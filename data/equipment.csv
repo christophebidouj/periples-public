@@ -1,0 +1,53 @@
+Code,Nom,Precision,Physical_Damage,Magical_Damage,Defense,Spells,Health
+O-5,Dague,2,1,0,0,0,0
+O-6,Epée courte,0,0,0,0,0,0
+O-7,Epée longue,2,2,0,0,0,0
+O-8,Hache de combat,1,2,0,0,0,0
+O-9,Marteau de guerre,2,2,0,0,0,0
+O-10,Arbalète légère,2,1,0,0,0,0
+O-11,Arc long,3,2,0,0,0,0
+O-12,Rondache de bois,0,0,0,1,0,0
+O-13,Luth,0,0,0,0,1,0
+O-14,Vêtement de cuir,0,0,0,1,0,0
+O-15,Vêtement de cuir,0,0,0,1,0,0
+O-16,Armure de cuir,0,0,0,1,0,0
+O-17,Armure de cuir,0,0,0,1,0,0
+O-18,Dague,2,1,0,0,0,0
+O-19,Epée courte,1,2,0,0,0,0
+O-20,Epée longue,2,2,0,0,0,0
+O-21,Espadon,1,4,0,0,0,0
+O-22,Hache de combat,1,2,0,0,0,0
+O-23,Hache de guerre,2,3,0,0,0,0
+O-24,Epée Bâtarde,3,1,0,0,0,0
+O-24b,Epée Bâtarde,1,3,0,0,0,0
+O-25,Lance,1,3,0,0,0,0
+O-26,Bâton de combat,3,1,0,0,0,0
+O-27,Arbalète légère,2,1,0,0,0,0
+O-28,Arbalète légère,2,1,0,0,0,0
+O-29,Rondache de bois,0,0,0,1,0,0
+O-30,Bouclier de bois,0,0,0,1,0,0
+O-31,Bouclier de fer,0,0,0,2,0,0
+O-32,Vêtement de cuir,0,0,0,1,0,0
+O-33,Vêtement de cuir,0,0,0,1,0,0
+O-34,Armure de cuir,0,0,0,1,0,0
+O-35,Armure de cuir,0,0,0,1,0,0
+O-36,Armure de plates,0,0,0,2,0,0
+O-37,Armure de plates,0,0,0,2,0,0
+O-38,Gants de précision ,4,0,0,0,0,0
+O-39,Couronne de santé,0,0,0,0,0,2
+O-40,Bague d’impact,2,0,0,0,0,0
+O-41,Ceinture de parade,0,0,0,1,0,0
+O-42,Pierre de mémoire,0,0,0,0,2,0
+O-55,Potion de précision,4,0,0,0,0,0
+O-56,Potion de vigueur,0,0,0,0,0,2
+O-57,Potion de défense,0,0,0,1,0,0
+O-58,Potion d’assaut,2,0,0,0,0,0
+O-59,Potion de magie,0,0,0,0,6,0
+O-73,Marteau du juste,4,0,2,0,0,0
+O-75,Implacable,0,6,0,0,0,0
+O-77,Poings de feu,2,0,4,0,0,0
+O-78,Dagues jumelles,3,0,3,0,0,0
+O-82,Armure de Jaron,0,0,0,3,0,0
+O-83,Epée d’Olestrin,3,3,0,0,0,0
+O-84,Bouclier polyvalent,0,0,0,0,0,0
+O-85,Don des élus,0,0,0,0,0,2
