@@ -110,7 +110,7 @@ class DataLoader:
             return self._create_default_enemies()
     
     def load_equipment(self) -> List[Equipment]:
-        """Charge la liste des équipements depuis le CSV"""
+        """Charge la liste des équipements depuis le CSV avec support Type"""
         try:
             csv_path = os.path.join(self.data_path, "equipment.csv")
             
@@ -126,6 +126,7 @@ class DataLoader:
                     equipment = Equipment(
                         code=str(row['Code']),
                         name=str(row['Nom']),
+                        type=str(row.get('Type', 'accessoire')),  # AJOUT avec fallback
                         precision=int(row['Precision']),
                         physical_damage=int(row['Physical_Damage']),
                         magical_damage=int(row['Magical_Damage']),
@@ -159,6 +160,7 @@ class DataLoader:
                     equipment.append(Equipment(
                         code=str(row['Code']),
                         name=str(row['Nom']),
+                        type=str(row.get('Type', 'accessoire')),  # AJOUT
                         precision=int(row['Precision']),
                         physical_damage=int(row['Physical_Damage']),
                         magical_damage=int(row['Magical_Damage']),
@@ -308,7 +310,7 @@ class DataLoader:
                     print(f"⚠️ Erreur ennemi ligne {_}: {e} - Données: {dict(row)}")
                     continue
             
-            # === CONVERSION EQUIPMENT AVEC NOMS EXACTS ===
+            # === CONVERSION EQUIPMENT AVEC NOMS EXACTS ET TYPE ===
             equipment_csv_data = []
             
             for _, row in equipment_df.iterrows():
@@ -325,6 +327,7 @@ class DataLoader:
                     equipment_csv_data.append([
                         str(row['Code']),
                         str(row['Nom']),
+                        str(row.get('Type', 'accessoire')),  # AJOUT colonne Type
                         safe_int(row['Précis.'], 0),
                         safe_int(row['Dég. P'], 0),
                         safe_int(row['Dég. M'], 0),
@@ -356,9 +359,9 @@ class DataLoader:
             enemies_df_csv.to_csv(enemies_path, index=False)
             print(f"✅ {enemies_path} créé avec {len(enemies_csv_data)} ennemis")
             
-            # Equipment CSV
+            # Equipment CSV AVEC TYPE
             equipment_df_csv = pd.DataFrame(equipment_csv_data, columns=[
-                "Code", "Nom", "Precision", "Physical_Damage", "Magical_Damage", "Defense", "Spells", "Health"
+                "Code", "Nom", "Type", "Precision", "Physical_Damage", "Magical_Damage", "Defense", "Spells", "Health"  # AJOUT Type
             ])
             equipment_path = os.path.join(self.data_path, "equipment.csv")
             equipment_df_csv.to_csv(equipment_path, index=False)
@@ -450,22 +453,22 @@ class DataLoader:
         enemies_df.to_csv(enemies_path, index=False)
         print(f"✅ {enemies_path} créé avec {len(enemies_data)} ennemis (échantillon)")
         
-        # === EQUIPMENT CSV (Échantillon) ===
+        # === EQUIPMENT CSV (Échantillon AVEC TYPE) ===
         equipment_data = [
-            ["O-5", "Dague", 2, 1, 0, 0, 0, 0],
-            ["O-7", "Epée longue", 2, 2, 0, 0, 0, 0],
-            ["O-11", "Arc long", 3, 2, 0, 0, 0, 0],
-            ["O-23", "Hache de guerre", 2, 3, 0, 0, 0, 0],
-            ["O-31", "Bouclier de fer", 0, 0, 0, 2, 0, 0],
-            ["O-32", "Vêtement de cuir", 0, 0, 0, 1, 0, 0],
-            ["O-38", "Gants de précision", 4, 0, 0, 0, 0, 0],
-            ["O-42", "Pierre de mémoire", 0, 0, 0, 0, 2, 0],
-            ["O-75", "Implacable", 0, 6, 0, 0, 0, 0],
-            ["O-83", "Epée d'Olestrin", 3, 3, 0, 0, 0, 0]
+            ["O-5", "Dague", "arme", 2, 1, 0, 0, 0, 0],
+            ["O-7", "Epée longue", "arme", 2, 2, 0, 0, 0, 0],
+            ["O-11", "Arc long", "arme", 3, 2, 0, 0, 0, 0],
+            ["O-23", "Hache de guerre", "arme", 2, 3, 0, 0, 0, 0],
+            ["O-31", "Bouclier de fer", "armure", 0, 0, 0, 2, 0, 0],
+            ["O-32", "Vêtement de cuir", "armure", 0, 0, 0, 1, 0, 0],
+            ["O-38", "Gants de précision", "accessoire", 4, 0, 0, 0, 0, 0],
+            ["O-42", "Pierre de mémoire", "accessoire", 0, 0, 0, 0, 2, 0],
+            ["O-75", "Implacable", "arme", 0, 6, 0, 0, 0, 0],
+            ["O-83", "Epée d'Olestrin", "arme", 3, 3, 0, 0, 0, 0]
         ]
         
         equipment_df = pd.DataFrame(equipment_data, columns=[
-            "Code", "Nom", "Precision", "Physical_Damage", "Magical_Damage", "Defense", "Spells", "Health"
+            "Code", "Nom", "Type", "Precision", "Physical_Damage", "Magical_Damage", "Defense", "Spells", "Health"
         ])
         equipment_path = os.path.join(self.data_path, "equipment.csv")
         equipment_df.to_csv(equipment_path, index=False)
@@ -503,6 +506,6 @@ class DataLoader:
     def _create_default_equipment(self) -> List[Equipment]:
         """Crée des équipements par défaut si le CSV n'existe pas"""
         equipment_data = [
-            {"code": "O-5", "name": "Dague", "precision": 2, "physical_damage": 1, "magical_damage": 0, "defense": 0, "spells": 0, "health": 0}
+            {"code": "O-5", "name": "Dague", "type": "arme", "precision": 2, "physical_damage": 1, "magical_damage": 0, "defense": 0, "spells": 0, "health": 0}
         ]
         return [Equipment(**eq_data) for eq_data in equipment_data]

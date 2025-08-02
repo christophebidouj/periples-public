@@ -5,18 +5,18 @@
 **Simulateur d'équilibrage RPG** pour le jeu de société **"Périples"** de Bastien LIAUTY. 
 Application professionnelle d'analyse de combat avec interface moderne style **cartes à jouer**.
 
-### 📊 État Actuel (Janvier 2025)
-- **Version :** V4 Finale - Style Cartes Ultra-Compact
+### 📊 État Actuel (Août 2025)
+- **Version :** V4 Finale - Style Cartes Ultra-Compact avec Récapitulatif Élégant
 - **Interface :** 3 onglets avec affichage 4 héros + 5 ennemis par ligne
 - **Focus :** Combat détaillé avec journal tactique complet
-- **Style :** Cartes gaming avec effets visuels modernes
+- **Style :** Cartes gaming avec récapitulatif des équipes essentiel
 
 ## 🚀 Architecture Technique
 
 ### 📁 Structure des Fichiers
 ```
 periples/
-├── app.py                    # Application Streamlit SIMPLIFIÉE (350 lignes)
+├── app.py                    # Application Streamlit SIMPLIFIÉE (400 lignes)
 ├── Data_cards.xlsx          # Source données Excel → Auto-import CSV
 ├── models/
 │   ├── character.py         # Modèles Pydantic (Character/Enemy/Equipment)
@@ -28,7 +28,7 @@ periples/
 └── data/                    # Auto-généré depuis Excel
     ├── heroes.csv           # 12 héros avec stats
     ├── enemies.csv          # 72 ennemis (stats évolutives 2-4J)
-    └── equipment.csv        # 52 équipements avec bonus
+    └── equipment.csv        # 52 équipements avec catégorisation Type
 ```
 
 ### 🔧 Installation Rapide
@@ -47,10 +47,17 @@ streamlit run app.py
 
 ### 🏠 **Onglet 1 : Sélection des Équipes**
 **STYLE CARTES ULTRA-COMPACT :**
-- **Héros** : 4 par ligne, cartes claires avec dégradés
+- **Héros** : 4 par ligne, cartes avec images et dégradés
 - **Ennemis** : 5 par ligne, cartes sombres thème gaming
 - **Affichage** : Style jeu avec icônes 🎯⚔️❤️🛡️✨
 - **Sélection** : Bordures vertes/rouges, boutons ✅/➕
+
+**⚔️ RÉCAPITULATIF FORMATION DE GUERRE (ESSENTIEL) :**
+- **Design élégant** : Cards individuelles pour chaque combattant
+- **Statistiques détaillées** : Builds, stats complètes, pronostic de bataille
+- **Style thématique** : Couleurs héros (vert) vs ennemis (rouge)
+- **Position stratégique** : Visible avant le bouton de combat
+- **🚨 IMPORTANT** : Ce récapitulatif ne doit JAMAIS être supprimé du projet !
 
 **Fonctionnalités :**
 - Minimum 2 héros obligatoire
@@ -58,14 +65,14 @@ streamlit run app.py
 - Recherche ennemis par numéro (ex: "34") ou nom
 - Indicateurs visuels : 📋 = Standard, 🔧 = Custom, ✨ = Magique
 
-### ⚙️ **Onglet 2 : Customisation**
+### ⚙️ **Onglet 2 : Forge des Équipements**
+- **Catégorisation fonctionnelle** : ⚔️ Armes, 🛡️ Armures, 💍 Accessoires
+- **52 équipements** triés par type Excel
 - **Builds personnalisés** avec noms custom
-- **3 catégories** : ⚔️ Armes, 🛡️ Armures, 💍 Accessoires
-- **52 équipements** disponibles
 - **Aperçu temps réel** : comparaison base vs nouveau
 - **Sauvegarde persistante** entre sessions
 
-### 📊 **Onglet 3 : Résultats**
+### 📊 **Onglet 3 : Chroniques du Combat**
 - **Combat unique détaillé** (priorité absolue)
 - **Journal complet** : chaque action, jet de dé, résultat
 - **Métriques ressources** : blessures par héros, sorts utilisés
@@ -88,9 +95,10 @@ streamlit run app.py
 ## 💾 Données et Import
 
 ### 📊 Import Automatique Excel
-- **Source :** `data/Data_cards.xlsx` 
+- **Source :** `Data_cards.xlsx` 
 - **Auto-détection :** Création CSV si manquants
 - **Contenu :** 12 héros, 72 ennemis, 52 équipements
+- **Colonne Type :** Catégorisation arme/armure/accessoire
 
 ### 🔧 Builds Système Hybride
 ```python
@@ -106,19 +114,20 @@ st.session_state.custom_builds = {
 
 ## 🔄 État du Développement
 
-### ✅ **TERMINÉ - Interface Style Cartes**
-- [x] **app.py simplifié** : 350 lignes, code débutant-friendly
+### ✅ **TERMINÉ - Interface Style Cartes avec Récapitulatif**
+- [x] **app.py optimisé** : 400 lignes, code lisible
 - [x] **Style cartes gaming** : 4 héros + 5 ennemis par ligne
-- [x] **Affichage ultra-compact** : icônes au lieu de texte
-- [x] **Lisibilité optimisée** : fond clair, contrastes élevés
-- [x] **Effets visuels** : bordures colorées, boutons gaming
+- [x] **Récapitulatif FORMATION DE GUERRE** : Essentiel au projet
+- [x] **Catégorisation équipements** : Fonctionnelle par type Excel
+- [x] **Noms complets** : Plus de troncature d'équipements
+- [x] **Bouton combat stylisé** : Design épique avec effets
 
 ### ✅ **FONCTIONNEL - Système Complet**
 - [x] **Combat détaillé** : logs round par round prioritaires
 - [x] **Builds hybrides** : pré-définis + customisation complète
 - [x] **72 ennemis** : recherche par numéro/nom efficace
 - [x] **Validation UX** : minimum 2 héros, mode auto joueurs
-- [x] **Workflow fluide** : sélection → custom → combat → analyse
+- [x] **Workflow fluide** : sélection → récapitulatif → combat → analyse
 
 ## 🎯 Philosophie Projet
 
@@ -129,11 +138,18 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 - **Combat unique** = plus important que 100 simulations
 - **Relancer facilement** = tester variations sur même config
 
-### 🎨 **Interface Gaming Moderne**
+### 🎨 **Interface Gaming Moderne avec Récapitulatif**
 - **Style cartes** inspire confiance et engagement utilisateur
+- **Récapitulatif élégant** = vue claire des équipes avant combat
 - **Ultra-compact** = 75% gain d'espace vs version précédente
-- **Visuels clairs** = identification rapide héros/ennemis/builds
 - **Workflow intuitif** = 3 clics pour lancer un combat
+
+### 🚨 **RÉCAPITULATIF ESSENTIEL - NE PAS SUPPRIMER**
+Le récapitulatif "Formation de Guerre" qui affiche les équipes avant le combat est une **fonctionnalité critique** du projet :
+- **Position stratégique** : Juste avant le bouton de combat
+- **Information essentielle** : Stats détaillées, builds, pronostic
+- **Design thématique** : Intégration parfaite au style médiéval
+- **Expérience utilisateur** : Validation visuelle avant engagement
 
 ## 🚨 Propriété Intellectuelle
 
@@ -147,10 +163,10 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 ## 🔮 Informations pour Prochaine Session Claude
 
 ### 📋 **Contexte Critique à Retenir**
-1. **Code simplifié** : app.py = 350 lignes, débutant-friendly
-2. **Style cartes** : fonctionnel, 4+5 par ligne, fond clair
-3. **Focus combat unique** : pas de stats massives, journal prioritaire
-4. **Interface 3 onglets** : sélection/custom/résultats workflow
+1. **Code optimisé** : app.py = 400 lignes, style cartes + récapitulatif
+2. **Récapitulatif essentiel** : "Formation de Guerre" = fonctionnalité à préserver
+3. **Catégorisation équipements** : Fonctionnelle via colonne Type Excel
+4. **Focus combat unique** : journal prioritaire, pas de stats massives
 5. **Builds hybrides** : pré-définis + custom avec noms
 
 ### 🛠️ **Prochaines Étapes Possibles**
@@ -164,14 +180,15 @@ Si l'utilisateur demande des améliorations :
 
 ### 🚀 **État Technique Actuel**
 - **Python** : Streamlit + Pydantic + Plotly
-- **Données** : CSV auto-générés depuis Excel
-- **Style** : CSS inline, cartes responsive
+- **Données** : CSV auto-générés depuis Excel avec colonne Type
+- **Style** : CSS inline, cartes responsive + récapitulatif élégant
 - **Session** : st.session_state pour persistance
 - **Performance** : @st.cache_data pour optimisation
 
-### 💡 **Points d'Attention**
-- **Garder code simple** : max 30 lignes par fonction
-- **Respecter style cartes** : ne pas revenir à l'ancien design
+### 💡 **Points d'Attention Critiques**
+- **Garder récapitulatif** : La "Formation de Guerre" est ESSENTIELLE
+- **Respecter catégorisation** : Équipements triés par type Excel
+- **Maintenir style cartes** : Design gaming moderne
 - **Focus combat détaillé** : éviter sur-optimisation stats
 - **Propriété intellectuelle** : rappeler confidentialité si nécessaire
 
@@ -180,8 +197,8 @@ Si l'utilisateur demande des améliorations :
 ## 📞 **Contact & Statut**
 
 - **Utilisateur Principal :** Bastien LIAUTY (créateur Périples)
-- **Version Actuelle :** V4 Finale - Style Cartes Ultra-Compact
+- **Version Actuelle :** V4 Finale - Cartes + Récapitulatif Élégant
 - **Statut :** Projet fonctionnel, prêt pour utilisation professionnelle
-- **Dernière MAJ :** AOUT 2025 - Interface cartes + code simplifié
+- **Dernière MAJ :** Août 2025 - Récapitulatif Formation de Guerre ajouté
 
-**L'application est PRÊTE pour l'équilibrage professionnel de jeu avec interface gaming moderne et workflow optimisé.**
+**L'application est PRÊTE pour l'équilibrage professionnel avec interface gaming moderne, récapitulatif des équipes essentiel, et workflow optimisé.**

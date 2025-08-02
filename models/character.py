@@ -166,6 +166,7 @@ class Equipment(BaseModel):
     """Modèle d'un équipement"""
     code: str
     name: str
+    type: str = "accessoire"  # AJOUT - Type d'équipement (arme/armure/accessoire)
     precision: int = 0
     physical_damage: int = 0
     magical_damage: int = 0
