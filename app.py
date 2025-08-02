@@ -29,11 +29,21 @@ def get_cached_build_info(hero_code: str, _loader) -> Dict:
     return get_hero_build(hero, _loader)
 
 def get_hero_image_path(hero_name: str) -> str:
+    """CORRIGÉ - Mapping exact selon vos fichiers"""
     hero_files = {
-        "Atucan": "Atucan_-_Paladin.png", "Elneha": "Elneha_-_Druidesse.png",
-        "Kraor": "Kraor_-_Rodeur.png", "Lame": "Lame_-_Roublarde.png",
-        "Liarie": "Liarie_-_Mage.png", "Raishi": "Raishi_-_Pugiliste.png",
-        "Stèphe": "Stèphe_-_Barde.png", "Thordius": "Thordius_-_Barbare.png"
+        "Atucan": "Atucan_-_Paladin.png", 
+        "Elneha": "Elneha_-_Druidesse.png",
+        "Kraor": "Kraor_-_Rodeur.png", 
+        "Lame": "Lame_-_Roublarde.png",
+        "Liarie": "Liarie_-_Mage.png", 
+        "Raishi": "Raishi_-_Pugiliste.png",
+        "Stèphe": "Stephe_-_Barde.png",  # CORRIGÉ: Stèphe → Stephe
+        "Thordius": "Thordius_-_Barbare.png",
+        # Héros étendus
+        "Loup": "Loup.png",
+        "Ours": "Ours.png", 
+        "Loup S": "Loup_S.png",
+        "Ours S": "Ours_S.png"
     }
     filename = hero_files.get(hero_name)
     if filename:
@@ -127,7 +137,7 @@ def display_hero_card(hero: Character, build_info: Dict, is_selected: bool):
     else:
         border_color, button_text, button_type = "#5a9f5a", "➕ Ajouter", "primary"
     
-    # Image background
+    # Image background - VERSION ORIGINALE
     background_style = ""
     if ENABLE_IMAGES:
         image_path = get_hero_image_path(hero.name)
@@ -222,14 +232,14 @@ def tab_selection(data):
     else:
         st.success(f"🎯 Prêt ! {nb_heroes} héros et {nb_enemies} ennemis")
     
-    # HÉROS
+    # HÉROS - VOTRE VERSION: 6 par ligne
     st.subheader("🛡️ Héros Disponibles")
     st.markdown("*📋 = Standard • 🔧 = Personnalisé*")
-    cols = st.columns(4)
+    cols = st.columns(6)
     for i, hero in enumerate(heroes):
         build_info = get_cached_build_info(hero.code, loader)
         is_selected = hero.code in st.session_state.selected_heroes
-        with cols[i % 4]:
+        with cols[i % 6]:
             display_hero_card(hero, build_info, is_selected)
     
     # ENNEMIS
@@ -392,8 +402,8 @@ def tab_selection(data):
     col1, col2 = st.columns(2)
     with col1:
         rules = {'ranged_attacks': True, 'magical_damage': True,
-                'criticals': st.checkbox("🎯 Critiques", help="Échecs/Réussites critiques sur 1 et 20"),
-                'initiative': st.checkbox("🎲 Initiative", help="Ordre de jeu aléatoire")}
+                'criticals': st.checkbox("🎯 Critiques", value=True, help="Échecs/Réussites critiques sur 1 et 20"),
+                'initiative': st.checkbox("🎲 Initiative", value=True, help="Ordre de jeu aléatoire")}
         st.caption("🏹 Attaques distance et ✨ Dégâts magiques : activés automatiquement")
     with col2:
         st.info("⚔️ Combat détaillé avec journal complet des actions")
@@ -417,7 +427,7 @@ def tab_selection(data):
                 'enemy_codes': st.session_state.selected_enemies,
                 'player_count': player_count, 'rules': rules
             }
-            st.success("⚡ Combat engagé ! Consultez l'onglet Chroniques pour voir l'épopée !")
+            st.success("⚡ Combat engagé ! 👉 **Allez dans l'onglet 'Chroniques' pour voir le résultat** 👈")
             st.balloons()
         
         st.markdown("</div></div>", unsafe_allow_html=True)
@@ -696,10 +706,13 @@ def tab_results(data):
         if st.button("🎲 Rejouer le Combat", type="primary", use_container_width=True):
             st.session_state['run_simulation'] = True
             st.rerun()
+    
     with col2:
-        if st.button("📋 Copier le Journal", type="secondary", use_container_width=True):
+        # SIMPLIFIÉ - Bouton copie basique (pas primordial)
+        if st.button("📋 Afficher Journal Brut", type="secondary", use_container_width=True):
             log_text = "\n".join(result['log'])
             st.code(log_text, language="text")
+            st.info("💡 Utilisez Ctrl+A puis Ctrl+C pour copier le texte ci-dessus")
     
     st.session_state['run_simulation'] = False
     st.markdown('</div>', unsafe_allow_html=True)

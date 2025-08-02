@@ -169,14 +169,45 @@ Le récapitulatif "Formation de Guerre" qui affiche les équipes avant le combat
 4. **Focus combat unique** : journal prioritaire, pas de stats massives
 5. **Builds hybrides** : pré-définis + custom avec noms
 
-### 🛠️ **Prochaines Étapes Possibles**
-Si l'utilisateur demande des améliorations :
+### 🛠️ **TODO - Règles Manquantes à Implémenter**
+
+**URGENT - Conformité aux Règles Officielles :**
+
+1. **⚔️ Combat - Ordre d'Attaque (p.25-26)**
+   - ❌ MANQUANT : Attaque corps à corps doit cibler le **premier ennemi VIVANT**
+   - ❌ MANQUANT : Vérification que la cible est encore en vie avant attaque
+   - 📝 Localisation : `combat_engine.py` → `_select_target()`
+
+2. **✨ Capacités Magiques - Limitation d'Actions (p.24)**
+   - ❌ MANQUANT : "Les capacités magiques ne permettent pas de réaliser une attaque physique en plus"
+   - ❌ MANQUANT : Système de tracking des actions par tour (magie OU attaque)
+   - 📝 Localisation : `character.py` + `combat_engine.py` → `_hero_turn()`
+
+3. **🛡️ Ennemis Magiques - Résistance (p.26)**
+   - ❌ MANQUANT : Ennemis magiques divisent les dégâts physiques par 2
+   - ❌ MANQUANT : Les dégâts magiques ignorent cette résistance
+   - 📝 Localisation : `character.py` → `Enemy.take_damage()`
+
+4. **💀 Inconscience - Règles de Ciblage (p.18)**
+   - ❌ MANQUANT : Héros inconscients ne peuvent plus être ciblés par les ennemis
+   - ❌ MANQUANT : Soins sur inconscients ne récupèrent qu'1 PV (pas le montant normal)
+   - 📝 Localisation : `combat_engine.py` → `_select_hero_target()`
+
+5. **🔴 Défaite Totale - Malus (p.18)**
+   - ❌ MANQUANT : Si tous inconscients → coût 1 cube bleu par héros
+   - ❌ MANQUANT : Récupération de 50% des PV seulement
+   - 📝 Localisation : `combat_engine.py` → gestion fin de combat
+
+### 🚀 **Prochaines Étapes d'Amélioration**
+Si l'utilisateur demande des améliorations **APRÈS** avoir corrigé les règles :
 
 1. **🔧 Interface** : animations CSS, effets survol avancés
 2. **⚡ Performance** : optimisation chargement données
 3. **📊 Analytics** : métriques ressources étendues
 4. **🎮 UX** : raccourcis clavier, workflow optimisé
 5. **💾 Export** : sauvegarde configurations, PDF reports
+6. **🎲 Initiative** : Implémentation complète du système de piste d'initiative (p.26-27)
+7. **🧪 Potions** : Limitation stricte aux objets équipés en combat (p.24)
 
 ### 🚀 **État Technique Actuel**
 - **Python** : Streamlit + Pydantic + Plotly
