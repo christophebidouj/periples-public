@@ -144,12 +144,23 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 - **Ultra-compact** = 75% gain d'espace vs version précédente
 - **Workflow intuitif** = 3 clics pour lancer un combat
 
-### 🚨 **RÉCAPITULATIF ESSENTIEL - NE PAS SUPPRIMER**
-Le récapitulatif "Formation de Guerre" qui affiche les équipes avant le combat est une **fonctionnalité critique** du projet :
-- **Position stratégique** : Juste avant le bouton de combat
-- **Information essentielle** : Stats détaillées, builds, pronostic
-- **Design thématique** : Intégration parfaite au style médiéval
-- **Expérience utilisateur** : Validation visuelle avant engagement
+## 🛡️ **RÉCAPITULATIF "FORMATION DE GUERRE" - PRÉSERVATION**
+
+**Historique :** Cette fonctionnalité a été supprimée plusieurs fois par erreur lors de refactorings Claude, causant une régression de l'expérience utilisateur.
+
+**Fonction complète :**
+- **Affichage élégant** des équipes sélectionnées (héros vs ennemis)
+- **Stats détaillées** avec builds et pronostic de bataille  
+- **Position optimale** avant le bouton de combat pour validation
+- **Design cohérent** avec le thème gaming médiéval
+
+**Instructions de préservation :**
+- 🔒 **Maintenir** cette fonctionnalité lors des modifications
+- 📍 **Conserver** sa position et son contenu complet
+- ⚠️ **Éviter** la suppression pour "optimisation d'espace"
+- 🎯 **Améliorer** si nécessaire, mais ne pas retirer
+
+**Localisation :** `ui/components.py` → `display_team_recap()`
 
 ## 🚨 Propriété Intellectuelle
 
@@ -199,10 +210,7 @@ Le récapitulatif "Formation de Guerre" qui affiche les équipes avant le combat
    - 📝 Localisation : `combat_engine.py` → gestion fin de combat
 
 ### 🚀 **Prochaines Étapes d'Amélioration**
-Si l'utilisateur demande des améliorations **APRÈS** avoir corrigé les règles :
 
-1. **🔧 Interface** : animations CSS, effets survol avancés
-2. **⚡ Performance** : optimisation chargement données
 3. **📊 Analytics** : métriques ressources étendues
 4. **🎮 UX** : raccourcis clavier, workflow optimisé
 5. **💾 Export** : sauvegarde configurations, PDF reports
