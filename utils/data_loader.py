@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from typing import List, Dict, Any
+import streamlit as st
 
 # Import relatif correct pour ta structure
 from models.character import Character, Enemy, Equipment
@@ -147,10 +148,12 @@ class DataLoader:
             print(f"❌ Erreur lors du chargement des équipements: {e}")
             return self._create_default_equipment()
     
-    def get_hero_loadout(self, hero_code: str) -> List[Equipment]:
-        """Retourne l'équipement automatique optimal pour un héros"""
-        
-        # Éviter l'appel récursif - utiliser directement le CSV
+    def get_hero_build(self, hero_code: str) -> Dict:
+        """
+        CORRIGÉ - Retourne le build d'un héros avec priorisation Custom > Standard
+        Un seul build par héros : custom remplace le standard s'il existe
+        """
+        # Chargement des équipements
         try:
             csv_path = os.path.join(self.data_path, "equipment.csv")
             if os.path.exists(csv_path):
@@ -160,7 +163,7 @@ class DataLoader:
                     equipment.append(Equipment(
                         code=str(row['Code']),
                         name=str(row['Nom']),
-                        type=str(row.get('Type', 'accessoire')),  # AJOUT
+                        type=str(row.get('Type', 'accessoire')),
                         precision=int(row['Precision']),
                         physical_damage=int(row['Physical_Damage']),
                         magical_damage=int(row['Magical_Damage']),
@@ -171,9 +174,40 @@ class DataLoader:
             else:
                 equipment = []
         except Exception as e:
-            print(f"⚠️ Erreur chargement équipements pour hero_loadout: {e}")
+            print(f"⚠️ Erreur chargement équipements pour hero_build: {e}")
             equipment = []
         
+        # PRIORISATION : Custom > Standard
+        if hero_code in st.session_state.get('custom_builds', {}):
+            # BUILD CUSTOM TROUVÉ - Il remplace le standard
+            custom_data = st.session_state.custom_builds[hero_code]
+            equipment_codes = custom_data.get('equipment', [])
+            hero_equipment = [eq for eq in equipment if eq.code in equipment_codes]
+            build_name = custom_data.get('name', 'Build Custom')
+            is_custom = True
+        else:
+            # FALLBACK : Build standard uniquement si pas de custom
+            hero_equipment = self._get_standard_loadout(hero_code, equipment)
+            build_name = "Build Standard"
+            is_custom = False
+        
+        # Création du héros équipé
+        heroes = self.load_heroes()
+        hero = next(h for h in heroes if h.code == hero_code)
+        
+        hero_copy = hero.model_copy()
+        hero_copy.equip_items(hero_equipment, build_name)
+        
+        return {
+            'hero_equipped': hero_copy, 
+            'equipment': hero_equipment,
+            'build_name': build_name, 
+            'is_custom': is_custom, 
+            'stats': hero_copy.get_stats_summary()
+        }
+    
+    def _get_standard_loadout(self, hero_code: str, equipment: List[Equipment]) -> List[Equipment]:
+        """Retourne l'équipement standard d'un héros (fonction privée)"""
         # Builds optimisés par héros selon leur profil
         loadouts = {
             # Héros de base
@@ -195,6 +229,11 @@ class DataLoader:
         
         hero_equipment_codes = loadouts.get(hero_code, [])
         return [eq for eq in equipment if eq.code in hero_equipment_codes]
+    
+    def get_hero_loadout(self, hero_code: str) -> List[Equipment]:
+        """DÉPRÉCIÉ - Utilisez get_hero_build() à la place"""
+        print("⚠️ get_hero_loadout() est déprécié, utilisez get_hero_build()")
+        return self.get_hero_build(hero_code)['equipment']
     
     def get_build_templates(self) -> dict:
         """Retourne les templates de builds disponibles"""

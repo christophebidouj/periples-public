@@ -1,6 +1,7 @@
 """
 Composants héros pour le Simulateur Périples
 Cartes héros, récapitulatif d'équipe, statistiques
+AJOUT : Gestion des transformations d'Elneha (état désactivé)
 """
 
 import streamlit as st
@@ -17,7 +18,7 @@ from ui.styling import (
 
 from ui.components.ui_elements import get_hero_icon, load_hero_image_base64, get_hero_image_path
 
-def display_hero_card(hero: Character, build_info: Dict, is_selected: bool, enable_images: bool = True):
+def display_hero_card(hero: Character, build_info: Dict, is_selected: bool, enable_images: bool = True, show_button: bool = True):
     """
     Affiche une carte héros avec style gaming
     
@@ -26,11 +27,12 @@ def display_hero_card(hero: Character, build_info: Dict, is_selected: bool, enab
         build_info: Dictionnaire avec stats et équipements 
         is_selected: État de sélection
         enable_images: Activer les images de background
+        show_button: NOUVEAU - Afficher le bouton ou pas (pour gestion externe)
     """
     stats = build_info['stats']['total']
     hero_icon = get_hero_icon(hero.name)
     
-    # Détermination des couleurs selon l'état
+    # Détermination des couleurs selon l'état (SIMPLE)
     if is_selected:
         border_color = Colors.SELECTED_BORDER
         button_text, button_type = "✅ Sélectionné", "secondary"
@@ -83,9 +85,12 @@ def display_hero_card(hero: Character, build_info: Dict, is_selected: bool, enab
     with st.container():
         st.markdown(card_html, unsafe_allow_html=True)
         
-        # Bouton d'action (callback géré par app.py)
-        button_key = f"hero_btn_{hero.code}_{is_selected}"
-        return st.button(button_text, key=button_key, type=button_type, use_container_width=True)
+        # Bouton SEULEMENT si demandé
+        if show_button:
+            button_key = f"hero_btn_{hero.code}_{is_selected}"
+            return st.button(button_text, key=button_key, type=button_type, use_container_width=True)
+        
+        return False  # Pas de bouton = pas de clic
 
 def display_team_recap(selected_hero_details: List[Dict], selected_enemy_details: List[Dict], player_count: int):
     """

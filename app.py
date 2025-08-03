@@ -46,6 +46,29 @@ from ui.components import (
 # === CONFIGURATION ===
 ENABLE_IMAGES = True
 
+# === AJOUT : Gestion des formes d'Elneha ===
+def get_elneha_forms() -> List[str]:
+    """Retourne les codes des différentes formes d'Elneha (exclusion mutuelle)"""
+    return ['P-1', 'P-9', 'P-10', 'P-11', 'P-12']  # Elneha, Ours, Loup, Ours S, Loup S
+
+def clean_elneha_forms_from_selection(new_hero_code: str):
+    """
+    Supprime les autres formes d'Elneha si on sélectionne une forme d'Elneha
+    
+    Args:
+        new_hero_code: Code du héros qu'on va ajouter
+    """
+    elneha_forms = get_elneha_forms()
+    
+    # Si le nouveau héros n'est pas une forme d'Elneha, rien à faire
+    if new_hero_code not in elneha_forms:
+        return
+    
+    # Supprimer toutes les autres formes d'Elneha de la sélection
+    current_selection = st.session_state.get('selected_heroes', [])
+    cleaned_selection = [code for code in current_selection if code not in elneha_forms]
+    st.session_state.selected_heroes = cleaned_selection
+
 # === CACHE ET UTILITAIRES ===
 @st.cache_data(persist=True)
 def get_cached_build_info(hero_code: str, _loader) -> Dict:
@@ -172,6 +195,13 @@ def tab_selection(data):
     st.subheader("🛡️ Héros Disponibles")
     st.markdown("*📋 = Standard • 🔧 = Personnalisé*")
     
+    # AJOUT : Info sur les formes d'Elneha
+    elneha_forms = get_elneha_forms()
+    selected_elneha = [code for code in st.session_state.get('selected_heroes', []) if code in elneha_forms]
+    if selected_elneha:
+        selected_hero = next(h for h in heroes if h.code == selected_elneha[0])
+        st.info(f"🐻 {selected_hero.name} sélectionnée (forme d'Elneha)")
+    
     # Affichage des cartes héros - 6 par ligne
     cols = st.columns(6)
     for i, hero in enumerate(heroes):
@@ -183,6 +213,8 @@ def tab_selection(data):
                 if is_selected:
                     st.session_state.selected_heroes.remove(hero.code)
                 else:
+                    # AJOUT : Nettoyer les autres formes d'Elneha avant d'ajouter
+                    clean_elneha_forms_from_selection(hero.code)
                     st.session_state.selected_heroes.append(hero.code)
                 st.rerun()
     

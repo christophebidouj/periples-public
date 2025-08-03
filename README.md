@@ -1,4 +1,4 @@
-# ⚔️ Simulateur de Combat Périples - Version Finale
+# ⚔️ Simulateur de Combat Périples - Version Interface Optimisée
 
 ## 🎯 Contexte du Projet
 
@@ -6,10 +6,10 @@
 Application professionnelle d'analyse de combat avec interface moderne style **cartes à jouer**.
 
 ### 📊 État Actuel (Août 2025)
-- **Version :** V4 Finale - Style Cartes Ultra-Compact avec Récapitulatif Élégant
-- **Interface :** 3 onglets avec affichage 4 héros + 5 ennemis par ligne
+- **Version :** V4+ Interface Complète Optimisée - Expanders natifs
+- **Interface :** 3 onglets avec expanders compacts (zones blanches éliminées)
 - **Focus :** Combat détaillé avec journal tactique complet
-- **Style :** Cartes gaming avec récapitulatif des équipes essentiel
+- **Style :** Interface gaming avec récapitulatif des équipes essentiel
 
 ## 🚀 Architecture Technique
 
@@ -22,6 +22,15 @@ periples/
 │   ├── character.py         # Modèles Pydantic (Character/Enemy/Equipment)
 │   ├── combat_engine.py     # Moteur simulation + logs détaillés
 │   └── rules_engine.py      # Configuration règles avancées
+├── ui/
+│   ├── styling.py           # Thème fantasy + bordeaux royal
+│   └── components/          # Interface modulaire OPTIMISÉE
+│       ├── __init__.py      # Imports centralisés
+│       ├── ui_elements.py   # Utilitaires communs
+│       ├── hero_components.py      # Cartes héros + récapitulatif
+│       ├── enemy_components.py     # Cartes ennemis EXPANDERS NATIFS
+│       ├── equipment_components.py # Équipements EXPANDERS NATIFS
+│       └── combat_components.py    # Résultats combat
 ├── utils/
 │   ├── data_loader.py       # Import auto Excel → CSV
 │   └── stats_analyzer.py    # Analyses RPG (survie/attrition)
@@ -43,14 +52,14 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 🎮 Interface Utilisateur Moderne
+## 🎮 Interface Utilisateur Moderne OPTIMISÉE
 
 ### 🏠 **Onglet 1 : Sélection des Équipes**
-**STYLE CARTES ULTRA-COMPACT :**
+**INTERFACE EXPANDERS COMPACTE :**
 - **Héros** : 4 par ligne, cartes avec images et dégradés
-- **Ennemis** : 5 par ligne, cartes sombres thème gaming
+- **Ennemis** : 5 par ligne avec expanders natifs (expanded=False)
 - **Affichage** : Style jeu avec icônes 🎯⚔️❤️🛡️✨
-- **Sélection** : Bordures vertes/rouges, boutons ✅/➕
+- **Sélection** : Badge ✅ dans titre expander, boutons ✅/➕
 
 **⚔️ RÉCAPITULATIF FORMATION DE GUERRE (ESSENTIEL) :**
 - **Design élégant** : Cards individuelles pour chaque combattant
@@ -62,15 +71,16 @@ streamlit run app.py
 **Fonctionnalités :**
 - Minimum 2 héros obligatoire
 - Mode auto : 2 héros = 2 joueurs, 3 héros = 3 joueurs...
-- Recherche ennemis par numéro (ex: "34") ou nom
+- Recherche ennemis par numéro (ex: "34") ou nom avec noms complets
 - Indicateurs visuels : 📋 = Standard, 🔧 = Custom, ✨ = Magique
 
-### ⚙️ **Onglet 2 : Forge des Équipements**
+### ⚙️ **Onglet 2 : Forge des Équipements - INTERFACE OPTIMISÉE**
+- **Expanders natifs** : Fini les zones blanches ! st.expander() avec expanded=False
+- **Noms complets** : 20 caractères avec troncature intelligente
 - **Catégorisation fonctionnelle** : ⚔️ Armes, 🛡️ Armures, 💍 Accessoires
-- **52 équipements** triés par type Excel
-- **Builds personnalisés** avec noms custom
-- **Aperçu temps réel** : comparaison base vs nouveau
-- **Sauvegarde persistante** entre sessions
+- **Métriques Streamlit** : Top 2 bonus en métriques + bonus secondaires
+- **Builds personnalisés** avec noms custom et sauvegarde persistante
+- **52 équipements** triés par type Excel avec interface compacte
 
 ### 📊 **Onglet 3 : Chroniques du Combat**
 - **Combat unique détaillé** (priorité absolue)
@@ -114,18 +124,18 @@ st.session_state.custom_builds = {
 
 ## 🔄 État du Développement
 
-### ✅ **TERMINÉ - Interface Style Cartes avec Récapitulatif**
+### ✅ **TERMINÉ - Interface Expanders Optimisée**
 - [x] **app.py optimisé** : 400 lignes, code lisible
-- [x] **Style cartes gaming** : 4 héros + 5 ennemis par ligne
+- [x] **Interface expanders** : Équipements + Ennemis sans zones blanches
+- [x] **Noms complets** : 20 car. équipements, 18 car. ennemis avec troncature intelligente
 - [x] **Récapitulatif FORMATION DE GUERRE** : Essentiel au projet
-- [x] **Catégorisation équipements** : Fonctionnelle par type Excel
-- [x] **Noms complets** : Plus de troncature d'équipements
-- [x] **Bouton combat stylisé** : Design épique avec effets
+- [x] **Métriques natives** : st.metric() pour affichage premium
+- [x] **Interface compacte** : expanded=False par défaut
 
 ### ✅ **FONCTIONNEL - Système Complet**
 - [x] **Combat détaillé** : logs round par round prioritaires
 - [x] **Builds hybrides** : pré-définis + customisation complète
-- [x] **72 ennemis** : recherche par numéro/nom efficace
+- [x] **72 ennemis** : recherche par numéro/nom efficace avec noms complets
 - [x] **Validation UX** : minimum 2 héros, mode auto joueurs
 - [x] **Workflow fluide** : sélection → récapitulatif → combat → analyse
 
@@ -138,10 +148,11 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 - **Combat unique** = plus important que 100 simulations
 - **Relancer facilement** = tester variations sur même config
 
-### 🎨 **Interface Gaming Moderne avec Récapitulatif**
-- **Style cartes** inspire confiance et engagement utilisateur
+### 🎨 **Interface Gaming Moderne Optimisée**
+- **Expanders natifs** = Zero zones blanches + style cohérent Streamlit
 - **Récapitulatif élégant** = vue claire des équipes avant combat
-- **Ultra-compact** = 75% gain d'espace vs version précédente
+- **Interface compacte** = expanders fermés par défaut, gain d'espace
+- **Noms complets** = 20/18 caractères avec troncature intelligente
 - **Workflow intuitif** = 3 clics pour lancer un combat
 
 ## 🛡️ **RÉCAPITULATIF "FORMATION DE GUERRE" - PRÉSERVATION**
@@ -160,7 +171,7 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 - ⚠️ **Éviter** la suppression pour "optimisation d'espace"
 - 🎯 **Améliorer** si nécessaire, mais ne pas retirer
 
-**Localisation :** `ui/components.py` → `display_team_recap()`
+**Localisation :** `ui/components/hero_components.py` → `display_team_recap()`
 
 ## 🚨 Propriété Intellectuelle
 
@@ -174,11 +185,12 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 ## 🔮 Informations pour Prochaine Session Claude
 
 ### 📋 **Contexte Critique à Retenir**
-1. **Code optimisé** : app.py = 400 lignes, style cartes + récapitulatif
+1. **Interface optimisée** : Expanders natifs (expanded=False) = solution définitive zones blanches
 2. **Récapitulatif essentiel** : "Formation de Guerre" = fonctionnalité à préserver
-3. **Catégorisation équipements** : Fonctionnelle via colonne Type Excel
+3. **Noms complets** : 20 car. équipements, 18 car. ennemis avec troncature intelligente
 4. **Focus combat unique** : journal prioritaire, pas de stats massives
 5. **Builds hybrides** : pré-définis + custom avec noms
+6. **Interface compacte** : Expanders fermés par défaut pour éviter surcharge
 
 ### 🛠️ **TODO - Règles Manquantes à Implémenter**
 
@@ -220,14 +232,16 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 ### 🚀 **État Technique Actuel**
 - **Python** : Streamlit + Pydantic + Plotly
 - **Données** : CSV auto-générés depuis Excel avec colonne Type
-- **Style** : CSS inline, cartes responsive + récapitulatif élégant
+- **Style** : CSS inline, expanders natifs + récapitulatif élégant
 - **Session** : st.session_state pour persistance
 - **Performance** : @st.cache_data pour optimisation
+- **Interface** : Expanders compacts sans zones blanches
 
 ### 💡 **Points d'Attention Critiques**
 - **Garder récapitulatif** : La "Formation de Guerre" est ESSENTIELLE
-- **Respecter catégorisation** : Équipements triés par type Excel
-- **Maintenir style cartes** : Design gaming moderne
+- **Respecter expanders** : Solution définitive contre zones blanches
+- **Maintenir noms complets** : Troncature intelligente implémentée
+- **Interface compacte** : expanded=False par défaut
 - **Focus combat détaillé** : éviter sur-optimisation stats
 - **Propriété intellectuelle** : rappeler confidentialité si nécessaire
 
@@ -236,8 +250,8 @@ L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse ta
 ## 📞 **Contact & Statut**
 
 - **Utilisateur Principal :** Bastien LIAUTY (créateur Périples)
-- **Version Actuelle :** V4 Finale - Cartes + Récapitulatif Élégant
-- **Statut :** Projet fonctionnel, prêt pour utilisation professionnelle
-- **Dernière MAJ :** Août 2025 - Récapitulatif Formation de Guerre ajouté
+- **Version Actuelle :** V4+ Interface Complète Optimisée
+- **Statut :** Interface terminée, prêt pour implémentation règles manquantes
+- **Dernière MAJ :** Août 2025 - Interface Expanders Natifs Compacte
 
-**L'application est PRÊTE pour l'équilibrage professionnel avec interface gaming moderne, récapitulatif des équipes essentiel, et workflow optimisé.**
+**L'application est PRÊTE pour l'équilibrage professionnel avec interface gaming moderne optimisée, récapitulatif des équipes essentiel, et workflow ultra-compact.**
