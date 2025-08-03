@@ -116,8 +116,8 @@ def display_equipment_card_expander(equipment, is_selected: bool):
     # Badge de sélection dans le titre
     selection_badge = "✅ " if is_selected else ""
     
-    # === EXPANDER NATIF STREAMLIT ===
-    with st.expander(f"{selection_badge}{equipment_icon} {name_display}", expanded=True):
+    # === EXPANDER NATIF STREAMLIT FERMÉ PAR DÉFAUT ===
+    with st.expander(f"{selection_badge}{equipment_icon} {name_display}", expanded=False):
         
         # Type avec couleur
         st.markdown(f"<span style='color: {type_color}; font-weight: bold; font-size: 0.9rem;'>{type_name}</span>", 
