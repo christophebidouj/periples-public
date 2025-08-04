@@ -10,9 +10,15 @@ class GameRules(BaseModel):
     criticals: bool = False          # Gestion des critiques (1 et 20)
     initiative: bool = False         # Ordre aléatoire vs ordre fixe
     
+    # CORRECTION BUG : Ajout attribut manquant
+    max_rounds: int = 20             # Nombre maximum de rounds (évite combats infinis)
+    
     # Systèmes avancés (à développer)
     element_system: bool = False     # Système de cubes d'éléments
     capacities: bool = False         # Capacités spéciales des personnages
+    
+    # NOUVEAU - Support système de capacités
+    abilities_enabled: bool = True   # Active/désactive le système de capacités
     
     def get_active_rules(self) -> List[str]:
         """Retourne la liste des règles actives"""
@@ -29,6 +35,8 @@ class GameRules(BaseModel):
             active.append("Système d'éléments")
         if self.capacities:
             active.append("Capacités")
+        if self.abilities_enabled:
+            active.append("Système de capacités")
         
         return active if active else ["Règles de base uniquement"]
     
@@ -40,7 +48,8 @@ class GameRules(BaseModel):
             self.criticals,
             self.initiative,
             self.element_system,
-            self.capacities
+            self.capacities,
+            self.abilities_enabled
         ])
     
     def get_difficulty_modifier(self) -> float:
@@ -59,4 +68,12 @@ class GameRules(BaseModel):
         if self.ranged_attacks:
             modifier -= 0.05
             
+        # Le système de capacités peut faciliter les combats
+        if self.abilities_enabled:
+            modifier -= 0.1
+            
         return max(0.8, min(1.3, modifier))  # Limité entre 0.8 et 1.3
+    
+    def get_max_rounds_display(self) -> str:
+        """Retourne l'affichage de la limite de rounds"""
+        return f"Maximum {self.max_rounds} rounds"

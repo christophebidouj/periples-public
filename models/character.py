@@ -1,6 +1,6 @@
 """
 Modèles de personnages pour le Simulateur Périples
-VERSION MISE À JOUR avec support du système de capacités
+VERSION MISE À JOUR avec support du système de capacités + CORRECTION BUG heal()
 """
 
 from pydantic import BaseModel, Field
@@ -63,6 +63,48 @@ class Character(BaseModel):
     def take_damage(self, damage: int):
         """Fait subir des dégâts au personnage"""
         self.current_health = max(0, self.current_health - damage)
+    
+    # === CORRECTION BUG - MÉTHODE HEAL() MANQUANTE ===
+    
+    def heal(self, heal_amount: int) -> int:
+        """
+        Soigne le personnage d'un certain montant
+        
+        Args:
+            heal_amount: Montant de soins à appliquer
+            
+        Returns:
+            int: Montant réellement soigné (limité par PV max)
+        """
+        if heal_amount <= 0:
+            return 0
+        
+        max_health = self.get_total_health()
+        old_health = self.current_health
+        
+        # Soigne sans dépasser les PV maximum
+        self.current_health = min(max_health, self.current_health + heal_amount)
+        
+        # Retourne le montant réellement soigné
+        actual_heal = self.current_health - old_health
+        return actual_heal
+    
+    def is_at_full_health(self) -> bool:
+        """Vérifie si le personnage est à pleine santé"""
+        return self.current_health >= self.get_total_health()
+    
+    def get_health_percentage(self) -> float:
+        """Retourne le pourcentage de PV actuels"""
+        max_health = self.get_total_health()
+        if max_health <= 0:
+            return 0.0
+        return (self.current_health / max_health) * 100.0
+    
+    def get_missing_health(self) -> int:
+        """Retourne le nombre de PV manquants"""
+        return self.get_total_health() - self.current_health
+    
+    # === MÉTHODES ÉQUIPEMENTS (INCHANGÉES) ===
     
     def equip_items(self, items: List['Equipment'], build_name: str = None):
         """Équipe des objets au personnage"""

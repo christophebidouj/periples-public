@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Simulateur de Combat Périples
+Périples Balance Workshop
 🎲 Jeu : Périples © Bastien LIAUTY
 💻 Code : Christophe Bidouj (assistance Claude AI)
 """
@@ -14,6 +14,7 @@ from models.character import Character, Enemy
 from models.combat_engine import CombatEngine
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
+
 
 # Import UI
 from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waiting_combat_style, get_app_title_style
@@ -43,7 +44,7 @@ def get_equipment_categories(equipment):
 # === INITIALISATION ===
 def init_app():
     """Configure Streamlit et session"""
-    st.set_page_config(page_title="Simulateur RPG", page_icon="⚔️", layout="wide")
+    st.set_page_config(page_title="Périples Balance Workshop", page_icon="⚔️", layout="wide")
     os.makedirs("data", exist_ok=True)
     
     # Variables de session
@@ -154,7 +155,7 @@ def display_about():
                 text-align: center; box-shadow: 0 8px 32px rgba(139,69,19,0.3);">
         <h1 style="color: #fff; font-family: 'Cinzel', serif; margin: 0; font-size: 2.5rem; 
                    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
-            ⚔️ SIMULATEUR DE COMBAT PÉRIPLES ⚔️
+            ⚔️ PÉRIPLES BALANCE WORKSHOP ⚔️
         </h1>
         <h3 style="color: #f4f4f4; margin: 15px 0 5px 0; font-style: italic;">
             Outil Professionnel d'Équilibrage RPG
@@ -212,14 +213,14 @@ def display_about():
         """, unsafe_allow_html=True)
 
     with col2:
-        # Simulateur - Style technologique
+        # Balance Workshop - Style technologique
         st.markdown("""
         <div style="background: linear-gradient(135deg, rgba(70,130,180,0.15), rgba(100,149,237,0.08));
                     border: 3px solid #4682b4; border-radius: 20px; padding: 25px; margin: 15px 0;
                     box-shadow: 0 6px 20px rgba(70,130,180,0.2);">
             <h2 style="color: #2e4b6b; margin-top: 0; font-family: 'Cinzel', serif;
                        border-bottom: 2px solid #4682b4; padding-bottom: 10px;">
-                💻 SIMULATEUR PYTHON
+                💻 BALANCE WORKSHOP
             </h2>
             <div style="font-size: 1.1rem; line-height: 1.6;">
                 <p style="margin: 15px 0;"><span style="color: #666; display: inline-block; width: 140px;">👨‍💻 Dev Python :</span> <strong style="color: #4682b4;">Christophe Bidouj</strong></p>
@@ -359,7 +360,7 @@ def display_about():
         </div>
         <p style="margin: 10px 0; color: #666; font-size: 1rem; line-height: 1.6;">
             <strong style="color: #8b4513;">Périples</strong> © <strong style="color: #228b22;">Bastien LIAUTY</strong> - Tous droits réservés<br>
-            Simulateur forgé par <strong style="color: #4682b4;">Christophe Bidouj</strong> 
+            Balance Workshop forgé par <strong style="color: #4682b4;">Christophe Bidouj</strong> 
             avec l'assistance de <strong style="color: #8a2be2;">Claude AI</strong><br>
         </p>
         <div style="margin: 15px 0; padding: 12px; background: rgba(139,69,19,0.1); 

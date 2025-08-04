@@ -86,18 +86,22 @@ class Ability(BaseModel):
         """
         return self.ability_type == AbilityType.MAGICAL
     
-    def can_use(self, current_spells: int) -> tuple[bool, str]:
+    def can_use(self, current_spells: Optional[int]) -> tuple[bool, str]:
         """
         Vérifie si la capacité peut être utilisée
         
         Args:
-            current_spells: Points de sorts actuels du personnage
+            current_spells: Points de sorts actuels du personnage (peut être None)
             
         Returns:
             tuple[bool, str]: (peut_utiliser, raison)
         """
         if not self.is_unlocked:
             return False, "Capacité non débloquée"
+        
+        # CORRECTION: Gérer le cas où current_spells est None
+        if current_spells is None:
+            current_spells = 0
         
         if self.spell_cost > current_spells:
             return False, f"Sorts insuffisants ({self.spell_cost} requis, {current_spells} disponibles)"

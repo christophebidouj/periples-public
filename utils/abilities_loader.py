@@ -1,494 +1,376 @@
 """
-Chargeur de capacités pour le Simulateur Périples
-Import et parsing du fichier Sorts.xlsx selon les règles officielles
+Chargeur de capacités SIMPLIFIÉ pour le Simulateur Périples
+VERSION SIMPLE - Utilise ability_names.csv pour les vrais noms
 """
 
 import pandas as pd
 import os
-import re
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from models.abilities import Ability, AbilityEffect, TargetType
 
 class AbilitiesLoader:
     """
-    Chargeur des capacités depuis le fichier Sorts.xlsx
-    
-    Structure Excel attendue :
-    - Colonne 1 : Nom héros + numéro (ex: "Elneha1", "Liarie2")
-    - Colonne 2 : Coût en sorts (0 = physique, 1+ = magique)
-    - Colonne 3 : Description détaillée
-    - Colonne 4 : Utilisations par combat (optionnel)
+    Chargeur simple des capacités depuis Sorts.xlsx + ability_names.csv
+    CODE SIMPLIFIÉ pour débutants Python
     """
     
-    def __init__(self, excel_path: str = "Sorts.xlsx"):
-        self.excel_path = excel_path
-        
-        # Mapping des noms de héros vers leurs codes
-        self.hero_name_to_code = {
-            'elneha': 'P-1',
-            'liarie': 'P-2', 
-            'atucan': 'P-3',
-            'kraor': 'P-4',
-            'thordius': 'P-5',
-            'stephe': 'P-6',
-            'stèphe': 'P-6',  # Variante avec accent
-            'lame': 'P-7',
-            'raishi': 'P-8',
-            'ours': 'P-9',     # Héros étendus si présents
-            'loup': 'P-10',
-            'ours s': 'P-11',
-            'loup s': 'P-12'
-        }
+    def __init__(self):
+        self.sorts_file = "data/Sorts.xlsx"
+        self.names_file = "data/ability_names.csv"
+        self.names_cache = {}  # Cache des noms élégants
     
     def load_abilities_from_excel(self) -> Dict[str, List[Ability]]:
         """
-        Charge toutes les capacités depuis le fichier Excel
+        Charge toutes les capacités avec les vrais noms élégants
+        FONCTION PRINCIPALE - Simple et claire
         
         Returns:
             Dict[str, List[Ability]]: Capacités organisées par code de héros
         """
-        if not os.path.exists(self.excel_path):
-            print(f"❌ Fichier {self.excel_path} non trouvé")
-            return self._create_fallback_abilities()
+        print(f"📖 Chargement des capacités...")
+        
+        # Étape 1: Charger les noms élégants
+        if not self._load_names_cache():
+            print("⚠️ Utilisation des noms par défaut")
+        
+        # Étape 2: Charger les données Sorts.xlsx
+        if not os.path.exists(self.sorts_file):
+            print(f"❌ {self.sorts_file} non trouvé, utilisation capacités test")
+            return self._create_test_abilities()
         
         try:
-            print(f"📖 Lecture du fichier {self.excel_path}...")
-            df = pd.read_excel(self.excel_path)
+            # Lecture Excel simple
+            df = pd.read_excel(self.sorts_file, sheet_name='Capacités')
             
             abilities_by_hero = {}
-            success_count = 0
-            error_count = 0
+            loaded_count = 0
             
+            # Traitement ligne par ligne
             for index, row in df.iterrows():
-                try:
-                    ability = self._parse_ability_row(row, index + 1)
-                    if ability:
-                        hero_code = ability.hero_code
-                        if hero_code not in abilities_by_hero:
-                            abilities_by_hero[hero_code] = []
-                        abilities_by_hero[hero_code].append(ability)
-                        success_count += 1
-                    else:
-                        error_count += 1
-                        
-                except Exception as e:
-                    print(f"⚠️ Erreur ligne {index + 1}: {e}")
-                    error_count += 1
+                if index == 0:  # Skip en-tête
                     continue
+                
+                ability = self._parse_ability_row(row)
+                if ability:
+                    # Organiser par héros
+                    if ability.hero_code not in abilities_by_hero:
+                        abilities_by_hero[ability.hero_code] = []
+                    
+                    abilities_by_hero[ability.hero_code].append(ability)
+                    loaded_count += 1
             
-            # Tri des capacités par numéro pour chaque héros
-            for hero_code in abilities_by_hero:
-                abilities_by_hero[hero_code].sort(key=lambda a: a.ability_number)
-            
-            print(f"✅ Chargement terminé : {success_count} capacités, {error_count} erreurs")
-            print(f"📊 Héros avec capacités : {list(abilities_by_hero.keys())}")
-            
+            print(f"✅ {loaded_count} capacités chargées pour {len(abilities_by_hero)} héros")
             return abilities_by_hero
             
         except Exception as e:
-            print(f"❌ Erreur lors du chargement du fichier Excel: {e}")
-            print("💡 Vérifiez que openpyxl est installé (pip install openpyxl)")
-            return self._create_fallback_abilities()
+            print(f"❌ Erreur lecture Excel: {e}")
+            return self._create_test_abilities()
     
-    def _parse_ability_row(self, row, line_number: int) -> Optional[Ability]:
+    def _load_names_cache(self) -> bool:
         """
-        Parse une ligne Excel en objet Ability
+        Charge les noms élégants depuis ability_names.csv
+        FONCTION SIMPLE - Cache en mémoire
         
-        Args:
-            row: Ligne pandas
-            line_number: Numéro de ligne pour debug
-            
         Returns:
-            Optional[Ability]: Capacité parsée ou None si erreur
+            bool: True si chargé avec succès
         """
+        if not os.path.exists(self.names_file):
+            print(f"⚠️ {self.names_file} non trouvé")
+            return False
+        
         try:
-            # Vérification que la ligne a au moins 3 colonnes
-            if len(row) < 3:
-                print(f"⚠️ Ligne {line_number}: Pas assez de colonnes ({len(row)} < 3)")
-                return None
+            df = pd.read_csv(self.names_file)
             
-            # === PARSING COLONNE 1: Nom + Numéro ===
-            name_and_number = str(row.iloc[0]).strip()
-            if pd.isna(row.iloc[0]) or not name_and_number:
-                print(f"⚠️ Ligne {line_number}: Colonne 1 vide")
-                return None
+            # Création cache : (hero_code, ability_number) → nom
+            for _, row in df.iterrows():
+                key = (row['hero_code'], int(row['ability_number']))
+                self.names_cache[key] = row['generated_name']
             
-            hero_code, ability_number = self._extract_hero_and_number(name_and_number)
-            
-            # === PARSING COLONNE 2: Coût en sorts ===
-            spell_cost = self._safe_int(row.iloc[1], 0)
-            
-            # === PARSING COLONNE 3: Description ===
-            description = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ""
-            if not description:
-                print(f"⚠️ Ligne {line_number}: Description vide")
-                description = f"Capacité {ability_number}"
-            
-            # === PARSING COLONNE 4: Utilisations par combat (optionnel) ===
-            uses_per_combat = None
-            if len(row) > 3 and pd.notna(row.iloc[3]):
-                uses_per_combat = self._safe_int(row.iloc[3], None)
-            
-            # === EXTRACTION DES MÉTADONNÉES ===
-            ability_name = self._extract_ability_name(description)
-            effects = self._parse_effects_from_description(description)
-            target_type = self._determine_target_type(description)
-            
-            # === CRÉATION DE L'OBJET ABILITY ===
-            ability = Ability(
-                hero_code=hero_code,
-                ability_number=ability_number,
-                name=ability_name,
-                spell_cost=spell_cost,
-                description=description,
-                uses_per_combat=uses_per_combat,
-                effects=effects,
-                target_type=target_type
-            )
-            
-            return ability
+            print(f"✅ {len(self.names_cache)} noms élégants chargés")
+            return True
             
         except Exception as e:
-            print(f"⚠️ Erreur parsing ligne {line_number}: {e}")
+            print(f"❌ Erreur lecture noms: {e}")
+            return False
+    
+    def _get_elegant_name(self, hero_code: str, ability_number: int, fallback: str) -> str:
+        """
+        Récupère le nom élégant depuis le cache
+        FONCTION SIMPLE - Lookup avec fallback
+        
+        Args:
+            hero_code: Code du héros (P-1, P-2, etc.)
+            ability_number: Numéro capacité (1-6)
+            fallback: Nom par défaut si pas trouvé
+            
+        Returns:
+            str: Nom élégant ou fallback
+        """
+        key = (hero_code, ability_number)
+        return self.names_cache.get(key, fallback)
+    
+    def _parse_ability_row(self, row) -> Optional[Ability]:
+        """
+        Parse une ligne Excel en objet Ability
+        FONCTION SIMPLE - Extraction données de base
+        
+        Args:
+            row: Ligne DataFrame pandas
+            
+        Returns:
+            Optional[Ability]: Capacité créée ou None
+        """
+        # Colonnes Excel : [Nom+Numéro, Coût, Description, Limitations]
+        if len(row) < 3:
             return None
-    
-    def _extract_hero_and_number(self, name_and_number: str) -> Tuple[str, int]:
-        """
-        Extrait le code héros et le numéro depuis une chaîne comme 'Elneha1' ou 'Liarie 2'
         
-        Args:
-            name_and_number: Chaîne contenant nom + numéro
-            
-        Returns:
-            Tuple[str, int]: (code_hero, numero_capacite)
-            
-        Raises:
-            ValueError: Si le parsing échoue
-        """
-        # Nettoyage de la chaîne
-        cleaned = name_and_number.strip().lower()
+        # Colonne 1: Extraction héros + numéro
+        name_and_number = str(row.iloc[0]).strip()
+        if not name_and_number or name_and_number.lower() in ['nom', 'nan']:
+            return None
         
-        # Extraction du nombre à la fin
-        number_match = re.search(r'(\d+)$', cleaned)
-        if not number_match:
-            raise ValueError(f"Numéro de capacité non trouvé dans: '{name_and_number}'")
-        
-        ability_number = int(number_match.group(1))
-        if not (1 <= ability_number <= 6):
-            raise ValueError(f"Numéro de capacité invalide: {ability_number} (doit être 1-6)")
-        
-        # Extraction du nom du héros
-        hero_name = re.sub(r'\d+$', '', cleaned).strip()
-        hero_name = re.sub(r'\s+', ' ', hero_name)  # Normalise les espaces
-        
-        # Recherche du code correspondant
-        hero_code = self.hero_name_to_code.get(hero_name)
+        hero_code, ability_number = self._parse_hero_info(name_and_number)
         if not hero_code:
-            # Tentative avec recherche partielle
-            for name, code in self.hero_name_to_code.items():
-                if name in hero_name or hero_name in name:
-                    hero_code = code
-                    break
-            
-            if not hero_code:
-                available_names = list(self.hero_name_to_code.keys())
-                raise ValueError(f"Héros non reconnu: '{hero_name}'. Noms disponibles: {available_names}")
+            return None
         
-        return hero_code, ability_number
+        # Colonne 2: Coût en sorts
+        spell_cost = self._safe_int(row.iloc[1], 0)
+        
+        # Colonne 3: Description
+        description = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ""
+        
+        # Colonne 4: Limitations (optionnel)
+        uses_per_combat, uses_per_day = self._parse_limitations(row.iloc[3] if len(row) > 3 else None)
+        
+        # NOM ÉLÉGANT depuis CSV ou fallback
+        elegant_name = self._get_elegant_name(hero_code, ability_number, f"Capacité {ability_number}")
+        
+        # Création objet Ability
+        ability = Ability(
+            hero_code=hero_code,
+            ability_number=ability_number,
+            name=elegant_name,  # ✅ VRAI NOM ÉLÉGANT
+            spell_cost=spell_cost,
+            description=description,
+            uses_per_combat=uses_per_combat,
+            uses_per_day=uses_per_day,
+            effects=self._create_simple_effects(description),
+            target_type=self._guess_target_type(description),
+            is_unlocked=(ability_number == 1)  # Première capacité débloquée
+        )
+        
+        return ability
     
-    def _extract_ability_name(self, description: str) -> str:
+    def _parse_hero_info(self, name_and_number: str) -> tuple[str, int]:
         """
-        Extrait le nom de la capacité depuis la description
-        
-        Args:
-            description: Description complète de la capacité
-            
-        Returns:
-            str: Nom de la capacité
+        Parse "Elneha 1" → ("P-1", 1)
+        FONCTION SIMPLE - Mapping de base
         """
-        if not description:
-            return "Capacité"
+        import re
         
-        lines = description.split('\n')
-        first_line = lines[0].strip()
+        text = name_and_number.lower().strip()
         
-        # Si la première ligne est courte et sans ':', c'est probablement le nom
-        if len(first_line) <= 50 and ':' not in first_line and '.' not in first_line[:20]:
-            return first_line
+        # Mapping simple
+        heroes = {
+            'elneha': 'P-1', 'liarie': 'P-2', 'atucan': 'P-3', 'kraor': 'P-4',
+            'thordius': 'P-5', 'stephe': 'P-6', 'stèphe': 'P-6', 'lame': 'P-7', 'raishi': 'P-8'
+        }
         
-        # Cherche un motif "Nom:" au début
-        name_match = re.match(r'^([^:]+):', first_line)
-        if name_match:
-            return name_match.group(1).strip()
+        # Cas spéciaux formes
+        specials = {'ours': ('P-9', 1), 'loup': ('P-10', 1), 'ours s': ('P-11', 1), 'loup s': ('P-12', 1)}
+        if text in specials:
+            return specials[text]
         
-        # Cherche des mots-clés indicateurs de noms
-        for keyword in ['forme', 'métamorphose', 'invocation', 'sort', 'attaque', 'soin']:
-            if keyword in first_line.lower():
-                # Extrait jusqu'à 3 mots autour du mot-clé
-                words = first_line.split()
-                for i, word in enumerate(words):
-                    if keyword in word.lower():
-                        start = max(0, i-1)
-                        end = min(len(words), i+3)
-                        return ' '.join(words[start:end]).strip('.,!?')
+        # Extraction numéro
+        numbers = re.findall(r'\d+', text)
+        if not numbers:
+            return None, None
         
-        # Prend les 4 premiers mots en dernier recours
-        words = first_line.split()[:4]
-        name = ' '.join(words).strip('.,!?')
+        ability_num = int(numbers[0])
+        hero_name = re.sub(r'\d+', '', text).strip()
         
-        return name if len(name) <= 30 else "Capacité"
+        hero_code = heroes.get(hero_name)
+        if hero_code and 1 <= ability_num <= 6:
+            return hero_code, ability_num
+        
+        return None, None
     
-    def _parse_effects_from_description(self, description: str) -> List[AbilityEffect]:
+    def _parse_limitations(self, limitation_text) -> tuple[Optional[int], Optional[int]]:
         """
-        Parse les effets depuis la description textuelle
+        Parse "2 / combat" → (2, None)
+        FONCTION SIMPLE - Regex basique
+        """
+        if not limitation_text or pd.isna(limitation_text):
+            return None, None
         
-        Args:
-            description: Description de la capacité
-            
-        Returns:
-            List[AbilityEffect]: Liste des effets détectés
+        import re
+        text = str(limitation_text).lower()
+        
+        combat_match = re.search(r'(\d+)\s*/\s*combat', text)
+        day_match = re.search(r'(\d+)\s*/\s*jour', text)
+        
+        uses_combat = int(combat_match.group(1)) if combat_match else None
+        uses_day = int(day_match.group(1)) if day_match else None
+        
+        return uses_combat, uses_day
+    
+    def _create_simple_effects(self, description: str) -> List[AbilityEffect]:
+        """
+        Crée effets simples depuis description
+        FONCTION SIMPLE - Détection mots-clés de base
         """
         effects = []
-        desc_lower = description.lower()
+        desc = description.lower()
         
-        # Détection des effets de soin
-        heal_keywords = ['soigne', 'guérit', 'récupère', 'restaure', 'rend', 'vie']
-        if any(keyword in desc_lower for keyword in heal_keywords):
-            # Essaie d'extraire la valeur
-            heal_value = self._extract_number_near_keywords(description, heal_keywords)
+        # Détection soin
+        if 'soin' in desc or 'guéri' in desc:
+            # Extraction valeur soin
+            import re
+            heal_match = re.search(r'(\d+)\s*blessures?', desc)
+            heal_value = int(heal_match.group(1)) if heal_match else 2
+            
             effects.append(AbilityEffect(
                 type="heal",
                 value=heal_value,
-                description="Effet de soin détecté"
+                description=f"Soigne {heal_value} PV"
             ))
         
-        # Détection des effets de dégâts
-        damage_keywords = ['dégâts', 'dégats', 'blesse', 'attaque', 'frappe', 'touche']
-        if any(keyword in desc_lower for keyword in damage_keywords):
-            damage_value = self._extract_number_near_keywords(description, damage_keywords)
+        # Détection dégâts
+        elif 'dégât' in desc or 'inflige' in desc:
+            import re
+            damage_match = re.search(r'(\d+)\s*dégâts?', desc)
+            damage_value = int(damage_match.group(1)) if damage_match else 3
+            
+            effect_type = "magical_damage" if "magique" in desc else "damage"
             effects.append(AbilityEffect(
-                type="damage",
+                type=effect_type,
                 value=damage_value,
-                description="Effet de dégâts détecté"
+                description=f"Inflige {damage_value} dégâts"
             ))
         
-        # Détection des buffs
-        buff_keywords = ['bonus', 'augmente', 'améliore', '+', 'renforce', 'boost']
-        if any(keyword in desc_lower for keyword in buff_keywords):
-            buff_value = self._extract_number_near_keywords(description, buff_keywords)
-            effects.append(AbilityEffect(
-                type="buff",
-                value=buff_value,
-                description="Effet de bonus détecté"
-            ))
-        
-        # Détection des debuffs
-        debuff_keywords = ['malus', 'réduit', 'diminue', '-', 'affaiblit', 'pénalité']
-        if any(keyword in desc_lower for keyword in debuff_keywords):
-            debuff_value = self._extract_number_near_keywords(description, debuff_keywords)
-            effects.append(AbilityEffect(
-                type="debuff",
-                value=debuff_value,
-                description="Effet de malus détecté"
-            ))
-        
-        # Si aucun effet spécifique détecté, marquer comme spécial
-        if not effects:
+        # Effets génériques
+        else:
             effects.append(AbilityEffect(
                 type="special",
-                description="Effet spécial - voir description"
+                description=description[:50] + "..." if len(description) > 50 else description
             ))
         
         return effects
     
-    def _extract_number_near_keywords(self, text: str, keywords: List[str]) -> Optional[int]:
+    def _guess_target_type(self, description: str) -> TargetType:
         """
-        Extrait un nombre proche de mots-clés dans le texte
-        
-        Args:
-            text: Texte à analyser
-            keywords: Liste de mots-clés
-            
-        Returns:
-            Optional[int]: Nombre trouvé ou None
+        Devine le type de cible depuis description
+        FONCTION SIMPLE - Mots-clés basiques
         """
-        text_lower = text.lower()
+        desc = description.lower()
         
-        for keyword in keywords:
-            if keyword in text_lower:
-                # Cherche des nombres autour du mot-clé
-                keyword_pos = text_lower.find(keyword)
-                
-                # Examine 20 caractères avant et après
-                start = max(0, keyword_pos - 20)
-                end = min(len(text), keyword_pos + len(keyword) + 20)
-                context = text[start:end]
-                
-                # Cherche tous les nombres dans le contexte
-                numbers = re.findall(r'\d+', context)
-                if numbers:
-                    # Prend le premier nombre trouvé
-                    return int(numbers[0])
-        
-        return None
-    
-    def _determine_target_type(self, description: str) -> TargetType:
-        """
-        Détermine le type de cible depuis la description
-        
-        Args:
-            description: Description de la capacité
-            
-        Returns:
-            TargetType: Type de ciblage déterminé
-        """
-        desc_lower = description.lower()
-        
-        # Détection ciblage allié(s)
-        ally_keywords = ['allié', 'allies', 'équipe', 'compagnon', 'camarade']
-        if any(keyword in desc_lower for keyword in ally_keywords):
-            # Vérification si c'est tous les alliés
-            if any(word in desc_lower for word in ['tous', 'toute', 'entière', 'groupe']):
-                return TargetType.ALL_ALLIES
-            return TargetType.ALLY
-        
-        # Détection ciblage ennemi(s)
-        enemy_keywords = ['ennemi', 'ennemis', 'adversaire', 'monstre', 'cible']
-        if any(keyword in desc_lower for keyword in enemy_keywords):
-            # Vérification si c'est tous les ennemis
-            if any(word in desc_lower for word in ['tous', 'toute', 'entier']):
-                return TargetType.ALL_ENEMIES
+        if 'tous les adversaires' in desc or 'tous les ennemis' in desc:
+            return TargetType.ALL_ENEMIES
+        elif 'tous les personnages' in desc:
+            return TargetType.ALL_ALLIES
+        elif 'adversaire' in desc or 'ennemi' in desc:
             return TargetType.ENEMY
-        
-        # Détection ciblage libre
-        any_keywords = ['choix', 'cible au choix', 'n\'importe', 'selon']
-        if any(keyword in desc_lower for keyword in any_keywords):
-            return TargetType.ANY
-        
-        # Par défaut, ciblage personnel
-        return TargetType.SELF
+        elif 'personnage' in desc:
+            return TargetType.ALLY
+        else:
+            return TargetType.SELF
     
-    def _safe_int(self, value, default: Optional[int] = 0) -> Optional[int]:
-        """
-        Convertit une valeur en entier de manière sécurisée
-        
-        Args:
-            value: Valeur à convertir
-            default: Valeur par défaut si conversion impossible
-            
-        Returns:
-            Optional[int]: Entier converti ou valeur par défaut
-        """
-        if pd.isna(value) or value == '' or value is None:
+    def _safe_int(self, value, default: int) -> int:
+        """Conversion sécurisée en int"""
+        if pd.isna(value):
             return default
-        
         try:
-            # Tente d'abord une conversion directe
             return int(float(value))
-        except (ValueError, TypeError):
-            # Si échec, essaie d'extraire un nombre de la chaîne
-            if isinstance(value, str):
-                numbers = re.findall(r'\d+', str(value))
-                if numbers:
-                    return int(numbers[0])
+        except:
             return default
     
-    def _create_fallback_abilities(self) -> Dict[str, List[Ability]]:
+    def _create_test_abilities(self) -> Dict[str, List[Ability]]:
         """
-        Crée des capacités par défaut si le fichier Excel n'est pas disponible
-        
-        Returns:
-            Dict[str, List[Ability]]: Capacités de test
+        Capacités de test si pas de fichier Excel
+        FONCTION SIMPLE - Données minimales pour tests
         """
-        print("🔄 Création de capacités par défaut pour les tests...")
+        print("🔄 Utilisation capacités de test...")
         
-        fallback_abilities = {
+        test_abilities = {
             'P-1': [  # Elneha
                 Ability(
-                    hero_code='P-1',
-                    ability_number=1,
-                    name='Métamorphose Ours',
-                    spell_cost=2,
-                    description='Se transforme en ours, gagne +2 dégâts et +1 parade',
-                    effects=[AbilityEffect(type="buff", value=2, description="Bonus dégâts et parade")]
+                    hero_code='P-1', ability_number=1, name='Forme d\'Ours', spell_cost=1,
+                    description='Se métamorphose en Ours pour plus de défense',
+                    effects=[AbilityEffect(type="transformation", description="Forme d'ours")],
+                    target_type=TargetType.SELF, is_unlocked=True
                 ),
                 Ability(
-                    hero_code='P-1', 
-                    ability_number=2,
-                    name='Soin Naturel',
-                    spell_cost=1,
-                    description='Récupère 3 points de vie',
-                    effects=[AbilityEffect(type="heal", value=3, description="Soin de 3 PV")]
+                    hero_code='P-1', ability_number=2, name='Soin Naturel', spell_cost=1,
+                    description='Soigne 4 blessures d\'un personnage',
+                    effects=[AbilityEffect(type="heal", value=4, description="Soin 4 PV")],
+                    target_type=TargetType.ALLY, is_unlocked=False
                 )
             ],
-            'P-2': [  # Liarie
+            'P-3': [  # Atucan
                 Ability(
-                    hero_code='P-2',
-                    ability_number=1, 
-                    name='Projectile Magique',
-                    spell_cost=1,
-                    description='Lance un projectile magique qui inflige 3 dégâts',
-                    effects=[AbilityEffect(type="damage", value=3, description="Dégâts magiques")]
+                    hero_code='P-3', ability_number=1, name='Soin Proportionnel', spell_cost=1,
+                    description='Soigne la moitié des PV max du personnage',
+                    effects=[AbilityEffect(type="heal", description="Soin proportionnel")],
+                    target_type=TargetType.ALLY, is_unlocked=True
                 )
             ]
         }
         
-        print("✅ Capacités par défaut créées pour P-1 (Elneha) et P-2 (Liarie)")
-        return fallback_abilities
+        return test_abilities
+
+# === FONCTIONS UTILITAIRES SIMPLES ===
+
+def load_all_abilities(excel_path: str = "data/Sorts.xlsx") -> Dict[str, List[Ability]]:
+    """
+    Fonction utilitaire simple pour charger toutes les capacités
     
-    def validate_abilities_data(self, abilities_by_hero: Dict[str, List[Ability]]) -> bool:
-        """
-        Valide la cohérence des données de capacités chargées
+    Returns:
+        Dict[str, List[Ability]]: Capacités par héros avec vrais noms
+    """
+    loader = AbilitiesLoader()
+    return loader.load_abilities_from_excel()
+
+def get_abilities_summary(abilities_by_hero: Dict[str, List[Ability]]) -> str:
+    """
+    Résumé simple des capacités chargées
+    
+    Returns:
+        str: Résumé lisible
+    """
+    if not abilities_by_hero:
+        return "Aucune capacité chargée"
+    
+    total = sum(len(abilities) for abilities in abilities_by_hero.values())
+    heroes_count = len(abilities_by_hero)
+    
+    return f"{total} capacités pour {heroes_count} héros"
+
+# === TEST SIMPLE ===
+
+def test_loader():
+    """Test rapide du loader simplifié"""
+    print("🧪 === TEST LOADER SIMPLIFIÉ ===")
+    
+    try:
+        abilities = load_all_abilities()
         
-        Args:
-            abilities_by_hero: Données à valider
-            
-        Returns:
-            bool: True si les données sont valides
-        """
-        issues = []
-        
-        for hero_code, abilities in abilities_by_hero.items():
-            # Vérification du code héros
-            if not hero_code.startswith('P-'):
-                issues.append(f"Code héros invalide: {hero_code}")
-                continue
-            
-            # Vérification du nombre de capacités
-            if len(abilities) > 6:
-                issues.append(f"{hero_code}: Trop de capacités ({len(abilities)} > 6)")
-            
-            # Vérification de l'unicité des numéros
-            numbers = [a.ability_number for a in abilities]
-            if len(set(numbers)) != len(numbers):
-                issues.append(f"{hero_code}: Numéros de capacités dupliqués")
-            
-            # Vérification des coûts
-            for ability in abilities:
-                if ability.spell_cost < 0:
-                    issues.append(f"{hero_code}: Coût négatif pour {ability.name}")
-        
-        if issues:
-            print("⚠️ Problèmes détectés dans les données:")
-            for issue in issues:
-                print(f"  - {issue}")
+        if not abilities:
+            print("❌ Aucune capacité chargée")
             return False
         
-        print("✅ Validation des données réussie")
-        return True
-
-# Fonction utilitaire pour intégration facile
-def load_all_abilities(excel_path: str = "Sorts.xlsx") -> Dict[str, List[Ability]]:
-    """
-    Fonction utilitaire pour charger toutes les capacités
-    
-    Args:
-        excel_path: Chemin vers le fichier Excel
+        print(f"✅ Résumé: {get_abilities_summary(abilities)}")
         
-    Returns:
-        Dict[str, List[Ability]]: Capacités par héros
-    """
-    loader = AbilitiesLoader(excel_path)
-    abilities = loader.load_abilities_from_excel()
-    loader.validate_abilities_data(abilities)
-    return abilities
+        # Affichage exemple capacités avec vrais noms
+        for hero_code, hero_abilities in list(abilities.items())[:2]:  # 2 premiers héros
+            print(f"\n🧙‍♂️ {hero_code}:")
+            for ability in hero_abilities[:3]:  # 3 premières capacités
+                print(f"  • {ability.name} (coût: {ability.spell_cost})")
+        
+        return True
+    
+    except Exception as e:
+        print(f"❌ Erreur test: {e}")
+        return False
+
+if __name__ == "__main__":
+    test_loader()
