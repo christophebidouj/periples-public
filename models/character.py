@@ -1,6 +1,7 @@
 """
 Modèles de personnages pour le Simulateur Périples
 VERSION MISE À JOUR avec support du système de capacités + CORRECTION BUG heal()
++ EXCLUSION capacités Kraor 1 et 3 du combat
 """
 
 from pydantic import BaseModel, Field
@@ -281,14 +282,19 @@ class Character(BaseModel):
     def get_available_abilities(self) -> List[Ability]:
         """
         Retourne les capacités utilisables actuellement
+        NOUVEAU: Exclusion Kraor 1 et 3 du combat
         
         Returns:
-            List[Ability]: Capacités utilisables
+            List[Ability]: Capacités utilisables en combat
         """
         available = []
         current_spells = self.current_spells if self.current_spells is not None else self.get_total_spells()
         
         for ability in self.get_unlocked_abilities():
+            # EXCLUSION KRAOR : Capacités 1 et 3 non utilisables en combat
+            if self.code == "P-4" and ability.ability_number in [1, 3]:
+                continue
+            
             can_use, _ = ability.can_use(current_spells)
             if can_use:
                 available.append(ability)
@@ -298,6 +304,7 @@ class Character(BaseModel):
     def can_use_ability(self, ability: Ability) -> tuple[bool, str]:
         """
         Vérifie si une capacité peut être utilisée
+        NOUVEAU: Exclusion Kraor 1 et 3 du combat
         
         Args:
             ability: Capacité à vérifier
@@ -307,6 +314,10 @@ class Character(BaseModel):
         """
         if not ability.is_unlocked:
             return False, "Capacité non débloquée"
+        
+        # EXCLUSION KRAOR : Capacités 1 et 3 inutilisables en combat
+        if self.code == "P-4" and ability.ability_number in [1, 3]:
+            return False, "Capacité non utilisable en combat"
         
         current_spells = self.current_spells if self.current_spells is not None else self.get_total_spells()
         return ability.can_use(current_spells)
@@ -330,7 +341,7 @@ class Character(BaseModel):
             prevents_attack=ability.prevents_attack
         )
         
-        # Vérifications préalables
+        # Vérifications préalables (inclut l'exclusion Kraor)
         can_use, reason = self.can_use_ability(ability)
         if not can_use:
             action.add_effect(f"Échec: {reason}")
