@@ -92,92 +92,35 @@ def display_hero_card(hero: Character, build_info: Dict, is_selected: bool, enab
         
         return False  # Pas de bouton = pas de clic
 
-def display_team_recap(selected_hero_details: List[Dict], selected_enemy_details: List[Dict], player_count: int):
-    """
-    Affiche le récapitulatif "Formation de Guerre"
-    Fonctionnalité préservée selon guidelines du projet
-    
-    Args:
-        selected_hero_details: Liste des détails des héros sélectionnés
-        selected_enemy_details: Liste des détails des ennemis sélectionnés
-        player_count: Nombre de joueurs pour le contexte
-    """
-    # Styles pour le récapitulatif
-    recap_styles = get_team_recap_styles()
-    
-    # En-tête principal de formation
-    st.markdown("---")
-    st.markdown(recap_styles['formation_header'], unsafe_allow_html=True)
-    
-    # Organisation en deux colonnes
-    col1, col2 = st.columns([1, 1])
-    
-    # === COLONNE HÉROS ===
+def display_team_recap(heroes_details, enemies_details, player_count):
+    st.markdown("## 🛡️ Forces en Présence")
+
+    col1, col2 = st.columns(2)
+
+    # === HÉROS ===
     with col1:
-        st.markdown(recap_styles['heroes_team_header'], unsafe_allow_html=True)
-        
-        for hero in selected_hero_details:
-            # Badge du type de build
-            build_badge = "🔧 Custom" if hero['is_custom'] else "📋 Standard"
-            
-            # Construction des bonus additionnels
-            bonus_info = []
-            if hero['parade'] > 0:
-                bonus_info.append(f"🛡️{hero['parade']}")
-            if hero['spells'] > 0:
-                bonus_info.append(f"✨{hero['spells']}")
-            bonus_text = f" • {' • '.join(bonus_info)}" if bonus_info else ""
-            
-            # Statistiques complètes
-            stats = f"🎯{hero['precision']} ⚔️{hero['damage']} ❤️{hero['health']}{bonus_text}"
-            
-            # Génération de la carte héros
-            hero_card_html = recap_styles['hero_card'].format(
-                icon=hero['icon'],
-                name=hero['name'],
-                build_badge=build_badge,
-                stats=stats
+        st.markdown("### 🧙 ÉQUIPE HÉROS")
+
+        for h in heroes_details:
+            st.expander(
+                f"✅ {h['name']} — ⚔️ {h['damage']} | ❤️ {h['health']} | 🛡️ {h['parade']} | ✨ {h['spells']}",
+                expanded=True
             )
-            st.markdown(hero_card_html, unsafe_allow_html=True)
-    
-    # === COLONNE ENNEMIS ===
+
+    # === MONSTRES ===
     with col2:
-        st.markdown(recap_styles['enemies_team_header'], unsafe_allow_html=True)
-        
-        for enemy in selected_enemy_details:
-            # Badge type de dégâts
-            magic_badge = "✨ Magique" if enemy['is_magical'] else "⚔️ Physique"
-            
-            # Statistiques ennemis
-            stats = f"❤️{enemy['health']} ⚔️{enemy['damage']} 🛡️{enemy['defense']}"
-            
-            # Troncature du nom si nécessaire
-            name_truncated = enemy['name'][:18]
-            
-            # Génération de la carte ennemi
-            enemy_card_html = recap_styles['enemy_card'].format(
-                number=enemy['number'],
-                name=name_truncated,
-                magic_badge=magic_badge,
-                stats=stats
+        st.markdown("### 👹 ÉQUIPE MONSTRES")
+
+        for e in enemies_details:
+            st.expander(
+                f"👾 {e['name']} — ❤️ {e['health']} | ⚔️ {e['damage']} | 🛡️ {e['defense']}",
+                expanded=True
             )
-            st.markdown(enemy_card_html, unsafe_allow_html=True)
-    
-    # === STATISTIQUES DE BATAILLE ===
-    # Calculs des métriques globales
-    total_hero_health = sum(h['health'] for h in selected_hero_details)
-    total_enemy_health = sum(e['health'] for e in selected_enemy_details)
-    avg_hero_damage = sum(h['damage'] for h in selected_hero_details) / len(selected_hero_details)
-    avg_enemy_damage = sum(e['damage'] for e in selected_enemy_details) / len(selected_enemy_details)
-    
-    # Affichage du pronostic
-    battle_stats_html = recap_styles['battle_stats'].format(
-        hero_health=total_hero_health,
-        hero_dps=avg_hero_damage,
-        enemy_health=total_enemy_health,
-        enemy_dps=avg_enemy_damage
-    )
-    st.markdown(battle_stats_html, unsafe_allow_html=True)
+
+    # Info joueurs
+    st.markdown(f"<p style='color:#888;'>👥 Nombre de joueurs : <strong>{player_count}</strong></p>", unsafe_allow_html=True)
+
+
 
 def display_hero_base_stats(hero: Character):
     """

@@ -1,314 +1,284 @@
-# ⚔️ Simulateur de Combat Périples - Version Système Capacités Intégré
+# Périples Balance Workshop
 
-## 🎯 Contexte du Projet
+**Simulateur pour l'équilibrage du jeu de société "Périples"**
 
-**Simulateur d'équilibrage RPG** pour le jeu de société **"Périples"** de Bastien LIAUTY. 
-Application professionnelle d'analyse de combat avec interface moderne style **cartes à jouer** et **système de capacités complet**.
+## Présentation
 
-### 📊 État Actuel (Août 2025)
-- **Version :** V4+ Interface + Système Capacités 80% Terminé
-- **Interface :** 3 onglets avec expanders compacts (zones blanches éliminées)
-- **Focus :** Combat détaillé avec journal tactique complet + 48 capacités héros
-- **Style :** Interface gaming avec récapitulatif des équipes essentiel
-- **Dernière MAJ :** Corrections bugs critiques + noms de capacités élégants + IA logique
+Le Périples Balance Workshop est un outil de simulation développé pour le jeu de société **Périples** © Bastien LIAUTY. Il permet de tester l'équilibrage des combats, équipements, capacités spéciales et potions de santé.
 
-## 👥 **Crédits et Propriété Intellectuelle**
+### Objectifs
+- Équilibrage des ennemis selon le nombre de joueurs
+- Validation des règles de combat
+- Test des équipements et builds personnalisés
+- Simulation des capacités spéciales des héros
+- Gestion des potions de santé
+- Analyse statistique des combats
 
-### 🎲 **Jeu de Société Original**
-- **Périples** © Bastien LIAUTY - Tous droits réservés
-- **Règles et données** : Propriété de Bastien LIAUTY
-- **Usage autorisé** : Développement et tests d'équilibrage uniquement
+## Fonctionnalités
 
-### 💻 **Simulateur Python**
-- **Dev Python** : Christophe Bidouj
-- **Assistance IA** : Claude AI (Anthropic)
-- **Langage** : Python + Streamlit + Pydantic
-- **Architecture** : Modulaire avec interface gaming moderne
+### Sélection des Équipes
+- 12 héros avec formes d'Elneha
+- 72 ennemis évolutifs selon le nombre de joueurs
+- Interface avec images et statistiques détaillées
+- Recherche d'ennemis par nom ou numéro
+- Récapitulatif de formation avant combat
 
-### ⚖️ **IMPORTANT - Confidentialité**
-**TOUS les documents de ce projet sont propriétaires et confidentiels :**
-- Données CSV basées sur contenu propriétaire de Bastien LIAUTY
-- **❌ INTERDIT :** distribution, usage commercial, partage des règles
-- **✅ AUTORISÉ :** développement/tests d'équilibrage, contribution au projet
+### Forge des Équipements
+- 52 équipements répartis en 3 catégories (Armes, Armures, Accessoires)
+- Système de capacités : 48 capacités (6 par héros)
+- Système de potions : Petites (4 PV) et Grandes (PV max)
+- Création de builds personnalisés combinant équipements, capacités et potions
+- Interface avec grilles organisées pour la sélection
+- Aperçu en temps réel des statistiques et coûts
+- Sauvegarde des configurations personnalisées
 
-## 🚀 Architecture Technique
+### Moteur de Combat
+- Implémentation des règles officielles V3.0
+- IA pour l'utilisation des capacités et potions
+- Gestion automatique des potions selon les points de vie
+- Journal détaillé des actions de combat
+- Calcul des métriques d'équilibrage
 
-### 📁 Structure des Fichiers
+### Analyses et Métriques
+- Taux de survie des héros
+- Gestion de l'attrition (état des héros après combat)
+- Durée de combat
+- Utilisation des ressources (sorts, potions, capacités)
+- Recommandations d'équilibrage
+- Score global d'équilibrage
+
+## Système de Capacités
+
+### Interface
+- Grille 3x2 pour visualiser les 6 capacités par héros
+- Couleurs par type : Magique (violet) et Physique (orange)
+- Sélection/désélection interactive
+- Aperçu en temps réel des capacités sélectionnées
+
+### Gestion des Capacités
+- Respect des choix utilisateur pour les builds personnalisés
+- Génération aléatoire pour les builds standard
+- Exclusions spécifiques (ex: Kraor capacités 1 et 3 en combat)
+- Intégration avec le système de coût en sorts
+
+## Système de Potions
+
+### Types de Potions
+- **Petites potions** : +4 PV (limite : 3 par build)
+- **Grandes potions** : restauration complète des PV (limite : 1 par build)
+
+### Interface
+- Grille 2x1 pour les deux types de potions
+- Sélection par cycles pour les petites potions
+- Toggle pour les grandes potions
+- Aperçu des quantités sélectionnées
+
+### Utilisation par l'IA
+- Utilisation automatique si PV < 50%
+- Choix optimal selon l'état du héros
+- Intégration dans la séquence de combat
+- Journal détaillé des utilisations
+
+## IA Tactique
+
+### Séquence de Combat
+1. Évaluation et utilisation des potions si nécessaire
+2. Analyse tactique et décision sur les capacités
+3. Attaque physique (selon les règles)
+
+### Logique de Décision
+- **Potions** : Utilisation automatique selon les PV
+- **Survie** : Priorité aux capacités de soin si équipe blessée
+- **Zone** : Capacités de zone contre 3+ ennemis
+- **Offensive** : Capacités d'attaque en combat standard
+- **Économique** : Capacité la moins chère en dernier recours
+
+### Règles d'Utilisation
+- Respect des conditions de lancement (progression, coût en sorts)
+- Application des limitations (usages par combat/jour)
+- Impact sur l'attaque selon le type de capacité
+- Exclusions spécifiques par personnage
+
+## Structure du Projet
+
 ```
-periples/
-├── app.py                    # Application Streamlit SIMPLIFIÉE (400 lignes)
-├── Data_cards.xlsx          # Source données Excel → Auto-import CSV
-├── Sorts.xlsx               # Données capacités héros (48 capacités intégrées)
+périples-balance-workshop/
+├── app.py                          # Application principale Streamlit
 ├── models/
-│   ├── character.py         # Modèles Pydantic + Support Capacités COMPLET
-│   ├── combat_engine.py     # Moteur simulation + Capacités + IA logique
-│   ├── rules_engine.py      # Configuration règles + support capacités
-│   └── abilities.py         # NOUVEAU - Système capacités complet
+│   ├── character.py                # Modèles héros/ennemis
+│   ├── abilities.py                # Système de capacités
+│   ├── combat_engine.py            # Moteur de combat et IA
+│   └── rules_engine.py             # Règles de jeu
 ├── ui/
-│   ├── styling.py           # Thème fantasy + bordeaux royal
-│   └── components/          # Interface modulaire OPTIMISÉE
-│       ├── __init__.py      # Imports centralisés
-│       ├── ui_elements.py   # Utilitaires communs
-│       ├── hero_components.py      # Cartes héros + récapitulatif
-│       ├── enemy_components.py     # Cartes ennemis EXPANDERS NATIFS
-│       ├── equipment_components.py # Équipements EXPANDERS NATIFS
-│       ├── combat_components.py    # Résultats combat
-│       └── abilities_components.py # NOUVEAU - Interface capacités
+│   ├── styling.py                  # Thème interface
+│   └── components/                 # Composants interface
+│       ├── hero_components.py
+│       ├── equipment_components.py
+│       ├── forge_abilities_components.py
+│       ├── combat_components.py
+│       └── sandbox_interface.py
 ├── utils/
-│   ├── data_loader.py       # Import auto Excel → CSV + Capacités
-│   ├── abilities_loader.py  # NOUVEAU - Import Sorts.xlsx + noms élégants
-│   └── stats_analyzer.py    # Analyses RPG (survie/attrition)
-├── generate_ability_names.py # NOUVEAU - Générateur noms élégants
-└── data/                    # Auto-généré depuis Excel
-    ├── heroes.csv           # 12 héros avec stats
-    ├── enemies.csv          # 72 ennemis (stats évolutives 2-4J)
-    ├── equipment.csv        # 52 équipements avec catégorisation Type
-    ├── ability_names.csv    # NOUVEAU - Cache noms capacités élégants
-    └── Sorts.xlsx           # NOUVEAU - 48 capacités héros
+│   ├── data_loader.py             # Chargement des données
+│   ├── abilities_loader.py        # Import des capacités
+│   └── stats_analyzer.py          # Analyse statistique
+├── data/
+│   ├── Data_cards.xlsx           # Données officielles
+│   ├── Sorts.xlsx                # Capacités des héros
+│   ├── heroes.csv                # Données héros
+│   ├── enemies.csv               # Données ennemis
+│   ├── equipment.csv             # Données équipements
+│   └── images/                   # Images (optionnelles)
+└── docs/
+    └── README.md                 # Documentation
 ```
 
-### 🔧 Installation Rapide
-```bash
-# Conda (recommandé)
-conda env create -f environment.yml
-conda activate rpg-simulator
-streamlit run app.py
+## Installation et Utilisation
 
-# Ou pip
+### Prérequis
+- Python 3.10+
+- Streamlit 1.28+
+- Pydantic 2.0+
+- Pandas 2.0+
+
+### Installation
+```bash
+git clone [url-du-repo]
+cd periples-balance-workshop
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 🎮 Interface Utilisateur Moderne OPTIMISÉE
+### Utilisation
 
-### 🏠 **Onglet 1 : Sélection des Équipes**
-**INTERFACE EXPANDERS COMPACTE :**
-- **Héros** : 6 par ligne, cartes avec images et dégradés (REQUIREMENT ABSOLU)
-- **Ennemis** : 5 par ligne avec expanders natifs (expanded=False)
-- **Affichage** : Style jeu avec icônes 🎯⚔️❤️🛡️✨
-- **Sélection** : Badge ✅ dans titre expander, boutons ✅/➕
+#### Sélection des Équipes
+1. Choisir 2+ héros dans la grille
+2. Sélectionner les ennemis
+3. Valider la formation
+4. Configurer les règles de combat
 
-**⚔️ RÉCAPITULATIF FORMATION DE GUERRE (ESSENTIEL) :**
-- **Design élégant** : Cards individuelles pour chaque combattant
-- **Statistiques détaillées** : Builds, stats complètes, pronostic de bataille
-- **🆕 Aperçu capacités** : Informations capacités débloquées par héros
-- **Style thématique** : Couleurs héros (vert) vs ennemis (rouge)
-- **Position stratégique** : Visible avant le bouton de combat
-- **🚨 IMPORTANT** : Ce récapitulatif ne doit JAMAIS être supprimé du projet !
+#### Forge des Équipements
+1. Sélectionner un héros
+2. Choisir les équipements par catégorie
+3. Sélectionner les capacités (1 à 6)
+4. Configurer les potions
+5. Sauvegarder le build personnalisé
 
-### 🛠️ **Onglet 2 : Forge des Équipements**
-**EXPANDERS NATIFS OPTIMISÉS :**
-- **Interface compacte** : expanded=False par défaut (solution anti-zones blanches)
-- **Catégorisation Type** : Armes / Armures / Accessoires avec couleurs distinctes
-- **Noms complets** : 20 caractères avec troncature intelligente
-- **Builds hybrides** : Standards + customisation complète
-- **Stats dynamiques** : Aperçu temps réel des modifications
+#### Combat
+1. Accéder aux "Chroniques"
+2. Observer le combat automatique
+3. Analyser les métriques et recommandations
 
-### 📊 **Onglet 3 : Chroniques de Combat**
-**JOURNAL TACTIQUE PRIORITAIRE AVEC CAPACITÉS :**
-- **Logs détaillés** : Action par action avec horodatage + capacités élégantes
-- **🆕 Noms élégants** : "Atucan utilise Soin Proportionnel" au lieu de "Atucan 2"
-- **🆕 IA logique** : Soin automatique si PV < 50%, attaques de zone si 3+ ennemis
-- **Métriques RPG** : Blessures/sorts par héros (analyse critique)
-- **Bannière résultat** : Victoire/défaite avec style gaming
-- **Tableaux individuels** : Stats finales par combattant
+## Équilibrage
 
-### ℹ️ **Onglet 4 : À Propos - STABLE**
-**INTERFACE OPTIMISÉE :**
-- **✅ Sections visibles** : Arsenal, Progression, Crédits parfaitement alignés
-- **✅ Cards uniformes** : Hauteur fixe avec design cohérent
-- **✅ Crédits clarifiés** : Distinction claire créateur jeu vs dev Python
-- **✅ Progression** : Système de capacités maintenant à 80%
+### Métriques Importantes
+- **Taux de survie** : Pourcentage de héros survivants
+- **Durée de combat** : Nombre de rounds
+- **Attrition** : État des héros après combat
+- **Usage des ressources** : Utilisation des sorts, potions et capacités
+- **Score global** : Évaluation générale de l'équilibrage
 
-## 🔮 Système de Capacités - 80% TERMINÉ
+### Workflow d'Équilibrage
+1. Tester différentes configurations d'équipes
+2. Analyser les métriques de combat
+3. Ajuster les statistiques selon les recommandations
+4. Valider les builds personnalisés
+5. Itérer jusqu'à obtenir un équilibrage satisfaisant
 
-### ✅ **INTÉGRÉ - Système Principal (100% Fonctionnel)**
-- 🔮 **48 capacités** : 6 capacités par héros (P-1 à P-8)
-- 📖 **Import automatique** : Chargement depuis `Sorts.xlsx`
-- 🎯 **Noms élégants** : "Soin Proportionnel", "Forme d'Ours", "Projectile Magique"
-- 🤖 **IA logique** : Priorise soins si PV < 50%, attaques zone si 3+ ennemis
-- ⚡ **Déblocage aléatoire** : 2-3 capacités débloquées par défaut (variété combats)
-- 📜 **Règles officielles** : Limitation d'actions (magie OU attaque physique)
+## Équipe et Contribution
 
-### 🛠️ **CORE - Combat Intégré (100% Fonctionnel)**
-- ⚔️ **Combat au tour par tour** : Initiative, attaque, défense, blessures + capacités
-- 🎲 **Système de dés** : d20 pour attaque, dégâts variables réalistes
-- 🛡️ **Équipements complets** : Bonus stats, builds optimisés par héros
-- 💀 **Inconscience/Mort** : Gestion 0 PV avec règles de résurrection
-- 📊 **Métriques détaillées** : Survie, attrition, efficacité builds + capacités
+- **Game Design** : Bastien LIAUTY (Créateur Périples)
+- **Développement** : Christophe Bidouj
 
-### 🔧 **CORRECTIONS RÉCENTES - Bugs Critiques Résolus**
-- ✅ **GameRules.max_rounds** : Attribut manquant ajouté (évite crashes)
-- ✅ **Character.heal()** : Méthode de soin implémentée (capacités fonctionnelles)
-- ✅ **Adaptateur métriques** : Conversion format pour interface (plus de KeyError)
-- ✅ **Noms de capacités** : Générateur automatique de noms élégants
+### Spécifications Techniques
+- **Langage** : Python 3.10+
+- **Interface** : Streamlit
+- **Architecture** : Modulaire et extensible
 
-## 🎯 Philosophie Projet
+## Licence
 
-### 🛡️ **Focus Combat Détaillé Avec Capacités**
-L'objectif principal n'est **PAS** les statistiques massives mais l'**analyse tactique fine** :
-- **Journal de combat** = ressource essentielle pour équilibrage + utilisation capacités
-- **Métriques ressources** = blessures/sorts par héros (critique) + tracking capacités
-- **Combat unique** = plus important que 100 simulations
-- **Relancer facilement** = tester variations sur même config
-- **🆕 Capacités intelligentes** = IA utilise logiquement les 48 capacités
+- **Jeu "Périples"** © Bastien LIAUTY - Tous droits réservés
+- **Simulateur** : Usage autorisé pour le développement et les tests du jeu
+- **Code source** : Développé par Christophe Bidouj
 
-### 🎨 **Interface Gaming Moderne Optimisée**
-- **Expanders natifs** = Zero zones blanches + style cohérent Streamlit
-- **Récapitulatif élégant** = vue claire des équipes avant combat + capacités
-- **Interface compacte** = expanders fermés par défaut, gain d'espace
-- **Noms complets** = 20/18 caractères avec troncature intelligente
-- **Workflow intuitif** = 3 clics pour lancer un combat avec capacités
-- **🆕 Héros par 6** = Grille 6 colonnes MAINTENUE (requirement absolu)
+### Usage Autorisé
+- Tests d'équilibrage pour l'équipe de développement
+- Validation des règles et mécaniques
+- Développement et amélioration du jeu
 
-## 🛡️ **RÉCAPITULATIF "FORMATION DE GUERRE" - PRÉSERVATION**
+L'usage commercial ou la redistribution ne sont pas autorisés.
 
-**Historique :** Cette fonctionnalité a été supprimée plusieurs fois par erreur lors de refactorings Claude, causant une régression de l'expérience utilisateur.
+## Mode Sandbox
 
-**Fonction complète :**
-- **Affichage élégant** des équipes sélectionnées (héros vs ennemis)
-- **Stats détaillées** avec builds et pronostic de bataille
-- **🆕 Aperçu capacités** : Capacités débloquées, coûts, types
-- **Position optimale** avant le bouton de combat pour validation
-- **Design cohérent** avec le thème gaming médiéval
+### Présentation
+Le Mode Sandbox permet un contrôle manuel complet des combats pour les tests d'équilibrage avancés. Contrairement au combat automatique géré par l'IA, l'utilisateur contrôle tous les personnages (héros et ennemis) tour par tour.
 
-**Instructions de préservation :**
-- 🔒 **Maintenir** cette fonctionnalité lors des modifications
-- 📍 **Conserver** sa position et son contenu complet
-- ⚠️ **Éviter** la suppression pour "optimisation d'espace"
-- 🎯 **Améliorer** si nécessaire, mais ne pas retirer
+### Objectifs
+- Tester des cas limites et reproduire des situations spécifiques
+- Valider l'équilibrage en contrôlant précisément les actions
+- Déboguer des mécaniques de combat particulières
+- Expérimenter avec différentes stratégies tactiques
 
-**Localisation :** `ui/components/hero_components.py` → `display_team_recap()`
+### Fonctionnalités
 
-## 🎮 Règles et Mécaniques
+#### Interface de Contrôle
+- **Contrôle dual** : L'utilisateur contrôle alternativement héros et ennemis
+- **Indication de faction** : Bannières visuelles distinctes (vert pour héros, rouge pour ennemis)
+- **Tour par tour** : Chaque personnage peut effectuer une action à son tour
+- **Système de guidance** : Messages contextuels pour guider l'utilisateur
 
-### ✅ **Règles de Combat Implémentées**
-- 🏹 **Attaques distance :** Ciblage libre vs corps-à-corps
-- ✨ **Dégâts magiques :** Ignorent la parade
-- 🎯 **Critiques :** 20 = double dégâts, 1 = contre-attaque
-- 🎲 **Initiative :** Ordre aléatoire vs fixe
-- 🔮 **Capacités complètes** : 48 capacités avec règles officielles
+#### Actions Disponibles
+- **Attaque** : Sélection manuelle de la cible
+- **Capacités spéciales** : Menu adaptatif selon les capacités du personnage (0-6 par héros)
+- **Passer le tour** : Passage au personnage suivant
+- **Options de débogage** : Possibilité de forcer certains effets pour les tests
 
-### 🛠️ **TODO - Règles Optionnelles à Implémenter**
-**🔴 Inconscience et Défaite (p.18)**
-   - ❌ MANQUANT : Récupération PV limitée après défaite totale
-   - ❌ MANQUANT : Malus ressources (1 cube bleu par héros)
-   - 📝 Localisation : `combat_engine.py` → gestion fin de combat
+#### Système d'Historique
+- **Sauvegarde d'état** : Chaque action est sauvegardée automatiquement
+- **Undo/Redo** : Possibilité de revenir en arrière ou refaire des actions
+- **Navigation temporelle** : Visualisation de la position dans l'historique
+- **États complets** : Sauvegarde de tous les paramètres (PV, équipements, sorts utilisés)
 
-**🔴 Défaite Totale - Malus (p.18)**
-   - ❌ MANQUANT : Si tous inconscients → coût 1 cube bleu par héros
-   - ❌ MANQUANT : Récupération de 50% des PV seulement
-   - 📝 Localisation : `combat_engine.py` → gestion fin de combat
+#### Workflow d'Utilisation
+1. **Configuration** : Utilisation de l'onglet de sélection des équipes
+2. **Lancement** : Bouton "Mode Sandbox" pour démarrer le mode manuel
+3. **Initiative** : Génération automatique de l'ordre des tours
+4. **Combat** : Contrôle manuel de chaque personnage à son tour
+5. **Navigation** : Utilisation de l'historique pour tester différentes approches
 
-## 💾 Données et Import
+### Intégration Technique
+- **Réutilisation** : Utilise les mêmes modèles et moteur de combat que le mode automatique
+- **Interface cohérente** : Même thème visuel que le reste de l'application
+- **Session persistante** : Maintien de l'état de jeu pendant toute la session
+- **Système de capacités** : Intégration complète avec le système de sorts existant
 
-### 📊 Import Automatique Excel + Capacités
-- **Source principale :** `Data_cards.xlsx`
-- **🆕 Source capacités :** `Sorts.xlsx` (48 capacités)
-- **Auto-détection :** Création CSV si manquants + génération noms élégants
-- **Contenu :** 12 héros, 72 ennemis, 52 équipements, 48 capacités
-- **🆕 Cache performance :** `ability_names.csv` pour noms élégants
+### Avantages pour l'Équilibrage
+- **Reproductibilité** : Possibilité de reproduire exactement des situations problématiques
+- **Tests exhaustifs** : Validation de tous les cas de figure possibles
+- **Analyse fine** : Compréhension détaillée des mécaniques de combat
+- **Itération rapide** : Modifications et tests immédiats grâce à l'historique
 
-### 🔧 Builds Système Hybride + Capacités
-```python
-# Builds pré-définis optimisés par héros
-'P-1': ['O-38', 'O-11'],  # Elneha Sniper: Gants + Arc
+### Études d'Interface
 
-# Builds custom sauvegardés
-st.session_state.custom_builds = {
-    'P-1': {'equipment': ['O-75', 'O-23'], 'name': 'Mon DPS Ultime'}
-}
+Le développement du Mode Sandbox s'appuie sur des études d'interface détaillées comprenant :
 
-# NOUVEAU - Capacités par héros
-'P-1': [
-    Ability(name="Forme d'Ours", spell_cost=1, ability_number=1),
-    Ability(name="Soin Naturel", spell_cost=1, ability_number=2),
-    # ... 4 autres capacités
-]
-```
+#### Système de Guidance
+- **Bannières contextuelles** avec indication d'étape (ex: "Étape 3/5")
+- **Fil d'Ariane** montrant la progression (Setup → Initiative → Action → Cible → Confirmer)
+- **Messages d'aide contextuelle** selon le personnage contrôlé
+- **Conseils stratégiques** adaptés à la situation de combat
 
-## 🔄 État du Développement
+#### Interface de Contrôle des Capacités
+- **Grille organisée** des capacités spéciales disponibles par héros
+- **Indicateurs visuels** : coût en actions, usages restants, type de capacité
+- **Actions de base** : Attaque, Défense, Passer le tour
+- **Gestion des potions** : Interface dédiée avec compteurs visuels
+- **Badges de statut** pour chaque capacité (disponible/utilisée/indisponible)
 
-### ✅ **TERMINÉ - Système de Capacités 80%**
-- [x] **Modèles Pydantic** : `models/abilities.py` validation complète
-- [x] **Import automatique** : `utils/abilities_loader.py` + noms élégants
-- [x] **Intégration Character** : `models/character.py` avec gestion capacités
-- [x] **Moteur de combat** : `models/combat_engine.py` + IA logique
-- [x] **Règles officielles** : Limitation d'actions (magie OU attaque)
-- [x] **🆕 Déblocage aléatoire** : 2-3 capacités par héros par défaut
-- [x] **🆕 Noms élégants** : Générateur automatique via `generate_ability_names.py`
-- [x] **🆕 IA intelligente** : Logique soin/zone/offensive selon contexte
+#### Principe de Développement
+Le Mode Sandbox privilégie l'utilisation **d'éléments natifs Streamlit** pour garantir :
+- **Fluidité** : Interactions responsives sans délais
+- **Fiabilité** : Comportement prévisible et stable
+- **Maintenabilité** : Code simple et facilement extensible
+- **Compatibilité** : Fonctionnement optimal sur tous les navigateurs
 
-### ✅ **CORRIGÉ - Bugs Critiques**
-- [x] **GameRules.max_rounds** : Attribut manquant causait crashes
-- [x] **Character.heal()** : Méthode manquante pour capacités de soin
-- [x] **Adaptateur métriques** : KeyError interface résultats corrigé
-- [x] **Compatibilité capacités** : Fallback si système indisponible
-
-### ✅ **FONCTIONNEL - Interface Complète**
-- [x] **Combat détaillé** : logs round par round + capacités prioritaires
-- [x] **Builds hybrides** : pré-définis + customisation complète
-- [x] **72 ennemis** : recherche par numéro/nom efficace avec noms complets
-- [x] **Validation UX** : minimum 2 héros, mode auto joueurs
-- [x] **Workflow fluide** : sélection → récapitulatif → combat → analyse
-- [x] **🆕 Héros par 6** : Grille maintenue selon requirement
-
-### 🎯 **EN COURS - Optimisations Optionnelles (20%)**
-- 🔄 **Interface UI capacités** : Activation manuelle en combat (optionnel)
-- 🔄 **Métriques étendues** : Tracking usage capacités dans récapitulatif
-- 🔄 **Règles avancées** : Ordre attaque corps-à-corps, résistance magique
-
-## 🔮 Informations pour Prochaine Session Claude
-
-### 📋 **Contexte Critique à Retenir**
-1. **✅ Bugs critiques résolus** : max_rounds, heal(), adaptateur métriques
-2. **✅ Système capacités 80%** : Fonctionnel avec noms élégants + IA logique
-3. **✅ Interface stable** : Héros par 6, récapitulatif Formation de Guerre préservé
-4. **✅ Expérience utilisateur** : 2-3 capacités par héros, logs élégants
-5. **🔒 Requirements absolus** : Grille héros 6 colonnes jamais modifier
-6. **🎯 Focus combat détaillé** : journal prioritaire, pas de stats massives
-
-### 🆕 **Améliorations Récentes (Session Août 2025)**
-- **✅ Noms capacités élégants** : "Soin Proportionnel" au lieu de "Atucan 2"
-- **✅ IA capacités logique** : Soin si PV < 50%, zone si 3+ ennemis, offensive sinon
-- **✅ Déblocage variété** : 2-3 capacités aléatoires au lieu d'1 seule
-- **✅ Stabilité totale** : Plus de crashes, interface résultats fonctionnelle
-- **✅ Code débutant** : Fonctions courtes, commentaires clairs, architecture simple
-
-### 🛠️ **Priorité Développement**
-
-**1. VALIDATION SYSTÈME (URGENT)**
-- Tester génération `ability_names.csv` avec `generate_ability_names.py`
-- Valider combats avec noms élégants dans logs
-- Confirmer absence de régressions interface existante
-
-**2. OPTIMISATIONS OPTIONNELLES**
-- Interface UI capacités complète (Phase 5) si souhaité
-- Amélioration IA capacités (logique plus sophistiquée)
-- Métriques capacités dans récapitulatif Formation de Guerre
-
-### 💡 **Points d'Attention Critiques**
-- **🔒 Maintenir héros par 6** : `cols = st.columns(6)` JAMAIS changer
-- **🔒 Préserver récapitulatif** : "Formation de Guerre" = business critical
-- **🔒 Respecter architecture** : ui/components/, models/, utils/ modulaire
-- **🔧 Code accessible** : Fonctions courtes, commentaires, compréhensible débutants
-- **🎮 Expérience utilisateur** : Capacités automatiques, noms élégants, IA logique
-
-### 🚀 **État Technique Stable**
-- **Python** : Streamlit + Pydantic + Plotly + Pandas
-- **Capacités** : 48 intégrées avec noms élégants et IA intelligente
-- **Interface** : Expanders compacts + récapitulatif élégant + héros par 6
-- **Combat** : Moteur complet avec journal détaillé + capacités logiques
-- **Stabilité** : Bugs critiques résolus, système robuste et fonctionnel
-
----
-
-## 📞 **Contact & Statut**
-
-- **Équipe d'équilibrage** : Équipe d'équilibrage du jeu Périples
-- **Dev Python** : Christophe Bidouj (développement assisté par Claude AI)
-- **Version Actuelle** : V4+ Interface + Système Capacités 80% Terminé
-- **Statut** : **Stable et fonctionnel** - Bugs critiques résolus, capacités intégrées avec IA logique
-- **Dernière MAJ** : Août 2025 - Corrections bugs + noms élégants + IA capacités
-
-**L'application dispose maintenant d'un système de capacités complet et stable à 80%, avec une interface gaming moderne préservée et une expérience utilisateur optimisée.**
+L'interface s'appuie principalement sur les composants Streamlit standards (boutons, colonnes, conteneurs, sélecteurs) avec un styling CSS minimal pour préserver les performances et la stabilité.
