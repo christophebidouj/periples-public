@@ -79,6 +79,155 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 - Intégration dans la séquence de combat
 - Journal détaillé des utilisations
 
+## Mode Sandbox
+
+### Présentation
+Le Mode Sandbox permet un contrôle manuel complet des combats pour les tests d'équilibrage avancés. Contrairement au combat automatique géré par l'IA, l'utilisateur contrôle tous les personnages (héros et ennemis) tour par tour.
+
+### Objectifs
+- Tester des cas limites et reproduire des situations spécifiques
+- Valider l'équilibrage en contrôlant précisément les actions
+- Déboguer des mécaniques de combat particulières
+- Expérimenter avec différentes stratégies tactiques
+
+### Interface Utilisateur
+
+#### Système de Guidance
+- **Bannière contextuelle** : Affichage coloré avec titre, description et badge d'étape
+- **Fil d'Ariane** : 5 étapes visuelles (Setup → Initiative → Action → Cible → Confirmer)
+- **Messages d'aide** : Conseils stratégiques selon le personnage actif
+- **Progression visuelle** : Étapes complétées/actives/à venir clairement identifiées
+
+#### Interface de Combat
+
+##### Panneau Personnage
+- **En-tête coloré** : Nom du personnage avec indicateur de faction
+- **Stats en temps réel** : PV, ATT, DEF, MAG avec couleurs dynamiques
+- **État de santé** : Codes couleur selon le pourcentage de PV restants
+- **Indication de tour** : Personnage actif clairement identifié
+
+##### Capacités Spéciales
+- **Grille 3x2** : 6 emplacements pour les capacités du héros
+- **Cartes cliquables** : Zones entières cliquables (pas de boutons internes)
+- **Badges d'état** : Disponible (✅) / Indisponible (❌) avec compteurs
+- **Types visuels** : Magique (🔮) / Physique (⚔️) avec couleurs distinctes
+- **Informations détaillées** : Coût, description, conditions d'utilisation
+
+##### Système de Potions
+- **4 emplacements** : Soin, Force, Vide, Vitesse
+- **Compteurs visuels** : Quantités restantes clairement affichées
+- **Zones cliquables** : Utilisation directe pour potions disponibles
+- **États différenciés** : Actif/Inactif/Placeholder selon le type
+
+#### Actions de Base
+- **Boutons standards limités** : Seulement pour actions principales
+- **Actions disponibles** : Attaquer, Capacité, Passer le tour
+- **Feedback immédiat** : Messages de confirmation des actions
+- **Interface épurée** : Minimal de boutons standards selon le prototype
+
+### Fonctionnalités Avancées
+
+#### Contrôle Dual
+- **Alternance factions** : L'utilisateur contrôle héros ET ennemis
+- **Indication visuelle** : Bannières distinctes par faction (vert/rouge)
+- **Tour par tour** : Chaque personnage agit individuellement
+- **Liberté totale** : Aucune restriction sur les choix tactiques
+
+#### Système d'Historique
+- **Sauvegarde automatique** : Chaque action est enregistrée
+- **Navigation temporelle** : Undo/Redo fonctionnels
+- **États complets** : PV, sorts, équipements, potions sauvegardés
+- **Description des actions** : Historique lisible des modifications
+- **Reset global** : Possibilité de recommencer le combat
+
+#### Journal de Combat
+- **Suivi détaillé** : Toutes les actions enregistrées chronologiquement
+- **Format lisible** : Messages clairs et structurés
+- **Intégration capacités** : Utilisation des sorts et potions trackée
+- **Résultats des actions** : Dégâts, soins, effets appliqués
+
+### Workflow d'Utilisation
+
+#### Phase 1 : Configuration
+1. **Détection automatique** : Utilise les équipes sélectionnées dans l'onglet principal
+2. **Préparation des builds** : Application des builds custom et capacités
+3. **Validation** : Vérification de la configuration (2+ héros, 1+ ennemi)
+4. **Initialisation** : Remise à zéro des stats de combat
+
+#### Phase 2 : Initiative
+1. **Génération aléatoire** : Jet d'initiative pour tous les combattants
+2. **Ordre de tour** : Tri par initiative décroissante
+3. **Affichage** : Liste ordonnée visible dans le journal
+4. **Transition** : Passage automatique au combat
+
+#### Phase 3 : Combat Manuel
+1. **Tour actif** : Affichage du personnage dont c'est le tour
+2. **Interface contextuelle** : Panneaux adaptés à la faction (héros/ennemi)
+3. **Actions disponibles** : Capacités, potions, actions de base
+4. **Validation** : Confirmation et application des effets
+5. **Passage au suivant** : Rotation automatique des tours
+
+#### Phase 4 : Navigation
+1. **Historique accessible** : Boutons Undo/Redo toujours disponibles
+2. **Journal consultable** : Historique des 10 dernières actions
+3. **Reset possible** : Recommencer le combat à tout moment
+4. **État persistant** : Sauvegarde maintenue pendant la session
+
+### Intégration Technique
+
+#### Réutilisation du Système Existant
+- **Modèles identiques** : Utilise les mêmes classes Character/Enemy
+- **Moteur de combat** : Réutilise les mécaniques de dégâts/soins
+- **Système de capacités** : Intégration complète avec les 48 capacités
+- **Builds custom** : Support total des configurations personnalisées
+
+#### Interface Streamlit Native
+- **Composants standards** : 100% Streamlit natif pour la stabilité
+- **Zones colorées** : st.success/warning/error/info pour la guidance
+- **Métriques** : st.metric() pour les statistiques en temps réel
+- **Colonnes** : st.columns() pour les layouts en grille
+- **Expanders** : Pour les informations détaillées optionnelles
+
+#### Gestion d'État
+- **Session state** : Persistance complète entre les interactions
+- **Copies profondes** : Sauvegarde sécurisée des états de jeu
+- **Clés uniques** : Évite les conflits entre les composants
+- **Réactivité** : st.rerun() pour la mise à jour immédiate
+
+### Avantages pour l'Équilibrage
+
+#### Tests Reproductibles
+- **Scénarios fixes** : Possibilité de reproduire exactement une situation
+- **Validation précise** : Test de chaque mécanisme individuellement
+- **Documentation** : Historique complet des actions pour analyse
+- **Comparaisons** : Tests A/B avec navigation temporelle
+
+#### Analyses Détaillées
+- **Granularité maximale** : Contrôle action par action
+- **Métriques précises** : Suivi exact des ressources (PV, sorts, potions)
+- **Patterns tactiques** : Identification des stratégies optimales
+- **Points de rupture** : Détection des déséquilibres critiques
+
+#### Flexibilité Totale
+- **Liberté stratégique** : Aucune contrainte d'IA
+- **Tests exhaustifs** : Exploration de toutes les possibilités
+- **Modifications en temps réel** : Ajustements immédiats visibles
+- **Validation règles** : Vérification des mécaniques de jeu
+
+### Interface Responsive
+
+#### Adaptation Automatique
+- **Grilles flexibles** : Colonnes qui s'adaptent à la largeur d'écran
+- **Contenus scrollables** : Journal et historique avec défilement
+- **Boutons full-width** : Utilisation optimale de l'espace disponible
+- **Textes adaptatifs** : Troncature intelligente des descriptions longues
+
+#### Performance Optimisée
+- **Chargement minimal** : Seuls les composants nécessaires sont affichés
+- **Mise à jour ciblée** : Rerun uniquement lors d'actions utilisateur
+- **Cache intelligent** : Réutilisation des calculs de stats
+- **Navigation fluide** : Transitions rapides entre les phases
+
 ## IA Tactique
 
 ### Séquence de Combat
@@ -116,7 +265,7 @@ périples-balance-workshop/
 │       ├── equipment_components.py
 │       ├── forge_abilities_components.py
 │       ├── combat_components.py
-│       └── sandbox_interface.py
+│       └── sandbox_interface.py    # Mode Sandbox (nouveau)
 ├── utils/
 │   ├── data_loader.py             # Chargement des données
 │   ├── abilities_loader.py        # Import des capacités
@@ -163,10 +312,17 @@ streamlit run app.py
 4. Configurer les potions
 5. Sauvegarder le build personnalisé
 
-#### Combat
+#### Combat Automatique
 1. Accéder aux "Chroniques"
 2. Observer le combat automatique
 3. Analyser les métriques et recommandations
+
+#### Mode Sandbox
+1. Configurer les équipes dans l'onglet "Sélection"
+2. Accéder à l'onglet "Arène" (Mode Sandbox)
+3. Générer l'initiative
+4. Contrôler manuellement chaque personnage à son tour
+5. Utiliser l'historique pour tester différentes approches
 
 ## Équilibrage
 
@@ -182,7 +338,8 @@ streamlit run app.py
 2. Analyser les métriques de combat
 3. Ajuster les statistiques selon les recommandations
 4. Valider les builds personnalisés
-5. Itérer jusqu'à obtenir un équilibrage satisfaisant
+5. Utiliser le Mode Sandbox pour tests précis
+6. Itérer jusqu'à obtenir un équilibrage satisfaisant
 
 ## Équipe et Contribution
 
@@ -206,79 +363,3 @@ streamlit run app.py
 - Développement et amélioration du jeu
 
 L'usage commercial ou la redistribution ne sont pas autorisés.
-
-## Mode Sandbox
-
-### Présentation
-Le Mode Sandbox permet un contrôle manuel complet des combats pour les tests d'équilibrage avancés. Contrairement au combat automatique géré par l'IA, l'utilisateur contrôle tous les personnages (héros et ennemis) tour par tour.
-
-### Objectifs
-- Tester des cas limites et reproduire des situations spécifiques
-- Valider l'équilibrage en contrôlant précisément les actions
-- Déboguer des mécaniques de combat particulières
-- Expérimenter avec différentes stratégies tactiques
-
-### Fonctionnalités
-
-#### Interface de Contrôle
-- **Contrôle dual** : L'utilisateur contrôle alternativement héros et ennemis
-- **Indication de faction** : Bannières visuelles distinctes (vert pour héros, rouge pour ennemis)
-- **Tour par tour** : Chaque personnage peut effectuer une action à son tour
-- **Système de guidance** : Messages contextuels pour guider l'utilisateur
-
-#### Actions Disponibles
-- **Attaque** : Sélection manuelle de la cible
-- **Capacités spéciales** : Menu adaptatif selon les capacités du personnage (0-6 par héros)
-- **Passer le tour** : Passage au personnage suivant
-- **Options de débogage** : Possibilité de forcer certains effets pour les tests
-
-#### Système d'Historique
-- **Sauvegarde d'état** : Chaque action est sauvegardée automatiquement
-- **Undo/Redo** : Possibilité de revenir en arrière ou refaire des actions
-- **Navigation temporelle** : Visualisation de la position dans l'historique
-- **États complets** : Sauvegarde de tous les paramètres (PV, équipements, sorts utilisés)
-
-#### Workflow d'Utilisation
-1. **Configuration** : Utilisation de l'onglet de sélection des équipes
-2. **Lancement** : Bouton "Mode Sandbox" pour démarrer le mode manuel
-3. **Initiative** : Génération automatique de l'ordre des tours
-4. **Combat** : Contrôle manuel de chaque personnage à son tour
-5. **Navigation** : Utilisation de l'historique pour tester différentes approches
-
-### Intégration Technique
-- **Réutilisation** : Utilise les mêmes modèles et moteur de combat que le mode automatique
-- **Interface cohérente** : Même thème visuel que le reste de l'application
-- **Session persistante** : Maintien de l'état de jeu pendant toute la session
-- **Système de capacités** : Intégration complète avec le système de sorts existant
-
-### Avantages pour l'Équilibrage
-- **Reproductibilité** : Possibilité de reproduire exactement des situations problématiques
-- **Tests exhaustifs** : Validation de tous les cas de figure possibles
-- **Analyse fine** : Compréhension détaillée des mécaniques de combat
-- **Itération rapide** : Modifications et tests immédiats grâce à l'historique
-
-### Études d'Interface
-
-Le développement du Mode Sandbox s'appuie sur des études d'interface détaillées comprenant :
-
-#### Système de Guidance
-- **Bannières contextuelles** avec indication d'étape (ex: "Étape 3/5")
-- **Fil d'Ariane** montrant la progression (Setup → Initiative → Action → Cible → Confirmer)
-- **Messages d'aide contextuelle** selon le personnage contrôlé
-- **Conseils stratégiques** adaptés à la situation de combat
-
-#### Interface de Contrôle des Capacités
-- **Grille organisée** des capacités spéciales disponibles par héros
-- **Indicateurs visuels** : coût en actions, usages restants, type de capacité
-- **Actions de base** : Attaque, Défense, Passer le tour
-- **Gestion des potions** : Interface dédiée avec compteurs visuels
-- **Badges de statut** pour chaque capacité (disponible/utilisée/indisponible)
-
-#### Principe de Développement
-Le Mode Sandbox privilégie l'utilisation **d'éléments natifs Streamlit** pour garantir :
-- **Fluidité** : Interactions responsives sans délais
-- **Fiabilité** : Comportement prévisible et stable
-- **Maintenabilité** : Code simple et facilement extensible
-- **Compatibilité** : Fonctionnement optimal sur tous les navigateurs
-
-L'interface s'appuie principalement sur les composants Streamlit standards (boutons, colonnes, conteneurs, sélecteurs) avec un styling CSS minimal pour préserver les performances et la stabilité.

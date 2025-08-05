@@ -1,13 +1,13 @@
 """
 Module de gestion du styling et des thèmes pour le Simulateur Périples
-Version sobre et élégante sans effets superflus
+Version avec boutons bordeaux royal (#800020) - Harmonie parfaite
 """
 
 import streamlit as st
 from typing import Dict
 
 def apply_fantasy_theme():
-    """Applique le thème fantasy sobre et élégant"""
+    """Applique le thème fantasy sobre et élégant - BOUTONS SÉLECTIFS"""
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
@@ -57,8 +57,8 @@ def apply_fantasy_theme():
         margin: 10px 0;
     }
     
-    /* === BOUTONS BORDEAUX ROYAL (conservés) === */
-    .stButton > button {
+    /* === BOUTONS BORDEAUX ROYAL - SAUF SANDBOX === */
+    .stButton > button:not(.sandbox-button):not([data-sandbox]) {
         background: linear-gradient(135deg, #800020, #5d0015) !important;
         color: #f4e4bc !important;
         border: 2px solid #4d0012 !important;
@@ -70,33 +70,43 @@ def apply_fantasy_theme():
         transition: all 0.3s ease !important;
     }
     
-    .stButton > button:hover {
+    .stButton > button:not(.sandbox-button):not([data-sandbox]):hover {
         background: linear-gradient(135deg, #a0002a, #800020) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(128,0,32,0.6) !important;
     }
     
-    .stButton > button:active {
+    .stButton > button:not(.sandbox-button):not([data-sandbox]):active {
         transform: translateY(0px) !important;
         box-shadow: 0 3px 6px rgba(128,0,32,0.4) !important;
     }
     
-    /* Boutons spécifiques selon le type */
-    button[kind="primary"] {
+    /* === STYLES SANDBOX EXEMPTS === */
+    /* Les boutons avec .sandbox-button ou [data-sandbox] gardent leur style natif */
+    .sandbox-button {
+        /* Style natif Streamlit préservé */
+    }
+    
+    button[data-sandbox] {
+        /* Style natif Streamlit préservé */
+    }
+    
+    /* Boutons spécifiques selon le type (HORS SANDBOX) */
+    button[kind="primary"]:not(.sandbox-button):not([data-sandbox]) {
         background: linear-gradient(135deg, #800020, #5d0015) !important;
         border: 2px solid #4d0012 !important;
     }
     
-    button[kind="secondary"] {
+    button[kind="secondary"]:not(.sandbox-button):not([data-sandbox]) {
         background: linear-gradient(135deg, #6d001a, #4d0012) !important;
         border: 2px solid #330009 !important;
     }
     
-    button[kind="primary"]:hover {
+    button[kind="primary"]:not(.sandbox-button):not([data-sandbox]):hover {
         background: linear-gradient(135deg, #a0002a, #800020) !important;
     }
     
-    button[kind="secondary"]:hover {
+    button[kind="secondary"]:not(.sandbox-button):not([data-sandbox]):hover {
         background: linear-gradient(135deg, #800020, #5d0015) !important;
     }
     </style>
@@ -243,7 +253,7 @@ def get_combat_result_styles() -> Dict[str, str]:
     }
 
 def get_combat_button_styles() -> Dict[str, str]:
-    """Retourne les styles pour les boutons de combat"""
+    """Retourne les styles pour les boutons de combat - VERSION BORDEAUX ROYAL"""
     return {
         'ready': """
         <div style="text-align: center; margin: 25px 0;">
@@ -304,10 +314,16 @@ def get_waiting_combat_style() -> str:
     </div>
     """
 
-def get_native_app_title():
-    """Version native Streamlit - simple et efficace"""
-    st.title("⚔️ Périples Balance Workshop ⚔️")
-    st.caption("🎲 Simulateur d'équilibrage RPG dans l'univers fantasy")
+def get_app_title_style() -> str:
+    """Style pour le titre principal de l'application"""
+    return """
+    <h1 style="text-align: center; font-family: 'Cinzel', serif; color: #8b4513; font-size: 3rem; margin-bottom: 2rem;">
+        ⚔️ Simulateur Périples ⚔️
+    </h1>
+    <p style="text-align: center; font-style: italic; color: #6f4f27; margin-bottom: 2rem; font-size: 1.2rem;">
+        Outil d'équilibrage RPG dans l'univers fantasy
+    </p>
+    """
 
 def style_combat_log_entry(line: str) -> str:
     """Applique le style approprié à une ligne de log de combat"""
@@ -326,14 +342,14 @@ def style_combat_log_entry(line: str) -> str:
     else:
         return f"<div style='color: #3b2f1c; margin: 2px 0;'>{line}</div>"
 
-# CONSTANTES DE COULEURS - Version sobre
+# CONSTANTES DE COULEURS - Centralisation avec nouveaux bordeaux
 class Colors:
-    """Constantes de couleurs pour cohérence du thème sobre"""
+    """Constantes de couleurs pour cohérence du thème"""
     
     # Couleurs principales
     BACKGROUND = "#f4e4bc"
     TEXT_PRIMARY = "#3b2f1c" 
-    TITLE_COLOR = "#5a5a5a"
+    TITLE_COLOR = "#8b4513"
     
     # Couleurs des équipes
     HERO_GREEN = "#228b22"
@@ -356,17 +372,13 @@ class Colors:
     SILVER = "#c0c0c0"
     BRONZE = "#cd7f32"
     
-    # Onglets sobres
-    TAB_BACKGROUND = "#6b7280"
-    TAB_ACTIVE = "#d97706"
-    
-    # Boutons bordeaux royal (conservés)
+    # NOUVEAUX BOUTONS BORDEAUX ROYAL
     BUTTON_PRIMARY = "#800020"
     BUTTON_PRIMARY_HOVER = "#a0002a"
     BUTTON_SECONDARY = "#6d001a"
     BUTTON_BORDER = "#4d0012"
     
-    # Couleurs d'équipements
-    EQUIPMENT_WEAPONS = "#d2691e"
-    EQUIPMENT_ARMOR = "#1e90ff"
-    EQUIPMENT_ACCESSORIES = "#8a2be2"
+    # Couleurs d'équipements (validées selon harmonie)
+    EQUIPMENT_WEAPONS = "#d2691e"    # Orange chocolat
+    EQUIPMENT_ARMOR = "#1e90ff"      # Bleu ciel profond
+    EQUIPMENT_ACCESSORIES = "#8a2be2" # Violet bleu
