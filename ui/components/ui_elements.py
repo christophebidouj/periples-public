@@ -1,6 +1,7 @@
 """
 Éléments UI communs pour le Simulateur Périples
 Fonctions utilitaires et composants réutilisables
+VERSION CORRIGÉE - Support JPG optimisés
 """
 
 import streamlit as st
@@ -63,26 +64,42 @@ def load_hero_image_base64(image_path: str) -> str:
         return None
 
 def get_hero_image_path(hero_name: str) -> str:
-    """Retourne le chemin vers l'image d'un héros"""
+    """
+    Retourne le chemin vers l'image d'un héros - VERSION JPG OPTIMISÉE
+    Cherche d'abord les JPG optimisés, puis fallback PNG original
+    """
     import os
+    
+    # Mapping des noms vers fichiers (JPG optimisés en priorité)
     hero_files = {
-        "Atucan": "Atucan_-_Paladin.png", 
-        "Elneha": "Elneha_-_Druidesse.png",
-        "Kraor": "Kraor_-_Rodeur.png", 
-        "Lame": "Lame_-_Roublarde.png",
-        "Liarie": "Liarie_-_Mage.png", 
-        "Raishi": "Raishi_-_Pugiliste.png",
-        "Stèphe": "Stephe_-_Barde.png",  
-        "Thordius": "Thordius_-_Barbare.png",
-        "Loup": "Loup.png",
-        "Ours": "Ours.png", 
-        "Loup S": "Loup_S.png",
-        "Ours S": "Ours_S.png"
+        "Atucan": "Atucan_-_Paladin", 
+        "Elneha": "Elneha_-_Druidesse",
+        "Kraor": "Kraor_-_Rodeur", 
+        "Lame": "Lame_-_Roublarde",
+        "Liarie": "Liarie_-_Mage", 
+        "Raishi": "Raishi_-_Pugiliste",
+        "Stèphe": "Stephe_-_Barde",  
+        "Thordius": "Thordius_-_Barbare",
+        "Loup": "Loup",
+        "Ours": "Ours", 
+        "Loup S": "Loup_S",
+        "Ours S": "Ours_S"
     }
-    filename = hero_files.get(hero_name)
-    if filename:
-        path = f"data/images/{filename}"
-        return path if os.path.exists(path) else None
+    
+    base_filename = hero_files.get(hero_name)
+    if not base_filename:
+        return None
+    
+    # Priorité 1 : JPG optimisé (nouvelles images)
+    jpg_path = f"data/images/{base_filename}.jpg"
+    if os.path.exists(jpg_path):
+        return jpg_path
+    
+    # Priorité 2 : PNG original (fallback)
+    png_path = f"data/images/{base_filename}.png"
+    if os.path.exists(png_path):
+        return png_path
+    
     return None
 
 def display_progress_indicators_with_reset(nb_heroes: int, nb_enemies: int):

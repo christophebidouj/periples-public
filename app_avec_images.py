@@ -9,7 +9,7 @@ Périples Balance Workshop - Version Optimisée Performance
 import streamlit as st
 import time
 import os
-import random
+import hashlib
 from typing import List, Dict
 from models.character import Character, Enemy
 from models.combat_engine import CombatEngine
@@ -32,28 +32,19 @@ try:
 except ImportError:
     FORGE_ABILITIES_AVAILABLE = False
 
-# Configuration - Images optimisées réactivées
-ENABLE_IMAGES = True  # Réactivé avec images optimisées JPG
+# Configuration
+ENABLE_IMAGES = True
 
 # === FONCTIONS UTILITAIRES OPTIMISÉES ===
 
-def get_standard_equipment_codes(hero_code: str) -> List[str]:
-    """Retourne les codes équipements standard pour un héros"""
-    standard_equipment = {
-        'P-1': ['E-1', 'E-7', 'E-13'],   # Elneha
-        'P-2': ['E-2', 'E-8', 'E-14'],   # Liarie
-        'P-3': ['E-3', 'E-9', 'E-15'],   # Atucan
-        'P-4': ['E-4', 'E-10', 'E-16'],  # Kraor
-        'P-5': ['E-5', 'E-11', 'E-17'],  # Thordius
-        'P-6': ['E-6', 'E-12', 'E-18'],  # Stephe
-        'P-7': ['E-1', 'E-7', 'E-13'],   # Lame
-        'P-8': ['E-2', 'E-8', 'E-14'],   # Raishi
-        'P-9': ['E-1', 'E-7', 'E-13'],   # Ours
-        'P-10': ['E-1', 'E-7', 'E-13'],  # Loup
-        'P-11': ['E-1', 'E-7', 'E-13'],  # Ours S.
-        'P-12': ['E-1', 'E-7', 'E-13']   # Loup S.
+def get_session_hash():
+    """Génère hash simple pour invalidation cache"""
+    key_data = {
+        'heroes': len(st.session_state.get('selected_heroes', [])),
+        'enemies': len(st.session_state.get('selected_enemies', [])),
+        'builds': len(st.session_state.get('custom_builds', {}))
     }
-    return standard_equipment.get(hero_code, [])
+    return hashlib.md5(str(key_data).encode()).hexdigest()[:8]
 
 def safe_session_update(key: str, value):
     """Mise à jour sécurisée session state"""
@@ -112,9 +103,8 @@ def init_app():
             st.session_state[key] = value
 
 @st.cache_data
-def load_data():
-    """Cache simple et stable - Pas de paramètre dynamique"""
-    print("🔍 DEBUG: load_data() appelée - chargement des fichiers")
+def load_data(_session_hash=None):
+    """Cache intelligent qui se met à jour selon les changements"""
     loader = DataLoader()
     missing = [f for f in ["heroes.csv", "enemies.csv", "equipment.csv"] if not os.path.exists(f"data/{f}")]
     
@@ -132,24 +122,21 @@ def load_data():
         'loader': loader
     }
 
-def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List, _loader, custom_builds_dict: Dict = None) -> Dict:
-    """Version CORRIGÉE - utilise les listes déjà chargées"""
-    print(f"🔍 DEBUG: get_hero_build_info() appelée pour {hero_code}")
-    hero = next(h for h in heroes_list if h.code == hero_code)  # CORRECTION: utilise la liste passée
+def get_hero_build_info(hero_code: str, _loader, custom_builds_dict: Dict = None) -> Dict:
+    """Version optimisée - pas de recalcul inutile"""
+    hero = next(h for h in _loader.load_heroes() if h.code == hero_code)
     current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
     
     # Build custom ou standard
     if hero_code in current_custom_builds:
         custom = current_custom_builds[hero_code]
-        equipment = [eq for eq in equipment_list if eq.code in custom.get('equipment', [])]  # CORRECTION: utilise equipment_list
+        equipment = [eq for eq in _loader.load_equipment() if eq.code in custom.get('equipment', [])]
         build_name = custom.get('name', 'Build Custom')
         is_custom = True
         custom_abilities = custom.get('abilities', [])
         abilities_custom = custom.get('abilities_custom', False)
     else:
-        # Build standard - utilise la liste d'équipements passée
-        standard_equipment_codes = get_standard_equipment_codes(hero_code)
-        equipment = [eq for eq in equipment_list if eq.code in standard_equipment_codes]
+        equipment = _loader.get_hero_loadout(hero_code)
         build_name = "Build Standard"
         is_custom = False
         custom_abilities = []
@@ -189,7 +176,6 @@ def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List,
 
 def tab_selection(data):
     """Onglet sélection - Version optimisée performance"""
-    print("🔍 DEBUG: tab_selection() démarrée")
     st.header("🏰 Sélection des Équipes")
     
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
@@ -214,14 +200,12 @@ def tab_selection(data):
         st.info(f"🐻 {hero_name} sélectionnée (forme d'Elneha)")
     
     # Grille héros 6 par ligne - OPTIMISÉE
-    print("🔍 DEBUG: Début boucle héros - création grille 6 colonnes")
     cols = st.columns(6)
     current_builds = st.session_state.get('custom_builds', {})
     hero_changes = []  # Batch des changements
     
     for i, hero in enumerate(heroes):
-        print(f"🔍 DEBUG: Traitement héros {i+1}/{len(heroes)} - {hero.name} ({hero.code})")
-        build = get_hero_build_info(hero.code, heroes, data['equipment'], loader, current_builds)  # CORRECTION: data['equipment']
+        build = get_hero_build_info(hero.code, loader, current_builds)
         is_selected = hero.code in st.session_state.selected_heroes
         
         with cols[i % 6]:
@@ -343,7 +327,7 @@ def tab_forge(data):
     display_hero_base_stats(selected_hero)
     
     current_builds = st.session_state.get('custom_builds', {})
-    current_build = get_hero_build_info(selected_code, heroes, equipment, data['loader'], current_builds)  # CORRECTION: passe equipment
+    current_build = get_hero_build_info(selected_code, data['loader'], current_builds)
     display_current_build_info(current_build)
     
     # Gestion builds
@@ -460,7 +444,7 @@ def tab_combat(data):
     current_builds = st.session_state.get('custom_builds', {})
     
     for code in config['hero_codes']:
-        build = get_hero_build_info(code, heroes, data['equipment'], loader, current_builds)  # CORRECTION: passe data['equipment']
+        build = get_hero_build_info(code, loader, current_builds)
         selected_heroes.append(build['hero_equipped'])
     
     selected_enemies = [e for e in enemies if e.code in config['enemy_codes']]
@@ -490,7 +474,7 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
     # Données héros
     heroes_data = []
     for code in hero_codes:
-        build = get_hero_build_info(code, data['heroes'], data['equipment'], data['loader'], current_builds)  # CORRECTION: passe data['equipment']
+        build = get_hero_build_info(code, data['loader'], current_builds)
         stats = build['stats']['total']
         heroes_data.append({
             'name': build['hero_equipped'].name,
@@ -561,7 +545,6 @@ def display_about():
 # === MAIN OPTIMISÉ ===
 def main():
     """Application principale - Version optimisée"""
-    print("🔍 DEBUG: main() démarrée")
     init_app()
     apply_fantasy_theme()
     
@@ -574,35 +557,22 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Données avec cache simple et stable
-    print("🔍 DEBUG: Chargement des données")
+    # Données avec cache intelligent
     try:
-        data = load_data()  # Cache fixe sans hash dynamique
-        print(f"🔍 DEBUG: Données chargées - {len(data['heroes'])} héros, {len(data['enemies'])} ennemis")
+        session_hash = get_session_hash()
+        data = load_data(_session_hash=session_hash)
     except Exception as e:
         st.error(f"❌ Erreur: {e}")
         st.stop()
     
     # Onglets
-    print("🔍 DEBUG: Création des onglets")
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène", "ℹ️ À Propos"])
     
-    print("🔍 DEBUG: Rendu des onglets - vérifiez quel onglet est actif")
-    with tab1: 
-        print("🔍 DEBUG: Onglet 1 (Sélection) activé")
-        tab_selection(data)
-    with tab2: 
-        print("🔍 DEBUG: Onglet 2 (Forge) activé")
-        tab_forge(data)
-    with tab3: 
-        print("🔍 DEBUG: Onglet 3 (Chroniques) activé")
-        tab_combat(data)
-    with tab4: 
-        print("🔍 DEBUG: Onglet 4 (Arène) activé")
-        ui.components.sandbox_interface.main_sandbox_tab()
-    with tab5: 
-        print("🔍 DEBUG: Onglet 5 (À Propos) activé")
-        display_about()
+    with tab1: tab_selection(data)
+    with tab2: tab_forge(data)
+    with tab3: tab_combat(data)
+    with tab4: ui.components.sandbox_interface.main_sandbox_tab()
+    with tab5: display_about()
 
 if __name__ == "__main__":
     main()

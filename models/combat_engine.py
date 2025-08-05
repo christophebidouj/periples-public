@@ -1,13 +1,18 @@
 """
 Moteur de combat simplifié pour Périples
-Version nettoyée avec système de capacités et potions
-CORRECTION : IA Atucan ne gaspille plus les soins
+Version nettoyée avec système de capacités et potions - ANTI-CRASH
 """
 
 import random
 import time
 import streamlit as st
 from typing import List, Dict, Any
+
+def safe_randint(min_val: int, max_val: int) -> int:
+    """Version sécurisée de randint qui évite les crashes"""
+    if min_val >= max_val:
+        return min_val
+    return random.randint(min_val, max_val)
 
 class CombatEngine:
     """Moteur de combat avec capacités et potions"""
@@ -66,7 +71,7 @@ class CombatEngine:
                 self._setup_abilities(hero, log)
     
     def _setup_abilities(self, hero, log: List[str]):
-        """Configure capacités : custom OU aléatoire"""
+        """Configure capacités : custom OU aléatoire - VERSION ANTI-CRASH"""
         if not hasattr(hero, 'abilities') or not hero.abilities:
             return
         
@@ -89,7 +94,7 @@ class CombatEngine:
                 log.append(f"🎯 {hero.name} (Custom): {', '.join(unlocked)}")
             return
         
-        # === GÉNÉRATION ALÉATOIRE ===
+        # === GÉNÉRATION ALÉATOIRE SÉCURISÉE ===
         # Exclusions Kraor (P-4)
         if hero.code == "P-4":
             allowed = [2, 4, 5, 6]  # Pas de 1 et 3 en combat
@@ -100,11 +105,25 @@ class CombatEngine:
         if not available:
             return
         
-        # Débloque 2-3 capacités
-        count = random.randint(2, min(3, len(available)))
-        selected = random.sample(available, count)
-        unlocked = []
+        # CORRECTION ANTI-CRASH : Gestion des cas limites
+        max_possible = len(available)
+        if max_possible <= 1:
+            # Un seul disponible ou aucun
+            count = max_possible
+        elif max_possible == 2:
+            # Exactement 2 disponibles → prendre les 2
+            count = 2
+        else:
+            # 3+ disponibles → 2 ou 3 au hasard
+            count = safe_randint(2, min(3, max_possible))
         
+        # Sélection sécurisée
+        if count >= max_possible:
+            selected = available  # Prend tout
+        else:
+            selected = random.sample(available, count)
+        
+        unlocked = []
         for num in selected:
             if hero.unlock_ability(num):
                 ability = next((a for a in hero.abilities if a.ability_number == num), None)
@@ -138,11 +157,11 @@ class CombatEngine:
             if hasattr(hero, 'reset_turn_state'):
                 hero.reset_turn_state()
             
-            # Potion d'abord si nécessaire
+            # NOUVEAU - Potion d'abord si nécessaire
             self._try_health_potion(hero, log)
             
             # Capacité puis attaque
-            ability_used = self._try_ability(hero, alive_enemies, heroes, log)
+            ability_used = self._try_ability(hero, alive_enemies, log)
             
             # Attaque si autorisée
             can_attack = not hasattr(hero, 'can_attack_this_turn') or hero.can_attack_this_turn
@@ -152,7 +171,7 @@ class CombatEngine:
                 log.append(f"  {hero.name} ne peut pas attaquer (capacité magique)")
     
     def _try_health_potion(self, hero, log: List[str]):
-        """IA utilise potions intelligemment"""
+        """NOUVEAU - IA utilise potions intelligemment"""
         if not hasattr(hero, 'use_health_potion'):
             return
         
@@ -166,16 +185,8 @@ class CombatEngine:
                 if result['success']:
                     log.append(f"🧪 {hero.name} boit une potion : {result['message']}")
     
-    def _try_ability(self, hero, enemies: List, all_heroes: List, log: List[str]) -> bool:
-        """
-        IA capacités intelligente - CORRECTION ATUCAN
-        
-        Args:
-            hero: Héros actuel
-            enemies: Ennemis vivants
-            all_heroes: NOUVEAU - Tous les héros pour vérifier blessures
-            log: Journal de combat
-        """
+    def _try_ability(self, hero, enemies: List, log: List[str]) -> bool:
+        """IA capacités intelligente"""
         if not hasattr(hero, 'get_available_abilities'):
             return False
         
@@ -183,22 +194,11 @@ class CombatEngine:
         if not available:
             return False
         
-        # === CORRECTION ATUCAN - Vérification équipe blessée ===
-        team_needs_healing = self._team_needs_healing(all_heroes)
-        hero_health_percent = (hero.current_health / hero.get_total_health()) * 100
-        
-        # 1. Soin INTELLIGENT - Seulement si quelqu'un est blessé
-        if hero_health_percent < 50 or team_needs_healing:
+        # 1. Soin si PV < 50%
+        health_percent = (hero.current_health / hero.get_total_health()) * 100
+        if health_percent < 50:
             heal_abilities = [a for a in available if 'soin' in a.name.lower()]
-            
-            # LOGIQUE SPÉCIALE ATUCAN
-            if hero.code == "P-3" and heal_abilities:  # Atucan
-                best_heal = self._choose_best_heal_for_atucan(hero, all_heroes, heal_abilities)
-                if best_heal:
-                    return self._use_ability(hero, best_heal, log, target_context="équipe")
-            
-            # Autres héros soigneurs
-            elif heal_abilities:
+            if heal_abilities:
                 return self._use_ability(hero, heal_abilities[0], log)
         
         # 2. Zone si 3+ ennemis
@@ -218,91 +218,13 @@ class CombatEngine:
         
         return False
     
-    def _team_needs_healing(self, heroes: List) -> bool:
-        """
-        NOUVEAU - Vérifie si l'équipe a besoin de soins
-        
-        Args:
-            heroes: Liste de tous les héros
-            
-        Returns:
-            bool: True si au moins un héros est blessé (< 90% PV)
-        """
-        for hero in heroes:
-            if not hero.is_alive():
-                continue
-            
-            health_percent = (hero.current_health / hero.get_total_health()) * 100
-            if health_percent < 90:  # Seuil "blessé"
-                return True
-        
-        return False
-    
-    def _choose_best_heal_for_atucan(self, atucan, all_heroes: List, heal_abilities: List):
-        """
-        NOUVEAU - Logique spéciale Atucan pour choisir le meilleur soin
-        
-        Args:
-            atucan: Héros Atucan
-            all_heroes: Tous les héros
-            heal_abilities: Capacités de soin disponibles
-            
-        Returns:
-            Ability ou None: Meilleure capacité de soin selon la situation
-        """
-        atucan_health = (atucan.current_health / atucan.get_total_health()) * 100
-        
-        # Compter héros blessés
-        wounded_heroes = []
-        for hero in all_heroes:
-            if hero.is_alive():
-                health_percent = (hero.current_health / hero.get_total_health()) * 100
-                if health_percent < 90:
-                    wounded_heroes.append((hero, health_percent))
-        
-        if not wounded_heroes:
-            return None  # CORRECTION : Pas de soin si personne blessé
-        
-        # Logique de choix intelligent
-        wounded_count = len(wounded_heroes)
-        most_wounded_percent = min(hp for _, hp in wounded_heroes)
-        
-        for ability in heal_abilities:
-            ability_name = ability.name.lower()
-            
-            # Soin Proportionnel - Pour blessures moyennes/graves
-            if "proportionnel" in ability_name:
-                if most_wounded_percent < 60:  # Quelqu'un gravement blessé
-                    return ability
-            
-            # Soin de Groupe - Si plusieurs blessés
-            elif "groupe" in ability_name:
-                if wounded_count >= 2:
-                    return ability
-            
-            # Soin Majeur - Pour blessures importantes
-            elif "majeur" in ability_name:
-                if most_wounded_percent < 40:
-                    return ability
-            
-            # Guérison Complète - Urgence absolue
-            elif "complète" in ability_name or "miracle" in ability_name:
-                if most_wounded_percent < 25:
-                    return ability
-        
-        # Fallback : première capacité de soin si situation appropriée
-        return heal_abilities[0] if wounded_heroes else None
-    
-    def _use_ability(self, hero, ability, log: List[str], target_context: str = None) -> bool:
+    def _use_ability(self, hero, ability, log: List[str]) -> bool:
         """Utilise une capacité"""
         action = hero.use_ability(ability)
         if not action.success:
             return False
         
-        # Log avec contexte si fourni
-        context_text = f" sur {target_context}" if target_context else ""
-        log.append(f"🔮 {hero.name} utilise {ability.name}{context_text}")
-        
+        log.append(f"🔮 {hero.name} utilise {ability.name}")
         if action.spell_cost_paid > 0:
             log.append(f"  Coût: {action.spell_cost_paid} sorts")
         
@@ -323,6 +245,9 @@ class CombatEngine:
     
     def _hero_attack(self, hero, enemies: List, player_count: int, log: List[str]):
         """Attaque normale héros"""
+        if not enemies:
+            return
+            
         target = enemies[0]
         
         attack_roll = random.randint(1, 20)
@@ -361,7 +286,12 @@ class CombatEngine:
             if not alive_heroes:
                 break
             
-            target = random.choice(alive_heroes)
+            # Sélection cible sécurisée
+            if len(alive_heroes) == 1:
+                target = alive_heroes[0]
+            else:
+                target = random.choice(alive_heroes)
+            
             enemy_stats = enemy.get_stats_for_players(player_count)
             damage = enemy_stats['damage']
             
