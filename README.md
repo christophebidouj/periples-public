@@ -22,13 +22,14 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 - Interface avec images et statistiques détaillées
 - Recherche d'ennemis par nom ou numéro
 - Récapitulatif de formation avant combat
+- Grille héros 6 par ligne pour navigation optimale
 
 ### Forge des Équipements
 - 52 équipements répartis en 3 catégories (Armes, Armures, Accessoires)
 - Système de capacités : 48 capacités (6 par héros)
 - Système de potions : Petites (4 PV) et Grandes (PV max)
 - Création de builds personnalisés combinant équipements, capacités et potions
-- Interface avec grilles organisées pour la sélection
+- Interface avec expanders natifs Streamlit pour meilleure compatibilité
 - Aperçu en temps réel des statistiques et coûts
 - Sauvegarde des configurations personnalisées
 
@@ -98,7 +99,7 @@ Le Mode Sandbox permet un contrôle manuel complet des combats pour les tests d'
 - **Messages d'aide** : Conseils stratégiques selon le personnage actif
 - **Progression visuelle** : Étapes complétées/actives/à venir clairement identifiées
 
-#### Interface de Combat
+#### Interface de Combat Proche du Prototype
 
 ##### Panneau Personnage
 - **En-tête coloré** : Nom du personnage avec indicateur de faction
@@ -108,7 +109,7 @@ Le Mode Sandbox permet un contrôle manuel complet des combats pour les tests d'
 
 ##### Capacités Spéciales
 - **Grille 3x2** : 6 emplacements pour les capacités du héros
-- **Cartes cliquables** : Zones entières cliquables (pas de boutons internes)
+- **Cartes cliquables** : Zones entières cliquables (style prototype)
 - **Badges d'état** : Disponible (✅) / Indisponible (❌) avec compteurs
 - **Types visuels** : Magique (🔮) / Physique (⚔️) avec couleurs distinctes
 - **Informations détaillées** : Coût, description, conditions d'utilisation
@@ -120,10 +121,10 @@ Le Mode Sandbox permet un contrôle manuel complet des combats pour les tests d'
 - **États différenciés** : Actif/Inactif/Placeholder selon le type
 
 #### Actions de Base
-- **Boutons standards limités** : Seulement pour actions principales
+- **Boutons colorés exempts du style bordeaux** : Couleurs spécifiques (rouge, bleu, violet)
 - **Actions disponibles** : Attaquer, Capacité, Passer le tour
 - **Feedback immédiat** : Messages de confirmation des actions
-- **Interface épurée** : Minimal de boutons standards selon le prototype
+- **Interface épurée** : Style proche du prototype gaming
 
 ### Fonctionnalités Avancées
 
@@ -265,7 +266,7 @@ périples-balance-workshop/
 │       ├── equipment_components.py
 │       ├── forge_abilities_components.py
 │       ├── combat_components.py
-│       └── sandbox_interface.py    # Mode Sandbox (nouveau)
+│       └── sandbox_interface.py    # Mode Sandbox
 ├── utils/
 │   ├── data_loader.py             # Chargement des données
 │   ├── abilities_loader.py        # Import des capacités
@@ -300,16 +301,16 @@ streamlit run app.py
 ### Utilisation
 
 #### Sélection des Équipes
-1. Choisir 2+ héros dans la grille
+1. Choisir 2+ héros dans la grille (6 par ligne)
 2. Sélectionner les ennemis
 3. Valider la formation
 4. Configurer les règles de combat
 
 #### Forge des Équipements
 1. Sélectionner un héros
-2. Choisir les équipements par catégorie
+2. Choisir les équipements par catégorie (expanders natifs)
 3. Sélectionner les capacités (1 à 6)
-4. Configurer les potions
+4. Configurer les potions (petites et grandes)
 5. Sauvegarder le build personnalisé
 
 #### Combat Automatique
@@ -323,6 +324,7 @@ streamlit run app.py
 3. Générer l'initiative
 4. Contrôler manuellement chaque personnage à son tour
 5. Utiliser l'historique pour tester différentes approches
+6. Interface proche du prototype avec zones cliquables
 
 ## Équilibrage
 
@@ -341,6 +343,21 @@ streamlit run app.py
 5. Utiliser le Mode Sandbox pour tests précis
 6. Itérer jusqu'à obtenir un équilibrage satisfaisant
 
+## Interface et Design
+
+### Thème Visual
+- **Couleur principale** : Bordeaux royal pour cohérence
+- **Boutons sandbox** : Couleurs spécifiques exemptées du thème global
+- **Interface native** : Maximise l'utilisation des composants Streamlit natifs
+- **Responsive** : Adaptation automatique à différentes tailles d'écran
+
+### Amélirations Récentes
+- **Titre unifié** : Suppression des doublons et harmonisation
+- **Expanders natifs** : Remplacement des interfaces problématiques
+- **Grille optimisée** : Héros affichés par 6 pour meilleure navigation
+- **Clés uniques** : Élimination des conflits Streamlit
+- **Interface sandbox** : Style proche du prototype gaming
+
 ## Équipe et Contribution
 
 - **Game Design** : Bastien LIAUTY (Créateur Périples)
@@ -348,8 +365,9 @@ streamlit run app.py
 
 ### Spécifications Techniques
 - **Langage** : Python 3.10+
-- **Interface** : Streamlit
+- **Interface** : Streamlit natif optimisé
 - **Architecture** : Modulaire et extensible
+- **Style** : Code simple et accessible aux débutants
 
 ## Licence
 
