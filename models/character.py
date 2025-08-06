@@ -1,7 +1,8 @@
 """
 Modèles de personnages pour le Simulateur Périples
-VERSION SIMPLIFIÉE avec système de potions de santé 🩸❤️‍🩹
-NOUVEAU : Support potions dans builds custom
+VERSION CORRIGÉE avec système de jetons parade rechargeable
+🛡️ Parade = jetons rechargeable à chaque tour (héros ET ennemis)
+🩸 Potions de santé dans builds custom
 """
 
 from pydantic import BaseModel, Field
@@ -48,7 +49,7 @@ class HealthPotion(BaseModel):
         return False
 
 class Character(BaseModel):
-    """Héros avec capacités et potions"""
+    """Héros avec système de jetons parade rechargeable"""
     
     # Stats de base
     code: str
@@ -66,6 +67,10 @@ class Character(BaseModel):
     # Combat
     current_spells: Optional[int] = None
     spells_used: int = 0
+    
+    # NOUVEAU - Système de jetons parade
+    max_parade_tokens: int = 0
+    current_parade_tokens: int = 0
     
     # Capacités
     abilities: List[Ability] = Field(default_factory=list)
@@ -90,48 +95,115 @@ class Character(BaseModel):
         
         if not self.health_potions:
             self.add_default_potions()
+        
+        # Initialiser parade selon équipements
+        self._update_parade_from_equipment()
     
-    # === POTIONS - SECTION ÉTENDUE POUR BUILDS CUSTOM ===
+    # === SYSTÈME JETONS PARADE ===
+    
+    def _update_parade_from_equipment(self):
+        """Met à jour la parade max selon les équipements"""
+        self.max_parade_tokens = self.get_equipment_bonus('defense')
+        # Parade actuelle = max au début du combat
+        self.current_parade_tokens = self.max_parade_tokens
+    
+    def get_total_parade(self) -> int:
+        """NOUVEAU - Retourne les jetons parade actuels (pas max)"""
+        return self.current_parade_tokens
+    
+    def refresh_parade_tokens(self):
+        """NOUVEAU - Recharge tous les jetons parade (début de tour)"""
+        self.current_parade_tokens = self.max_parade_tokens
+    
+    def consume_parade_tokens(self, damage: int) -> tuple[int, int]:
+        """
+        NOUVEAU - Consomme les jetons parade contre les dégâts
+        
+        Args:
+            damage: Dégâts entrants
+            
+        Returns:
+            tuple[int, int]: (dégâts bloqués, dégâts restants)
+        """
+        if damage <= 0:
+            return 0, 0
+        
+        # Les jetons parade bloquent 1 dégât chacun
+        blocked_damage = min(damage, self.current_parade_tokens)
+        remaining_damage = damage - blocked_damage
+        
+        # Consommation des jetons
+        self.current_parade_tokens -= blocked_damage
+        
+        return blocked_damage, remaining_damage
+    
+    def apply_damage_with_parade(self, damage: int) -> Dict:
+        """
+        NOUVEAU - Applique dégâts avec système parade à jetons
+        
+        Returns:
+            Dict avec détails de l'application des dégâts
+        """
+        if damage <= 0:
+            return {
+                'total_damage': 0,
+                'blocked_by_parade': 0,
+                'health_damage': 0,
+                'parade_tokens_used': 0,
+                'parade_tokens_remaining': self.current_parade_tokens
+            }
+        
+        blocked, remaining = self.consume_parade_tokens(damage)
+        
+        # Dégâts aux PV
+        old_health = self.current_health
+        self.current_health = max(0, self.current_health - remaining)
+        actual_health_damage = old_health - self.current_health
+        
+        return {
+            'total_damage': damage,
+            'blocked_by_parade': blocked,
+            'health_damage': actual_health_damage,
+            'parade_tokens_used': blocked,
+            'parade_tokens_remaining': self.current_parade_tokens
+        }
+    
+    def get_parade_status(self) -> Dict:
+        """NOUVEAU - État actuel du système parade"""
+        return {
+            'max_tokens': self.max_parade_tokens,
+            'current_tokens': self.current_parade_tokens,
+            'has_parade': self.max_parade_tokens > 0,
+            'parade_percentage': round((self.current_parade_tokens / self.max_parade_tokens * 100), 1) if self.max_parade_tokens > 0 else 0
+        }
+    
+    # === POTIONS (INCHANGÉ) ===
     
     def add_default_potions(self):
         """Ajoute 1 Petite Potion par défaut"""
         self.health_potions = [HealthPotion(potion_type=PotionType.SMALL, quantity=1)]
     
     def set_custom_potions(self, potions_config: List[Dict]):
-        """
-        Configure potions pour build custom
-        NOUVEAU - Interface avec validation
-        
-        Args:
-            potions_config: [{'type': 'small', 'quantity': 2}, {'type': 'large', 'quantity': 1}]
-        """
+        """Configure potions pour build custom"""
         self.health_potions = []
         
         for config in potions_config:
             potion_type = PotionType.SMALL if config['type'] == 'small' else PotionType.LARGE
-            quantity = min(3, max(0, config['quantity']))  # Limite 0-3
+            quantity = min(3, max(0, config['quantity']))
             
             if quantity > 0:
                 potion = HealthPotion(potion_type=potion_type, quantity=quantity)
                 self.health_potions.append(potion)
     
     def set_potions_from_selection(self, small_count: int = 0, large_count: int = 0):
-        """
-        NOUVEAU - Configuration simple depuis interface Forge
-        
-        Args:
-            small_count: Nombre de petites potions (0-3)
-            large_count: Nombre de grandes potions (0-1)
-        """
+        """Configuration simple depuis interface Forge"""
         self.health_potions = []
         
-        # Validation et ajout Petites Potions
         small_count = min(3, max(0, small_count))
         if small_count > 0:
             small_potion = HealthPotion(potion_type=PotionType.SMALL, quantity=small_count)
             self.health_potions.append(small_potion)
         
-        # Validation et ajout Grande Potion
         large_count = min(1, max(0, large_count))
         if large_count > 0:
             large_potion = HealthPotion(potion_type=PotionType.LARGE, quantity=large_count)
@@ -224,9 +296,7 @@ class Character(BaseModel):
         return None
     
     def get_potions_summary(self) -> Dict:
-        """
-        NOUVEAU - Résumé potions pour affichage interface
-        """
+        """Résumé potions pour affichage interface"""
         small_total = sum(p.quantity for p in self.health_potions if p.potion_type == PotionType.SMALL)
         large_total = sum(p.quantity for p in self.health_potions if p.potion_type == PotionType.LARGE)
         total = small_total + large_total
@@ -247,9 +317,7 @@ class Character(BaseModel):
         }
     
     def get_potions_for_forge_display(self) -> Dict:
-        """
-        NOUVEAU - Format spécial pour interface Forge
-        """
+        """Format spécial pour interface Forge"""
         summary = self.get_potions_summary()
         
         return {
@@ -259,12 +327,13 @@ class Character(BaseModel):
             'preview_text': f"🧪 Potions: {summary['display_text']}" if summary['has_potions'] else "🧪 Aucune potion sélectionnée"
         }
     
-    # === SANTÉ (INCHANGÉ) ===
+    # === SANTÉ ===
     
     def is_alive(self) -> bool:
         return self.current_health > 0
     
     def take_damage(self, damage: int):
+        """OBSOLÈTE - Utiliser apply_damage_with_parade() à la place"""
         self.current_health = max(0, self.current_health - damage)
     
     def heal(self, heal_amount: int) -> int:
@@ -284,13 +353,15 @@ class Character(BaseModel):
     def reset_health(self):
         self.current_health = self.get_total_health()
     
-    # === ÉQUIPEMENTS (INCHANGÉ) ===
+    # === ÉQUIPEMENTS ===
     
     def equip_items(self, items: List['Equipment'], build_name: str = None):
         self.equipped_items = items
         self.build_name = build_name
         if self.current_health == self.health:
             self.reset_health()
+        # NOUVEAU - Mise à jour parade
+        self._update_parade_from_equipment()
     
     def get_equipment_bonus(self, stat_type: str) -> int:
         total = 0
@@ -317,9 +388,6 @@ class Character(BaseModel):
     
     def get_total_magical_damage(self) -> int:
         return self.get_equipment_bonus('magical_damage')
-    
-    def get_total_parade(self) -> int:
-        return self.get_equipment_bonus('defense')
     
     def get_total_spells(self) -> int:
         return self.spells + self.get_equipment_bonus('spells')
@@ -348,7 +416,7 @@ class Character(BaseModel):
                 'precision': self.get_total_precision(),
                 'damage': self.get_total_damage(),
                 'magical_damage': self.get_total_magical_damage(),
-                'parade': self.get_total_parade(),
+                'parade': self.max_parade_tokens,
                 'spells': self.get_total_spells(),
                 'health': self.get_total_health()
             }
@@ -426,7 +494,7 @@ class Character(BaseModel):
         action.success = True
         return action
     
-    # === COMBAT (INCHANGÉ) ===
+    # === COMBAT ===
     
     def reset_turn_state(self):
         """Reset état du tour"""
@@ -444,6 +512,14 @@ class Character(BaseModel):
         # Reset capacités
         for ability in self.abilities:
             ability.reset_combat_uses()
+        
+        # NOUVEAU - Reset parade
+        self.refresh_parade_tokens()
+    
+    def start_hero_turn(self):
+        """NOUVEAU - Début du tour héros (recharge parade)"""
+        self.reset_turn_state()
+        self.refresh_parade_tokens()
     
     def get_combat_status(self) -> Dict:
         """État complet pour interface"""
@@ -460,6 +536,7 @@ class Character(BaseModel):
                 'max': self.get_total_spells(),
                 'used': self.spells_used
             },
+            'parade': self.get_parade_status(),
             'potions': self.get_potions_summary(),
             'turn_state': {
                 'action_taken': self.action_taken_this_turn,
@@ -468,36 +545,119 @@ class Character(BaseModel):
             }
         }
 
-# === MODÈLES ENEMY ET EQUIPMENT (INCHANGÉS) ===
-
 class Enemy(BaseModel):
-    """Modèle ennemi - inchangé"""
+    """Modèle ennemi avec système de jetons parade rechargeable"""
     code: str
     name: str
-    defense: int
-    stats_by_players: Dict[int, Dict[str, int]]
+    defense: int  # Seuil à dépasser pour toucher
+    stats_by_players: Dict[int, Dict[str, int]]  # Contient parade + santé + dégâts
     is_magical: bool = False
     has_magical_damage: bool = False
     current_health: Optional[int] = None
     max_health: Optional[int] = None
     
+    # NOUVEAU - Système jetons parade
+    max_parade_tokens: int = 0
+    current_parade_tokens: int = 0
+    
     def get_stats_for_players(self, player_count: int) -> Dict[str, int]:
         return self.stats_by_players.get(player_count, self.stats_by_players[4])
     
     def initialize_for_combat(self, player_count: int):
+        """MODIFIÉ - Initialise santé ET parade"""
         stats = self.get_stats_for_players(player_count)
+        
+        # Santé
         self.max_health = stats['health']
         self.current_health = stats['health']
+        
+        # NOUVEAU - Parade (Defense_Xj dans le CSV)
+        # Note: Assume que 'defense' dans stats est en fait la parade
+        self.max_parade_tokens = stats.get('defense', 0)
+        self.current_parade_tokens = self.max_parade_tokens
     
     def is_alive(self) -> bool:
         return self.current_health > 0
     
     def take_damage(self, damage: int, player_count: int):
+        """OBSOLÈTE - Utiliser apply_damage_with_parade() à la place"""
         stats = self.get_stats_for_players(player_count)
         defense_value = stats.get('defense', 0)
         actual_damage = max(1, damage - defense_value)
         self.current_health = max(0, self.current_health - actual_damage)
         return actual_damage
+    
+    # === SYSTÈME JETONS PARADE ===
+    
+    def refresh_parade_tokens(self):
+        """NOUVEAU - Recharge tous les jetons parade (début de tour)"""
+        self.current_parade_tokens = self.max_parade_tokens
+    
+    def consume_parade_tokens(self, damage: int) -> tuple[int, int]:
+        """
+        NOUVEAU - Consomme les jetons parade contre les dégâts
+        
+        Args:
+            damage: Dégâts entrants
+            
+        Returns:
+            tuple[int, int]: (dégâts bloqués, dégâts restants)
+        """
+        if damage <= 0:
+            return 0, 0
+        
+        # Les jetons parade bloquent 1 dégât chacun
+        blocked_damage = min(damage, self.current_parade_tokens)
+        remaining_damage = damage - blocked_damage
+        
+        # Consommation des jetons
+        self.current_parade_tokens -= blocked_damage
+        
+        return blocked_damage, remaining_damage
+    
+    def apply_damage_with_parade(self, damage: int) -> Dict:
+        """
+        NOUVEAU - Applique dégâts avec système parade à jetons
+        
+        Returns:
+            Dict avec détails de l'application des dégâts
+        """
+        if damage <= 0:
+            return {
+                'total_damage': 0,
+                'blocked_by_parade': 0,
+                'health_damage': 0,
+                'parade_tokens_used': 0,
+                'parade_tokens_remaining': self.current_parade_tokens
+            }
+        
+        blocked, remaining = self.consume_parade_tokens(damage)
+        
+        # Dégâts aux PV
+        old_health = self.current_health
+        self.current_health = max(0, self.current_health - remaining)
+        actual_health_damage = old_health - self.current_health
+        
+        return {
+            'total_damage': damage,
+            'blocked_by_parade': blocked,
+            'health_damage': actual_health_damage,
+            'parade_tokens_used': blocked,
+            'parade_tokens_remaining': self.current_parade_tokens
+        }
+    
+    def get_parade_status(self) -> Dict:
+        """NOUVEAU - État actuel du système parade"""
+        return {
+            'max_tokens': self.max_parade_tokens,
+            'current_tokens': self.current_parade_tokens,
+            'has_parade': self.max_parade_tokens > 0,
+            'parade_percentage': round((self.current_parade_tokens / self.max_parade_tokens * 100), 1) if self.max_parade_tokens > 0 else 0
+        }
+    
+    def start_enemy_turn(self):
+        """NOUVEAU - Début du tour ennemi (recharge parade)"""
+        self.refresh_parade_tokens()
 
 class Equipment(BaseModel):
     """Modèle équipement - inchangé"""

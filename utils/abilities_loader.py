@@ -139,8 +139,8 @@ class AbilitiesLoader:
         # Colonne 3: Description
         description = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ""
         
-        # Colonne 4: Limitations (optionnel)
-        uses_per_combat, uses_per_day = self._parse_limitations(row.iloc[3] if len(row) > 3 else None)
+        # Colonne 4: Limitations (optionnel) - CONVERSION AUTOMATIQUE JOUR → COMBAT
+        uses_per_combat = self._parse_limitations(row.iloc[3] if len(row) > 3 else None)
         
         # NOM ÉLÉGANT depuis CSV ou fallback
         elegant_name = self._get_elegant_name(hero_code, ability_number, f"Capacité {ability_number}")
@@ -153,7 +153,6 @@ class AbilitiesLoader:
             spell_cost=spell_cost,
             description=description,
             uses_per_combat=uses_per_combat,
-            uses_per_day=uses_per_day,
             effects=self._create_simple_effects(description),
             target_type=self._guess_target_type(description),
             is_unlocked=(ability_number == 1)  # Première capacité débloquée
@@ -195,24 +194,34 @@ class AbilitiesLoader:
         
         return None, None
     
-    def _parse_limitations(self, limitation_text) -> tuple[Optional[int], Optional[int]]:
+    def _parse_limitations(self, limitation_text) -> Optional[int]:
         """
-        Parse "2 / combat" → (2, None)
-        FONCTION SIMPLE - Regex basique
+        Parse limitations et convertit tout en "par combat"
+        "2 / combat" → 2
+        "1 / jour" → 1 (conversion automatique)
+        
+        FONCTION SIMPLE - Regex basique avec conversion jour→combat
         """
         if not limitation_text or pd.isna(limitation_text):
-            return None, None
+            return None
         
         import re
         text = str(limitation_text).lower()
         
+        # Recherche limitations par combat
         combat_match = re.search(r'(\d+)\s*/\s*combat', text)
+        if combat_match:
+            return int(combat_match.group(1))
+        
+        # Recherche limitations par jour - CONVERSION AUTOMATIQUE
         day_match = re.search(r'(\d+)\s*/\s*jour', text)
+        if day_match:
+            # CONVERSION : 1/jour devient 1/combat pour notre système
+            uses_per_day = int(day_match.group(1))
+            print(f"🔄 Conversion {uses_per_day}/jour → {uses_per_day}/combat")
+            return uses_per_day
         
-        uses_combat = int(combat_match.group(1)) if combat_match else None
-        uses_day = int(day_match.group(1)) if day_match else None
-        
-        return uses_combat, uses_day
+        return None
     
     def _create_simple_effects(self, description: str) -> List[AbilityEffect]:
         """
@@ -301,7 +310,7 @@ class AbilitiesLoader:
                 ),
                 Ability(
                     hero_code='P-1', ability_number=2, name='Soin Naturel', spell_cost=1,
-                    description='Soigne 4 blessures d\'un personnage',
+                    description='Soigne 4 blessures d\'un personnage', uses_per_combat=2,
                     effects=[AbilityEffect(type="heal", value=4, description="Soin 4 PV")],
                     target_type=TargetType.ALLY, is_unlocked=False
                 )
@@ -309,7 +318,7 @@ class AbilitiesLoader:
             'P-3': [  # Atucan
                 Ability(
                     hero_code='P-3', ability_number=1, name='Soin Proportionnel', spell_cost=1,
-                    description='Soigne la moitié des PV max du personnage',
+                    description='Soigne la moitié des PV max du personnage', uses_per_combat=1,
                     effects=[AbilityEffect(type="heal", description="Soin proportionnel")],
                     target_type=TargetType.ALLY, is_unlocked=True
                 )
@@ -365,6 +374,8 @@ def test_loader():
             print(f"\n🧙‍♂️ {hero_code}:")
             for ability in hero_abilities[:3]:  # 3 premières capacités
                 print(f"  • {ability.name} (coût: {ability.spell_cost})")
+                if ability.uses_per_combat:
+                    print(f"    Limite: {ability.uses_per_combat}/combat")
         
         return True
     
