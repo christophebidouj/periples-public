@@ -228,9 +228,28 @@ def tab_selection(data):
     
     # Application batch des changements héros
     if hero_changes:
+        # Détecter si c'est le premier héros sélectionné
+        was_empty = len(st.session_state.selected_heroes) == 0
+        
         for hero_code in hero_changes:
             toggle_hero_selection(hero_code)
+        
+        # Flag pour correction scroll après rerun
+        if was_empty and len(st.session_state.selected_heroes) == 1:
+            st.session_state['fix_scroll'] = True
+        
         st.rerun()
+    
+    # Correction du scroll après rerun du premier héros
+    if st.session_state.get('fix_scroll', False):
+        st.session_state['fix_scroll'] = False
+        st.components.v1.html("""
+        <script>
+        setTimeout(() => {
+            window.parent.document.querySelector('.main').scrollTo({top: 0, behavior: 'smooth'});
+        }, 300);
+        </script>
+        """, height=0)
     
     # === ENNEMIS ===
     st.subheader("👹 Ennemis")
