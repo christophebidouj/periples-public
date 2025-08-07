@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Périples Balance Workshop - Version Corrigée
+Périples Balance Workshop - Version avec Builds Prédéfinis
 🎲 Jeu : Périples © Bastien LIAUTY
 💻 Code : Christophe Bidouj (assistance Claude AI)
 """
@@ -20,6 +20,7 @@ import ui.components.sandbox_interface
 # Import UI
 from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waiting_combat_style
 from ui.components import *
+from ui.components.hero_components import preload_hero_builds_for_all_difficulties
 
 # Import capacités et potions
 try:
@@ -55,6 +56,94 @@ def get_standard_equipment_codes(hero_code: str) -> List[str]:
         'P-12': ['E-1', 'E-7', 'E-13']   # Loup S.
     }
     return standard_equipment.get(hero_code, [])
+
+def get_difficulty_level_name(hero_code: str) -> str:
+    """Récupère le niveau de difficulté sélectionné pour un héros"""
+    hero_difficulties = st.session_state.get('hero_difficulties', {})
+    difficulty_full = hero_difficulties.get(hero_code, "🔵 Normal")
+    
+    # Extraction du nom sans emoji
+    if "Facile" in difficulty_full:
+        return "Facile"
+    elif "Difficile" in difficulty_full:
+        return "Difficile"
+    else:
+        return "Normal"
+
+def apply_difficulty_to_equipment(equipment_codes: List[str], difficulty: str, equipment_list: List) -> List[str]:
+    """
+    Applique la modification de difficulté aux équipements
+    
+    Args:
+        equipment_codes: Codes équipements de base
+        difficulty: Niveau de difficulté ("Facile", "Normal", "Difficile")
+        equipment_list: Liste complète des équipements
+        
+    Returns:
+        List[str]: Codes équipements modifiés selon la difficulté
+    """
+    if difficulty == "Normal":
+        return equipment_codes
+    
+    # Création mapping par catégorie
+    weapons = [eq for eq in equipment_list if eq.type.lower() == 'arme']
+    armor = [eq for eq in equipment_list if eq.type.lower() == 'armure']
+    accessories = [eq for eq in equipment_list if eq.type.lower() not in ['arme', 'armure']]
+    
+    # Tri par puissance (somme des stats)
+    def get_equipment_power(eq):
+        return eq.precision + eq.physical_damage + eq.magical_damage + eq.defense + eq.spells + eq.health
+    
+    weapons.sort(key=get_equipment_power)
+    armor.sort(key=get_equipment_power)
+    accessories.sort(key=get_equipment_power)
+    
+    modified_codes = []
+    
+    for code in equipment_codes:
+        # Trouve l'équipement actuel
+        current_eq = next((eq for eq in equipment_list if eq.code == code), None)
+        if not current_eq:
+            modified_codes.append(code)
+            continue
+        
+        # Détermine la catégorie
+        if current_eq.type.lower() == 'arme':
+            category_list = weapons
+        elif current_eq.type.lower() == 'armure':
+            category_list = armor
+        else:
+            category_list = accessories
+        
+        # Trouve la position actuelle
+        try:
+            current_index = next(i for i, eq in enumerate(category_list) if eq.code == code)
+        except StopIteration:
+            modified_codes.append(code)
+            continue
+        
+        # Calcule le nouvel index selon la difficulté
+        if difficulty == "Facile":
+            # Améliore (+2 positions vers les plus puissants)
+            new_index = min(len(category_list) - 1, current_index + 2)
+        elif difficulty == "Difficile":
+            # Dégrade (-1 position vers les moins puissants)
+            new_index = max(0, current_index - 1)
+        else:
+            new_index = current_index
+        
+        modified_codes.append(category_list[new_index].code)
+    
+    return modified_codes
+
+def get_difficulty_build_name(base_name: str, difficulty: str) -> str:
+    """Génère le nom du build selon la difficulté"""
+    difficulty_prefixes = {
+        "Facile": "🟢 Build Facile",
+        "Normal": "🔵 Build Standard", 
+        "Difficile": "🔴 Build Difficile"
+    }
+    return difficulty_prefixes.get(difficulty, base_name)
 
 def safe_session_update(key: str, value):
     """Mise à jour sécurisée session state"""
@@ -105,6 +194,7 @@ def init_app():
         'selected_heroes': [], 
         'selected_enemies': [], 
         'custom_builds': {},
+        'hero_difficulties': {},  # NOUVEAU - Niveaux de difficulté
         'ui_state': {'needs_rerun': False}
     }
     
@@ -132,27 +222,21 @@ def load_data():
         'loader': loader
     }
 
+@st.cache_data
+def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
+    """Cache les builds pré-calculés pour éviter de les recalculer à chaque interaction"""
+    return preload_hero_builds_for_all_difficulties(_heroes_list, _equipment_list, _loader)
+
 def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
-    """Retourne infos complètes du build héros"""
+    """Version restaurée et simplifiée pour builds custom uniquement"""
     hero = next(h for h in heroes_list if h.code == hero_code)
     current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
     
-    # Build custom ou standard
-    if hero_code in current_custom_builds:
-        custom = current_custom_builds[hero_code]
-        equipment = [eq for eq in equipment_list if eq.code in custom.get('equipment', [])]
-        build_name = custom.get('name', 'Build Custom')
-        is_custom = True
-        custom_abilities = custom.get('abilities', [])
-        abilities_custom = custom.get('abilities_custom', False)
-    else:
-        # Build standard
-        standard_equipment_codes = get_standard_equipment_codes(hero_code)
-        equipment = [eq for eq in equipment_list if eq.code in standard_equipment_codes]
-        build_name = "Build Standard"
-        is_custom = False
-        custom_abilities = []
-        abilities_custom = False
+    custom = current_custom_builds[hero_code]  # Assume que le héros a un build custom
+    equipment = [eq for eq in equipment_list if eq.code in custom.get('equipment', [])]
+    build_name = custom.get('name', 'Build Custom')
+    custom_abilities = custom.get('abilities', [])
+    abilities_custom = custom.get('abilities_custom', False)
     
     # Héros équipé
     hero_equipped = hero.model_copy()
@@ -177,17 +261,89 @@ def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List,
         'hero_equipped': hero_equipped,
         'equipment': equipment,
         'build_name': build_name,
-        'is_custom': is_custom,
+        'is_custom': True,
         'stats': hero_equipped.get_stats_summary(),
         'abilities_info': {
             'has_custom_abilities': bool(custom_abilities and abilities_custom)
         }
     }
 
+def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
+    """
+    Calcule les stats finales d'un héros selon la logique : Custom > Builds fixes selon difficulté
+    Version utilisée pour les autres onglets (Forge, Combat, etc.)
+    """
+    current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
+    
+    if hero_code in current_custom_builds:
+        # BUILD CUSTOM - Utiliser get_hero_build_info complet
+        return get_hero_build_info(hero_code, heroes_list, equipment_list, loader, current_custom_builds)
+    else:
+        # BUILDS FIXES - Utiliser les données fixes selon difficulté
+        from hero_builds_data import get_hero_stats_by_difficulty, get_build_name_by_difficulty
+        
+        difficulty = st.session_state.get('hero_difficulties', {}).get(hero_code, "🔵 Normal")
+        stats = get_hero_stats_by_difficulty(hero_code, difficulty)
+        build_name = get_build_name_by_difficulty(difficulty)
+        
+        # Récupération info de base du héros
+        hero = next(h for h in heroes_list if h.code == hero_code)
+        
+        # Format compatible avec display_hero_card
+        return {
+            'hero_equipped': hero,
+            'equipment': [],  # Pas d'équipements pour builds fixes
+            'build_name': build_name,
+            'is_custom': False,
+            'stats': {
+                'total': stats  # Stats directes du fichier
+            },
+            'difficulty_level': difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
+        }
+
+def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data, player_count: int):
+    """Prépare données pour récapitulatif - Version simplifiée"""
+    current_builds = st.session_state.get('custom_builds', {})
+    
+    # Données héros avec logique unifiée
+    heroes_data = []
+    for code in hero_codes:
+        build_info = get_hero_final_stats(code, data['heroes'], data['equipment'], data['loader'], current_builds)
+        stats = build_info['stats']['total']
+        
+        heroes_data.append({
+            'name': build_info['hero_equipped'].name,
+            'icon': get_hero_icon(build_info['hero_equipped'].name),
+            'build': build_info['build_name'],
+            'is_custom': build_info['is_custom'],
+            'difficulty_level': build_info.get('difficulty_level', 'Normal'),
+            'precision': stats['precision'],
+            'damage': stats['damage'],
+            'health': stats['health'],
+            'parade': stats['parade'],
+            'spells': stats['spells']
+        })
+    
+    # Données ennemis (inchangées)
+    enemies_data = []
+    for code in enemy_codes:
+        enemy = next(e for e in data['enemies'] if e.code == code)
+        stats = enemy.get_stats_for_players(player_count)
+        enemies_data.append({
+            'name': enemy.name,
+            'number': enemy.code.split('-')[-1],
+            'is_magical': enemy.is_magical,
+            'health': stats['health'],
+            'damage': stats['damage'],
+            'defense': enemy.defense
+        })
+    
+    return heroes_data, enemies_data
+
 # === ONGLETS ===
 
 def tab_selection(data):
-    """Onglet sélection des équipes"""
+    """Onglet sélection des équipes avec système de builds prédéfinis"""
     st.header("🏰 Sélection des Équipes")
     
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
@@ -198,11 +354,15 @@ def tab_selection(data):
     if display_progress_indicators_with_reset(nb_heroes, nb_enemies):
         safe_session_update('selected_heroes', [])
         safe_session_update('selected_enemies', [])
+        safe_session_update('hero_difficulties', {})  # NOUVEAU - Reset niveaux
         st.success("✅ Sélections effacées !")
         st.rerun()
     
     # === HÉROS ===
     st.subheader("🛡️ Héros Disponibles")
+    
+    # Info système builds prédéfinis
+    st.info("🎯 **Nouveau :** Chaque héros peut être configuré en 3 niveaux de difficulté avec équipements adaptés !")
     
     # Info Elneha
     elneha_forms = ['P-1', 'P-9', 'P-10', 'P-11', 'P-12']
@@ -211,45 +371,27 @@ def tab_selection(data):
         hero_name = next(h.name for h in heroes if h.code == selected_elneha[0])
         st.info(f"🐻 {hero_name} sélectionnée (forme d'Elneha)")
     
-    # Grille héros 6 par ligne
+    # PRÉ-CALCUL DES BUILDS (mise en cache)
+    preloaded_builds = get_preloaded_builds(heroes, data['equipment'], loader)
+    
+    # Grille héros 6 par ligne - Version avec builds pré-calculés
     cols = st.columns(6)
     current_builds = st.session_state.get('custom_builds', {})
     hero_changes = []
     
     for i, hero in enumerate(heroes):
-        build = get_hero_build_info(hero.code, heroes, data['equipment'], loader, current_builds)
         is_selected = hero.code in st.session_state.selected_heroes
         
         with cols[i % 6]:
-            button_key = f"hero_select_{hero.code}_{i}"
-            
-            if display_hero_card(hero, build, is_selected, ENABLE_IMAGES):
+            # NOUVEAU - Utilisation de display_hero_card avec builds pré-calculés
+            if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
                 hero_changes.append(hero.code)
     
-    # Application batch des changements héros
+    # Application des changements héros uniquement
     if hero_changes:
-        # Détecter si c'est le premier héros sélectionné
-        was_empty = len(st.session_state.selected_heroes) == 0
-        
         for hero_code in hero_changes:
             toggle_hero_selection(hero_code)
-        
-        # Flag pour correction scroll après rerun
-        if was_empty and len(st.session_state.selected_heroes) == 1:
-            st.session_state['fix_scroll'] = True
-        
         st.rerun()
-    
-    # Correction du scroll après rerun du premier héros
-    if st.session_state.get('fix_scroll', False):
-        st.session_state['fix_scroll'] = False
-        st.components.v1.html("""
-        <script>
-        setTimeout(() => {
-            window.parent.document.querySelector('.main').scrollTo({top: 0, behavior: 'smooth'});
-        }, 300);
-        </script>
-        """, height=0)
     
     # === ENNEMIS ===
     st.subheader("👹 Ennemis")
@@ -317,7 +459,7 @@ def tab_selection(data):
             'initiative': st.checkbox("🎲 Initiative", value=True)
         }
     with col2:
-        st.info("⚔️ Combat avec journal détaillé")
+        st.info("⚔️ Combat avec builds prédéfinis selon niveaux sélectionnés")
     
     # Bouton combat
     ready = nb_heroes >= 2 and nb_enemies > 0
@@ -356,7 +498,7 @@ def tab_forge(data):
     display_hero_base_stats(selected_hero)
     
     current_builds = st.session_state.get('custom_builds', {})
-    current_build = get_hero_build_info(selected_code, heroes, equipment, data['loader'], current_builds)
+    current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
     display_current_build_info(current_build)
     
     # Gestion builds
@@ -475,7 +617,7 @@ def tab_forge(data):
             st.rerun()
 
 def tab_combat(data):
-    """Onglet combat"""
+    """Onglet combat avec builds prédéfinis"""
     st.header("📜 Chroniques du Combat")
     
     if not st.session_state.get('run_simulation', False):
@@ -486,12 +628,12 @@ def tab_combat(data):
     config = st.session_state['simulation_config']
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     
-    # Équipes avec builds custom
+    # Équipes avec builds selon niveaux de difficulté
     selected_heroes = []
     current_builds = st.session_state.get('custom_builds', {})
     
     for code in config['hero_codes']:
-        build = get_hero_build_info(code, heroes, data['equipment'], loader, current_builds)
+        build = get_hero_final_stats(code, heroes, data['equipment'], loader, current_builds)
         selected_heroes.append(build['hero_equipped'])
     
     selected_enemies = [e for e in enemies if e.code in config['enemy_codes']]
@@ -513,43 +655,6 @@ def tab_combat(data):
     
     # Reset
     safe_session_update('run_simulation', False)
-
-def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data, player_count: int):
-    """Prépare données pour récapitulatif"""
-    current_builds = st.session_state.get('custom_builds', {})
-    
-    # Données héros
-    heroes_data = []
-    for code in hero_codes:
-        build = get_hero_build_info(code, data['heroes'], data['equipment'], data['loader'], current_builds)
-        stats = build['stats']['total']
-        heroes_data.append({
-            'name': build['hero_equipped'].name,
-            'icon': get_hero_icon(build['hero_equipped'].name),
-            'build': build['build_name'],
-            'is_custom': build['is_custom'],
-            'precision': stats['precision'],
-            'damage': stats['damage'],
-            'health': stats['health'],
-            'parade': stats['parade'],
-            'spells': stats['spells']
-        })
-    
-    # Données ennemis
-    enemies_data = []
-    for code in enemy_codes:
-        enemy = next(e for e in data['enemies'] if e.code == code)
-        stats = enemy.get_stats_for_players(player_count)
-        enemies_data.append({
-            'name': enemy.name,
-            'number': enemy.code.split('-')[-1],
-            'is_magical': enemy.is_magical,
-            'health': stats['health'],
-            'damage': stats['damage'],
-            'defense': enemy.defense
-        })
-    
-    return heroes_data, enemies_data
 
 def display_about():
     """Section À Propos - Version native"""
@@ -592,7 +697,7 @@ def display_about():
         - Simulation de combats automatisés
         - Forge d'équipements personnalisés
         - Système de capacités et potions
-        - Mode sandbox pour tests manuels
+        - **NOUVEAU** : 3 builds prédéfinis par héros
         """)
 
     # Objectifs et usage
@@ -602,6 +707,7 @@ def display_about():
     - **Combats** : Validation des règles et équilibrage selon le nombre de joueurs
     - **Équipements** : Test des builds personnalisés et impact sur les statistiques  
     - **Capacités** : Simulation des 48 capacités spéciales des héros
+    - **Builds Prédéfinis** : 3 niveaux de difficulté (Facile/Normal/Difficile) avec équipements adaptés
     - **Métriques** : Analyse du taux de survie, durée de combat et utilisation des ressources
     """)
 
