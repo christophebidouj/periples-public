@@ -1,6 +1,6 @@
 """
 Composants capacités + potions pour l'onglet Forge
-VERSION CONCISE - Code simple et accessible débutants Python
+VERSION SÉQUENTIELLE - Slider 0-6 pour capacités selon abilities_level
 """
 
 import streamlit as st
@@ -69,24 +69,19 @@ def create_test_abilities_for_hero(hero_code: str) -> List:
     except:
         return []
 
-# === INTERFACE CAPACITÉS ===
+# === INTERFACE CAPACITÉS SÉQUENTIELLE ===
 
 def display_abilities_selection_section(hero_code: str, abilities: List, current_selection: List[int] = None) -> List[int]:
-    """Interface sélection capacités avec état persistant"""
-    if not current_selection:
-        current_selection = []
-    
-    # Clé de session
-    session_key = f"forge_abilities_{hero_code}"
-    if session_key not in st.session_state:
-        st.session_state[session_key] = list(current_selection)
-    
+    """
+    NOUVEAU - Interface capacités séquentielle avec slider 0-6
+    Remplace le système de checkboxes individuelles
+    """
     # Header
     st.markdown("""
     <div style="background: linear-gradient(135deg, rgba(138,43,226,0.1), rgba(244,228,188,0.6));
                 border-radius: 12px; padding: 12px; margin: 15px 0; text-align: center;
                 border: 2px solid rgba(138,43,226,0.3);">
-        <h4 style="margin: 0; color: #8a2be2;">🔮 Capacités Disponibles</h4>
+        <h4 style="margin: 0; color: #8a2be2;">🔮 Capacités Séquentielles</h4>
     </div>
     """, unsafe_allow_html=True)
     
@@ -100,117 +95,176 @@ def display_abilities_selection_section(hero_code: str, abilities: List, current
                 st.rerun()
         return []
     
-    selected = st.session_state[session_key]
+    # Conversion sélection actuelle vers abilities_level
+    current_level = len(current_selection) if current_selection else 1
+    max_abilities = min(len(abilities), 6)
     
-    # Grille 3x2 pour 6 capacités
-    cols_row1 = st.columns(3)
-    cols_row2 = st.columns(3)
-    all_cols = cols_row1 + cols_row2
+    # Clé de session pour le slider
+    slider_key = f"forge_abilities_level_{hero_code}"
     
-    for i, ability in enumerate(abilities[:6]):
-        if i < len(all_cols):
-            with all_cols[i]:
-                ability_num = getattr(ability, 'ability_number', i + 1)
-                is_selected = ability_num in selected
-                
-                if display_ability_card(ability, is_selected, hero_code, ability_num):
-                    # Toggle sélection
-                    if ability_num in selected:
-                        selected.remove(ability_num)
-                        st.success("➖ Capacité retirée")
-                    else:
-                        selected.append(ability_num)
-                        st.success("➕ Capacité ajoutée")
-                    
-                    st.session_state[session_key] = selected
-                    st.rerun()
+    # Info explicative
+    st.info("🎯 **Système séquentiel :** Les capacités s'acquièrent dans l'ordre 1→2→3→...→6")
     
-    # Récapitulatif
-    if selected:
-        display_abilities_summary(abilities, selected)
+    # SLIDER PRINCIPAL
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        abilities_level = st.slider(
+            "Niveau de maîtrise des capacités",
+            min_value=0,
+            max_value=max_abilities,
+            value=min(current_level, max_abilities),
+            key=slider_key,
+            help="0 = Aucune capacité, 6 = Toutes les capacités acquises"
+        )
+    
+    with col2:
+        # Badge visuel du niveau
+        if abilities_level == 0:
+            st.markdown("🚫 **Novice**")
+        elif abilities_level <= 2:
+            st.markdown("🟡 **Apprenti**")
+        elif abilities_level <= 4:
+            st.markdown("🟠 **Expert**")
+        else:
+            st.markdown("🔴 **Maître**")
+    
+    # Génération de la liste séquentielle
+    from hero_builds_data import get_abilities_for_level
+    selected_numbers = get_abilities_for_level(hero_code, abilities_level)
+    
+    # Affichage des capacités acquises
+    if abilities_level > 0:
+        display_sequential_abilities_preview(abilities, selected_numbers)
     else:
-        st.info("💡 Cliquez sur '➕ CHOISIR' pour sélectionner")
+        st.info("💤 Aucune capacité maîtrisée")
     
-    return selected
+    # Comparaison avec les builds prédéfinis
+    display_difficulty_comparison(hero_code)
+    
+    return selected_numbers
 
-def display_ability_card(ability, is_selected: bool, hero_code: str, ability_number: int) -> bool:
-    """Carte capacité avec expander natif"""
-    # Infos capacité
-    name = getattr(ability, 'name', 'Capacité')
-    cost = getattr(ability, 'spell_cost', 0)
-    desc = getattr(ability, 'description', 'Description')
-    
-    # Type et couleur
-    if cost > 0:
-        type_icon = "🔮"
-        color = "#8a2be2"
-        type_name = "Magique"
-    else:
-        type_icon = "⚔️"
-        color = "#d2691e"
-        type_name = "Physique"
-    
-    # Badge sélection
-    badge = "✅ " if is_selected else ""
-    
-    # Nom court pour titre
-    short_name = name[:15] + "..." if len(name) > 15 else name
-    
-    with st.expander(f"{badge}{type_icon} {short_name}", expanded=False):
-        st.markdown(f"<span style='color: {color}; font-weight: bold;'>{type_name}</span>", 
-                   unsafe_allow_html=True)
-        
-        st.metric("⚡ Coût", f"{cost} sorts" if cost > 0 else "Gratuit")
-        
-        desc_short = desc[:60] + "..." if len(desc) > 60 else desc
-        st.caption(desc_short)
-        
-        if is_selected:
-            st.success("✅ Sélectionnée")
-        
-        # Bouton
-        button_text = "➖ Retirer" if is_selected else "➕ Choisir"
-        button_type = "secondary" if is_selected else "primary"
-        key = f"ability_{hero_code}_{ability_number}_{is_selected}"
-        
-        return st.button(button_text, key=key, type=button_type, use_container_width=True)
-
-def display_abilities_summary(abilities: List, selected_numbers: List[int]):
-    """Récapitulatif capacités sélectionnées"""
+def display_sequential_abilities_preview(abilities: List, selected_numbers: List[int]):
+    """Affiche un aperçu des capacités acquises séquentiellement"""
     if not selected_numbers:
         return
     
-    # Récupération capacités sélectionnées
+    st.markdown("### 📜 Capacités Acquises")
+    
+    # Récupération des capacités sélectionnées
     selected_abilities = []
     for ability in abilities:
         ability_num = getattr(ability, 'ability_number', None)
         if ability_num in selected_numbers:
             selected_abilities.append(ability)
     
-    if not selected_abilities:
-        return
+    # Tri par numéro
+    selected_abilities.sort(key=lambda a: getattr(a, 'ability_number', 0))
     
-    # Calcul coût total
-    total_cost = 0
-    names = []
+    # Affichage en grille compacte
+    if len(selected_abilities) <= 3:
+        cols = st.columns(len(selected_abilities))
+    else:
+        # Deux lignes si plus de 3
+        cols_row1 = st.columns(3)
+        cols_row2 = st.columns(max(1, len(selected_abilities) - 3))
+        cols = cols_row1 + cols_row2
     
-    for ability in selected_abilities:
-        cost = getattr(ability, 'spell_cost', 0)
-        name = getattr(ability, 'name', 'Capacité')
-        total_cost += cost
-        names.append(name)
+    for i, ability in enumerate(selected_abilities):
+        if i < len(cols):
+            with cols[i]:
+                display_ability_compact_card(ability, i + 1)
     
-    # Affichage
-    names_display = ", ".join(names[:3])
-    if len(names) > 3:
-        names_display += f" (+{len(names) - 3} autres)"
-    
-    st.info(f"🎯 **Sélectionnées ({len(selected_abilities)}/6)** : {names_display}")
-    
+    # Résumé coût total
+    total_cost = sum(getattr(ability, 'spell_cost', 0) for ability in selected_abilities)
     if total_cost > 0:
-        st.caption(f"💫 Coût total : {total_cost} sorts")
+        st.caption(f"💫 **Coût total :** {total_cost} sorts pour toutes les capacités")
 
-# === INTERFACE POTIONS ===
+def display_ability_compact_card(ability, position: int):
+    """Carte capacité compacte pour l'aperçu séquentiel"""
+    name = getattr(ability, 'name', 'Capacité')
+    cost = getattr(ability, 'spell_cost', 0)
+    ability_num = getattr(ability, 'ability_number', position)
+    
+    # Type et icône
+    if cost > 0:
+        type_icon = "🔮"
+        cost_text = f"{cost}✨"
+        border_color = "#8a2be2"
+    else:
+        type_icon = "⚔️"
+        cost_text = "Gratuit"
+        border_color = "#d2691e"
+    
+    # Nom raccourci
+    short_name = name[:12] + "..." if len(name) > 12 else name
+    
+    # Carte compacte
+    st.markdown(f"""
+    <div style="border: 2px solid {border_color}; border-radius: 8px; padding: 8px; 
+                text-align: center; background: linear-gradient(135deg, {border_color}15, {border_color}05);">
+        <div style="font-weight: bold; color: {border_color};">
+            {type_icon} #{ability_num}
+        </div>
+        <div style="font-size: 0.9rem; margin: 4px 0;">
+            {short_name}
+        </div>
+        <div style="font-size: 0.8rem; color: #666;">
+            {cost_text}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def display_difficulty_comparison(hero_code: str):
+    """Affiche une comparaison avec les niveaux prédéfinis"""
+    try:
+        from hero_builds_data import get_hero_detailed_build
+        
+        # Récupération des niveaux prédéfinis
+        facile_config = get_hero_detailed_build(hero_code, "Facile")
+        normal_config = get_hero_detailed_build(hero_code, "Normal")
+        difficile_config = get_hero_detailed_build(hero_code, "Difficile")
+        
+        facile_level = facile_config.get('abilities_level', 6)
+        normal_level = normal_config.get('abilities_level', 3)
+        difficile_level = difficile_config.get('abilities_level', 1)
+        
+        # Affichage comparatif
+        st.markdown("### 📊 Référence Builds Prédéfinis")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown(f"""
+            <div style="background: #22803030; border-radius: 6px; padding: 8px; text-align: center;">
+                <div style="color: #228030; font-weight: bold;">🟢 Facile</div>
+                <div>Niveau {facile_level}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div style="background: #4169e130; border-radius: 6px; padding: 8px; text-align: center;">
+                <div style="color: #4169e1; font-weight: bold;">🔵 Normal</div>
+                <div>Niveau {normal_level}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div style="background: #dc143c30; border-radius: 6px; padding: 8px; text-align: center;">
+                <div style="color: #dc143c; font-weight: bold;">🔴 Difficile</div>
+                <div>Niveau {difficile_level}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.caption("💡 Utilisez ces niveaux comme référence pour équilibrer votre build custom")
+        
+    except Exception:
+        # Fallback si hero_builds_data pas disponible
+        st.caption("💡 Niveau 1-2 = Débutant, 3-4 = Intermédiaire, 5-6 = Expert")
+
+# === INTERFACE POTIONS (inchangée) ===
 
 def display_potions_selection_section(hero_code: str) -> Dict[str, int]:
     """Interface sélection potions"""
@@ -331,10 +385,10 @@ def display_potions_summary(small_count: int, large_count: int):
     elif small_count >= 2:
         st.caption("💡 Stratégie soins fréquents")
 
-# === UTILITAIRES ===
+# === UTILITAIRES MISE À JOUR ===
 
 def validate_abilities_selection(selected_numbers: List[int], max_abilities: int = 6) -> Dict:
-    """Valide sélection capacités"""
+    """Valide sélection capacités séquentielles"""
     validation = {
         'valid': True,
         'count': len(selected_numbers),
@@ -345,23 +399,22 @@ def validate_abilities_selection(selected_numbers: List[int], max_abilities: int
         validation['valid'] = False
         validation['messages'].append(f"Max {max_abilities} capacités")
     
-    invalid = [n for n in selected_numbers if not (1 <= n <= 6)]
-    if invalid:
-        validation['valid'] = False
-        validation['messages'].append(f"Numéros invalides: {invalid}")
-    
-    if len(selected_numbers) != len(set(selected_numbers)):
-        validation['valid'] = False
-        validation['messages'].append("Doublons détectés")
+    # Vérification séquentielle : doit être 1,2,3... sans trous
+    if selected_numbers:
+        expected_sequence = list(range(1, len(selected_numbers) + 1))
+        if sorted(selected_numbers) != expected_sequence:
+            validation['valid'] = False
+            validation['messages'].append("Les capacités doivent être séquentielles (1→2→3...)")
     
     return validation
 
 def get_forge_selections_summary(hero_code: str, abilities: List, selected_abilities: List[int], 
                                 potions: Dict[str, int]) -> Dict:
-    """Résumé complet sélections pour aperçu"""
+    """Résumé complet sélections pour aperçu - VERSION SÉQUENTIELLE"""
     summary = {
         'has_selections': False,
         'abilities_count': len(selected_abilities),
+        'abilities_level': len(selected_abilities),  # NOUVEAU
         'potions_count': potions.get('small', 0) + potions.get('large', 0),
         'abilities_names': [],
         'abilities_cost': 0,

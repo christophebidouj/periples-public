@@ -4,6 +4,7 @@
 Périples Balance Workshop - Version avec 8 Héros Principaux
 🎲 Jeu : Périples © Bastien LIAUTY
 💻 Code : Christophe Bidouj (assistance Claude AI)
+VERSION FINALE MIGRÉE - Système de builds basé sur équipements réels
 """
 
 import streamlit as st
@@ -66,81 +67,6 @@ def get_difficulty_level_name(hero_code: str) -> str:
     else:
         return "Normal"
 
-def apply_difficulty_to_equipment(equipment_codes: List[str], difficulty: str, equipment_list: List) -> List[str]:
-    """
-    Applique la modification de difficulté aux équipements
-    
-    Args:
-        equipment_codes: Codes équipements de base
-        difficulty: Niveau de difficulté ("Facile", "Normal", "Difficile")
-        equipment_list: Liste complète des équipements
-        
-    Returns:
-        List[str]: Codes équipements modifiés selon la difficulté
-    """
-    if difficulty == "Normal":
-        return equipment_codes
-    
-    # Création mapping par catégorie
-    weapons = [eq for eq in equipment_list if eq.type.lower() == 'arme']
-    armor = [eq for eq in equipment_list if eq.type.lower() == 'armure']
-    accessories = [eq for eq in equipment_list if eq.type.lower() not in ['arme', 'armure']]
-    
-    # Tri par puissance (somme des stats)
-    def get_equipment_power(eq):
-        return eq.precision + eq.physical_damage + eq.magical_damage + eq.defense + eq.spells + eq.health
-    
-    weapons.sort(key=get_equipment_power)
-    armor.sort(key=get_equipment_power)
-    accessories.sort(key=get_equipment_power)
-    
-    modified_codes = []
-    
-    for code in equipment_codes:
-        # Trouve l'équipement actuel
-        current_eq = next((eq for eq in equipment_list if eq.code == code), None)
-        if not current_eq:
-            modified_codes.append(code)
-            continue
-        
-        # Détermine la catégorie
-        if current_eq.type.lower() == 'arme':
-            category_list = weapons
-        elif current_eq.type.lower() == 'armure':
-            category_list = armor
-        else:
-            category_list = accessories
-        
-        # Trouve la position actuelle
-        try:
-            current_index = next(i for i, eq in enumerate(category_list) if eq.code == code)
-        except StopIteration:
-            modified_codes.append(code)
-            continue
-        
-        # Calcule le nouvel index selon la difficulté
-        if difficulty == "Facile":
-            # Améliore (+2 positions vers les plus puissants)
-            new_index = min(len(category_list) - 1, current_index + 2)
-        elif difficulty == "Difficile":
-            # Dégrade (-1 position vers les moins puissants)
-            new_index = max(0, current_index - 1)
-        else:
-            new_index = current_index
-        
-        modified_codes.append(category_list[new_index].code)
-    
-    return modified_codes
-
-def get_difficulty_build_name(base_name: str, difficulty: str) -> str:
-    """Génère le nom du build selon la difficulté"""
-    difficulty_prefixes = {
-        "Facile": "🟢 Build Facile",
-        "Normal": "🔵 Build Standard", 
-        "Difficile": "🔴 Build Difficile"
-    }
-    return difficulty_prefixes.get(difficulty, base_name)
-
 def safe_session_update(key: str, value):
     """Mise à jour sécurisée session state"""
     st.session_state[key] = value
@@ -181,6 +107,158 @@ def filter_heroes_to_main_8(heroes_list: List) -> List:
     """Filtre pour ne garder que les 8 héros principaux (P-1 à P-8)"""
     main_hero_codes = ['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7', 'P-8']
     return [hero for hero in heroes_list if hero.code in main_hero_codes]
+
+def get_hero_build_from_equipment(hero_code: str, heroes_list: List, equipment_list: List, loader, difficulty: str) -> Dict:
+    """
+    NOUVEAU - Calcule les stats depuis les équipements réels selon hero_builds_data.py
+    Remplace get_hero_stats_by_difficulty()
+    """
+    from hero_builds_data import get_hero_detailed_build, get_abilities_for_level
+    
+    # Récupération build détaillé
+    build_config = get_hero_detailed_build(hero_code, difficulty)
+    
+    # Héros de base
+    hero = next(h for h in heroes_list if h.code == hero_code)
+    hero_equipped = hero.model_copy()
+    
+    # Application équipements
+    equipment_items = [eq for eq in equipment_list if eq.code in build_config.get('equipment', [])]
+    hero_equipped.equip_items(equipment_items, build_config.get('name', 'Build Standard'))
+    
+    # Application capacités selon abilities_level
+    abilities_level = build_config.get('abilities_level', 1)
+    if abilities_level > 0:
+        try:
+            hero_abilities = loader.get_hero_abilities(hero_code)
+            if hero_abilities:
+                # Capacités séquentielles 1 à abilities_level
+                unlocked_numbers = get_abilities_for_level(hero_code, abilities_level)
+                selected_abilities = [a for a in hero_abilities if a.ability_number in unlocked_numbers]
+                
+                if hasattr(hero_equipped, 'add_abilities') and selected_abilities:
+                    hero_equipped.add_abilities(selected_abilities)
+                    hero_equipped.unlocked_abilities = unlocked_numbers.copy()
+                    for ability in hero_equipped.abilities:
+                        if ability.ability_number in unlocked_numbers:
+                            ability.is_unlocked = True
+        except Exception:
+            pass
+    
+    # Application potions
+    potions_config = build_config.get('potions', {'small': 1, 'large': 0})
+    if hasattr(hero_equipped, 'set_potions_from_selection'):
+        hero_equipped.set_potions_from_selection(
+            potions_config.get('small', 0),
+            potions_config.get('large', 0)
+        )
+    
+    return {
+        'hero_equipped': hero_equipped,
+        'equipment': equipment_items,
+        'build_name': build_config.get('name', 'Build Standard'),
+        'is_custom': False,
+        'difficulty_level': difficulty,
+        'stats': hero_equipped.get_stats_summary(),
+        'abilities_info': {
+            'has_custom_abilities': False,
+            'abilities_level': abilities_level
+        }
+    }
+
+def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
+    """Build custom uniquement - inchangé"""
+    hero = next(h for h in heroes_list if h.code == hero_code)
+    current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
+    
+    custom = current_custom_builds[hero_code]  # Assume que le héros a un build custom
+    equipment = [eq for eq in equipment_list if eq.code in custom.get('equipment', [])]
+    build_name = custom.get('name', 'Build Custom')
+    custom_abilities = custom.get('abilities', [])
+    abilities_custom = custom.get('abilities_custom', False)
+    
+    # Héros équipé
+    hero_equipped = hero.model_copy()
+    hero_equipped.equip_items(equipment, build_name)
+    
+    # Application capacités custom
+    if custom_abilities and abilities_custom:
+        try:
+            hero_abilities = loader.get_hero_abilities(hero_code)
+            if hero_abilities:
+                selected_abilities = [a for a in hero_abilities if a.ability_number in custom_abilities]
+                if hasattr(hero_equipped, 'add_abilities') and selected_abilities:
+                    hero_equipped.add_abilities(selected_abilities)
+                    hero_equipped.unlocked_abilities = custom_abilities.copy()
+                    for ability in hero_equipped.abilities:
+                        if ability.ability_number in custom_abilities:
+                            ability.is_unlocked = True
+        except Exception:
+            pass
+    
+    return {
+        'hero_equipped': hero_equipped,
+        'equipment': equipment,
+        'build_name': build_name,
+        'is_custom': True,
+        'stats': hero_equipped.get_stats_summary(),
+        'abilities_info': {
+            'has_custom_abilities': bool(custom_abilities and abilities_custom)
+        }
+    }
+
+def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
+    """
+    MIGRÉ - Calcule les stats finales selon la logique : Custom > Builds équipements réels
+    """
+    current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
+    
+    if hero_code in current_custom_builds:
+        # BUILD CUSTOM - Utiliser get_hero_build_info complet
+        return get_hero_build_info(hero_code, heroes_list, equipment_list, loader, current_custom_builds)
+    else:
+        # BUILDS FIXES - NOUVEAU : Utiliser les équipements réels
+        difficulty = get_difficulty_level_name(hero_code)
+        return get_hero_build_from_equipment(hero_code, heroes_list, equipment_list, loader, difficulty)
+
+def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data, player_count: int):
+    """Prépare données pour récapitulatif - MIGRÉ vers système équipements"""
+    current_builds = st.session_state.get('custom_builds', {})
+    
+    # Données héros avec logique unifiée MIGRÉE
+    heroes_data = []
+    for code in hero_codes:
+        build_info = get_hero_final_stats(code, data['heroes'], data['equipment'], data['loader'], current_builds)
+        stats = build_info['stats']['total']
+        
+        heroes_data.append({
+            'name': build_info['hero_equipped'].name,
+            'icon': get_hero_icon(build_info['hero_equipped'].name),
+            'build_name': build_info['build_name'],
+            'is_custom': build_info['is_custom'],
+            'difficulty_level': build_info.get('difficulty_level', 'Normal'),
+            'precision': stats['precision'],
+            'damage': stats['damage'],
+            'health': stats['health'],
+            'parade': stats['parade'],
+            'spells': stats['spells']
+        })
+    
+    # Données ennemis (inchangées)
+    enemies_data = []
+    for code in enemy_codes:
+        enemy = next(e for e in data['enemies'] if e.code == code)
+        stats = enemy.get_stats_for_players(player_count)
+        enemies_data.append({
+            'name': enemy.name,
+            'number': enemy.code.split('-')[-1],
+            'is_magical': enemy.is_magical,
+            'health': stats['health'],
+            'damage': stats['damage'],
+            'defense': enemy.defense
+        })
+    
+    return heroes_data, enemies_data
 
 # === INITIALISATION ===
 
@@ -229,119 +307,6 @@ def load_data():
 def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
     """Cache les builds pré-calculés pour éviter de les recalculer à chaque interaction"""
     return preload_hero_builds_for_all_difficulties(_heroes_list, _equipment_list, _loader)
-
-def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
-    """Version restaurée et simplifiée pour builds custom uniquement"""
-    hero = next(h for h in heroes_list if h.code == hero_code)
-    current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
-    
-    custom = current_custom_builds[hero_code]  # Assume que le héros a un build custom
-    equipment = [eq for eq in equipment_list if eq.code in custom.get('equipment', [])]
-    build_name = custom.get('name', 'Build Custom')
-    custom_abilities = custom.get('abilities', [])
-    abilities_custom = custom.get('abilities_custom', False)
-    
-    # Héros équipé
-    hero_equipped = hero.model_copy()
-    hero_equipped.equip_items(equipment, build_name)
-    
-    # Application capacités custom
-    if custom_abilities and abilities_custom:
-        try:
-            hero_abilities = loader.get_hero_abilities(hero_code)
-            if hero_abilities:
-                selected_abilities = [a for a in hero_abilities if a.ability_number in custom_abilities]
-                if hasattr(hero_equipped, 'add_abilities') and selected_abilities:
-                    hero_equipped.add_abilities(selected_abilities)
-                    hero_equipped.unlocked_abilities = custom_abilities.copy()
-                    for ability in hero_equipped.abilities:
-                        if ability.ability_number in custom_abilities:
-                            ability.is_unlocked = True
-        except Exception:
-            pass
-    
-    return {
-        'hero_equipped': hero_equipped,
-        'equipment': equipment,
-        'build_name': build_name,
-        'is_custom': True,
-        'stats': hero_equipped.get_stats_summary(),
-        'abilities_info': {
-            'has_custom_abilities': bool(custom_abilities and abilities_custom)
-        }
-    }
-
-def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
-    """
-    Calcule les stats finales d'un héros selon la logique : Custom > Builds fixes selon difficulté
-    Version utilisée pour les autres onglets (Forge, Combat, etc.)
-    """
-    current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
-    
-    if hero_code in current_custom_builds:
-        # BUILD CUSTOM - Utiliser get_hero_build_info complet
-        return get_hero_build_info(hero_code, heroes_list, equipment_list, loader, current_custom_builds)
-    else:
-        # BUILDS FIXES - Utiliser les données fixes selon difficulté
-        from hero_builds_data import get_hero_stats_by_difficulty, get_build_name_by_difficulty
-        
-        difficulty = st.session_state.get('hero_difficulties', {}).get(hero_code, "🔵 Normal")
-        stats = get_hero_stats_by_difficulty(hero_code, difficulty)
-        build_name = get_build_name_by_difficulty(difficulty)
-        
-        # Récupération info de base du héros
-        hero = next(h for h in heroes_list if h.code == hero_code)
-        
-        # Format compatible avec display_hero_card
-        return {
-            'hero_equipped': hero,
-            'equipment': [],  # Pas d'équipements pour builds fixes
-            'build_name': build_name,
-            'is_custom': False,
-            'stats': {
-                'total': stats  # Stats directes du fichier
-            },
-            'difficulty_level': difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
-        }
-
-def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data, player_count: int):
-    """Prépare données pour récapitulatif - CORRIGÉ KeyError build_name"""
-    current_builds = st.session_state.get('custom_builds', {})
-    
-    # Données héros avec logique unifiée
-    heroes_data = []
-    for code in hero_codes:
-        build_info = get_hero_final_stats(code, data['heroes'], data['equipment'], data['loader'], current_builds)
-        stats = build_info['stats']['total']
-        
-        heroes_data.append({
-            'name': build_info['hero_equipped'].name,
-            'icon': get_hero_icon(build_info['hero_equipped'].name),
-            'build_name': build_info['build_name'],  # 🔧 CORRIGÉ - Était 'build' au lieu de 'build_name'
-            'is_custom': build_info['is_custom'],
-            'difficulty_level': build_info.get('difficulty_level', 'Normal'),
-            'precision': stats['precision'],
-            'damage': stats['damage'],
-            'health': stats['health'],
-            'parade': stats['parade'],
-            'spells': stats['spells']
-        })
-    
-    # Données ennemis (inchangées)
-    enemies_data = []
-    for code in enemy_codes:
-        enemy = next(e for e in data['enemies'] if e.code == code)
-        stats = enemy.get_stats_for_players(player_count)
-        enemies_data.append({
-            'name': enemy.name,
-            'number': enemy.code.split('-')[-1],
-            'is_magical': enemy.is_magical,
-            'health': stats['health'],
-            'damage': stats['damage'],
-            'defense': enemy.defense
-        })
-    
-    return heroes_data, enemies_data
 
 # === ONGLETS ===
 
@@ -493,7 +458,7 @@ def tab_selection(data):
         st.button("⚔️ FORMATION INCOMPLÈTE", disabled=True, use_container_width=True)
 
 def tab_forge(data):
-    """Onglet forge des équipements - Version 8 héros"""
+    """Onglet forge des équipements - Version 8 héros MIGRÉE"""
     st.header("⚙️ Forge des Équipements")
     
     heroes, equipment = data['heroes'], data['equipment']
@@ -508,14 +473,14 @@ def tab_forge(data):
     )
     selected_hero = next(h for h in heroes if h.code == selected_code)
     
-    # Stats et build actuels
+    # Stats et build actuels MIGRÉS
     st.subheader("📊 Statistiques")
     display_hero_base_stats(selected_hero)
     
     current_builds = st.session_state.get('custom_builds', {})
-    #current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
-    #display_current_build_info(current_build)
-    current_build = {'is_custom': False, 'build_name': 'Test'}
+    current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
+    display_current_build_info(current_build)
+    
     # Gestion builds
     col1, col2 = st.columns(2)
     with col1:
@@ -632,18 +597,18 @@ def tab_forge(data):
             st.rerun()
 
 def tab_combat(data):
-    """Onglet combat avec builds prédéfinis"""
+    """Onglet combat avec builds MIGRÉS vers équipements réels"""
     st.header("📜 Chroniques du Combat")
     
     if not st.session_state.get('run_simulation', False):
         st.markdown(get_waiting_combat_style(), unsafe_allow_html=True)
         return
     
-    # Préparation combat
+    # Préparation combat MIGRÉE
     config = st.session_state['simulation_config']
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     
-    # Équipes avec builds selon niveaux de difficulté
+    # Équipes avec builds selon système migré (équipements réels)
     selected_heroes = []
     current_builds = st.session_state.get('custom_builds', {})
     
@@ -672,7 +637,7 @@ def tab_combat(data):
     safe_session_update('run_simulation', False)
 
 def display_about():
-    """Section À Propos - Version 8 héros"""
+    """Section À Propos - Version 8 héros MIGRÉE"""
     
     # Informations sur le jeu
     st.subheader("🎲 Jeu de Société")
@@ -691,7 +656,7 @@ def display_about():
         **Statut :** Prototype en développement
         - 8 héros principaux avec formes d'Elneha
         - 72 ennemis évolutifs
-        - 52 équipements et 48 capacités spéciales
+        - 56 équipements et 48 capacités spéciales
         """)
 
     # Informations techniques
@@ -712,7 +677,7 @@ def display_about():
         - Simulation de combats automatisés
         - Forge d'équipements personnalisés
         - Système de capacités et potions
-        - **8 héros** avec 3 builds prédéfinis chacun
+        - **8 héros** avec builds basés sur équipements réels
         """)
 
     # Objectifs et usage
@@ -720,9 +685,10 @@ def display_about():
     st.markdown("""
     Ce simulateur permet de tester et valider l'équilibrage des mécaniques de jeu :
     - **Combats** : Validation des règles et équilibrage selon le nombre de joueurs
-    - **Équipements** : Test des builds personnalisés et impact sur les statistiques  
+    - **Équipements** : Test des builds personnalisés et impact réel des équipements  
     - **Capacités** : Simulation des 48 capacités spéciales des héros
-    - **Builds Prédéfinis** : 3 niveaux de difficulté (Facile/Normal/Difficile) avec équipements adaptés
+    - **Builds Réels** : 3 niveaux de difficulté avec calcul depuis équipements authentiques
+    - **Objets Spéciaux** : 4 objets uniques avec effets complexes intégrés
     - **Métriques** : Analyse du taux de survie, durée de combat et utilisation des ressources
     """)
 
@@ -735,13 +701,13 @@ def display_about():
 # === MAIN ===
 
 def main():
-    """Application principale"""
+    """Application principale MIGRÉE"""
     init_app()
     apply_fantasy_theme()
     
     # Titre natif Streamlit
     st.title("⚔️ Périples Balance Workshop ⚔️")
-    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Dev Python : **Christophe Bidouj** | Simulateur d'équilibrage RPG dans l'univers fantasy")
+    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Dev Python : **Christophe Bidouj** | Simulateur d'équilibrage RPG avec système de builds basé sur équipements réels")
     
     # Données avec cache
     try:

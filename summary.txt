@@ -1,0 +1,148 @@
+# PÉRIPLES BALANCE WORKSHOP - RÉSUMÉ OBJETS SPÉCIAUX
+
+## CONTEXTE GÉNÉRAL
+- Projet : Simulateur d'équilibrage pour le jeu de société "Périples" de Bastien LIAUTY
+- Objectif : Intégrer 4 objets spéciaux avec effets complexes nécessitant du code spécifique
+- Version : Système avec 8 héros (P-1 à P-8) et builds prédéfinis (Facile/Normal/Difficile)
+
+## OBJETS SPÉCIAUX - ÉTAT FINAL
+
+### O-1 : Gemme de pouvoir (P-1 Elneha) ✅ TERMINÉ
+- **Effet** : Attaques formes d'ours (capacité 1) et loup (capacité 3) → dégâts magiques
+- **Stats** : Toutes à 0 (conversion de type uniquement)
+- **Implementation** : Système de formes + conversion magique fonctionnel
+
+### O-2 : Baton de puissance (P-2 Liarie) ✅ TERMINÉ  
+- **Effet** : +1 utilisation sur toutes les capacités magiques (spell_cost > 0)
+- **Stats** : Physical_Damage 1, autres à 0
+- **Implementation** : Bonus appliqué au début du combat
+
+### O-3 : Médaillon d'appel (P-4 Kraor) ✅ TERMINÉ
+- **Effet** : Invoque un Pet (Précision 4, Dégâts magiques 4, Parade 0, Santé 15)
+- **Stats** : Toutes à 0
+- **Implementation** : Système Pet complet + invocation en combat
+
+### O-4 : Lyre phoenix (P-6 Stèphe) ✅ TERMINÉ
+- **Effet** : +4 sorts + toutes les attaques → dégâts magiques  
+- **Stats** : Spells 4, autres à 0
+- **Implementation** : Conversion attaques + bonus sorts fonctionnel
+
+## ÉTAT ACTUEL DES FICHIERS
+
+### ✅ FICHIERS COMPLÉTÉS ET FONCTIONNELS
+
+#### equipment.csv
+- ✅ 4 objets spéciaux ajoutés (O-1 à O-4)
+- ⚠️ Total : 50 équipements (manque 6 pour atteindre 56 total)
+
+#### hero_builds_data.py
+- ✅ Système de niveaux de capacités séquentielles (abilities_level)
+- ✅ Builds mis à jour avec objets spéciaux dans builds Facile
+- ✅ Fonction get_abilities_for_level() pour capacités 1 à N
+- ⚠️ **Fonction temporaire get_hero_stats_by_difficulty() à remplacer**
+
+#### character.py
+- ✅ Système jetons parade rechargeable complet
+- ✅ Classe Pet(Character) avec create_kraor_pet()
+- ✅ Tous les objets spéciaux intégrés dans get_special_equipment_effects()
+- ✅ Système de formes d'Elneha (O-1)
+- ✅ Méthodes d'invocation pour Kraor (O-3)
+- ⚠️ **2 méthodes obsolètes take_damage() à supprimer**
+
+#### combat_engine.py  
+- ✅ Support complet des 4 objets spéciaux
+- ✅ Gestion des Pets en combat (active_pets, _pet_turn, _use_summon_ability)
+- ✅ Jets de dés affichés avec conversions magiques
+- ✅ Logs contextuels pour tous les objets spéciaux
+- ✅ Pets inclus comme cibles d'attaque des ennemis
+
+## SYSTÈME OPÉRATIONNEL CONFIRMÉ
+
+### ✅ Tous les objets spéciaux fonctionnels
+- **O-1** : Formes d'Elneha avec attaques magiques
+- **O-2** : Bonus capacités pour Liarie détecté au combat
+- **O-3** : Invocation de Pet par Kraor avec Médaillon
+- **O-4** : Attaques magiques pour Stèphe avec Lyre
+
+### ✅ Intégration builds prédéfinis
+- P-1 Facile : inclut O-1 (Gemme de pouvoir)
+- P-2 Facile : inclut O-2 (Baton de puissance) 
+- P-4 Facile : inclut O-3 (Médaillon d'appel)
+- P-6 Facile : inclut O-4 (Lyre phoenix)
+
+### ✅ Capacités séquentielles
+- Système abilities_level opérationnel (1-6)
+- Compatible avec interface Forge actuelle
+- get_abilities_for_level() fonctionnelle
+
+## TÂCHES RESTANTES
+
+### 🔴 PRIORITÉ 1 - Migration système de builds
+1. **Remplacer get_hero_stats_by_difficulty()** par calcul depuis équipements
+2. **Intégrer get_hero_detailed_build()** dans app.py 
+3. **Supprimer stats temporaires** hardcodées
+
+### 🔴 PRIORITÉ 2 - Nettoyage code
+4. **Supprimer méthodes obsolètes** take_damage() dans Character/Enemy
+5. **Compléter equipment.csv** (ajouter 6 équipements manquants)
+
+### 🟡 AMÉLIORATIONS FUTURES
+6. **Interface Forge** - Slider 0-6 pour sélection capacités séquentielles
+7. **Tests d'intégration** - Validation complète objets spéciaux en combat
+
+## LOGS EXEMPLES OPÉRATIONNELS
+
+### O-4 (Lyre phoenix) :
+```
+Stèphe (🎲 15+4=19 vs défense 12) → Gobelin: 6 dégâts magiques (🎵 Lyre phoenix) 4 aux PV
+```
+
+### O-1 (Gemme de pouvoir) :
+```
+🔮 Elneha utilise Forme d'ours
+  🔄 Transformation en 🐻 Forme d'ours
+Elneha (🎲 16+5=21 vs défense 12) → Gobelin: 4 dégâts magiques (💎 🐻 Forme d'ours) 4 aux PV
+```
+
+### O-2 (Baton de puissance) :
+```
+⚡ Liarie - Baton de puissance: +1 utilisation pour Éclair magique, Boule de feu
+```
+
+### O-3 (Médaillon d'appel) :
+```
+🔮 Kraor utilise Invoquer Pet
+  ✨ Minion de Kraor invoqué ! (Précision: 4, Dégâts magiques: 4, Santé: 15)
+```
+
+## ARCHITECTURE TECHNIQUE VALIDÉE
+
+### Contraintes respectées :
+- ✅ Compatible PyInstaller 
+- ✅ Cache Streamlit (@st.cache_data) optimisé
+- ✅ Système de builds prédéfinis + custom opérationnel
+- ✅ Interface grille 2x4 pour 8 héros
+
+### Pattern confirmé fonctionnel :
+- Détection objets : has_equipment()
+- Effets dynamiques : get_special_equipment_effects()
+- Application combat : get_attack_damage_info() + logs contextuels
+- Init combat : start_new_combat() pour bonus permanents
+- Invocation : système Pet complet avec gestion en combat
+
+## PROCHAINES ÉTAPES TECHNIQUES
+
+### Étape 1 : Migration builds (Priorité 1)
+- Modifier app.py pour utiliser get_hero_detailed_build()
+- Intégrer calcul stats depuis équipements réels
+- Supprimer get_hero_stats_by_difficulty() temporaire
+
+### Étape 2 : Nettoyage (Priorité 2)  
+- Supprimer méthodes take_damage() obsolètes
+- Compléter equipment.csv à 56 équipements
+- Tests de régression complets
+
+## STATUT FINAL
+**SYSTÈME OBJETS SPÉCIAUX : 100% OPÉRATIONNEL**
+**ARCHITECTURE : STABLE ET FONCTIONNELLE**
+**RESTE : MIGRATION BUILDS + NETTOYAGE CODE**

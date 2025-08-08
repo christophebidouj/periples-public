@@ -1,9 +1,11 @@
 """
 Moteur de combat corrigé pour Périples
-VERSION AVEC SYSTÈME JETONS PARADE RECHARGEABLE
+VERSION AVEC SYSTÈME JETONS PARADE RECHARGEABLE + OBJETS SPÉCIAUX + PETS
 🛡️ Parade = jetons qui se rechargent à chaque tour (héros ET ennemis)
 🎯 Ennemis touchent toujours, héros font jets d'attaque
 🩸 Système potions et capacités intégré
+🎭 O-4 (Lyre phoenix) : Stèphe attaques → dégâts magiques
+🐾 Support complet des Pets invoqués
 """
 
 import random
@@ -18,7 +20,7 @@ def safe_randint(min_val: int, max_val: int) -> int:
     return random.randint(min_val, max_val)
 
 class CombatEngine:
-    """Moteur de combat avec système jetons parade"""
+    """Moteur de combat avec système jetons parade + objets spéciaux + Pets"""
     
     def __init__(self, rules):
         self.rules = rules
@@ -30,13 +32,16 @@ class CombatEngine:
             self.abilities_enabled = False
     
     def simulate_single_combat(self, heroes: List, enemies: List, player_count: int) -> Dict[str, Any]:
-        """Combat principal avec système jetons parade"""
+        """Combat principal avec système jetons parade + objets spéciaux + Pets"""
         start_time = time.time()
         log = ["=== DÉBUT DU COMBAT ==="]
         
         # Préparation
         heroes_combat = [hero.model_copy() for hero in heroes]
         enemies_combat = [enemy.model_copy() for enemy in enemies]
+        
+        # Liste des Pets invoqués
+        active_pets = []
         
         self._prepare_heroes(heroes_combat, log)
         self._prepare_enemies(enemies_combat, player_count, log)
@@ -46,31 +51,37 @@ class CombatEngine:
         for round_num in range(1, self.rules.max_rounds + 1):
             log.append(f"=== ROUND {round_num} ===")
             
-            # Phase héros (rechargent parade + agissent)
-            self._heroes_turn(heroes_combat, enemies_combat, player_count, log)
+            # Phase héros + Pets (rechargent parade + agissent)
+            self._heroes_turn(heroes_combat, enemies_combat, player_count, log, active_pets)
             if self._check_victory(enemies_combat, "héros", round_num, log):
-                return self._make_result('heroes', round_num, heroes_combat, enemies_combat, log, start_time)
+                return self._make_result('heroes', round_num, heroes_combat, enemies_combat, log, start_time, active_pets)
             
             # Phase ennemis (rechargent parade + attaquent)
-            self._enemies_turn(enemies_combat, heroes_combat, player_count, log)
-            if self._check_victory(heroes_combat, "ennemis", round_num, log):
+            self._enemies_turn(enemies_combat, heroes_combat, player_count, log, active_pets)
+            if self._check_victory(heroes_combat + active_pets, "ennemis", round_num, log):
                 self._apply_defeat(heroes_combat, log)
-                return self._make_result('enemies', round_num, heroes_combat, enemies_combat, log, start_time)
+                return self._make_result('enemies', round_num, heroes_combat, enemies_combat, log, start_time, active_pets)
         
         # Match nul
         log.append(f"⏱️ Combat trop long ({self.rules.max_rounds} rounds)")
-        return self._make_result('draw', self.rules.max_rounds, heroes_combat, enemies_combat, log, start_time)
+        return self._make_result('draw', self.rules.max_rounds, heroes_combat, enemies_combat, log, start_time, active_pets)
     
     def _prepare_heroes(self, heroes: List, log: List[str]):
-        """Initialise héros pour combat"""
+        """Initialise héros pour combat + détection objets spéciaux"""
         for hero in heroes:
             hero.reset_health()
             hero.current_spells = hero.get_total_spells()
             hero.spells_used = 0
             
-            # NOUVEAU - Initialise système parade
+            # Initialise système parade
             hero._update_parade_from_equipment()
             hero.refresh_parade_tokens()
+            
+            # Log objets spéciaux détectés
+            special_effects = hero.get_special_equipment_effects()
+            active_effects = [name for name, active in special_effects.items() if active]
+            if active_effects:
+                log.append(f"✨ {hero.name} - Objets spéciaux: {', '.join(active_effects)}")
             
             # Capacités avec protection builds custom
             if self.abilities_enabled and hasattr(hero, 'start_new_combat'):
@@ -146,7 +157,7 @@ class CombatEngine:
             log.append(f"🔓 {hero.name} (Aléatoire): {', '.join(unlocked)}")
     
     def _log_start(self, heroes: List, enemies: List, log: List[str]):
-        """Log initial avec info parade"""
+        """Log initial avec info parade + objets spéciaux"""
         log.append(f"Héros: {', '.join([h.name for h in heroes])}")
         log.append(f"Ennemis: {', '.join([e.name for e in enemies])}")
         
@@ -156,62 +167,98 @@ class CombatEngine:
             parade_info = [f"{h.name}({h.max_parade_tokens}🛡️)" for h in heroes_with_parade]
             log.append(f"Parade héros: {', '.join(parade_info)}")
         
+        # Info objets spéciaux
+        heroes_with_special = []
+        for hero in heroes:
+            effects = hero.get_special_equipment_effects()
+            active = [name for name, active in effects.items() if active]
+            if active:
+                # Ajout info formes pour Elneha
+                if hero.code == "P-1" and hasattr(hero, 'current_form'):
+                    form_info = f"forme:{hero.current_form}"
+                    active.append(form_info)
+                heroes_with_special.append(f"{hero.name}({','.join(active)})")
+        
+        if heroes_with_special:
+            log.append(f"Objets spéciaux: {', '.join(heroes_with_special)}")
+        
         log.append("")
     
-    def _heroes_turn(self, heroes: List, enemies: List, player_count: int, log: List[str]):
-        """Phase héros avec recharge parade et capacités"""
-        log.append("🛡️ Phase des Héros")
+    def _heroes_turn(self, heroes: List, enemies: List, player_count: int, log: List[str], active_pets: List):
+        """Phase héros + Pets avec recharge parade et capacités"""
+        log.append("🛡️ Phase des Héros + Pets")
         
-        for hero in [h for h in heroes if h.is_alive()]:
+        # Héros + Pets agissent ensemble
+        all_allies = heroes + active_pets
+        
+        for ally in [a for a in all_allies if a.is_alive()]:
             alive_enemies = [e for e in enemies if e.is_alive()]
             if not alive_enemies:
                 break
             
-            # NOUVEAU - Début tour héros (recharge parade)
-            hero.start_hero_turn()
-            if hero.max_parade_tokens > 0:
-                log.append(f"🔄 {hero.name} recharge {hero.max_parade_tokens} jetons parade")
+            # Début tour allié (recharge parade)
+            ally.start_hero_turn()
+            if ally.max_parade_tokens > 0:
+                ally_name = getattr(ally, 'display_name', ally.name)
+                log.append(f"🔄 {ally_name} recharge {ally.max_parade_tokens} jetons parade")
             
-            # Potion d'abord si nécessaire
-            self._try_health_potion(hero, log)
-            
-            # Capacité puis attaque
-            ability_used = self._try_ability(hero, alive_enemies, log)
-            
-            # Attaque si autorisée
-            can_attack = not hasattr(hero, 'can_attack_this_turn') or hero.can_attack_this_turn
-            if can_attack and not getattr(hero, 'action_taken_this_turn', False):
-                self._hero_attack(hero, alive_enemies, player_count, log)
-            elif ability_used:
-                log.append(f"  {hero.name} ne peut pas attaquer (capacité magique)")
+            # Logique différente pour héros vs Pets
+            if hasattr(ally, 'owner_code'):  # C'est un Pet
+                self._pet_turn(ally, alive_enemies, player_count, log)
+            else:  # C'est un héros
+                self._hero_turn(ally, alive_enemies, player_count, log, active_pets)
     
-    def _enemies_turn(self, enemies: List, heroes: List, player_count: int, log: List[str]):
-        """Phase ennemis avec recharge parade - ATTAQUENT L'ÉQUIPE"""
+    def _hero_turn(self, hero, alive_enemies: List, player_count: int, log: List[str], active_pets: List):
+        """Tour d'un héros avec gestion invocations"""
+        # Potion d'abord si nécessaire
+        self._try_health_potion(hero, log)
+        
+        # Capacité (peut inclure invocation)
+        ability_used = self._try_ability_with_summon(hero, alive_enemies, log, active_pets)
+        
+        # Attaque si autorisée
+        can_attack = not hasattr(hero, 'can_attack_this_turn') or hero.can_attack_this_turn
+        if can_attack and not getattr(hero, 'action_taken_this_turn', False):
+            self._hero_attack(hero, alive_enemies, player_count, log)
+        elif ability_used:
+            log.append(f"  {hero.name} ne peut pas attaquer (capacité magique)")
+    
+    def _pet_turn(self, pet, alive_enemies: List, player_count: int, log: List[str]):
+        """Tour d'un Pet (attaque automatique simple)"""
+        if alive_enemies:
+            # Pet attaque automatiquement le premier ennemi
+            self._hero_attack(pet, alive_enemies, player_count, log)
+    
+    def _enemies_turn(self, enemies: List, heroes: List, player_count: int, log: List[str], active_pets: List):
+        """Phase ennemis avec recharge parade - ATTAQUENT L'ÉQUIPE + Pets"""
         log.append("👹 Phase des Ennemis")
         
         for enemy in [e for e in enemies if e.is_alive()]:
             alive_heroes = [h for h in heroes if h.is_alive()]
-            if not alive_heroes:
+            alive_pets = [p for p in active_pets if p.is_alive()]
+            all_targets = alive_heroes + alive_pets
+            
+            if not all_targets:
                 break
             
-            # NOUVEAU - Début tour ennemi (recharge parade)
+            # Début tour ennemi (recharge parade)
             enemy.start_enemy_turn()
             if enemy.max_parade_tokens > 0:
                 log.append(f"🔄 {enemy.name} recharge {enemy.max_parade_tokens} jetons parade")
             
-            # RÈGLE OFFICIELLE : Ennemis attaquent l'équipe
-            # Les joueurs (via IA) choisissent qui prend les dégâts
+            # RÈGLE OFFICIELLE : Ennemis attaquent l'équipe (héros + pets)
             enemy_stats = enemy.get_stats_for_players(player_count)
             damage = enemy_stats['damage']
             
-            # Les héros répartissent les dégâts entre eux (IA tactique)
-            target = self._heroes_distribute_damage(alive_heroes, damage, enemy.name, log)
+            # Les joueurs choisissent qui prend les dégâts (héros ou pets)
+            target = self._heroes_distribute_damage(all_targets, damage, enemy.name, log)
             
             # Application dégâts avec système parade
             damage_result = target.apply_damage_with_parade(damage)
             
-            # Log détaillé
-            log_parts = [f"{enemy.name} attaque l'équipe: {damage} dégâts → {target.name}"]
+            # Log détaillé avec nom approprié
+            target_name = getattr(target, 'display_name', target.name)
+            log_parts = [f"{enemy.name} attaque l'équipe: {damage} dégâts → {target_name}"]
             
             if damage_result['blocked_by_parade'] > 0:
                 log_parts.append(f"({damage_result['blocked_by_parade']} bloqués par parade)")
@@ -223,10 +270,13 @@ class CombatEngine:
             
             # Jetons parade restants
             if target.max_parade_tokens > 0:
-                log.append(f"  🛡️ {target.name}: {target.current_parade_tokens}/{target.max_parade_tokens} jetons restants")
+                log.append(f"  🛡️ {target_name}: {target.current_parade_tokens}/{target.max_parade_tokens} jetons restants")
             
             if not target.is_alive():
-                log.append(f"💀 {target.name} tombe !")
+                log.append(f"💀 {target_name} tombe !")
+                # Retirer Pet de la liste s'il meurt
+                if hasattr(target, 'owner_code') and target in active_pets:
+                    active_pets.remove(target)
     
     def _heroes_distribute_damage(self, heroes: List, damage: int, enemy_name: str, log: List[str]):
         """IA qui simule la décision tactique des JOUEURS pour répartir les dégâts"""
@@ -271,7 +321,7 @@ class CombatEngine:
         return chosen_hero
     
     def _hero_attack(self, hero, enemies: List, player_count: int, log: List[str]):
-        """Attaque héros avec jets et système parade"""
+        """Attaque héros avec objets spéciaux (O-4 Lyre phoenix) + support Pets"""
         if not enemies:
             return
             
@@ -279,12 +329,33 @@ class CombatEngine:
         
         attack_roll = random.randint(1, 20)
         
+        # Détection type d'attaque (physique ou magique)
+        attack_info = hero.get_attack_damage_info()
+        damage_type = attack_info['damage_type']
+        damage_value = attack_info['damage_value']
+        
+        # Nom du combattant (héros ou Pet)
+        combatant_name = getattr(hero, 'display_name', hero.name)
+        
         # Critique
         if self.rules.criticals and attack_roll == 20:
-            damage = hero.get_total_damage() * 2
+            damage = damage_value * 2
             damage_result = target.apply_damage_with_parade(damage)
             
-            log.append(f"💥 CRITIQUE ! {hero.name} → {target.name}: {damage} dégâts")
+            # Log avec jet de dé et type de dégâts
+            total_attack = attack_roll + hero.get_total_precision()
+            damage_type_emoji = "✨" if damage_type == "magical" else "💥"
+            log.append(f"{damage_type_emoji} CRITIQUE ! {combatant_name} (🎲 20+{hero.get_total_precision()}={total_attack}) → {target.name}: {damage} dégâts {damage_type}s")
+            
+            # Log conversion selon l'objet spécial
+            if attack_info.get('conversion_source') == 'lyre_phoenix':
+                log.append(f"  🎵 Lyre phoenix: attaque convertie en dégâts magiques")
+            elif attack_info.get('conversion_source') == 'gemme_pouvoir':
+                form_display = attack_info.get('form_display', 'forme inconnue')
+                log.append(f"  💎 Gemme de pouvoir: {form_display} → attaque magique")
+            elif attack_info.get('pet_attack'):
+                log.append(f"  🐾 Attaque de Pet invoqué")
+            
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
             
@@ -294,16 +365,32 @@ class CombatEngine:
         
         # Échec critique
         if self.rules.criticals and attack_roll == 1:
-            log.append(f"💢 {hero.name} manque complètement")
+            total_attack = attack_roll + hero.get_total_precision()
+            log.append(f"💢 ÉCHEC CRITIQUE ! {combatant_name} (🎲 1+{hero.get_total_precision()}={total_attack}) manque complètement")
             return
         
         # Attaque normale
         total_attack = attack_roll + hero.get_total_precision()
         if total_attack >= target.defense:
-            damage = hero.get_total_damage()
+            damage = damage_value
             damage_result = target.apply_damage_with_parade(damage)
             
-            log_parts = [f"{hero.name} → {target.name}: {damage} dégâts"]
+            # Log avec jet de dé et type de dégâts
+            damage_type_text = "magiques" if damage_type == "magical" else "physiques"
+            log_parts = [f"{combatant_name} (🎲 {attack_roll}+{hero.get_total_precision()}={total_attack} vs défense {target.defense}) → {target.name}: {damage} dégâts {damage_type_text}"]
+            
+            # Log conversion selon l'objet spécial
+            conversion_log = ""
+            if attack_info.get('conversion_source') == 'lyre_phoenix':
+                conversion_log = "(🎵 Lyre phoenix)"
+            elif attack_info.get('conversion_source') == 'gemme_pouvoir':
+                form_display = attack_info.get('form_display', '').replace('🐻 ', '🐻').replace('🐺 ', '🐺')
+                conversion_log = f"(💎 {form_display})"
+            elif attack_info.get('pet_attack'):
+                conversion_log = "(🐾 Pet)"
+            
+            if conversion_log:
+                log_parts.append(conversion_log)
             
             if damage_result['blocked_by_parade'] > 0:
                 log_parts.append(f"({damage_result['blocked_by_parade']} bloqués)")
@@ -320,7 +407,7 @@ class CombatEngine:
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
         else:
-            log.append(f"{hero.name} manque {target.name} (attaque: {total_attack} vs défense: {target.defense})")
+            log.append(f"{combatant_name} (🎲 {attack_roll}+{hero.get_total_precision()}={total_attack} vs défense {target.defense}) manque {target.name}")
     
     def _try_health_potion(self, hero, log: List[str]):
         """IA utilise potions intelligemment"""
@@ -335,10 +422,11 @@ class CombatEngine:
             if can_use:
                 result = hero.use_health_potion()
                 if result['success']:
-                    log.append(f"🧪 {hero.name} boit une potion : {result['message']}")
+                    combatant_name = getattr(hero, 'display_name', hero.name)
+                    log.append(f"🧪 {combatant_name} boit une potion : {result['message']}")
     
-    def _try_ability(self, hero, enemies: List, log: List[str]) -> bool:
-        """IA capacités intelligente"""
+    def _try_ability_with_summon(self, hero, enemies: List, log: List[str], active_pets: List) -> bool:
+        """IA capacités intelligente + gestion invocations"""
         if not hasattr(hero, 'get_available_abilities'):
             return False
         
@@ -346,27 +434,60 @@ class CombatEngine:
         if not available:
             return False
         
+        # Priorité 1 : Invocation si pas de Pet actuel pour Kraor
+        if hero.code == "P-4" and hero.can_summon_pet():
+            current_pets = [p for p in active_pets if hasattr(p, 'owner_code') and p.owner_code == hero.code]
+            if not current_pets:  # Pas de Pet actuel
+                # Chercher la capacité d'invocation (VirtualAbility avec ability_number 99)
+                summon_ability = next((a for a in available if getattr(a, 'ability_number', 0) == 99), None)
+                if summon_ability:
+                    return self._use_summon_ability(hero, summon_ability, log, active_pets)
+        
+        # Logique IA normale pour autres capacités
         # 1. Soin si PV < 50%
         health_percent = (hero.current_health / hero.get_total_health()) * 100
         if health_percent < 50:
-            heal_abilities = [a for a in available if 'soin' in a.name.lower()]
+            heal_abilities = [a for a in available if 'soin' in a.name.lower() and getattr(a, 'ability_number', 0) != 99]
             if heal_abilities:
                 return self._use_ability(hero, heal_abilities[0], log)
         
         # 2. Zone si 3+ ennemis
         if len(enemies) >= 3:
-            aoe_abilities = [a for a in available if 'tous les adversaires' in a.description.lower()]
+            aoe_abilities = [a for a in available if 'tous les adversaires' in a.description.lower() and getattr(a, 'ability_number', 0) != 99]
             if aoe_abilities:
                 return self._use_ability(hero, aoe_abilities[0], log)
         
         # 3. Attaque offensive
-        offensive = [a for a in available if any(word in a.description.lower() for word in ['dégât', 'inflige'])]
+        offensive = [a for a in available if any(word in a.description.lower() for word in ['dégât', 'inflige']) and getattr(a, 'ability_number', 0) != 99]
         if offensive:
             return self._use_ability(hero, offensive[0], log)
         
-        # 4. Première capacité disponible
-        for ability in sorted(available, key=lambda a: a.spell_cost):
-            return self._use_ability(hero, ability, log)
+        # 4. Première capacité disponible (hors invocation)
+        for ability in sorted(available, key=lambda a: getattr(a, 'spell_cost', 0)):
+            if getattr(ability, 'ability_number', 0) != 99:
+                return self._use_ability(hero, ability, log)
+        
+        return False
+    
+    def _use_summon_ability(self, hero, ability, log: List[str], active_pets: List) -> bool:
+        """Utilise une capacité d'invocation"""
+        # Supprimer Pet existant du même propriétaire
+        active_pets[:] = [p for p in active_pets if not (hasattr(p, 'owner_code') and p.owner_code == hero.code)]
+        
+        # Invoquer nouveau Pet
+        new_pet = hero.summon_pet()
+        if new_pet:
+            if hasattr(new_pet, 'start_new_combat'):
+                new_pet.start_new_combat()  # Initialiser pour le combat
+            active_pets.append(new_pet)
+            
+            pet_name = getattr(new_pet, 'display_name', 'Pet')
+            log.append(f"🔮 {hero.name} utilise {ability.name}")
+            log.append(f"  ✨ {pet_name} invoqué ! (Précision: {new_pet.precision}, Dégâts magiques: {new_pet.get_total_magical_damage()}, Santé: {new_pet.health})")
+            
+            # Marquer action prise
+            hero.action_taken_this_turn = True
+            return True
         
         return False
     
@@ -376,7 +497,16 @@ class CombatEngine:
         if not action.success:
             return False
         
-        log.append(f"🔮 {hero.name} utilise {ability.name}")
+        # Affichage utilisation capacité avec formes
+        combatant_name = getattr(hero, 'display_name', hero.name)
+        log.append(f"🔮 {combatant_name} utilise {ability.name}")
+        
+        # Log des effets de transformation (Elneha)
+        if action.effects_applied:
+            for effect in action.effects_applied:
+                if "Transformation" in effect:
+                    log.append(f"  🔄 {effect}")
+        
         if action.spell_cost_paid > 0:
             log.append(f"  Coût: {action.spell_cost_paid} sorts")
         
@@ -387,7 +517,7 @@ class CombatEngine:
             heal = 8 if "8 blessures" in desc else 4 if "4 blessures" in desc else 2
             actual = hero.heal(heal)
             if actual > 0:
-                log.append(f"  💚 {hero.name} récupère {actual} PV")
+                log.append(f"  💚 {combatant_name} récupère {actual} PV")
         
         elif any(word in desc for word in ["dégât", "inflige"]):
             damage = 6 if "6 dégâts" in desc else 4 if "4 dégâts" in desc else 3
@@ -410,11 +540,12 @@ class CombatEngine:
                 hero.current_spells = max(0, hero.current_spells - 1)
     
     def _make_result(self, winner: str, rounds: int, heroes: List, enemies: List, 
-                     log: List[str], start_time: float) -> Dict[str, Any]:
-        """Résultat final avec métriques parade"""
+                     log: List[str], start_time: float, active_pets: List = None) -> Dict[str, Any]:
+        """CORRIGÉ - Résultat final avec métriques parade + objets spéciaux + Pets"""
         duration = time.time() - start_time
+        active_pets = active_pets or []
         
-        # Métriques par héros avec info parade
+        # Métriques par héros avec info parade + objets spéciaux
         heroes_individual = []
         total_damage = 0
         total_spells = 0
@@ -429,6 +560,10 @@ class CombatEngine:
                 'current_tokens': 0, 'max_tokens': 0, 'has_parade': False
             }
             
+            # Info objets spéciaux
+            special_effects = hero.get_special_equipment_effects() if hasattr(hero, 'get_special_equipment_effects') else {}
+            active_specials = [name for name, active in special_effects.items() if active]
+            
             heroes_individual.append({
                 'name': hero.name,
                 'damage_taken': damage_taken,
@@ -438,37 +573,75 @@ class CombatEngine:
                 'is_alive': hero.is_alive(),
                 'build': getattr(hero, 'build_name', 'Standard'),
                 'parade_tokens_remaining': parade_status['current_tokens'],
-                'parade_tokens_max': parade_status['max_tokens']
+                'parade_tokens_max': parade_status['max_tokens'],
+                'special_effects': active_specials
             })
         
+        # NOUVEAU - Ajouter les Pets aux métriques individuelles
+        if active_pets:
+            for pet in active_pets:
+                if hasattr(pet, 'display_name'):
+                    pet_damage_taken = pet.get_total_health() - pet.current_health
+                    total_damage += pet_damage_taken
+                    
+                    # Parade status pour Pet
+                    pet_parade_status = pet.get_parade_status() if hasattr(pet, 'get_parade_status') else {
+                        'current_tokens': 0, 'max_tokens': 0, 'has_parade': False
+                    }
+                    
+                    pet_info = {
+                        'name': pet.display_name,
+                        'damage_taken': pet_damage_taken,
+                        'spells_used': 0,  # Pets n'utilisent pas de sorts
+                        'health_remaining': pet.current_health,
+                        'health_percentage': f"{(pet.current_health / pet.get_total_health() * 100):.0f}",
+                        'is_alive': pet.is_alive(),
+                        'build': 'Pet Invoqué',
+                        'parade_tokens_remaining': pet_parade_status['current_tokens'],
+                        'parade_tokens_max': pet_parade_status['max_tokens'],
+                        'special_effects': []  # Pets n'ont pas d'objets spéciaux
+                    }
+                    heroes_individual.append(pet_info)
+        
         # Métriques compatibles interface
+        total_combatants = len(heroes) + len(active_pets)
         resource_metrics = {
             'total_damage_taken': total_damage,
             'total_spells_used': total_spells,
-            'average_damage_per_hero': round(total_damage / len(heroes), 1) if heroes else 0,
+            'average_damage_per_hero': round(total_damage / total_combatants, 1) if total_combatants > 0 else 0,
             'heroes_individual': heroes_individual
         }
+        
+        # Comptage des survivants (héros + pets)
+        heroes_alive = len([h for h in heroes if h.is_alive()])
+        pets_alive = len([p for p in active_pets if p.is_alive()])
+        total_alive = heroes_alive + pets_alive
         
         return {
             'winner': winner,
             'rounds': rounds,
             'duration': round(duration, 2),
-            'heroes_alive': len([h for h in heroes if h.is_alive()]),
+            'heroes_alive': total_alive,  # Inclut les Pets
             'enemies_alive': len([e for e in enemies if e.is_alive()]),
             'log': log,
             'resource_metrics': resource_metrics,
             'summary': {
                 'total_heroes': len(heroes),
-                'survival_rate': (len([h for h in heroes if h.is_alive()]) / len(heroes)) * 100 if heroes else 0,
+                'total_pets': len(active_pets),
+                'survival_rate': (total_alive / total_combatants * 100) if total_combatants > 0 else 0,
                 'abilities_system_active': self.abilities_enabled,
                 'potions_system_active': any(hasattr(h, 'health_potions') for h in heroes),
-                'parade_system_active': True
+                'parade_system_active': True,
+                'pets_system_active': len(active_pets) > 0,
+                'special_objects_active': any(any(special_effects.values()) for h in heroes 
+                                            if hasattr(h, 'get_special_equipment_effects') 
+                                            for special_effects in [h.get_special_equipment_effects()])
             }
         }
 
 # Fonctions utilitaires
 def create_combat_engine_with_abilities(rules, enable_abilities: bool = True):
-    """Crée moteur avec capacités et parade"""
+    """Crée moteur avec capacités, parade, objets spéciaux et Pets"""
     if hasattr(rules, 'abilities_enabled'):
         rules.abilities_enabled = enable_abilities
     return CombatEngine(rules)

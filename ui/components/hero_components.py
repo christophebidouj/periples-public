@@ -3,6 +3,7 @@ Composants héros pour le Simulateur Périples
 Cartes héros, récapitulatif d'équipe, statistiques
 NOUVEAU : Sélecteurs de difficulté (Facile/Normal/Difficile)
 AJOUT : Expander détails builds avec données pré-calculées (OPTIMISÉ)
+VERSION MIGRÉE : Système basé sur équipements réels
 """
 
 import streamlit as st
@@ -85,15 +86,48 @@ def load_abilities_details_cache(_loader):
         print(f"❌ Erreur cache capacités: {e}")
         return {}
 
+def calculate_stats_from_equipment(hero: Character, equipment_codes: List[str], equipment_cache: Dict) -> Dict[str, int]:
+    """
+    NOUVEAU - Calcule les stats depuis les équipements au lieu d'utiliser get_hero_stats_by_difficulty()
+    
+    Args:
+        hero: Héros de base
+        equipment_codes: Liste des codes d'équipements
+        equipment_cache: Cache des équipements
+        
+    Returns:
+        Dict avec les stats totales
+    """
+    # Stats de base du héros
+    total_stats = {
+        'precision': hero.precision,
+        'damage': hero.damage,
+        'health': hero.health,
+        'parade': 0,
+        'spells': hero.spells
+    }
+    
+    # Ajout des bonus d'équipements
+    for code in equipment_codes:
+        if code in equipment_cache:
+            eq = equipment_cache[code]
+            total_stats['precision'] += eq['precision']
+            total_stats['damage'] += eq['physical_damage']
+            total_stats['parade'] += eq['defense']
+            total_stats['spells'] += eq['spells']
+            total_stats['health'] += eq['health']
+    
+    return total_stats
+
 def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: List, loader) -> Dict:
     """
     Pré-calcule les 3 builds (Facile/Normal/Difficile) pour tous les héros
-    NOUVEAU : Inclut tous les détails (équipements, capacités, potions) pré-calculés
+    VERSION MIGRÉE : Calcul depuis équipements réels au lieu de stats hardcodées
     
     Returns:
         Dict: Structure {hero_code: [build_facile, build_normal, build_difficile]} avec détails complets
     """
-    from hero_builds_data import get_hero_stats_by_difficulty, get_build_name_by_difficulty, get_hero_detailed_build
+    from hero_builds_data import get_build_name_by_difficulty, get_hero_detailed_build, get_abilities_for_level
     
     # Chargement des caches
     equipment_cache = load_equipment_details_cache()
@@ -106,24 +140,26 @@ def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: 
         hero_builds = []
         
         for difficulty in difficulty_levels:
-            # Stats de base
-            stats = get_hero_stats_by_difficulty(hero.code, difficulty)
-            build_name = get_build_name_by_difficulty(difficulty)
             difficulty_clean = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
+            build_name = get_build_name_by_difficulty(difficulty_clean)
             
-            # Détails du build depuis hero_builds_data
+            # NOUVEAU - Récupération build détaillé depuis hero_builds_data
             detailed_build = get_hero_detailed_build(hero.code, difficulty_clean)
+            
+            # NOUVEAU - Calcul stats depuis équipements réels
+            equipment_codes = detailed_build.get('equipment', [])
+            stats = calculate_stats_from_equipment(hero, equipment_codes, equipment_cache)
             
             # === ÉQUIPEMENTS PRÉ-CALCULÉS ===
             equipment_details = []
-            equipment_codes = detailed_build.get('equipment', [])
             for code in equipment_codes:
                 if code in equipment_cache:
                     equipment_details.append(equipment_cache[code])
             
             # === CAPACITÉS PRÉ-CALCULÉES ===
             abilities_details = []
-            abilities_numbers = detailed_build.get('abilities', [])
+            abilities_level = detailed_build.get('abilities_level', 1)
+            abilities_numbers = get_abilities_for_level(hero.code, abilities_level)
             hero_abilities_cache = abilities_cache.get(hero.code, {})
             for ability_num in abilities_numbers:
                 if ability_num in hero_abilities_cache:
@@ -140,7 +176,7 @@ def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: 
                 'is_custom': False,
                 'stats': {'total': stats},
                 'difficulty_level': difficulty_clean,
-                # NOUVEAU : Détails pré-calculés
+                # Détails pré-calculés
                 'build_details': {
                     'equipment': equipment_details,
                     'abilities': abilities_details,
@@ -152,7 +188,7 @@ def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: 
         
         preloaded_builds[hero.code] = hero_builds
     
-    print(f"✅ Builds pré-calculés pour {len(preloaded_builds)} héros avec détails complets")
+    print(f"✅ Builds pré-calculés pour {len(preloaded_builds)} héros avec équipements réels")
     return preloaded_builds
 
 def get_custom_build_details(hero_code: str, custom_build_data: Dict, equipment_cache: Dict, abilities_cache: Dict) -> Dict:
@@ -326,7 +362,7 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     """
     Affiche une carte héros avec style gaming et sélecteur de difficulté
     Utilise les builds pré-calculés pour une réactivité immédiate avec callback
-    OPTIMISÉ : Expander avec données pré-calculées, aucune requête
+    VERSION MIGRÉE : Stats calculées depuis équipements réels
     
     Args:
         hero: Objet Character
@@ -356,10 +392,14 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         abilities_cache = load_abilities_details_cache(st.session_state.get('data_loader'))
         custom_build_details = get_custom_build_details(hero.code, custom, equipment_cache, abilities_cache)
         
+        # NOUVEAU - Calcul stats custom depuis équipements
+        equipment_codes = custom.get('equipment', [])
+        custom_stats = calculate_stats_from_equipment(hero, equipment_codes, equipment_cache)
+        
         build_info = {
             'build_name': custom.get('name', 'Build Custom'),
             'is_custom': True,
-            'stats': {'total': {'precision': 6, 'damage': 3, 'health': 8, 'parade': 1, 'spells': 4}},  # Placeholder
+            'stats': {'total': custom_stats},
             'difficulty_level': 'Custom',
             'build_details': custom_build_details
         }

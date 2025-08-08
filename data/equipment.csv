@@ -1,53 +1,86 @@
 Code,Nom,Type,Precision,Physical_Damage,Magical_Damage,Defense,Spells,Health
-O-5,Dague,arme,2,1,0,0,0,0
-O-6,Epée courte,arme,0,0,0,0,0,0
-O-7,Epée longue,arme,2,2,0,0,0,0
-O-8,Hache de combat,arme,1,2,0,0,0,0
-O-9,Marteau de guerre,arme,2,2,0,0,0,0
-O-10,Arbalète légère,arme,2,1,0,0,0,0
-O-11,Arc long,arme,3,2,0,0,0,0
-O-12,Rondache de bois,arme,0,0,0,1,0,0
-O-13,Luth,accessoire,0,0,0,0,1,0
-O-14,Vêtement de cuir,armure,0,0,0,1,0,0
-O-15,Vêtement de cuir,armure,0,0,0,1,0,0
-O-16,Armure de cuir,armure,0,0,0,1,0,0
-O-17,Armure de cuir,armure,0,0,0,1,0,0
-O-18,Dague,arme,2,1,0,0,0,0
-O-19,Epée courte,arme,1,2,0,0,0,0
-O-20,Epée longue,arme,2,2,0,0,0,0
-O-21,Espadon,arme,1,4,0,0,0,0
+O-1,Gemme de pouvoir,accessoire,0,0,0,0,0,0
+O-2,Baton de puissance,arme,0,1,0,0,0,0
+O-3,Médaillon d'appel,accessoire,0,0,0,0,0,0
+O-4,Lyre phoenix,accessoire,0,0,0,0,4,0
+O-5,Dague rouillée,arme,0,1,0,0,0,0
+O-6,Bâton cassé,arme,0,0,1,0,0,0
+O-7,Tunique trouée,armure,0,0,0,0,0,1
+O-8,Grimoire déchiré,accessoire,0,0,0,0,1,0
+O-9,Marteau de guerre,arme,1,2,0,0,0,0
+O-10,Bâton de mage,arme,0,0,2,0,1,0
+O-11,Arc long,arme,2,1,0,0,0,0
+O-12,Épée rouillée,arme,0,2,0,0,0,0
+O-13,Hachette,arme,1,1,0,0,0,0
+O-14,Dague empoisonnée,arme,1,1,0,0,0,0
+O-15,Lance courte,arme,1,1,0,0,0,0
+O-16,Masse d'armes,arme,0,2,0,0,0,0
+O-17,Fléau d'armes,arme,1,2,0,0,0,0
+O-18,Dague,arme,1,1,0,0,0,0
+O-19,Épée courte,arme,1,2,0,0,0,0
+O-20,Épée longue,arme,2,2,0,0,0,0
+O-21,Espadon,arme,1,3,0,0,0,0
 O-22,Hache de combat,arme,1,2,0,0,0,0
-O-23,Hache de guerre,arme,2,3,0,0,0,0
-O-24,Epée Bâtarde,arme,3,1,0,0,0,0
-O-24b,Epée Bâtarde,arme,1,3,0,0,0,0
-O-25,Lance,arme,1,3,0,0,0,0
-O-26,Bâton de combat,arme,3,1,0,0,0,0
-O-27,Arbalète légère,arme,2,1,0,0,0,0
+O-23,Hache de guerre,arme,0,3,0,0,0,0
+O-24,Épée bâtarde,arme,2,3,0,0,0,0
+O-25,Arc court,arme,1,1,0,0,0,0
+O-26,Bâton de combat,arme,1,1,0,0,0,0
+O-27,Javeline,arme,1,1,0,0,0,0
 O-28,Arbalète légère,arme,2,1,0,0,0,0
 O-29,Rondache de bois,armure,0,0,0,1,0,0
-O-30,Bouclier de bois,armure,0,0,0,1,0,0
-O-31,Bouclier de fer,armure,0,0,0,2,0,0
-O-32,Vêtement de cuir,armure,0,0,0,1,0,0
-O-33,Vêtement de cuir,armure,0,0,0,1,0,0
-O-34,Armure de cuir,armure,0,0,0,1,0,0
-O-35,Armure de cuir,armure,0,0,0,1,0,0
-O-36,Armure de plates,armure,0,0,0,2,0,0
-O-37,Armure de plates,armure,0,0,0,2,0,0
-O-38,Gants de précision ,armure,4,0,0,0,0,0
-O-39,Couronne de santé,armure,0,0,0,0,0,2
-O-40,Bague d’impact,accessoire,2,0,0,0,0,0
-O-41,Ceinture de parade,armure,0,0,0,1,0,0
+O-30,Bouclier de bois,armure,0,0,0,2,0,0
+O-31,Bouclier de fer,armure,0,0,0,3,0,0
+O-32,Vêtement de cuir,armure,0,0,0,0,0,1
+O-33,Robe de mage,armure,0,0,0,0,1,0
+O-34,Cotte de mailles,armure,0,0,0,2,0,0
+O-35,Armure de cuir,armure,0,0,0,1,0,1
+O-36,Armure de plate,armure,0,0,0,3,0,1
+O-37,Casque de fer,armure,0,0,0,1,0,0
+O-38,Gants de précision,accessoire,1,0,0,0,0,0
+O-39,Couronne de santé,accessoire,0,0,0,0,0,3
+O-40,Bague d'impact,accessoire,0,1,0,0,0,0
+O-41,Ceinture de parade,accessoire,0,0,0,1,0,0
 O-42,Pierre de mémoire,accessoire,0,0,0,0,2,0
-O-55,Potion de précision,accessoire,4,0,0,0,0,0
-O-56,Potion de vigueur,accessoire,0,0,0,0,0,2
-O-57,Potion de défense,accessoire,0,0,0,1,0,0
-O-58,Potion d’assaut,accessoire,2,0,0,0,0,0
-O-59,Potion de magie,accessoire,0,0,0,0,6,0
-O-73,Marteau du juste,arme,4,0,2,0,0,0
-O-75,Implacable,accessoire,0,6,0,0,0,0
-O-77,Poings de feu,arme,2,0,4,0,0,0
-O-78,Dagues jumelles,arme,3,0,3,0,0,0
-O-82,Armure de Jaron,armure,0,0,0,3,0,0
-O-83,Epée d’Olestrin,arme,3,3,0,0,0,0
-O-84,Bouclier polyvalent,armure,0,0,0,0,0,0
-O-85,Don des élus,accessoire,0,0,0,0,0,2
+O-43,Amulette de force,accessoire,0,1,0,0,0,1
+O-44,Botte de vitesse,accessoire,1,0,0,0,0,0
+O-45,Cape de mage,accessoire,0,0,1,0,1,0
+O-46,Cristal de pouvoir,accessoire,0,0,2,0,0,0
+O-47,Talisman de protection,accessoire,0,0,0,2,0,0
+O-48,Bracelet de précision,accessoire,2,0,0,0,0,0
+O-49,Collier de santé,accessoire,0,0,0,0,0,2
+O-50,Anneau de magie,accessoire,0,0,1,0,1,0
+O-51,Heaume lourd,armure,0,0,0,2,0,0
+O-52,Plastron renforcé,armure,0,0,0,1,0,2
+O-53,Jambières de fer,armure,0,0,0,1,0,1
+O-54,Gantelets de combat,armure,1,0,0,1,0,0
+O-55,Bottes cloutées,armure,0,1,0,1,0,0
+O-56,Cagoule de mage,armure,0,0,0,0,2,0
+O-57,Harnois complet,armure,0,0,0,4,0,0
+O-58,Cuirasse de cuir,armure,0,0,0,1,0,1
+O-59,Gambison rembourré,armure,0,0,0,0,0,2
+O-60,Bracelet de défense,accessoire,0,0,0,1,0,0
+O-61,Médaillon de vie,accessoire,0,0,0,0,0,3
+O-62,Orbe de pouvoir,accessoire,0,0,2,0,2,0
+O-63,Sceptre du sage,arme,0,0,3,0,2,0
+O-64,Lame elfique,arme,3,2,0,0,0,0
+O-65,Marteau nain,arme,1,4,0,0,0,0
+O-66,Arc elfique,arme,3,2,0,0,0,0
+O-67,Dague de maître,arme,2,2,0,0,0,0
+O-68,Rapière noble,arme,3,1,0,0,0,0
+O-69,Glaive à deux mains,arme,1,4,0,0,0,0
+O-70,Morgenstern,arme,2,3,0,0,0,0
+O-71,Francisque,arme,1,3,0,0,0,0
+O-72,Hallebarde,arme,2,3,0,0,0,0
+O-73,Marteau du juste,arme,2,3,1,0,0,1
+O-74,Épée sacrée,arme,2,2,2,0,1,0
+O-75,Implacable,arme,3,4,0,0,0,0
+O-76,Lame de feu,arme,2,1,3,0,0,0
+O-77,Poings de feu,arme,1,2,2,0,0,0
+O-78,Dagues jumelles,arme,3,3,0,0,0,0
+O-79,Bâton du grand mage,arme,0,0,4,0,3,0
+O-80,Arc de guerre,arme,3,3,0,0,0,0
+O-81,Arbalète lourde,arme,2,4,0,0,0,0
+O-82,Masse de guerre,arme,1,4,0,0,0,0
+O-83,Épée maudite,arme,2,3,1,0,0,0
+O-84,Faux de guerre,arme,1,4,0,0,0,0
+O-85,Trident,arme,2,2,0,0,0,0

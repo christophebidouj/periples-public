@@ -1,14 +1,49 @@
 """
 Modèles de personnages pour le Simulateur Périples
-VERSION CORRIGÉE avec système de jetons parade rechargeable
+VERSION CORRIGÉE avec VirtualAbility pour invocation + système de jetons parade rechargeable + effets spéciaux
 🛡️ Parade = jetons rechargeable à chaque tour (héros ET ennemis)
 🩸 Potions de santé dans builds custom
+🎭 O-4 (Lyre phoenix) : +4 sorts + attaques magiques pour Stèphe
 """
 
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 from enum import Enum
 from .abilities import Ability, AbilityAction, AbilityType, AbilityManager
+
+class VirtualAbility:
+    """
+    Capacité virtuelle pour invocations - Évite les contraintes Pydantic
+    Compatible avec le système Ability mais sans validation stricte
+    """
+    def __init__(self, hero_code: str, name: str, description: str):
+        self.hero_code = hero_code
+        self.ability_number = 99  # Numéro spécial hors contraintes
+        self.name = name
+        self.spell_cost = 0
+        self.description = description
+        self.is_unlocked = True
+        self.unique_id = f"{hero_code}_summon"
+        self.prevents_attack = False
+        self.target_type = "self"
+        self.effects = []
+    
+    @property
+    def ability_type(self):
+        """Type physique car coût 0"""
+        return AbilityType.PHYSICAL
+    
+    def can_use(self, current_spells: Optional[int]) -> tuple[bool, str]:
+        """Toujours utilisable (pas de coût)"""
+        return True, "Utilisable"
+    
+    def use_ability(self) -> bool:
+        """Toujours réussit"""
+        return True
+    
+    def reset_combat_uses(self):
+        """Rien à reset pour invocation"""
+        pass
 
 class PotionType(Enum):
     """Types de potions de santé"""
@@ -49,7 +84,7 @@ class HealthPotion(BaseModel):
         return False
 
 class Character(BaseModel):
-    """Héros avec système de jetons parade rechargeable"""
+    """Héros avec système de jetons parade rechargeable + effets spéciaux"""
     
     # Stats de base
     code: str
@@ -68,7 +103,7 @@ class Character(BaseModel):
     current_spells: Optional[int] = None
     spells_used: int = 0
     
-    # NOUVEAU - Système de jetons parade
+    # Système de jetons parade
     max_parade_tokens: int = 0
     current_parade_tokens: int = 0
     
@@ -85,6 +120,9 @@ class Character(BaseModel):
     can_attack_this_turn: bool = True
     potion_used_this_turn: bool = False
     
+    # Système de formes pour Elneha
+    current_form: Optional[str] = None  # "bear", "wolf", "human"
+    
     def model_post_init(self, __context):
         """Initialisation"""
         if self.current_health is None:
@@ -98,6 +136,111 @@ class Character(BaseModel):
         
         # Initialiser parade selon équipements
         self._update_parade_from_equipment()
+        
+        # Initialiser forme pour Elneha
+        if self.code == "P-1":
+            self.current_form = "human"
+    
+    # === SYSTÈME OBJETS SPÉCIAUX ===
+    
+    def has_equipment(self, equipment_code: str) -> bool:
+        """Vérifie si le héros porte un équipement spécifique"""
+        return any(item.code == equipment_code for item in self.equipped_items)
+    
+    def get_special_equipment_effects(self) -> Dict[str, bool]:
+        """Retourne les effets spéciaux actifs"""
+        effects = {
+            'lyre_phoenix': False,      # O-4 - Stèphe attaques magiques
+            'gemme_pouvoir': False,     # O-1 - Elneha formes magiques  
+            'baton_puissance': False,   # O-2 - Liarie +1 capacités
+            'medaillon_appel': False    # O-3 - Kraor invocation Pet
+        }
+        
+        # O-4 Lyre phoenix - Stèphe (P-6)
+        if self.code == "P-6" and self.has_equipment("O-4"):
+            effects['lyre_phoenix'] = True
+        
+        # O-1 Gemme de pouvoir - Elneha (P-1)  
+        if self.code == "P-1" and self.has_equipment("O-1"):
+            effects['gemme_pouvoir'] = True
+        
+        # O-2 Baton de puissance - Liarie (P-2)
+        if self.code == "P-2" and self.has_equipment("O-2"):
+            effects['baton_puissance'] = True
+        
+        # O-3 Médaillon d'appel - Kraor (P-4)
+        if self.code == "P-4" and self.has_equipment("O-3"):
+            effects['medaillon_appel'] = True
+        
+        return effects
+    
+    def has_magical_attacks(self) -> bool:
+        """Vérifie si les attaques sont magiques (O-4 Lyre phoenix)"""
+        effects = self.get_special_equipment_effects()
+        return effects['lyre_phoenix']
+    
+    # === SYSTÈME DE FORMES (ELNEHA) ===
+    
+    def set_form(self, form: str):
+        """Change la forme actuelle (pour Elneha)"""
+        if self.code == "P-1":  # Seule Elneha peut changer de forme
+            self.current_form = form
+    
+    def get_form_display(self) -> str:
+        """Affichage de la forme actuelle"""
+        if self.code != "P-1":
+            return ""
+        
+        form_names = {
+            "bear": "🐻 Forme d'ours",
+            "wolf": "🐺 Forme de loup", 
+            "human": "👤 Forme humaine"
+        }
+        return form_names.get(self.current_form, "👤 Forme humaine")
+    
+    def has_magical_form_attacks(self) -> bool:
+        """O-1 Gemme de pouvoir : formes d'ours/loup → attaques magiques"""
+        return (self.code == "P-1" and 
+                self.has_equipment("O-1") and 
+                self.current_form in ["bear", "wolf"])
+    
+    def get_form_status(self) -> Dict:
+        """État des formes pour interface"""
+        if self.code != "P-1":
+            return {'has_forms': False}
+        
+        return {
+            'has_forms': True,
+            'current_form': self.current_form,
+            'display_name': self.get_form_display(),
+            'has_gemme_pouvoir': self.has_equipment("O-1"),
+            'has_magical_attacks': self.has_magical_form_attacks()
+        }
+    
+    # === SYSTÈME D'INVOCATION (KRAOR) ===
+    
+    def can_summon_pet(self) -> bool:
+        """Vérifie si le héros peut invoquer un Pet"""
+        return self.code == "P-4" and self.has_equipment("O-3")
+    
+    def summon_pet(self) -> Optional['Pet']:
+        """Invoque un Pet selon l'objet équipé"""
+        if not self.can_summon_pet():
+            return None
+        
+        # Kraor avec O-3 Médaillon d'appel
+        if self.code == "P-4" and self.has_equipment("O-3"):
+            return Pet.create_kraor_pet(self)
+        
+        return None
+    
+    def get_summon_status(self) -> Dict:
+        """État des capacités d'invocation"""
+        return {
+            'can_summon': self.can_summon_pet(),
+            'summon_type': 'pet' if self.can_summon_pet() else None,
+            'has_medaillon_appel': self.has_equipment("O-3") if self.code == "P-4" else False
+        }
     
     # === SYSTÈME JETONS PARADE ===
     
@@ -108,16 +251,16 @@ class Character(BaseModel):
         self.current_parade_tokens = self.max_parade_tokens
     
     def get_total_parade(self) -> int:
-        """NOUVEAU - Retourne les jetons parade actuels (pas max)"""
+        """Retourne les jetons parade actuels (pas max)"""
         return self.current_parade_tokens
     
     def refresh_parade_tokens(self):
-        """NOUVEAU - Recharge tous les jetons parade (début de tour)"""
+        """Recharge tous les jetons parade (début de tour)"""
         self.current_parade_tokens = self.max_parade_tokens
     
     def consume_parade_tokens(self, damage: int) -> tuple[int, int]:
         """
-        NOUVEAU - Consomme les jetons parade contre les dégâts
+        Consomme les jetons parade contre les dégâts
         
         Args:
             damage: Dégâts entrants
@@ -139,7 +282,7 @@ class Character(BaseModel):
     
     def apply_damage_with_parade(self, damage: int) -> Dict:
         """
-        NOUVEAU - Applique dégâts avec système parade à jetons
+        Applique dégâts avec système parade à jetons
         
         Returns:
             Dict avec détails de l'application des dégâts
@@ -169,7 +312,7 @@ class Character(BaseModel):
         }
     
     def get_parade_status(self) -> Dict:
-        """NOUVEAU - État actuel du système parade"""
+        """État actuel du système parade"""
         return {
             'max_tokens': self.max_parade_tokens,
             'current_tokens': self.current_parade_tokens,
@@ -177,7 +320,7 @@ class Character(BaseModel):
             'parade_percentage': round((self.current_parade_tokens / self.max_parade_tokens * 100), 1) if self.max_parade_tokens > 0 else 0
         }
     
-    # === POTIONS (INCHANGÉ) ===
+    # === POTIONS ===
     
     def add_default_potions(self):
         """Ajoute 1 Petite Potion par défaut"""
@@ -332,10 +475,6 @@ class Character(BaseModel):
     def is_alive(self) -> bool:
         return self.current_health > 0
     
-    def take_damage(self, damage: int):
-        """OBSOLÈTE - Utiliser apply_damage_with_parade() à la place"""
-        self.current_health = max(0, self.current_health - damage)
-    
     def heal(self, heal_amount: int) -> int:
         """Soigne et retourne le montant réellement soigné"""
         if heal_amount <= 0:
@@ -360,7 +499,7 @@ class Character(BaseModel):
         self.build_name = build_name
         if self.current_health == self.health:
             self.reset_health()
-        # NOUVEAU - Mise à jour parade
+        # Mise à jour parade
         self._update_parade_from_equipment()
     
     def get_equipment_bonus(self, stat_type: str) -> int:
@@ -387,13 +526,59 @@ class Character(BaseModel):
         return self.damage + self.get_equipment_bonus('physical_damage')
     
     def get_total_magical_damage(self) -> int:
-        return self.get_equipment_bonus('magical_damage')
+        """Gère la conversion d'attaques pour O-4 Lyre phoenix"""
+        base_magical = self.get_equipment_bonus('magical_damage')
+        
+        # O-4 Lyre phoenix : Stèphe attaques → magiques (conversion, pas addition)
+        if self.has_magical_attacks():
+            # Conversion : dégâts physiques deviennent magiques
+            converted_damage = self.get_total_damage()
+            return max(base_magical, converted_damage)  # Prendre le max pour éviter double comptage
+        
+        return base_magical
     
     def get_total_spells(self) -> int:
-        return self.spells + self.get_equipment_bonus('spells')
+        """Gère le bonus O-4 Lyre phoenix (+4 sorts)"""
+        base_spells = self.spells + self.get_equipment_bonus('spells')
+        
+        # O-4 Lyre phoenix : +4 sorts déjà dans equipment.csv (O-4 a Spells: 4)
+        # Pas besoin de bonus supplémentaire ici
+        return base_spells
     
     def get_total_health(self) -> int:
         return self.health + self.get_equipment_bonus('health')
+    
+    def get_attack_damage_info(self) -> Dict:
+        """Infos sur le type de dégâts d'attaque (physique ou magique)"""
+        # Priorité 1 : O-4 Lyre phoenix (toutes les attaques → magiques)
+        if self.has_magical_attacks():
+            return {
+                'damage_type': 'magical',
+                'damage_value': self.get_total_magical_damage(),
+                'is_converted': True,
+                'conversion_source': 'lyre_phoenix',
+                'original_physical': self.get_total_damage()
+            }
+        
+        # Priorité 2 : O-1 Gemme de pouvoir (formes d'ours/loup → magiques)
+        elif self.has_magical_form_attacks():
+            return {
+                'damage_type': 'magical',
+                'damage_value': self.get_total_damage(),  # Même valeur, type changé
+                'is_converted': True,
+                'conversion_source': 'gemme_pouvoir',
+                'current_form': self.current_form,
+                'form_display': self.get_form_display()
+            }
+        
+        # Attaques normales (physiques)
+        else:
+            return {
+                'damage_type': 'physical', 
+                'damage_value': self.get_total_damage(),
+                'is_converted': False,
+                'magical_bonus': self.get_total_magical_damage()
+            }
     
     def get_stats_summary(self) -> Dict:
         return {
@@ -419,10 +604,12 @@ class Character(BaseModel):
                 'parade': self.max_parade_tokens,
                 'spells': self.get_total_spells(),
                 'health': self.get_total_health()
-            }
+            },
+            'special_effects': self.get_special_equipment_effects(),
+            'forms': self.get_form_status() if self.code == "P-1" else None
         }
     
-    # === CAPACITÉS (INCHANGÉ) ===
+    # === CAPACITÉS ===
     
     def add_abilities(self, abilities: List[Ability]):
         self.abilities = abilities
@@ -448,11 +635,12 @@ class Character(BaseModel):
         
         return True
     
-    def get_available_abilities(self) -> List[Ability]:
-        """Capacités utilisables (exclusion Kraor 1&3)"""
+    def get_available_abilities(self) -> List:
+        """MODIFIÉ - Capacités utilisables + VirtualAbility pour invocation"""
         available = []
         current_spells = self.current_spells or self.get_total_spells()
         
+        # Capacités normales (Ability Pydantic)
         for ability in self.abilities:
             if not ability.is_unlocked:
                 continue
@@ -465,9 +653,19 @@ class Character(BaseModel):
             if can_use:
                 available.append(ability)
         
+        # NOUVEAU - VirtualAbility pour invocation
+        if self.can_summon_pet():
+            summon_ability = VirtualAbility(
+                self.code,
+                "Invoquer Pet",
+                "Invoque un Pet allié avec le Médaillon d'appel"
+            )
+            available.append(summon_ability)
+        
         return available
     
-    def use_ability(self, ability: Ability) -> AbilityAction:
+    def use_ability(self, ability) -> AbilityAction:
+        """MODIFIÉ - Support VirtualAbility + Ability normale"""
         action = AbilityAction(
             ability_id=ability.unique_id,
             ability_name=ability.name,
@@ -475,15 +673,25 @@ class Character(BaseModel):
             prevents_attack=ability.prevents_attack
         )
         
-        # Consommation sorts
-        if ability.spell_cost > 0:
+        # Gestion des formes d'Elneha (capacités 1 et 3 seulement)
+        if self.code == "P-1" and hasattr(ability, 'ability_number'):
+            if ability.ability_number == 1:  # Forme d'ours
+                self.set_form("bear")
+                action.add_effect(f"Transformation en {self.get_form_display()}")
+            elif ability.ability_number == 3:  # Forme de loup
+                self.set_form("wolf")
+                action.add_effect(f"Transformation en {self.get_form_display()}")
+        
+        # Consommation sorts (seulement pour Ability normales)
+        if hasattr(ability, 'spell_cost') and ability.spell_cost > 0:
             current_spells = self.current_spells or self.get_total_spells()
             self.current_spells = current_spells - ability.spell_cost
             self.spells_used += ability.spell_cost
             action.spell_cost_paid = ability.spell_cost
         
-        # Consommation utilisations
-        ability.use_ability()
+        # Consommation utilisations (seulement pour Ability normales)
+        if hasattr(ability, 'use_ability'):
+            ability.use_ability()
         
         # État tour
         self.ability_used_this_turn = ability
@@ -513,11 +721,23 @@ class Character(BaseModel):
         for ability in self.abilities:
             ability.reset_combat_uses()
         
-        # NOUVEAU - Reset parade
+        # O-2 Baton de puissance : +1 utilisation capacités magiques (Liarie)
+        if self.code == "P-2" and self.has_equipment("O-2"):
+            self._apply_baton_puissance_bonus()
+        
+        # Reset parade
         self.refresh_parade_tokens()
     
+    def _apply_baton_puissance_bonus(self):
+        """Applique le bonus O-2 Baton de puissance (+1 utilisation capacités magiques)"""
+        for ability in self.abilities:
+            if ability.spell_cost > 0 and ability.uses_per_combat is not None:
+                # +1 utilisation pour les capacités magiques avec limitation
+                ability.uses_remaining_combat = ability.uses_per_combat + 1
+                ability.uses_per_combat += 1  # Modifier aussi la base pour reset_combat_uses()
+    
     def start_hero_turn(self):
-        """NOUVEAU - Début du tour héros (recharge parade)"""
+        """Début du tour héros (recharge parade)"""
         self.reset_turn_state()
         self.refresh_parade_tokens()
     
@@ -542,8 +762,63 @@ class Character(BaseModel):
                 'action_taken': self.action_taken_this_turn,
                 'can_attack': self.can_attack_this_turn,
                 'potion_used': self.potion_used_this_turn
-            }
+            },
+            'special_effects': self.get_special_equipment_effects()
         }
+
+class Pet(Character):
+    """Pet invoqué avec système de jetons parade + héritage Character"""
+    
+    owner_code: str  # Code du héros qui l'a invoqué (ex: "P-4")
+    owner_name: str  # Nom du héros qui l'a invoqué (ex: "Kraor")
+    pet_type: str = "summoned"  # Type de Pet pour extensions futures
+    
+    @property
+    def display_name(self) -> str:
+        """Nom d'affichage du Pet"""
+        return f"Minion de {self.owner_name}"
+    
+    @classmethod
+    def create_kraor_pet(cls, owner: 'Character') -> 'Pet':
+        """Crée le Pet de Kraor selon les stats définies"""
+        return cls(
+            code=f"{owner.code}_pet",
+            name="Pet Invoqué",
+            owner_code=owner.code,
+            owner_name=owner.name,
+            # Stats du Pet selon règles : Précision 4, Dégâts magiques 4, Parade 0, Santé 15
+            precision=4,
+            damage=0,  # Pas de dégâts physiques
+            spells=0,  # Pas de sorts
+            health=15,
+            current_health=15,
+            # Parade = 0 selon règles
+            max_parade_tokens=0,
+            current_parade_tokens=0,
+            # Équipement spécial pour dégâts magiques
+            equipped_items=[]  # On ajoutera un équipement virtuel pour les dégâts magiques
+        )
+    
+    def get_total_magical_damage(self) -> int:
+        """Pet de Kraor fait 4 dégâts magiques"""
+        if self.owner_code == "P-4":
+            return 4
+        return super().get_total_magical_damage()
+    
+    def get_attack_damage_info(self) -> Dict:
+        """Pet attaque toujours en magique"""
+        if self.owner_code == "P-4":
+            return {
+                'damage_type': 'magical',
+                'damage_value': 4,
+                'is_converted': False,
+                'pet_attack': True
+            }
+        return super().get_attack_damage_info()
+    
+    def get_available_abilities(self) -> List:
+        """Pets n'ont pas de capacités spéciales (pour l'instant)"""
+        return []
 
 class Enemy(BaseModel):
     """Modèle ennemi avec système de jetons parade rechargeable"""
@@ -556,7 +831,7 @@ class Enemy(BaseModel):
     current_health: Optional[int] = None
     max_health: Optional[int] = None
     
-    # NOUVEAU - Système jetons parade
+    # Système jetons parade
     max_parade_tokens: int = 0
     current_parade_tokens: int = 0
     
@@ -564,14 +839,14 @@ class Enemy(BaseModel):
         return self.stats_by_players.get(player_count, self.stats_by_players[4])
     
     def initialize_for_combat(self, player_count: int):
-        """MODIFIÉ - Initialise santé ET parade"""
+        """Initialise santé ET parade"""
         stats = self.get_stats_for_players(player_count)
         
         # Santé
         self.max_health = stats['health']
         self.current_health = stats['health']
         
-        # NOUVEAU - Parade (Defense_Xj dans le CSV)
+        # Parade (Defense_Xj dans le CSV)
         # Note: Assume que 'defense' dans stats est en fait la parade
         self.max_parade_tokens = stats.get('defense', 0)
         self.current_parade_tokens = self.max_parade_tokens
@@ -579,23 +854,15 @@ class Enemy(BaseModel):
     def is_alive(self) -> bool:
         return self.current_health > 0
     
-    def take_damage(self, damage: int, player_count: int):
-        """OBSOLÈTE - Utiliser apply_damage_with_parade() à la place"""
-        stats = self.get_stats_for_players(player_count)
-        defense_value = stats.get('defense', 0)
-        actual_damage = max(1, damage - defense_value)
-        self.current_health = max(0, self.current_health - actual_damage)
-        return actual_damage
-    
     # === SYSTÈME JETONS PARADE ===
     
     def refresh_parade_tokens(self):
-        """NOUVEAU - Recharge tous les jetons parade (début de tour)"""
+        """Recharge tous les jetons parade (début de tour)"""
         self.current_parade_tokens = self.max_parade_tokens
     
     def consume_parade_tokens(self, damage: int) -> tuple[int, int]:
         """
-        NOUVEAU - Consomme les jetons parade contre les dégâts
+        Consomme les jetons parade contre les dégâts
         
         Args:
             damage: Dégâts entrants
@@ -617,7 +884,7 @@ class Enemy(BaseModel):
     
     def apply_damage_with_parade(self, damage: int) -> Dict:
         """
-        NOUVEAU - Applique dégâts avec système parade à jetons
+        Applique dégâts avec système parade à jetons
         
         Returns:
             Dict avec détails de l'application des dégâts
@@ -647,7 +914,7 @@ class Enemy(BaseModel):
         }
     
     def get_parade_status(self) -> Dict:
-        """NOUVEAU - État actuel du système parade"""
+        """État actuel du système parade"""
         return {
             'max_tokens': self.max_parade_tokens,
             'current_tokens': self.current_parade_tokens,
@@ -656,11 +923,11 @@ class Enemy(BaseModel):
         }
     
     def start_enemy_turn(self):
-        """NOUVEAU - Début du tour ennemi (recharge parade)"""
+        """Début du tour ennemi (recharge parade)"""
         self.refresh_parade_tokens()
 
 class Equipment(BaseModel):
-    """Modèle équipement - inchangé"""
+    """Modèle équipement"""
     code: str
     name: str
     type: str = "accessoire"
