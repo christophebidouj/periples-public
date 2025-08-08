@@ -1,17 +1,26 @@
 """
-Éléments UI communs pour le Simulateur Périples
-Fonctions utilitaires et composants réutilisables
-VERSION CORRIGÉE - Support JPG optimisés
+Éléments d'interface pour le Simulateur Périples
+Gestion des icônes, images et composants visuels
+VERSION SIMPLIFIÉE - JPG direct sans fallback
 """
 
-import streamlit as st
-from typing import Dict
+import base64
+import os
+from typing import Optional
 
-def get_hero_icon(name: str) -> str:
-    """Retourne l'icône emoji pour un héros donné"""
-    icons = {"Elneha": "🐻", "Liarie": "🔮", "Atucan": "🛡️", "Kraor": "⚔️",
-             "Thordius": "🪓", "Stèphe": "🎭", "Lame": "🗡️", "Raishi": "🏹"}
-    return icons.get(name, "⚔️")
+def get_hero_icon(hero_name: str) -> str:
+    """Retourne l'icône correspondant au héros"""
+    icon_mapping = {
+        "Elneha": "🐻",
+        "Liarie": "🔮", 
+        "Atucan": "🛡️",
+        "Kraor": "🏹",
+        "Thordius": "⚔️",
+        "Stephe": "🎵",  # Stephe le Barde - SANS ACCENT
+        "Lame": "🗡️",
+        "Raishi": "👊"
+    }
+    return icon_mapping.get(hero_name, "⚔️")
 
 def get_equipment_icon(equipment_type: str, equipment_name: str) -> str:
     """Retourne l'icône appropriée pour un équipement"""
@@ -51,56 +60,46 @@ def get_equipment_icon(equipment_type: str, equipment_name: str) -> str:
     # Fallback sur le type
     return type_icons.get(equipment_type.lower(), '💍')
 
-def load_hero_image_base64(image_path: str) -> str:
-    """Charge une image héros en base64 pour affichage"""
-    import os
-    import base64
-    if not image_path or not os.path.exists(image_path):
-        return None
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    except:
-        return None
-
-def get_hero_image_path(hero_name: str) -> str:
-    """
-    Retourne le chemin vers l'image d'un héros - VERSION JPG OPTIMISÉE
-    Cherche d'abord les JPG optimisés, puis fallback PNG original
-    """
-    import os
-    
-    # Mapping des noms vers fichiers (JPG optimisés en priorité)
-    hero_files = {
-        "Atucan": "Atucan_-_Paladin", 
-        "Elneha": "Elneha_-_Druidesse",
-        "Kraor": "Kraor_-_Rodeur", 
-        "Lame": "Lame_-_Roublarde",
-        "Liarie": "Liarie_-_Mage", 
-        "Raishi": "Raishi_-_Pugiliste",
-        "Stèphe": "Stephe_-_Barde",  
-        "Thordius": "Thordius_-_Barbare",
-        "Loup": "Loup",
-        "Ours": "Ours", 
-        "Loup S": "Loup_S",
-        "Ours S": "Ours_S"
+def get_hero_image_path(hero_name: str) -> Optional[str]:
+    """Retourne le chemin vers l'image du héros - VERSION JPG DIRECT"""
+    # Mapping direct vers les fichiers JPG - SANS ACCENT pour éviter les erreurs
+    image_mapping = {
+        "Elneha": "data/images/Elneha_-_Druidesse.jpg",
+        "Liarie": "data/images/Liarie_-_Mage.jpg", 
+        "Atucan": "data/images/Atucan_-_Paladin.jpg",
+        "Kraor": "data/images/Kraor_-_Rodeur.jpg",
+        "Thordius": "data/images/Thordius_-_Barbare.jpg",
+        "Stephe": "data/images/Stephe_-_Barde.jpg",  # SANS ACCENT - Mapping direct
+        "Lame": "data/images/Lame_-_Roublarde.jpg",
+        "Raishi": "data/images/Raishi_-_Pugiliste.jpg"
     }
     
-    base_filename = hero_files.get(hero_name)
-    if not base_filename:
+    return image_mapping.get(hero_name)
+
+def load_hero_image_base64(image_path: str) -> Optional[str]:
+    """Charge une image héros en base64 pour affichage"""
+    try:
+        if not image_path or not os.path.exists(image_path):
+            return None
+            
+        with open(image_path, "rb") as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode()
+            return encoded_image
+            
+    except Exception as e:
         return None
+
+def get_hero_background_style(hero_name: str, border_color: str) -> str:
+    """Génère le style de background pour une carte héros"""
+    image_path = get_hero_image_path(hero_name)
     
-    # Priorité 1 : JPG optimisé (nouvelles images)
-    jpg_path = f"data/images/{base_filename}.jpg"
-    if os.path.exists(jpg_path):
-        return jpg_path
+    if image_path:
+        img_base64 = load_hero_image_base64(image_path)
+        if img_base64:
+            return f"background-image: url('data:image/jpeg;base64,{img_base64}');"
     
-    # Priorité 2 : PNG original (fallback)
-    png_path = f"data/images/{base_filename}.png"
-    if os.path.exists(png_path):
-        return png_path
-    
-    return None
+    # Fallback : dégradé coloré si pas d'image
+    return f"background: linear-gradient(135deg, {border_color}33, {border_color}11);"
 
 def display_progress_indicators_with_reset(nb_heroes: int, nb_enemies: int):
     """
@@ -114,6 +113,8 @@ def display_progress_indicators_with_reset(nb_heroes: int, nb_enemies: int):
     Returns:
         bool: True si reset demandé
     """
+    import streamlit as st
+    
     # CSS HYPER-AGRESSIF pour forcer le style BORDEAUX ROYAL sur TOUS les boutons
     st.markdown("""
     <style>

@@ -2,9 +2,11 @@
 Composants héros pour le Simulateur Périples
 Cartes héros, récapitulatif d'équipe, statistiques
 NOUVEAU : Sélecteurs de difficulté (Facile/Normal/Difficile)
+AJOUT : Expander détails builds avec données pré-calculées (OPTIMISÉ)
 """
 
 import streamlit as st
+import pandas as pd
 from typing import List, Dict, Any
 from models.character import Character
 
@@ -18,14 +20,84 @@ from ui.styling import (
 
 from ui.components.ui_elements import get_hero_icon, load_hero_image_base64, get_hero_image_path
 
+@st.cache_data
+def load_equipment_details_cache():
+    """
+    Charge et met en cache les détails de tous les équipements
+    """
+    try:
+        df = pd.read_csv("data/equipment.csv")
+        equipment_dict = {}
+        
+        for _, row in df.iterrows():
+            code = row['Code']
+            equipment_dict[code] = {
+                'code': code,
+                'name': row['Nom'],
+                'type': row['Type'],
+                'precision': row.get('Precision', 0),
+                'physical_damage': row.get('Physical_Damage', 0),
+                'magical_damage': row.get('Magical_Damage', 0),
+                'defense': row.get('Defense', 0),
+                'spells': row.get('Spells', 0),
+                'health': row.get('Health', 0)
+            }
+        
+        print(f"✅ {len(equipment_dict)} équipements mis en cache")
+        return equipment_dict
+    except Exception as e:
+        print(f"❌ Erreur cache équipements: {e}")
+        return {}
+
+@st.cache_data
+def load_abilities_details_cache(_loader):
+    """
+    Charge et met en cache les détails de toutes les capacités pour tous les héros
+    """
+    try:
+        from ui.components.forge_abilities_components import get_abilities_for_hero
+        
+        hero_codes = ['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7', 'P-8']
+        abilities_dict = {}
+        
+        for hero_code in hero_codes:
+            try:
+                hero_abilities = get_abilities_for_hero(hero_code, _loader)
+                abilities_dict[hero_code] = {}
+                
+                for ability in hero_abilities:
+                    ability_num = getattr(ability, 'ability_number', None)
+                    if ability_num:
+                        abilities_dict[hero_code][ability_num] = {
+                            'number': ability_num,
+                            'name': getattr(ability, 'name', f'Capacité {ability_num}'),
+                            'cost': getattr(ability, 'spell_cost', 0),
+                            'description': getattr(ability, 'description', '')
+                        }
+            except Exception as e:
+                print(f"⚠️ Erreur capacités {hero_code}: {e}")
+                abilities_dict[hero_code] = {}
+        
+        total_abilities = sum(len(abilities) for abilities in abilities_dict.values())
+        print(f"✅ {total_abilities} capacités mises en cache pour {len(abilities_dict)} héros")
+        return abilities_dict
+    except Exception as e:
+        print(f"❌ Erreur cache capacités: {e}")
+        return {}
+
 def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: List, loader) -> Dict:
     """
     Pré-calcule les 3 builds (Facile/Normal/Difficile) pour tous les héros
+    NOUVEAU : Inclut tous les détails (équipements, capacités, potions) pré-calculés
     
     Returns:
-        Dict: Structure {hero_code: [build_facile, build_normal, build_difficile]}
+        Dict: Structure {hero_code: [build_facile, build_normal, build_difficile]} avec détails complets
     """
-    from hero_builds_data import get_hero_stats_by_difficulty, get_build_name_by_difficulty
+    from hero_builds_data import get_hero_stats_by_difficulty, get_build_name_by_difficulty, get_hero_detailed_build
+    
+    # Chargement des caches
+    equipment_cache = load_equipment_details_cache()
+    abilities_cache = load_abilities_details_cache(loader)
     
     preloaded_builds = {}
     difficulty_levels = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
@@ -34,32 +106,232 @@ def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: 
         hero_builds = []
         
         for difficulty in difficulty_levels:
+            # Stats de base
             stats = get_hero_stats_by_difficulty(hero.code, difficulty)
             build_name = get_build_name_by_difficulty(difficulty)
+            difficulty_clean = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
             
+            # Détails du build depuis hero_builds_data
+            detailed_build = get_hero_detailed_build(hero.code, difficulty_clean)
+            
+            # === ÉQUIPEMENTS PRÉ-CALCULÉS ===
+            equipment_details = []
+            equipment_codes = detailed_build.get('equipment', [])
+            for code in equipment_codes:
+                if code in equipment_cache:
+                    equipment_details.append(equipment_cache[code])
+            
+            # === CAPACITÉS PRÉ-CALCULÉES ===
+            abilities_details = []
+            abilities_numbers = detailed_build.get('abilities', [])
+            hero_abilities_cache = abilities_cache.get(hero.code, {})
+            for ability_num in abilities_numbers:
+                if ability_num in hero_abilities_cache:
+                    abilities_details.append(hero_abilities_cache[ability_num])
+            
+            # === POTIONS PRÉ-CALCULÉES ===
+            potions = detailed_build.get('potions', {'small': 0, 'large': 0})
+            
+            # Build info complet avec détails pré-calculés
             build_info = {
                 'hero_equipped': hero,
                 'equipment': [],
                 'build_name': build_name,
                 'is_custom': False,
                 'stats': {'total': stats},
-                'difficulty_level': difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
+                'difficulty_level': difficulty_clean,
+                # NOUVEAU : Détails pré-calculés
+                'build_details': {
+                    'equipment': equipment_details,
+                    'abilities': abilities_details,
+                    'potions': potions,
+                    'has_custom_abilities': False
+                }
             }
             hero_builds.append(build_info)
         
         preloaded_builds[hero.code] = hero_builds
     
+    print(f"✅ Builds pré-calculés pour {len(preloaded_builds)} héros avec détails complets")
     return preloaded_builds
+
+def get_custom_build_details(hero_code: str, custom_build_data: Dict, equipment_cache: Dict, abilities_cache: Dict) -> Dict:
+    """
+    Calcule les détails d'un build custom en utilisant les caches
+    """
+    build_details = {
+        'equipment': [],
+        'abilities': [],
+        'potions': {'small': 0, 'large': 0},
+        'has_custom_abilities': False
+    }
+    
+    # Équipements custom
+    equipment_codes = custom_build_data.get('equipment', [])
+    for code in equipment_codes:
+        if code in equipment_cache:
+            build_details['equipment'].append(equipment_cache[code])
+    
+    # Capacités custom
+    if custom_build_data.get('abilities_custom', False):
+        selected_abilities = custom_build_data.get('abilities', [])
+        hero_abilities_cache = abilities_cache.get(hero_code, {})
+        
+        for ability_num in selected_abilities:
+            if ability_num in hero_abilities_cache:
+                build_details['abilities'].append(hero_abilities_cache[ability_num])
+        
+        build_details['has_custom_abilities'] = True
+    
+    # Potions custom
+    potions = custom_build_data.get('potions', {})
+    build_details['potions'] = {
+        'small': potions.get('small', 0),
+        'large': potions.get('large', 0)
+    }
+    
+    return build_details
+
+def display_build_details_expander(hero: Character, current_build_info: Dict):
+    """
+    Affiche l'expander avec les détails du build actuellement sélectionné
+    OPTIMISÉ : Utilise les données pré-calculées, aucune requête
+    """
+    
+    # Récupération des détails selon le type de build
+    if current_build_info['is_custom']:
+        # Build custom - calcul à la volée avec caches
+        custom_builds = st.session_state.get('custom_builds', {})
+        if hero.code in custom_builds:
+            equipment_cache = load_equipment_details_cache()
+            abilities_cache = load_abilities_details_cache(st.session_state.get('data_loader'))
+            
+            build_details = get_custom_build_details(
+                hero.code, 
+                custom_builds[hero.code], 
+                equipment_cache, 
+                abilities_cache
+            )
+        else:
+            build_details = {'equipment': [], 'abilities': [], 'potions': {'small': 0, 'large': 0}, 'has_custom_abilities': False}
+    else:
+        # Build prédéfini - données déjà pré-calculées
+        build_details = current_build_info.get('build_details', {
+            'equipment': [], 'abilities': [], 'potions': {'small': 0, 'large': 0}, 'has_custom_abilities': False
+        })
+    
+    # Titre de l'expander avec icône selon le type
+    if current_build_info['is_custom']:
+        expander_title = f"🔧 Détails {current_build_info['build_name']}"
+        expander_color = "#8a2be2"
+    else:
+        difficulty = current_build_info['difficulty_level']
+        if difficulty == "Facile":
+            expander_title = f"🟢 Détails Build Renforcé"
+            expander_color = "#228b22"
+        elif difficulty == "Difficile":
+            expander_title = f"🔴 Détails Build Spartiate"
+            expander_color = "#dc143c"
+        else:
+            expander_title = f"🔵 Détails Build Standard"
+            expander_color = "#4169e1"
+    
+    with st.expander(expander_title, expanded=False):
+        # Style du contenu
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, {expander_color}15, {expander_color}05);
+                    border-radius: 8px; padding: 12px; margin: 8px 0;">
+        """, unsafe_allow_html=True)
+        
+        # === ÉQUIPEMENTS ===
+        if build_details['equipment']:
+            st.markdown("**⚔️ Équipements :**")
+            
+            equipment_by_type = {'arme': [], 'armure': [], 'accessoire': []}
+            for eq in build_details['equipment']:
+                eq_type = eq['type'].lower()
+                if eq_type not in equipment_by_type:
+                    eq_type = 'accessoire'
+                equipment_by_type[eq_type].append(eq)
+            
+            cols = st.columns(3)
+            type_icons = {'arme': '⚔️', 'armure': '🛡️', 'accessoire': '💍'}
+            type_names = {'arme': 'Armes', 'armure': 'Armures', 'accessoire': 'Accessoires'}
+            
+            for i, (eq_type, equipment) in enumerate(equipment_by_type.items()):
+                if equipment and i < 3:
+                    with cols[i]:
+                        st.markdown(f"**{type_icons[eq_type]} {type_names[eq_type]}**")
+                        for eq in equipment:
+                            # Stats non-nulles
+                            stats_parts = []
+                            if eq['precision'] > 0:
+                                stats_parts.append(f"🎯{eq['precision']}")
+                            if eq['physical_damage'] > 0:
+                                stats_parts.append(f"⚔️{eq['physical_damage']}")
+                            if eq['magical_damage'] > 0:
+                                stats_parts.append(f"✨{eq['magical_damage']}")
+                            if eq['defense'] > 0:
+                                stats_parts.append(f"🛡️{eq['defense']}")
+                            if eq['spells'] > 0:
+                                stats_parts.append(f"🔮{eq['spells']}")
+                            if eq['health'] > 0:
+                                stats_parts.append(f"❤️{eq['health']}")
+                            
+                            stats_text = " • ".join(stats_parts) if stats_parts else "Pas de bonus"
+                            st.caption(f"• **{eq['name']}**")
+                            st.caption(f"  {stats_text}")
+        else:
+            st.info("🎒 Aucun équipement")
+        
+        st.markdown("---")
+        
+        # === CAPACITÉS ===
+        if build_details['abilities']:
+            st.markdown("**🔮 Capacités Spéciales :**")
+            
+            # Affichage en grille 2 colonnes
+            cols = st.columns(2)
+            for i, ability in enumerate(build_details['abilities']):
+                with cols[i % 2]:
+                    cost_text = f"({ability['cost']} 🔮)" if ability['cost'] > 0 else "(Gratuit)"
+                    st.caption(f"• **{ability['name']}** {cost_text}")
+        else:
+            st.info("🔮 Aucune capacité spéciale")
+        
+        st.markdown("---")
+        
+        # === POTIONS ===
+        potions = build_details['potions']
+        total_potions = potions['small'] + potions['large']
+        
+        if total_potions > 0:
+            st.markdown("**🧪 Potions de Santé :**")
+            
+            potion_parts = []
+            if potions['small'] > 0:
+                plural_s = "s" if potions['small'] > 1 else ""
+                potion_parts.append(f"🩸 {potions['small']} Petite{plural_s} (4 PV chacune)")
+            if potions['large'] > 0:
+                potion_parts.append(f"❤️‍🩹 {potions['large']} Grande (PV max)")
+            
+            for part in potion_parts:
+                st.caption(f"• {part}")
+        else:
+            st.info("🧪 Aucune potion")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
 def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict, custom_builds_dict: Dict = None, enable_images: bool = True, show_button: bool = True):
     """
     Affiche une carte héros avec style gaming et sélecteur de difficulté
     Utilise les builds pré-calculés pour une réactivité immédiate avec callback
+    OPTIMISÉ : Expander avec données pré-calculées, aucune requête
     
     Args:
         hero: Objet Character
         is_selected: État de sélection
-        preloaded_builds: Builds pré-calculés {hero_code: [facile, normal, difficile]}
+        preloaded_builds: Builds pré-calculés {hero_code: [facile, normal, difficile]} avec détails complets
         custom_builds_dict: Dictionnaire des builds custom
         enable_images: Activer les images de background
         show_button: Afficher le bouton ou pas (pour gestion externe)
@@ -76,13 +348,20 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     
     # Vérifier si le héros a un build custom
     if hero.code in current_custom_builds:
-        # BUILD CUSTOM - Utiliser la logique existante
+        # BUILD CUSTOM - Créer build_info avec détails custom
         custom = current_custom_builds[hero.code]
+        
+        # Calcul détails custom avec caches
+        equipment_cache = load_equipment_details_cache()
+        abilities_cache = load_abilities_details_cache(st.session_state.get('data_loader'))
+        custom_build_details = get_custom_build_details(hero.code, custom, equipment_cache, abilities_cache)
+        
         build_info = {
             'build_name': custom.get('name', 'Build Custom'),
             'is_custom': True,
             'stats': {'total': {'precision': 6, 'damage': 3, 'health': 8, 'parade': 1, 'spells': 4}},  # Placeholder
-            'difficulty_level': 'Custom'
+            'difficulty_level': 'Custom',
+            'build_details': custom_build_details
         }
         
         # Pas de selectbox pour les builds custom
@@ -107,7 +386,7 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         updated_difficulty = st.session_state.get('hero_difficulties', {}).get(hero.code, "🔵 Normal")
         difficulty_index = difficulty_levels.index(updated_difficulty)
         
-        # Récupération du build pré-calculé avec la nouvelle difficulté
+        # Récupération du build pré-calculé avec détails complets
         build_info = preloaded_builds[hero.code][difficulty_index]
     
     # Données pour l'affichage
@@ -166,6 +445,9 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     # Affichage dans conteneur Streamlit
     with st.container():
         st.markdown(card_html, unsafe_allow_html=True)
+        
+        # OPTIMISÉ : Expander avec données pré-calculées
+        display_build_details_expander(hero, build_info)
         
         # Bouton sélection héros
         if show_button:

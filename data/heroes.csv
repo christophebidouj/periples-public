@@ -2,12 +2,8 @@ Code,Nom,Precision,Damage,Spells,Health
 P-1,Elneha,6,2,3,5
 P-2,Liarie,0,0,10,6
 P-3,Atucan,3,2,2,9
-P-4,Kraor,5,3,0,8
+P-4,Kraor,5,3,1,7
 P-5,Thordius,3,3,0,10
-P-6,Stèphe,5,2,2,7
-P-7,Lame,5,3,0,8
-P-8,Raishi,6,2,0,8
-P-9,Ours,4,2,2,12
-P-10,Loup,6,4,0,8
-P-11,Ours S,4,3,3,12
-P-12,Loup S,6,6,0,8
+P-6,Stephe,4,1,4,4
+P-7,Lame,7,4,0,6
+P-8,Raishi,8,3,0,5

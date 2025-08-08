@@ -283,8 +283,8 @@ class DataLoader:
         }
     
     def _get_standard_equipment(self, hero_code: str, equipment: List[Equipment]) -> List[Equipment]:
-        """Retourne l'équipement standard pour un héros"""
-        # Équipements par défaut pour chaque héros
+        """Retourne l'équipement standard pour un héros - VERSION 8 HÉROS"""
+        # Équipements par défaut pour chaque héros (P-9 à P-12 SUPPRIMÉS)
         standard_equipment = {
             'P-1': ['E-1', 'E-7', 'E-13'],   # Elneha
             'P-2': ['E-2', 'E-8', 'E-14'],   # Liarie
@@ -293,11 +293,7 @@ class DataLoader:
             'P-5': ['E-5', 'E-11', 'E-17'],  # Thordius
             'P-6': ['E-6', 'E-12', 'E-18'],  # Stephe
             'P-7': ['E-1', 'E-7', 'E-13'],   # Lame
-            'P-8': ['E-2', 'E-8', 'E-14'],   # Raishi
-            'P-9': ['E-1', 'E-7', 'E-13'],   # Ours
-            'P-10': ['E-1', 'E-7', 'E-13'],  # Loup
-            'P-11': ['E-1', 'E-7', 'E-13'],  # Ours S.
-            'P-12': ['E-1', 'E-7', 'E-13']   # Loup S.
+            'P-8': ['E-2', 'E-8', 'E-14']    # Raishi
         }
         
         codes = standard_equipment.get(hero_code, [])
@@ -370,10 +366,10 @@ class DataLoader:
     # === DONNÉES PAR DÉFAUT ===
     
     def _create_fallback_files(self):
-        """Crée des fichiers CSV basiques si Excel absent"""
+        """Crée des fichiers CSV basiques si Excel absent - VERSION 8 HÉROS"""
         print("🔄 Création données par défaut...")
         
-        # Héros par défaut
+        # Héros par défaut (8 héros uniquement)
         heroes_data = {
             'Code': ['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7', 'P-8'],
             'Nom': ['Elneha', 'Liarie', 'Atucan', 'Kraor', 'Thordius', 'Stephe', 'Lame', 'Raishi'],
@@ -414,12 +410,16 @@ class DataLoader:
         print("✅ Fichiers par défaut créés")
     
     def _create_default_heroes(self) -> List[Character]:
-        """Crée des héros par défaut en cas d'erreur"""
+        """Crée des héros par défaut en cas d'erreur - VERSION 8 HÉROS"""
         heroes_data = [
             {'code': 'P-1', 'name': 'Elneha', 'precision': 6, 'damage': 2, 'spells': 3, 'health': 5},
             {'code': 'P-2', 'name': 'Liarie', 'precision': 0, 'damage': 0, 'spells': 10, 'health': 6},
             {'code': 'P-3', 'name': 'Atucan', 'precision': 3, 'damage': 2, 'spells': 2, 'health': 9},
-            {'code': 'P-4', 'name': 'Kraor', 'precision': 5, 'damage': 3, 'spells': 1, 'health': 7}
+            {'code': 'P-4', 'name': 'Kraor', 'precision': 5, 'damage': 3, 'spells': 1, 'health': 7},
+            {'code': 'P-5', 'name': 'Thordius', 'precision': 3, 'damage': 3, 'spells': 0, 'health': 10},
+            {'code': 'P-6', 'name': 'Stephe', 'precision': 4, 'damage': 1, 'spells': 4, 'health': 4},
+            {'code': 'P-7', 'name': 'Lame', 'precision': 7, 'damage': 4, 'spells': 0, 'health': 6},
+            {'code': 'P-8', 'name': 'Raishi', 'precision': 8, 'damage': 3, 'spells': 0, 'health': 5}
         ]
         
         heroes = []
@@ -491,3 +491,36 @@ def get_hero_with_abilities(hero_code: str, loader: DataLoader) -> Character:
     """Récupère un héros avec ses capacités intégrées"""
     heroes = loader.load_heroes()
     return next((h for h in heroes if h.code == hero_code), None)
+
+# === FONCTION DE NETTOYAGE SESSION STATE ===
+
+def cleanup_removed_heroes_from_session():
+    """
+    Nettoie le session_state des codes héros supprimés (P-9, P-10, P-11, P-12)
+    À appeler au démarrage de l'application pour éviter les erreurs
+    """
+    removed_codes = ['P-9', 'P-10', 'P-11', 'P-12']
+    
+    # Nettoyage selected_heroes
+    if 'selected_heroes' in st.session_state:
+        old_selected = st.session_state.selected_heroes.copy()
+        st.session_state.selected_heroes = [code for code in old_selected if code not in removed_codes]
+        
+        removed_count = len(old_selected) - len(st.session_state.selected_heroes)
+        if removed_count > 0:
+            print(f"🧹 Session cleanup: {removed_count} pseudo-héros supprimés de la sélection")
+    
+    # Nettoyage hero_difficulties
+    if 'hero_difficulties' in st.session_state:
+        for code in removed_codes:
+            if code in st.session_state.hero_difficulties:
+                del st.session_state.hero_difficulties[code]
+                print(f"🧹 Session cleanup: Difficulté {code} supprimée")
+    
+    # Nettoyage custom_builds
+    if 'custom_builds' in st.session_state:
+        for code in removed_codes:
+            if code in st.session_state.custom_builds:
+                build_name = st.session_state.custom_builds[code].get('name', 'Build Custom')
+                del st.session_state.custom_builds[code]
+                print(f"🧹 Session cleanup: Build custom '{build_name}' ({code}) supprimé")

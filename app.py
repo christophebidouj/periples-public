@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Périples Balance Workshop - Version avec Builds Prédéfinis
+Périples Balance Workshop - Version avec 8 Héros Principaux
 🎲 Jeu : Périples © Bastien LIAUTY
 💻 Code : Christophe Bidouj (assistance Claude AI)
 """
@@ -14,7 +14,7 @@ from typing import List, Dict
 from models.character import Character, Enemy
 from models.combat_engine import CombatEngine
 from models.rules_engine import GameRules
-from utils.data_loader import DataLoader
+from utils.data_loader import DataLoader, cleanup_removed_heroes_from_session
 import ui.components.sandbox_interface
 
 # Import UI
@@ -40,7 +40,7 @@ ENABLE_IMAGES = True
 # === FONCTIONS UTILITAIRES ===
 
 def get_standard_equipment_codes(hero_code: str) -> List[str]:
-    """Retourne les codes équipements standard pour un héros"""
+    """Retourne les codes équipements standard pour un héros - VERSION 8 HÉROS"""
     standard_equipment = {
         'P-1': ['E-1', 'E-7', 'E-13'],   # Elneha
         'P-2': ['E-2', 'E-8', 'E-14'],   # Liarie
@@ -49,11 +49,7 @@ def get_standard_equipment_codes(hero_code: str) -> List[str]:
         'P-5': ['E-5', 'E-11', 'E-17'],  # Thordius
         'P-6': ['E-6', 'E-12', 'E-18'],  # Stephe
         'P-7': ['E-1', 'E-7', 'E-13'],   # Lame
-        'P-8': ['E-2', 'E-8', 'E-14'],   # Raishi
-        'P-9': ['E-1', 'E-7', 'E-13'],   # Ours
-        'P-10': ['E-1', 'E-7', 'E-13'],  # Loup
-        'P-11': ['E-1', 'E-7', 'E-13'],  # Ours S.
-        'P-12': ['E-1', 'E-7', 'E-13']   # Loup S.
+        'P-8': ['E-2', 'E-8', 'E-14']    # Raishi
     }
     return standard_equipment.get(hero_code, [])
 
@@ -150,16 +146,15 @@ def safe_session_update(key: str, value):
     st.session_state[key] = value
 
 def toggle_hero_selection(hero_code: str):
-    """Toggle héros avec gestion propre"""
+    """Toggle héros avec gestion propre - Version 8 héros"""
     selected = st.session_state.get('selected_heroes', [])
     
     if hero_code in selected:
         selected.remove(hero_code)
     else:
-        # Nettoyage Elneha avant ajout
-        elneha_forms = ['P-1', 'P-9', 'P-10', 'P-11', 'P-12']
-        if hero_code in elneha_forms:
-            selected = [code for code in selected if code not in elneha_forms]
+        # Nettoyage Elneha avant ajout (pas de formes multiples maintenant)
+        if hero_code == 'P-1':  # Elneha principale
+            selected = [code for code in selected if code != 'P-1']
         selected.append(hero_code)
     
     safe_session_update('selected_heroes', selected)
@@ -182,6 +177,11 @@ def get_equipment_categories(equipment):
     accessories = [eq for eq in equipment if eq.type.lower() not in ['arme', 'armure']]
     return weapons, armor, accessories
 
+def filter_heroes_to_main_8(heroes_list: List) -> List:
+    """Filtre pour ne garder que les 8 héros principaux (P-1 à P-8)"""
+    main_hero_codes = ['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7', 'P-8']
+    return [hero for hero in heroes_list if hero.code in main_hero_codes]
+
 # === INITIALISATION ===
 
 def init_app():
@@ -189,12 +189,15 @@ def init_app():
     st.set_page_config(page_title="Périples Balance Workshop", page_icon="⚔️", layout="wide")
     os.makedirs("data", exist_ok=True)
     
+    # NOUVEAU - Nettoyage automatique des pseudo-héros supprimés
+    cleanup_removed_heroes_from_session()
+    
     # Variables session avec valeurs par défaut
     defaults = {
         'selected_heroes': [], 
         'selected_enemies': [], 
         'custom_builds': {},
-        'hero_difficulties': {},  # NOUVEAU - Niveaux de difficulté
+        'hero_difficulties': {},
         'ui_state': {'needs_rerun': False}
     }
     
@@ -216,7 +219,7 @@ def load_data():
         st.rerun()
     
     return {
-        'heroes': loader.load_heroes(),
+        'heroes': filter_heroes_to_main_8(loader.load_heroes()),  # NOUVEAU - Filtrage à 8 héros
         'enemies': loader.load_enemies(), 
         'equipment': loader.load_equipment(),
         'loader': loader
@@ -302,7 +305,7 @@ def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List
         }
 
 def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data, player_count: int):
-    """Prépare données pour récapitulatif - Version simplifiée"""
+    """Prépare données pour récapitulatif - CORRIGÉ KeyError build_name"""
     current_builds = st.session_state.get('custom_builds', {})
     
     # Données héros avec logique unifiée
@@ -314,7 +317,7 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
         heroes_data.append({
             'name': build_info['hero_equipped'].name,
             'icon': get_hero_icon(build_info['hero_equipped'].name),
-            'build': build_info['build_name'],
+            'build_name': build_info['build_name'],  # 🔧 CORRIGÉ - Était 'build' au lieu de 'build_name'
             'is_custom': build_info['is_custom'],
             'difficulty_level': build_info.get('difficulty_level', 'Normal'),
             'precision': stats['precision'],
@@ -343,7 +346,7 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
 # === ONGLETS ===
 
 def tab_selection(data):
-    """Onglet sélection des équipes avec système de builds prédéfinis"""
+    """Onglet sélection des équipes avec système de builds prédéfinis - Version 8 héros"""
     st.header("🏰 Sélection des Équipes")
     
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
@@ -354,7 +357,7 @@ def tab_selection(data):
     if display_progress_indicators_with_reset(nb_heroes, nb_enemies):
         safe_session_update('selected_heroes', [])
         safe_session_update('selected_enemies', [])
-        safe_session_update('hero_difficulties', {})  # NOUVEAU - Reset niveaux
+        safe_session_update('hero_difficulties', {})
         st.success("✅ Sélections effacées !")
         st.rerun()
     
@@ -364,28 +367,40 @@ def tab_selection(data):
     # Info système builds prédéfinis
     st.info("🎯 **Nouveau :** Chaque héros peut être configuré en 3 niveaux de difficulté avec équipements adaptés !")
     
-    # Info Elneha
-    elneha_forms = ['P-1', 'P-9', 'P-10', 'P-11', 'P-12']
-    selected_elneha = [c for c in st.session_state.selected_heroes if c in elneha_forms]
-    if selected_elneha:
-        hero_name = next(h.name for h in heroes if h.code == selected_elneha[0])
-        st.info(f"🐻 {hero_name} sélectionnée (forme d'Elneha)")
+    # Info Elneha (simplifiée pour version 8 héros)
+    if 'P-1' in st.session_state.selected_heroes:
+        st.info("🐻 Elneha sélectionnée (formes d'animal gérées en combat)")
     
     # PRÉ-CALCUL DES BUILDS (mise en cache)
     preloaded_builds = get_preloaded_builds(heroes, data['equipment'], loader)
     
-    # Grille héros 6 par ligne - Version avec builds pré-calculés
-    cols = st.columns(6)
+    # NOUVEAU - Grille héros 2x4 (8 héros au lieu de 12)
+    st.write(f"**{len(heroes)} héros principaux disponibles :**")
+    
+    # Première ligne (4 héros)
+    cols1 = st.columns(4)
     current_builds = st.session_state.get('custom_builds', {})
     hero_changes = []
     
-    for i, hero in enumerate(heroes):
-        is_selected = hero.code in st.session_state.selected_heroes
-        
-        with cols[i % 6]:
-            # NOUVEAU - Utilisation de display_hero_card avec builds pré-calculés
-            if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
-                hero_changes.append(hero.code)
+    for i in range(4):
+        if i < len(heroes):
+            hero = heroes[i]
+            is_selected = hero.code in st.session_state.selected_heroes
+            
+            with cols1[i]:
+                if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
+                    hero_changes.append(hero.code)
+    
+    # Deuxième ligne (4 héros restants)
+    cols2 = st.columns(4)
+    for i in range(4, 8):
+        if i < len(heroes):
+            hero = heroes[i]
+            is_selected = hero.code in st.session_state.selected_heroes
+            
+            with cols2[i-4]:
+                if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
+                    hero_changes.append(hero.code)
     
     # Application des changements héros uniquement
     if hero_changes:
@@ -478,12 +493,12 @@ def tab_selection(data):
         st.button("⚔️ FORMATION INCOMPLÈTE", disabled=True, use_container_width=True)
 
 def tab_forge(data):
-    """Onglet forge des équipements"""
+    """Onglet forge des équipements - Version 8 héros"""
     st.header("⚙️ Forge des Équipements")
     
     heroes, equipment = data['heroes'], data['equipment']
     
-    # Sélection héros
+    # Sélection héros (8 héros uniquement)
     hero_options = {h.code: f"{get_hero_icon(h.name)} {h.name}" for h in heroes}
     selected_code = st.selectbox(
         "Héros:", 
@@ -498,9 +513,9 @@ def tab_forge(data):
     display_hero_base_stats(selected_hero)
     
     current_builds = st.session_state.get('custom_builds', {})
-    current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
-    display_current_build_info(current_build)
-    
+    #current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
+    #display_current_build_info(current_build)
+    current_build = {'is_custom': False, 'build_name': 'Test'}
     # Gestion builds
     col1, col2 = st.columns(2)
     with col1:
@@ -657,7 +672,7 @@ def tab_combat(data):
     safe_session_update('run_simulation', False)
 
 def display_about():
-    """Section À Propos - Version native"""
+    """Section À Propos - Version 8 héros"""
     
     # Informations sur le jeu
     st.subheader("🎲 Jeu de Société")
@@ -674,7 +689,7 @@ def display_about():
     with col2:
         st.markdown("""
         **Statut :** Prototype en développement
-        - 12 héros avec formes alternatives
+        - 8 héros principaux avec formes d'Elneha
         - 72 ennemis évolutifs
         - 52 équipements et 48 capacités spéciales
         """)
@@ -697,7 +712,7 @@ def display_about():
         - Simulation de combats automatisés
         - Forge d'équipements personnalisés
         - Système de capacités et potions
-        - **NOUVEAU** : 3 builds prédéfinis par héros
+        - **8 héros** avec 3 builds prédéfinis chacun
         """)
 
     # Objectifs et usage
