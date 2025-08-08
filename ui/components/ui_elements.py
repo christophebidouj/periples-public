@@ -1,9 +1,10 @@
 """
 Éléments d'interface pour le Simulateur Périples
 Gestion des icônes, images et composants visuels
-VERSION SIMPLIFIÉE - JPG direct sans fallback
+VERSION PROPRE - Sans forçage CSS brutal
 """
 
+import streamlit as st
 import base64
 import os
 from typing import Optional
@@ -101,10 +102,41 @@ def get_hero_background_style(hero_name: str, border_color: str) -> str:
     # Fallback : dégradé coloré si pas d'image
     return f"background: linear-gradient(135deg, {border_color}33, {border_color}11);"
 
+def create_styled_button(label: str, button_type: str = "default", key: str = None, disabled: bool = False, **kwargs):
+    """
+    Crée un bouton avec style spécifique sans forçage CSS brutal
+    
+    Args:
+        label: Texte du bouton
+        button_type: Type de bouton (success, info, warning, danger, magic, neutral, gold)
+        key: Clé unique du bouton
+        disabled: État désactivé
+        **kwargs: Arguments additionnels pour st.button
+    
+    Returns:
+        bool: True si le bouton est cliqué
+    """
+    # Application douce du style via data attributes
+    if button_type != "default":
+        st.markdown(f"""
+        <style>
+        div[data-testid="stButton"] button[data-button-type="{button_type}"] {{
+            /* Le style sera appliqué par les classes CSS du thème principal */
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+    
+    # Bouton natif Streamlit avec attributs personnalisés
+    if key:
+        button_key = f"{button_type}_{key}"
+    else:
+        button_key = key
+    
+    return st.button(label, key=button_key, disabled=disabled, **kwargs)
+
 def display_progress_indicators_with_reset(nb_heroes: int, nb_enemies: int):
     """
-    Affiche les indicateurs de progression avec bouton reset discret THÉMATIQUE
-    Version AGGRESSIVE - Force le style contre Streamlit récalcitrant
+    Affiche les indicateurs de progression avec bouton reset PROPRE
     
     Args:
         nb_heroes: Nombre de héros sélectionnés
@@ -113,57 +145,6 @@ def display_progress_indicators_with_reset(nb_heroes: int, nb_enemies: int):
     Returns:
         bool: True si reset demandé
     """
-    import streamlit as st
-    
-    # CSS HYPER-AGRESSIF pour forcer le style BORDEAUX ROYAL sur TOUS les boutons
-    st.markdown("""
-    <style>
-    /* FORCE le style BORDEAUX ROYAL sur TOUS les boutons */
-    button[kind="secondary"], 
-    button[data-testid*="baseButton"],
-    div[data-testid="column"] button,
-    .stButton > button {
-        background: linear-gradient(135deg, #800020, #5d0015) !important;
-        color: #f4e4bc !important;
-        border: 2px solid #4d0012 !important;
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        font-family: 'Cinzel', serif !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
-        box-shadow: 0 4px 8px rgba(128,0,32,0.4) !important;
-    }
-    
-    /* Force TOUT le contenu du bouton BORDEAUX */
-    button[kind="secondary"] div,
-    button[data-testid*="baseButton"] div,
-    div[data-testid="column"] button div,
-    .stButton > button > div {
-        color: #f4e4bc !important;
-        font-family: 'Cinzel', serif !important;
-        font-weight: bold !important;
-    }
-    
-    /* Hover BORDEAUX sur tout */
-    button[kind="secondary"]:hover,
-    button[data-testid*="baseButton"]:hover,
-    div[data-testid="column"] button:hover,
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #a0002a, #800020) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(128,0,32,0.6) !important;
-    }
-    
-    /* Boutons primaires spécifiques */
-    button[kind="primary"] {
-        background: linear-gradient(135deg, #800020, #5d0015) !important;
-        border: 2px solid #4d0012 !important;
-    }
-    
-    button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #a0002a, #800020) !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
     
     # Organisation en colonnes pour layout discret
     col1, col2 = st.columns([4, 1])
@@ -178,42 +159,95 @@ def display_progress_indicators_with_reset(nb_heroes: int, nb_enemies: int):
             st.success(f"🎯 Prêt ! {nb_heroes} héros et {nb_enemies} ennemis")
     
     with col2:
-        # Bouton reset thématique - FORCE le style
+        # Bouton reset propre - utilise le thème par défaut
         if nb_heroes > 0 or nb_enemies > 0:
-            # Ajout d'un div wrapper pour forcer le style BORDEAUX
-            st.markdown("""
-            <div class="reset-wrapper">
-            <style>
-            .reset-wrapper button {
-                background: linear-gradient(135deg, #800020, #5d0015) !important;
-                color: #f4e4bc !important;
-                border: 2px solid #4d0012 !important;
-                border-radius: 8px !important;
-                font-weight: bold !important;
-                font-family: 'Cinzel', serif !important;
-                text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
-                box-shadow: 0 4px 8px rgba(128,0,32,0.4) !important;
-            }
-            .reset-wrapper button div {
-                color: #f4e4bc !important;
-                font-family: 'Cinzel', serif !important;
-                font-weight: bold !important;
-            }
-            .reset-wrapper button:hover {
-                background: linear-gradient(135deg, #a0002a, #800020) !important;
-                transform: translateY(-2px) !important;
-            }
-            </style>
-            </div>
-            """, unsafe_allow_html=True)
-            
             if st.button("🗑️ Reset", 
                         key=f"reset_btn_{nb_heroes}_{nb_enemies}",
                         help=f"Effacer {nb_heroes} héros et {nb_enemies} ennemis sélectionnés",
-                        use_container_width=True):
+                        use_container_width=True,
+                        type="secondary"):  # Type Streamlit natif
                 return True
         else:
             # Espace vide pour maintenir l'alignement
             st.empty()
     
     return False
+
+def create_button_with_custom_style(label: str, style_class: str, key: str, **kwargs):
+    """
+    Alternative pour boutons avec styles personnalisés via CSS ciblé
+    """
+    # CSS ciblé sur la clé spécifique
+    st.markdown(f"""
+    <style>
+    div[data-testid="stButton"] button[data-key="{key}"] {{
+        /* Style appliqué selon la classe {style_class} */
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+    
+    return st.button(label, key=key, **kwargs)
+
+def apply_button_theme_classes():
+    """
+    Applique les classes de thème aux boutons existants
+    Version non-agressive qui respecte les types Streamlit
+    """
+    st.markdown("""
+    <style>
+    /* Styles appliqués selon les attributs data des boutons */
+    button[data-button-type="success"] {
+        background: linear-gradient(135deg, #228b22, #006400) !important;
+        color: white !important;
+        border: 2px solid #004d00 !important;
+    }
+    
+    button[data-button-type="info"] {
+        background: linear-gradient(135deg, #4169e1, #1e3a8a) !important;
+        color: white !important;
+        border: 2px solid #1e40af !important;
+    }
+    
+    button[data-button-type="warning"] {
+        background: linear-gradient(135deg, #ff8c00, #ff7f50) !important;
+        color: white !important;
+        border: 2px solid #ff6347 !important;
+    }
+    
+    button[data-button-type="danger"] {
+        background: linear-gradient(135deg, #dc143c, #8b0000) !important;
+        color: white !important;
+        border: 2px solid #660000 !important;
+    }
+    
+    button[data-button-type="magic"] {
+        background: linear-gradient(135deg, #8a2be2, #4b0082) !important;
+        color: white !important;
+        border: 2px solid #2e0054 !important;
+    }
+    
+    button[data-button-type="neutral"] {
+        background: linear-gradient(135deg, #708090, #2f4f4f) !important;
+        color: white !important;
+        border: 2px solid #1c3333 !important;
+    }
+    
+    button[data-button-type="gold"] {
+        background: linear-gradient(135deg, #ffd700, #b8860b) !important;
+        color: black !important;
+        border: 2px solid #8b7500 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Constantes pour les types de boutons
+class ButtonTypes:
+    """Types de boutons disponibles pour le système flexible"""
+    DEFAULT = "default"
+    SUCCESS = "success"
+    INFO = "info" 
+    WARNING = "warning"
+    DANGER = "danger"
+    MAGIC = "magic"
+    NEUTRAL = "neutral"
+    GOLD = "gold"

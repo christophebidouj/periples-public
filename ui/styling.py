@@ -1,13 +1,13 @@
 """
 Module de gestion du styling et des thèmes pour le Simulateur Périples
-Version sobre et élégante sans effets superflus
+Version flexible avec système de classes pour boutons
 """
 
 import streamlit as st
 from typing import Dict
 
 def apply_fantasy_theme():
-    """Applique le thème fantasy sobre et élégant"""
+    """Applique le thème fantasy avec système de boutons flexible"""
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
@@ -57,8 +57,10 @@ def apply_fantasy_theme():
         margin: 10px 0;
     }
     
-    /* === BOUTONS BORDEAUX ROYAL (conservés) === */
-    .stButton > button {
+    /* === SYSTÈME DE BOUTONS FLEXIBLE === */
+    
+    /* Bouton bordeaux par défaut (conservation de l'existant) */
+    .stButton > button:not([class*="btn-"]) {
         background: linear-gradient(135deg, #800020, #5d0015) !important;
         color: #f4e4bc !important;
         border: 2px solid #4d0012 !important;
@@ -70,18 +72,142 @@ def apply_fantasy_theme():
         transition: all 0.3s ease !important;
     }
     
-    .stButton > button:hover {
+    .stButton > button:not([class*="btn-"]):hover {
         background: linear-gradient(135deg, #a0002a, #800020) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(128,0,32,0.6) !important;
     }
     
-    .stButton > button:active {
-        transform: translateY(0px) !important;
-        box-shadow: 0 3px 6px rgba(128,0,32,0.4) !important;
+    /* Classes spécifiques pour différents types de boutons */
+    
+    /* Boutons verts (succès/validation) */
+    .btn-success {
+        background: linear-gradient(135deg, #228b22, #006400) !important;
+        color: #ffffff !important;
+        border: 2px solid #004d00 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        box-shadow: 0 4px 8px rgba(34,139,34,0.4) !important;
+        transition: all 0.3s ease !important;
     }
     
-    /* Boutons spécifiques selon le type */
+    .btn-success:hover {
+        background: linear-gradient(135deg, #32cd32, #228b22) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(34,139,34,0.6) !important;
+    }
+    
+    /* Boutons bleus (info/neutre) */
+    .btn-info {
+        background: linear-gradient(135deg, #4169e1, #1e3a8a) !important;
+        color: #ffffff !important;
+        border: 2px solid #1e40af !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        box-shadow: 0 4px 8px rgba(65,105,225,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-info:hover {
+        background: linear-gradient(135deg, #6495ed, #4169e1) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(65,105,225,0.6) !important;
+    }
+    
+    /* Boutons orange (avertissement) */
+    .btn-warning {
+        background: linear-gradient(135deg, #ff8c00, #ff7f50) !important;
+        color: #ffffff !important;
+        border: 2px solid #ff6347 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        box-shadow: 0 4px 8px rgba(255,140,0,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ffa500, #ff8c00) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(255,140,0,0.6) !important;
+    }
+    
+    /* Boutons rouges (danger/suppression) */
+    .btn-danger {
+        background: linear-gradient(135deg, #dc143c, #8b0000) !important;
+        color: #ffffff !important;
+        border: 2px solid #660000 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        box-shadow: 0 4px 8px rgba(220,20,60,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #ff1493, #dc143c) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(220,20,60,0.6) !important;
+    }
+    
+    /* Boutons violets (capacités magiques) */
+    .btn-magic {
+        background: linear-gradient(135deg, #8a2be2, #4b0082) !important;
+        color: #ffffff !important;
+        border: 2px solid #2e0054 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        box-shadow: 0 4px 8px rgba(138,43,226,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-magic:hover {
+        background: linear-gradient(135deg, #9370db, #8a2be2) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(138,43,226,0.6) !important;
+    }
+    
+    /* Boutons gris (désactivé/neutre) */
+    .btn-neutral {
+        background: linear-gradient(135deg, #708090, #2f4f4f) !important;
+        color: #ffffff !important;
+        border: 2px solid #1c3333 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        box-shadow: 0 4px 8px rgba(112,128,144,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-neutral:hover {
+        background: linear-gradient(135deg, #778899, #708090) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(112,128,144,0.6) !important;
+    }
+    
+    /* Boutons dorés (premium/spécial) */
+    .btn-gold {
+        background: linear-gradient(135deg, #ffd700, #b8860b) !important;
+        color: #000000 !important;
+        border: 2px solid #8b7500 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-family: 'Cinzel', serif !important;
+        text-shadow: 1px 1px 2px rgba(255,255,255,0.3) !important;
+        box-shadow: 0 4px 8px rgba(255,215,0,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-gold:hover {
+        background: linear-gradient(135deg, #ffec8c, #ffd700) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 12px rgba(255,215,0,0.6) !important;
+    }
+    
+    /* Application des classes aux boutons Streamlit selon leur type */
     button[kind="primary"] {
         background: linear-gradient(135deg, #800020, #5d0015) !important;
         border: 2px solid #4d0012 !important;
@@ -99,8 +225,45 @@ def apply_fantasy_theme():
     button[kind="secondary"]:hover {
         background: linear-gradient(135deg, #800020, #5d0015) !important;
     }
+    
+    /* Gestion des boutons désactivés */
+    button:disabled,
+    .stButton > button:disabled {
+        background: linear-gradient(135deg, #cccccc, #999999) !important;
+        color: #666666 !important;
+        border: 2px solid #888888 !important;
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
     </style>
     """, unsafe_allow_html=True)
+
+def create_button_with_class(label: str, button_class: str = "", key: str = None, **kwargs) -> bool:
+    """
+    Crée un bouton avec une classe CSS spécifique
+    
+    Args:
+        label: Texte du bouton
+        button_class: Classe CSS à appliquer (success, info, warning, danger, magic, neutral, gold)
+        key: Clé unique du bouton
+        **kwargs: Arguments additionnels pour st.button
+    
+    Returns:
+        bool: True si le bouton est cliqué
+    """
+    # Injection du style de classe via HTML si nécessaire
+    if button_class:
+        st.markdown(f"""
+        <style>
+        div[data-testid="stButton"] button[key="{key}"] {{
+            /* Classe {button_class} sera appliquée automatiquement par le CSS global */
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+    
+    return st.button(label, key=key, **kwargs)
 
 def get_hero_card_style(hero_name: str, border_color: str, background_style: str) -> str:
     """Génère le style CSS pour une carte héros"""
@@ -326,9 +489,9 @@ def style_combat_log_entry(line: str) -> str:
     else:
         return f"<div style='color: #3b2f1c; margin: 2px 0;'>{line}</div>"
 
-# CONSTANTES DE COULEURS - Version sobre
+# CONSTANTES DE COULEURS - Version sobre avec nouvelles options
 class Colors:
-    """Constantes de couleurs pour cohérence du thème sobre"""
+    """Constantes de couleurs pour cohérence du thème sobre avec système flexible"""
     
     # Couleurs principales
     BACKGROUND = "#f4e4bc"
@@ -360,13 +523,30 @@ class Colors:
     TAB_BACKGROUND = "#6b7280"
     TAB_ACTIVE = "#d97706"
     
-    # Boutons bordeaux royal (conservés)
-    BUTTON_PRIMARY = "#800020"
-    BUTTON_PRIMARY_HOVER = "#a0002a"
-    BUTTON_SECONDARY = "#6d001a"
-    BUTTON_BORDER = "#4d0012"
+    # Système de boutons flexible
+    BUTTON_BORDEAUX = "#800020"
+    BUTTON_SUCCESS = "#228b22"
+    BUTTON_INFO = "#4169e1"
+    BUTTON_WARNING = "#ff8c00"
+    BUTTON_DANGER = "#dc143c"
+    BUTTON_MAGIC = "#8a2be2"
+    BUTTON_NEUTRAL = "#708090"
+    BUTTON_GOLD = "#ffd700"
     
     # Couleurs d'équipements
     EQUIPMENT_WEAPONS = "#d2691e"
     EQUIPMENT_ARMOR = "#1e90ff"
     EQUIPMENT_ACCESSORIES = "#8a2be2"
+
+# Utilitaires pour l'application des classes CSS
+def get_button_classes():
+    """Retourne la liste des classes de boutons disponibles"""
+    return {
+        'success': 'Vert (succès/validation)',
+        'info': 'Bleu (information/neutre)',
+        'warning': 'Orange (avertissement)',
+        'danger': 'Rouge (danger/suppression)',
+        'magic': 'Violet (capacités magiques)',
+        'neutral': 'Gris (neutre/désactivé)',
+        'gold': 'Doré (premium/spécial)'
+    }

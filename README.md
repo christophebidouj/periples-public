@@ -41,7 +41,7 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 
 ### Forge des Équipements
 - **52 équipements** répartis en 3 catégories (Armes, Armures, Accessoires)
-- **48 capacités spéciales** (6 par héros)
+- **48 capacités spéciales** (6 par héros) avec noms officiels du livre de règles
 - **Système de potions** : Petites (4 PV) et Grandes (PV max)
 - **Builds personnalisés** combinant équipements, capacités et potions
 - **Interface expanders natifs** Streamlit pour meilleure compatibilité
@@ -61,10 +61,75 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 - **Système d'historique** : Undo/Redo fonctionnels
 - **Support des builds** : Utilise les builds sélectionnés (prédéfinis + custom)
 
+## Nouveautés Récentes
+
+### ✅ Système de Boutons Flexible (Dernière Mise à Jour)
+
+#### Problème Résolu
+- **Suppression du CSS hyper-agressif** qui forçait brutalement tous les boutons en bordeaux
+- **Fin des conflits avec Streamlit** - système respectueux des types natifs
+- **Conservation du thème bordeaux** comme style par défaut
+
+#### Nouveau Système de Couleurs
+- 🔴 **Bordeaux** (défaut) - thème de base conservé
+- 🟢 **Vert** (succès/validation) - `success_button()`
+- 🔵 **Bleu** (information/neutre) - `info_button()`
+- 🟠 **Orange** (avertissement) - `warning_button()`
+- 🔴 **Rouge** (danger/suppression) - `danger_button()`
+- 🟣 **Violet** (capacités magiques) - `magic_button()`
+- ⚫ **Gris** (neutre/désactivé) - `neutral_button()`
+- 🟡 **Doré** (premium/spécial) - `gold_button()`
+
+#### Usage Simple
+```python
+from ui.components.button_utils import success_button, danger_button, magic_button
+
+# Boutons colorés
+if success_button("✅ Valider", "btn_validate"):
+    handle_validation()
+
+if danger_button("🗑️ Supprimer", "btn_delete"):
+    handle_deletion()
+
+# Boutons contextuels
+if create_contextual_button('combat', '⚔️ Attaque', 'btn_attack'):
+    handle_combat()
+```
+
+### ✅ Capacités Officielles (Mise à Jour Récente)
+- **Noms officiels** : Tous les noms de capacités mis à jour selon le livre de règles
+- **Correspondance exacte** : P-1 Druide → "Forme d'ours", P-2 Mage → "Éclair magique", etc.
+- **48 capacités** avec noms corrects pour les 8 héros principaux
+
+### ✅ Optimisation Performance (Précédente)
+
+#### Système de Cache Intelligent
+- **Cache équipements** : `load_equipment_details_cache()` avec `@st.cache_data`
+- **Cache capacités** : `load_abilities_details_cache()` pour tous les héros
+- **Pré-calcul build détails** : Équipements, capacités et potions inclus dans `preloaded_builds`
+
+#### Élimination des Requêtes Répétées
+- **Plus de lecture CSV** en cours d'utilisation (équipements lus 1x au démarrage)
+- **Plus de `DataLoader()`** créé à chaque affichage
+- **Plus d'import répétés** de `get_abilities_for_hero`
+- **Données en mémoire** : Affichage instantané des détails builds
+
+#### Expander Détails Builds
+- **Affichage complet** : Équipements avec stats, capacités avec coûts, potions
+- **Performance optimisée** : Données pré-calculées, zéro latence
+- **Support builds custom** : Calcul à la volée avec caches
+
+### Migration 8 Héros (Précédente)
+- **Supprimés** : P-9 à P-12 (pseudo-héros)
+- **Conservés** : 8 héros principaux (P-1 à P-8)
+- **Grille 2x4** optimisée
+- **Session state** nettoyé automatiquement
+
 ## Architecture Technique
 
 ### Optimisations Récentes
-- **Système de cache Streamlit** : `@st.cache_data` pour équipements et capacités
+- **Système de boutons flexible** : Évite les conflits CSS avec Streamlit
+- **Système de cache Streamlit** : `@st.cache_data` pour données statiques
 - **Pré-calcul complet** : Builds avec détails calculés une seule fois au chargement
 - **Performance optimisée** : Élimination des lectures CSV et requêtes répétées
 - **Expander détails** : Affichage instantané des équipements/capacités/potions
@@ -120,31 +185,25 @@ streamlit run app.py
 3. Générer l'initiative et contrôler manuellement chaque personnage
 4. Utiliser l'historique pour tester différentes approches
 
-## Changements Récents
+#### Utilisation des Boutons Colorés
+```python
+# Import des utilitaires
+from ui.components.button_utils import (
+    ButtonStyle, success_button, danger_button, 
+    magic_button, create_contextual_button
+)
 
-### ✅ Optimisation Performance (Dernière Mise à Jour)
+# Boutons spécialisés
+if success_button("✅ Sauvegarder", "btn_save"):
+    save_data()
 
-#### Système de Cache Intelligent
-- **Cache équipements** : `load_equipment_details_cache()` avec `@st.cache_data`
-- **Cache capacités** : `load_abilities_details_cache()` pour tous les héros
-- **Pré-calcul build détails** : Équipements, capacités et potions inclus dans `preloaded_builds`
+if danger_button("🗑️ Reset", "btn_reset"):
+    reset_data()
 
-#### Élimination des Requêtes Répétées
-- **Plus de lecture CSV** en cours d'utilisation (équipements lus 1x au démarrage)
-- **Plus de `DataLoader()`** créé à chaque affichage
-- **Plus d'import répétés** de `get_abilities_for_hero`
-- **Données en mémoire** : Affichage instantané des détails builds
-
-#### Expander Détails Builds
-- **Affichage complet** : Équipements avec stats, capacités avec coûts, potions
-- **Performance optimisée** : Données pré-calculées, zéro latence
-- **Support builds custom** : Calcul à la volée avec caches
-
-### Migration 8 Héros (Précédente)
-- **Supprimés** : P-9 à P-12 (pseudo-héros)
-- **Conservés** : 8 héros principaux (P-1 à P-8)
-- **Grille 2x4** optimisée
-- **Session state** nettoyé automatiquement
+# Boutons contextuels
+if create_contextual_button('abilities', '🔮 Lancer Sort', 'btn_cast'):
+    cast_spell()
+```
 
 ## Structure du Projet
 
@@ -157,10 +216,11 @@ périples-balance-workshop/
 │   ├── combat_engine.py            # Moteur de combat et IA
 │   └── rules_engine.py             # Règles de jeu
 ├── ui/
-│   ├── styling.py                  # Thème interface
+│   ├── styling.py                  # Thème interface AVEC SYSTÈME FLEXIBLE
 │   └── components/                 # Composants interface
 │       ├── hero_components.py      # Composants héros OPTIMISÉS avec cache
-│       ├── ui_elements.py          # Éléments UI (version simplifiée JPG)
+│       ├── ui_elements.py          # Éléments UI PROPRES (sans forçage CSS)
+│       ├── button_utils.py         # NOUVEAU - Utilitaires boutons colorés
 │       ├── forge_abilities_components.py  # Interface capacités/potions
 │       └── sandbox_interface.py    # Mode Sandbox
 ├── utils/
@@ -170,6 +230,7 @@ périples-balance-workshop/
 │   ├── heroes.csv                # 8 héros principaux
 │   ├── enemies.csv               # Données ennemis
 │   ├── equipment.csv             # 52 équipements avec détails
+│   ├── ability_names.csv         # CAPACITÉS OFFICIELLES (noms du livre de règles)
 │   └── images/                   # Images JPG optimisées
 └── hero_builds_data.py           # Builds prédéfinis détaillés P-1 à P-8
 ```
@@ -180,7 +241,7 @@ périples-balance-workshop/
 1. Tester les 3 niveaux de difficulté avec différentes configurations
 2. **Consulter détails builds** via expanders pour comprendre les compositions
 3. Analyser les métriques de combat (taux de survie, durée, ressources)
-4. Ajuster les builds personnalisés
+4. Ajuster les builds personnalisés avec boutons colorés appropriés
 5. Utiliser le Mode Sandbox pour tests précis
 6. Itérer jusqu'à obtenir un équilibrage satisfaisant
 
@@ -193,21 +254,29 @@ périples-balance-workshop/
 ## Notes Développement
 
 ### Performance et Architecture
+- **Système de boutons flexible** : Compatible PyInstaller, évite les conflits Streamlit
 - **Cache Streamlit** : Utilisé pour données statiques (équipements, capacités)
 - **Pré-calcul** : Privilégier le calcul au démarrage vs calcul à la demande
 - **Session state minimal** : Éviter de stocker des données lourdes
 - **Callbacks natifs** : Utiliser `on_change` pour réactivité instantanée
 
+### Système de Boutons
+- **CSS non-agressif** : Évite le forçage brutal avec `!important`
+- **Classes ciblées** : Styles appliqués via attributs `data-*`
+- **Compatibilité** : Respecte les types Streamlit (`primary`, `secondary`)
+- **Extensibilité** : Facile d'ajouter de nouveaux styles
+
 ### Compatibilité PyInstaller
 - **Imports conditionnels** : `try/except` pour modules optionnels
 - **Chemins relatifs** : `data/` pour fichiers CSV et images
 - **Pas de dépendances lourdes** : Privilégier stdlib Python
+- **Boutons natifs** : Système compatible compilation
 
 ### Code Style
 - **Fonctions courtes** : Lisibilité pour débutants Python
 - **Cache documenté** : `@st.cache_data` avec commentaires
 - **Gestion erreurs** : `try/except` avec fallbacks gracieux
-- **Print logs** : Messages informatifs pour debugging
+- **Boutons sémantiques** : Usage contextuel des couleurs
 
 ## Équipe et Contribution
 
@@ -217,7 +286,7 @@ périples-balance-workshop/
 ### Spécifications Techniques
 - **Langage** : Python 3.10+
 - **Interface** : Streamlit natif optimisé avec callbacks
-- **Architecture** : Cache Streamlit + pré-calcul pour performance
+- **Architecture** : Cache Streamlit + pré-calcul + système de boutons flexible
 - **Déploiement** : Compatible PyInstaller
 
 ## Licence

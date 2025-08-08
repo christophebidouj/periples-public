@@ -1,54 +1,60 @@
 hero_code,ability_number,generated_name,clean_description
-P-1,1,Forme d'Ours,Permet à Elneha de se métamorphoser en Ours.
-P-1,2,Soin Mineur,Soigner jusqu'à 4 blessures de n'importe quel personnage.
-P-1,3,Forme de Loup,Permet à Elneha de se métamorphoser en Loup.
-P-1,4,Soin Mineur,Soigner jusqu'à 4 blessures de tous les personnages.
-P-1,5,Explosion Magique,Inflige 4 dégats magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour ce tour.
-P-1,6,Guérison Complète,Soigne la totalité des blessures d'un personnage inconscient. Ce dernier peut effectuer son tour au moment où il reprend conscience.
+P-1,1,Forme d'ours,Permet à Elneha de se métamorphoser en Ours.
+P-1,2,Soin mineur,Soigner jusqu'à 4 blessures de n'importe quel personnage.
+P-1,3,Forme de loup,Permet à Elneha de se métamorphoser en Loup.
+P-1,4,Soin multiple,Soigner jusqu'à 4 blessures de tous les personnages.
+P-1,5,Onde tonnante,Inflige 4 dégats magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour ce tour.
+P-1,6,Résurrection,Soigne la totalité des blessures d'un personnage inconscient. Ce dernier peut effectuer son tour au moment où il reprend conscience.
+P-2,1,Eclair magique,"Inflige 4 dégâts magiques à un ennemi, sans qu'il puisse riposter."
+P-2,2,Armure du mage,Gagne un jeton de parade supplémentaire par tour.
+P-2,3,Mur de glace,"Inflige 2 dégâts magiques aux adversaires situés dans le groupe de tête, et les fait reculer d'un rang."
+P-2,4,Boule de feu,"Inflige 3 dégâts magiques à tous les ennemis du combat, sans qu'ils puissent riposter."
+P-2,5,Vol de vie,"Inflige 3 dégâts magiques à un ennemi et soigne autant de blessures au personnage qui utilise ce sort, sans que l'ennemi puisse riposter."
+P-2,6,Pluie de météores,Inflige 6 dégâts magiques à tous les adversaires présents lors du combat et les empêche d'agir le tour suivant.
+P-3,1,Imposition des mains,Soigne 3 blessures de n'importe quel personnage.
+P-3,2,Parade,Gagne un jeton de parade supplémentaire par tour.
+P-3,3,Châtiment divin,"Inflige 6 dégâts magiques à un ennemi, sans qu'il puisse riposter."
+P-3,4,Aura sacrée,Tous les personnages gagnent un jeton de parade supplémentaire par tour.
+P-3,5,Soin supérieur,Soigne 6 blessures de n'importe quel personnage.
+P-3,6,Jugement dernier,Inflige 8 dégâts magiques à tous les adversaires présents lors du combat.
+P-4,1,Cueilleur / Chasseur,"Récolte une potion de soin ou, inflige 4 dégâts physiques à un ennemi à distance."
+P-4,2,Marque du chasseur,Marque un ennemi. Tous les personnages infligent +2 dégâts contre cet ennemi.
+P-4,3,Ambidextre,"Double les dégâts d'une attaque réussie, que ce soit au corps à corps ou à distance."
+P-4,4,Pluie de projectiles,"Inflige 2 dégâts physiques à tous les ennemis du combat, que ce soit au corps à corps ou à distance."
+P-4,5,Soin mineur,Soigne 2 blessures de n'importe quel personnage.
+P-4,6,Tir rapide,"Effectue 3 attaques à distance consécutives, en lançant le dé pour chacune d'entre elles."
+P-5,1,Défense sans armure,Gagne un jeton de parade supplémentaire par tour.
+P-5,2,Rage de berserker,"Inflige +2 dégâts physiques par attaque mais subit une blessure à chaque tour, tant que l'effet est actif."
+P-5,3,Charge de taureau,"Double les dégâts d'une attaque réussie, et gagne un jeton de parade supplémentaire ce tour-ci."
+P-5,4,Témérité,Tous les adversaires attaquent ce personnage en priorité. En contrepartie il gagne +2 dégâts physiques par attaque.
+P-5,5,Critique brutal,"Inflige 8 dégâts physiques à un ennemi, sans qu'il puisse riposter."
+P-5,6,Rage insatiable,"Inflige +3 dégâts physiques par attaque, mais subit une blessure à chaque tour tant que l'effet est actif."
+P-6,1,Affaiblissement,Un ennemi perd 2 points d'attaque jusqu'à la fin du combat.
+P-6,2,Accord interdit,"Inflige 3 dégâts magiques à tous les adversaires, et les empêche d'agir le tour suivant."
+P-6,3,Inspiration,Un personnage peut attaquer deux fois ce tour-ci.
+P-6,4,Invisibilité,"Un personnage ne peut plus subir d'attaque jusqu'au début de son prochain tour, sauf dégâts de zone."
+P-6,5,Soin majeur,Soigne 5 blessures de n'importe quel personnage.
+P-6,6,Mot de mort,"Tue instantanément un ennemi ayant subi au moins la moitié de ses points de vie en dégâts, quel que soit son nombre de points de vie restants."
+P-7,1,Attaque furtive,"Double les dégâts d'une attaque réussie, sans que l'ennemi puisse riposter."
+P-7,2,Dérobade,Gagne un jeton de parade supplémentaire par tour.
+P-7,3,Vol à la tire,"Vole une potion de soin, ou inflige 2 dégâts physiques à un ennemi."
+P-7,4,Bombe fumigène,"Tous les adversaires perdent leur action pour ce tour, et leur précision est réduite de 3 jusqu'à la fin du combat."
+P-7,5,Attaque tournoyante,"Inflige 3 dégâts physiques à tous les ennemis du combat, sans qu'ils puissent riposter."
+P-7,6,Assaut furieux,"Effectue 4 attaques consécutives, en lançant le dé pour chacune d'entre elles."
+P-8,1,Point faible,"Inflige +3 dégâts physiques supplémentaires lors d'une attaque réussie, sans que l'ennemi puisse riposter."
+P-8,2,Attaques multiples,"Effectue 2 attaques consécutives, en lançant le dé pour chacune d'entre elles."
+P-8,3,Purification,Enlève tous les effets néfastes d'un personnage et lui fait regagner 2 blessures.
+P-8,4,Déluge de coups,"Effectue 3 attaques consécutives, en lançant le dé pour chacune d'entre elles."
+P-8,5,Paume ouverte,"Inflige 4 dégâts physiques à un ennemi, sans qu'il puisse riposter. Cet ennemi perd également son tour."
+P-8,6,Zui quan,"Gagne +1 dégât physique et +1 parade par tour, de façon cumulative jusqu'à la fin du combat. L'effet se déclenche au début du tour du personnage."
 P-10,1,Attaque Double,"Double les dégâts d'une attaque réussie,"
 P-11,1,Ignore Attaque,Ignore les dégâts d'une attaque
 P-12,1,Attaque Spéciale,"Double les dégâts d'une attaque réussie,"
-P-2,1,Attaque Magique,Inflige 4 dégats magiques repartis au choix entre les ennemis.
-P-2,2,Bouclier Magique,Créer un bouclier de 2 de parade pendant toute la durée du combat.
-P-2,3,Gel Ennemi,"Gêles les ennemis, leur faisant perdre leur action pendant 1 tour."
-P-2,4,Explosion Magique,Inflige 6 dégats magiques à tous les adversaires.
-P-2,5,Soin Mineur,"Inflige 4 dégats magiques à 1 ennemi, et soigne Liarie de 4 blessures."
-P-2,6,Explosion Magique,Inflige 10 dégats magiques à tous les adversaires.
-P-3,1,Soin Proportionnel,"Soigne n'importe quel autre personnage, d'un montant égal à la moitié de la santé actuelle d'Atucan moins  ses blessures."
-P-3,2,Bouclier Magique,Permet de doubler la valeur de défense du bouclier équipé. Atucan ne peut cependant pas attaquer ce tour.
-P-3,3,Attaque Magique,"Après une attaque réussie, inflige 4 dégats magiques à cet ennemi."
-P-3,4,Attaque Spéciale,Permet à tous les personnages d'ignorer 1 blessure par attaque reçue.
-P-3,5,Soin Majeur,Soigner jusqu'à 8 blessures entre les personnages.
-P-3,6,Explosion Magique,Inflige 6 dégats magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour les 2 prochains tours.
-P-4,1,Expertise Combat,Pas utile en combat
-P-4,2,Attaque Magique,"Marque un ennemi. Tous les dégâts infligés sur ce dernier, par n'mporte quel membre du groupe, inflige 2 dégâts physique en plus."
-P-4,3,Expertise Combat,Pas utile en combat
-P-4,4,Attaque Spéciale,Cible tous les ennemis lorsqu'il attaque.
-P-4,5,Soin Mineur,Soigner jusqu'à 4 blessures de n'importe quel personnage.
-P-4,6,Attaque Magique,"Attaque 2 fois par tour pendant tout le combat. Chaque attaque est gérée indépendamment, et doit être réussie pour infliger des dégâts."
-P-5,1,Bouclier Magique,2 en parade si aucune armure ou bouclier n'est équipé
-P-5,2,Plus Dégâts,"Plus 3 dégâts physique, pendant la durée du combat."
-P-5,3,Attaque Spéciale,"Après une attaque réussie, bloque l'aciont de cet ennemi."
-P-5,4,Bouclier Magique,"Permet de convertir son score de parade, en bonus de dégâts. La parade ne peut pas être utilisée pendant ce tour."
-P-5,5,Jet Sont,"Les 18 & 19 sur le jet de dé, sont également des réussites critiques."
-P-5,6,Tant Qu'il,"Tant qu'il est en rage, Thordius continue de combattre même s'il atteint le maximum de points de blessures. Il tombe toutefois inconscient une fois le combat terminé qu’importe le nombre de blessure qu’il a reçu."
-P-6,1,Défense Renforcée,"Fait baisser la défense de 4 et la santé de 2,  de l'ennemi ciblé pendant toute la durée du combat. Effet non cumulable."
-P-6,2,Tour Perdu,Fait perdre aux adversaires leur action pour ce tour.
-P-6,3,Fait Gagner,Fait gagner 2 de pécision et 1 de dégat physique à tous les personnages pendant toute la durée du combat.
-P-6,4,Invisiblilité,"Rend invisible l'un des personnages du groupe. Il ne peut alors plus être la cible d'une action ennemie. Il peut même échapper au combat si tous ses compagnons tombent inconscients. 
-Cet effet disparaît si ce personnage tente une quelconque action de combat."
-P-6,5,Soin Majeur,Soigner jusqu'à 8 blessures entre les personnages.
-P-6,6,Tuerie,Utilise 2 pour tuer n'importe quel ennemi instantanément qui possède moins de 30 de santé.
-P-7,1,Attaque Magique,"N'attaque pas ce tour, pour pouvoir infliger le double de dégats le tour sans avoir a jeter le dé. Ne peut défendre ce tour ci"
-P-7,2,Ignore Attaque,Permet d'ignorer les dégâts reçus d'une attaque adverse.
-P-7,3,Expertise Combat,Pas utile en combat
-P-7,4,Utilise Ressource,Utilise une ressource pour empêcher les actions de tous adversaires pendant deux tours.
-P-7,5,Attaque Magique,Inflige les dégâts d'une attaque réussie sur tous les ennemis.
-P-7,6,Attaque Spéciale,"Permet d'utiliser l'attaque  furtive à tous les tours, au lieu d'un sur deux, pendant toute la durée du combat."
-P-8,1,Bouclier Magique,Ignore la parade des ennemis.
-P-8,2,Attaque Magique,"Permet d'infliger une deuxième fois les dégâts, après une attaque réussie, sur la même cible. Les dégâts de cette nouvelle attaque sont cependant divisés par deux."
-P-8,3,Soin Naturel,"Permet de soigner jusqu'à quatre de ses blessures. Ne peut être cumulé avec une attaque, si utilisé en combat."
-P-8,4,Attaque Magique,"Inflige les dégâts d'une attaque réussie sur un adversaire, à tous les ennemis."
-P-8,5,Attaque Spéciale,"Après une attaque réussie, empêche cet ennemi d'agir pendant 3 tours."
-P-8,6,Attaque Spéciale,"Permet d'être ciblé par deux attaques ennemies et d'en ignorer les dégâts, pendant toute la durée du combat."
-P-9,1,Attaque Spéciale,Ignore les dégâts d'une attaque
+P-2,7,Bouclier Magique,Gagne 2 jetons de parade supplémentaires ce tour-ci.
+P-3,7,Bénédiction,Tous les personnages gagnent +2 précision jusqu'à la fin du combat.
+P-4,7,Flèche Empoisonnée,"Inflige 2 dégâts physiques à un ennemi à distance, celui-ci perdra 1 point de vie supplémentaire à chaque début de tour."
+P-5,7,Coup de Grâce,"Si l'ennemi a moins de 4 points de vie, le tue instantanément."
+P-6,7,Charme,Un ennemi attaque un autre ennemi de votre choix.
+P-7,7,Poison,"Empoisonne un ennemi, qui perdra 2 points de vie à chaque début de tour."
+P-8,7,Méditation,Regagne 3 blessures et gagne +1 précision jusqu'à la fin du combat.
+P-1,7,Métamorphose Ultime,"Permet à Elneha de se métamorphoser en Dragon, gagnant +3 dégâts physiques et magiques jusqu'à la fin du combat."
