@@ -1,14 +1,15 @@
 """
 Modèles de personnages pour le Simulateur Périples
-VERSION CORRIGÉE avec VirtualAbility pour invocation + système de jetons parade rechargeable + effets spéciaux + GESTION SORTS
+VERSION INTÉGRÉE COMPLÈTE avec système d'effets de capacités
 🛡️ Parade = jetons rechargeable à chaque tour (héros ET ennemis)
 🩸 Potions de santé dans builds custom
 🎭 O-4 (Lyre phoenix) : +4 sorts + attaques magiques pour Stèphe
 🔮 Gestion sorts conforme aux règles officielles
+⚡ Système d'effets persistants intégré
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from enum import Enum
 from .abilities import Ability, AbilityAction, AbilityType, AbilityManager
 
@@ -85,7 +86,7 @@ class HealthPotion(BaseModel):
         return False
 
 class Character(BaseModel):
-    """Héros avec système de jetons parade rechargeable + effets spéciaux + gestion sorts"""
+    """Héros avec système de jetons parade rechargeable + effets spéciaux + gestion sorts + effets persistants"""
     
     # Stats de base
     code: str
@@ -127,8 +128,30 @@ class Character(BaseModel):
     # Système de formes pour Elneha
     current_form: Optional[str] = None  # "bear", "wolf", "human"
     
+    # === NOUVEAUX ATTRIBUTS POUR SYSTÈME D'EFFETS ===
+    # Effets persistants actifs
+    active_persistent_effects: List[Any] = Field(default_factory=list)
+    
+    # Buffs temporaires (pour une action/attaque)
+    temporary_buffs: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Buffs permanents (pour tout le combat)
+    permanent_buffs: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Flags d'attaque spéciaux
+    attack_flags: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Debuffs subis
+    debuffs: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Effets de statut
+    status_effects: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Marques appliquées (pour systèmes comme Kraor)
+    marks: Dict[str, Any] = Field(default_factory=dict)
+    
     def model_post_init(self, __context):
-        """Initialisation"""
+        """Initialisation avec système d'effets"""
         if self.current_health is None:
             self.current_health = self.health
         
@@ -150,6 +173,39 @@ class Character(BaseModel):
             self.magic_abilities_used_this_turn = 0
         if not hasattr(self, 'spells_used'):
             self.spells_used = 0
+        
+        # INTÉGRATION - Ajouter attributs système d'effets
+        self._add_required_attributes()
+    
+    def _add_required_attributes(self):
+        """Ajoute les attributs nécessaires pour le système d'effets"""
+        # Effets persistants actifs
+        if not hasattr(self, 'active_persistent_effects'):
+            self.active_persistent_effects = []
+        
+        # Buffs temporaires (pour une action/attaque)
+        if not hasattr(self, 'temporary_buffs'):
+            self.temporary_buffs = {}
+        
+        # Buffs permanents (pour tout le combat)
+        if not hasattr(self, 'permanent_buffs'):
+            self.permanent_buffs = {}
+        
+        # Flags d'attaque spéciaux
+        if not hasattr(self, 'attack_flags'):
+            self.attack_flags = {}
+        
+        # Debuffs subis
+        if not hasattr(self, 'debuffs'):
+            self.debuffs = {}
+        
+        # Effets de statut
+        if not hasattr(self, 'status_effects'):
+            self.status_effects = {}
+        
+        # Marques appliquées (pour systèmes comme Kraor)
+        if not hasattr(self, 'marks'):
+            self.marks = {}
     
     # === SYSTÈME OBJETS SPÉCIAUX ===
     
@@ -252,7 +308,7 @@ class Character(BaseModel):
             'has_medaillon_appel': self.has_equipment("O-3") if self.code == "P-4" else False
         }
     
-    # === SYSTÈME JETONS PARADE ===
+    # === SYSTÈME JETONS PARADE (VERSION AMÉLIORÉE) ===
     
     def _update_parade_from_equipment(self):
         """Met à jour la parade max selon les équipements"""
@@ -261,12 +317,41 @@ class Character(BaseModel):
         self.current_parade_tokens = self.max_parade_tokens
     
     def get_total_parade(self) -> int:
-        """Retourne les jetons parade actuels (pas max)"""
-        return self.current_parade_tokens
+        """Version améliorée pour calculer la parade max avec bonus persistants"""
+        # Parade de base
+        base_parade = self.get_equipment_bonus('defense')
+        
+        # Bonus persistants
+        persistent_bonus = 0
+        if hasattr(self, 'active_persistent_effects'):
+            try:
+                from models.combat.abilities.persistent_effects import PersistentEffectsSystem
+                persistent_system = PersistentEffectsSystem()
+                persistent_bonus = persistent_system.get_parade_bonus(self)
+            except ImportError:
+                pass
+        
+        # Buffs permanents
+        permanent_bonus = 0
+        if hasattr(self, 'permanent_buffs'):
+            if self.permanent_buffs.get('defense_sans_armure', False):
+                permanent_bonus += 1
+        
+        return base_parade + persistent_bonus + permanent_bonus
     
     def refresh_parade_tokens(self):
-        """Recharge tous les jetons parade (début de tour)"""
+        """Version améliorée de refresh_parade_tokens qui gère les effets persistants"""
+        # Recharge normale
         self.current_parade_tokens = self.max_parade_tokens
+        
+        # Appliquer effets persistants sur la parade
+        if hasattr(self, 'active_persistent_effects'):
+            try:
+                from models.combat.abilities.persistent_effects import PersistentEffectsSystem
+                persistent_system = PersistentEffectsSystem()
+                persistent_system.apply_parade_refresh_effects(self)
+            except ImportError:
+                pass
     
     def consume_parade_tokens(self, damage: int) -> tuple[int, int]:
         """
@@ -540,7 +625,35 @@ class Character(BaseModel):
         return self.precision + self.get_equipment_bonus('precision')
     
     def get_total_damage(self) -> int:
-        return self.damage + self.get_equipment_bonus('physical_damage')
+        """Version améliorée de get_total_damage qui inclut les bonus d'effets"""
+        # Dégâts de base
+        base_damage = self.damage + self.get_equipment_bonus('physical_damage')
+        
+        # Bonus des effets persistants
+        persistent_bonus = 0
+        if hasattr(self, 'active_persistent_effects'):
+            try:
+                from models.combat.abilities.persistent_effects import PersistentEffectsSystem
+                persistent_system = PersistentEffectsSystem()
+                persistent_bonus = persistent_system.get_damage_bonus(self)
+            except ImportError:
+                pass
+        
+        # Bonus temporaires
+        temp_bonus = 0
+        if hasattr(self, 'temporary_buffs'):
+            temp_bonus = self.temporary_buffs.get('damage_bonus_next_attack', 0)
+        
+        # Marques sur les ennemis (pour Kraor)
+        mark_bonus = self._get_mark_damage_bonus()
+        
+        return base_damage + persistent_bonus + temp_bonus + mark_bonus
+    
+    def _get_mark_damage_bonus(self) -> int:
+        """Calcule le bonus de dégâts contre les ennemis marqués"""
+        # Cette méthode sera appelée pendant une attaque pour vérifier
+        # si la cible est marquée (implémentation dépend du contexte de combat)
+        return 0  # Implémenté dans le moteur de combat
     
     def get_total_magical_damage(self) -> int:
         """Gère la conversion d'attaques pour O-4 Lyre phoenix"""
@@ -719,6 +832,203 @@ class Character(BaseModel):
         action.success = True
         return action
     
+    # === SYSTÈME D'EFFETS - NOUVELLES MÉTHODES ===
+    
+    def check_attack_modifiers(self) -> Dict[str, Any]:
+        """
+        Vérifie les modificateurs d'attaque actifs
+        À appeler avant de calculer une attaque
+        
+        Returns:
+            Dict avec les modificateurs: damage_multiplier, damage_bonus, no_retaliation, etc.
+        """
+        modifiers = {
+            'damage_multiplier': 1.0,
+            'damage_bonus': 0,
+            'no_retaliation': False,
+            'auto_hit': False
+        }
+        
+        if not hasattr(self, 'temporary_buffs'):
+            return modifiers
+        
+        # Double dégâts
+        if self.temporary_buffs.get('double_next_attack', False):
+            modifiers['damage_multiplier'] = 2.0
+        
+        # Bonus de dégâts
+        if 'damage_bonus_next_attack' in self.temporary_buffs:
+            modifiers['damage_bonus'] = self.temporary_buffs['damage_bonus_next_attack']
+        
+        # Pas de riposte
+        if self.temporary_buffs.get('no_retaliation', False):
+            modifiers['no_retaliation'] = True
+        
+        # Flags d'attaque
+        if hasattr(self, 'attack_flags'):
+            if self.attack_flags.get('no_retaliation', False):
+                modifiers['no_retaliation'] = True
+                # Reset le flag après vérification
+                self.attack_flags.pop('no_retaliation', None)
+        
+        return modifiers
+    
+    def enhance_hero_attack(self, target, damage_dealt: int):
+        """
+        Gestionnaire post-attaque pour les effets temporaires
+        À appeler après une attaque réussie
+        """
+        if not hasattr(self, 'temporary_buffs'):
+            return
+        
+        # Consommer les buffs d'attaque unique
+        consumed_buffs = []
+        
+        if 'double_next_attack' in self.temporary_buffs:
+            consumed_buffs.append('double_next_attack')
+        
+        if 'damage_bonus_next_attack' in self.temporary_buffs:
+            consumed_buffs.append('damage_bonus_next_attack')
+        
+        if 'ambidextre_active' in self.temporary_buffs:
+            consumed_buffs.append('ambidextre_active')
+        
+        if 'furtive_active' in self.temporary_buffs:
+            consumed_buffs.append('furtive_active')
+        
+        if 'point_faible_active' in self.temporary_buffs:
+            consumed_buffs.append('point_faible_active')
+        
+        # Retirer les buffs consommés
+        for buff in consumed_buffs:
+            self.temporary_buffs.pop(buff, None)
+    
+    def get_character_effects_summary(self) -> Dict[str, Any]:
+        """
+        Génère un résumé complet des effets actifs sur un personnage
+        Pour l'interface utilisateur
+        """
+        summary = {
+            'persistent_effects': [],
+            'temporary_buffs': [],
+            'permanent_buffs': [],
+            'debuffs': [],
+            'status_effects': []
+        }
+        
+        # Effets persistants
+        if hasattr(self, 'active_persistent_effects'):
+            try:
+                from models.combat.abilities.persistent_effects import PersistentEffectsSystem
+                persistent_system = PersistentEffectsSystem()
+                summary['persistent_effects'] = persistent_system.get_active_effects(self)
+            except ImportError:
+                pass
+        
+        # Buffs temporaires
+        if hasattr(self, 'temporary_buffs'):
+            for buff_name, buff_value in self.temporary_buffs.items():
+                summary['temporary_buffs'].append({
+                    'name': buff_name,
+                    'value': buff_value
+                })
+        
+        # Buffs permanents
+        if hasattr(self, 'permanent_buffs'):
+            for buff_name, is_active in self.permanent_buffs.items():
+                if is_active:
+                    summary['permanent_buffs'].append(buff_name)
+        
+        # Debuffs
+        if hasattr(self, 'debuffs'):
+            for debuff_name, debuff_value in self.debuffs.items():
+                summary['debuffs'].append({
+                    'name': debuff_name,
+                    'value': debuff_value
+                })
+        
+        # Effets de statut
+        if hasattr(self, 'status_effects'):
+            for effect_name, duration in self.status_effects.items():
+                summary['status_effects'].append({
+                    'name': effect_name,
+                    'duration': duration
+                })
+        
+        return summary
+    
+    def cleanup_expired_effects(self):
+        """
+        Nettoie les effets expirés du personnage
+        À appeler en fin de combat ou périodiquement
+        """
+        # Nettoyer buffs temporaires vides
+        if hasattr(self, 'temporary_buffs'):
+            empty_buffs = [k for k, v in self.temporary_buffs.items() if not v]
+            for buff in empty_buffs:
+                del self.temporary_buffs[buff]
+        
+        # Nettoyer effets de statut expirés
+        if hasattr(self, 'status_effects'):
+            expired_effects = [k for k, v in self.status_effects.items() if v <= 0]
+            for effect in expired_effects:
+                del self.status_effects[effect]
+        
+        # Nettoyer flags d'attaque
+        if hasattr(self, 'attack_flags'):
+            self.attack_flags.clear()
+    
+    # === MÉTHODES UTILITAIRES POUR EFFETS ===
+    
+    def apply_enemy_debuffs(self, stat_type: str) -> int:
+        """
+        Applique les debuffs d'un ennemi pour un type de stat
+        À appeler lors du calcul des stats d'ennemi
+        
+        Args:
+            stat_type: 'attack', 'precision', etc.
+            
+        Returns:
+            int: Réduction à appliquer
+        """
+        if not hasattr(self, 'debuffs'):
+            return 0
+        
+        reduction = 0
+        
+        if stat_type == 'attack' and 'attack_reduction' in self.debuffs:
+            reduction += self.debuffs['attack_reduction']
+        
+        if stat_type == 'precision' and 'precision_reduction' in self.debuffs:
+            reduction += self.debuffs['precision_reduction']
+        
+        return reduction
+    
+    def check_enemy_status_effects(self) -> Dict[str, Any]:
+        """
+        Vérifie les effets de statut d'un ennemi
+        À appeler avant l'action d'un ennemi
+        
+        Returns:
+            Dict: {can_act: bool, effects: List[str]}
+        """
+        status = {'can_act': True, 'effects': []}
+        
+        if not hasattr(self, 'status_effects'):
+            return status
+        
+        # Stun
+        if 'stunned' in self.status_effects:
+            if self.status_effects['stunned'] > 0:
+                status['can_act'] = False
+                status['effects'].append('stunned')
+                # Décrémenter la durée
+                self.status_effects['stunned'] -= 1
+                if self.status_effects['stunned'] <= 0:
+                    del self.status_effects['stunned']
+        
+        return status
+    
     # === COMBAT ===
     
     def reset_turn_state(self):
@@ -729,7 +1039,7 @@ class Character(BaseModel):
         self.potion_used_this_turn = False
     
     def start_new_combat(self):
-        """MODIFIÉ - Prépare nouveau combat + gestion sorts"""
+        """MODIFIÉ - Prépare nouveau combat + gestion sorts + effets"""
         self.reset_turn_state()
         self.current_spells = self.get_total_spells()
         self.spells_used = 0
@@ -747,6 +1057,9 @@ class Character(BaseModel):
         
         # Reset parade
         self.refresh_parade_tokens()
+        
+        # NOUVEAU - Initialiser attributs effets pour le combat
+        self._add_required_attributes()
     
     def _apply_baton_puissance_bonus(self):
         """Applique le bonus O-2 Baton de puissance (+1 utilisation capacités magiques)"""
@@ -757,20 +1070,30 @@ class Character(BaseModel):
                 ability.uses_per_combat += 1  # Modifier aussi la base pour reset_combat_uses()
     
     def start_hero_turn(self):
-        """MODIFIÉ - Début du tour héros (recharge parade + reset sorts)"""
+        """Version améliorée de start_hero_turn avec gestion des effets"""
+        # Reset état du tour standard
         self.reset_turn_state()
-        
-        # NOUVEAU - Reset compteur capacités magiques par tour
         self.magic_abilities_used_this_turn = 0
         
-        # Recharger jetons parade
+        # Recharger jetons parade avec effets
         self.refresh_parade_tokens()
+        
+        # Appliquer effets de début de tour
+        if hasattr(self, 'active_persistent_effects'):
+            try:
+                from models.combat.abilities.persistent_effects import PersistentEffectsSystem
+                persistent_system = PersistentEffectsSystem()
+                log = []  # Log temporaire pour les effets
+                persistent_system.apply_turn_start_effects(self, log)
+                # Note: log devrait être passé par le système de combat
+            except ImportError:
+                pass
     
     def get_combat_status(self) -> Dict:
-        """État complet pour interface"""
+        """État complet pour interface avec effets"""
         current_spells = self.current_spells or self.get_total_spells()
         
-        return {
+        base_status = {
             'health': {
                 'current': self.current_health,
                 'max': self.get_total_health(),
@@ -790,9 +1113,24 @@ class Character(BaseModel):
             },
             'special_effects': self.get_special_equipment_effects()
         }
+        
+        # NOUVEAU - Ajouter résumé des effets
+        try:
+            effects_summary = self.get_character_effects_summary()
+            base_status['effects'] = effects_summary
+        except:
+            base_status['effects'] = {
+                'persistent_effects': [],
+                'temporary_buffs': [],
+                'permanent_buffs': [],
+                'debuffs': [],
+                'status_effects': []
+            }
+        
+        return base_status
 
 class Pet(Character):
-    """Pet invoqué avec système de jetons parade + héritage Character + gestion sorts"""
+    """Pet invoqué avec système de jetons parade + héritage Character + gestion sorts + effets"""
     
     owner_code: str  # Code du héros qui l'a invoqué (ex: "P-4")
     owner_name: str  # Nom du héros qui l'a invoqué (ex: "Kraor")
@@ -855,7 +1193,7 @@ class Pet(Character):
         return []
     
     def start_new_combat(self):
-        """NOUVEAU - Initialise le Pet pour un nouveau combat"""
+        """NOUVEAU - Initialise le Pet pour un nouveau combat avec effets"""
         self.current_health = self.health
         self.magic_abilities_used_this_turn = 0
         self.spells_used = 0
@@ -864,9 +1202,12 @@ class Pet(Character):
         # Pas de parade pour les Pets par défaut
         self.current_parade_tokens = 0
         self.max_parade_tokens = 0
+        
+        # NOUVEAU - Initialiser attributs effets pour les Pets
+        self._add_required_attributes()
     
     def start_hero_turn(self):
-        """NOUVEAU - Début du tour Pet"""
+        """NOUVEAU - Début du tour Pet avec effets"""
         # Reset compteur capacités magiques par tour
         self.magic_abilities_used_this_turn = 0
         
@@ -875,7 +1216,7 @@ class Pet(Character):
             self.refresh_parade_tokens()
 
 class Enemy(BaseModel):
-    """Modèle ennemi avec système de jetons parade rechargeable"""
+    """Modèle ennemi avec système de jetons parade rechargeable + effets"""
     code: str
     name: str
     defense: int  # Seuil à dépasser pour toucher
@@ -889,11 +1230,21 @@ class Enemy(BaseModel):
     max_parade_tokens: int = 0
     current_parade_tokens: int = 0
     
+    # === NOUVEAUX ATTRIBUTS POUR SYSTÈME D'EFFETS ===
+    # Debuffs subis
+    debuffs: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Effets de statut
+    status_effects: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Marques appliquées
+    marks: Dict[str, Any] = Field(default_factory=dict)
+    
     def get_stats_for_players(self, player_count: int) -> Dict[str, int]:
         return self.stats_by_players.get(player_count, self.stats_by_players[4])
     
     def initialize_for_combat(self, player_count: int):
-        """Initialise santé ET parade"""
+        """Initialise santé ET parade + effets"""
         stats = self.get_stats_for_players(player_count)
         
         # Santé
@@ -904,6 +1255,14 @@ class Enemy(BaseModel):
         # Note: Assume que 'defense' dans stats est en fait la parade
         self.max_parade_tokens = stats.get('defense', 0)
         self.current_parade_tokens = self.max_parade_tokens
+        
+        # NOUVEAU - Initialiser attributs effets
+        if not hasattr(self, 'debuffs'):
+            self.debuffs = {}
+        if not hasattr(self, 'status_effects'):
+            self.status_effects = {}
+        if not hasattr(self, 'marks'):
+            self.marks = {}
     
     def is_alive(self) -> bool:
         return self.current_health > 0
@@ -979,6 +1338,71 @@ class Enemy(BaseModel):
     def start_enemy_turn(self):
         """Début du tour ennemi (recharge parade)"""
         self.refresh_parade_tokens()
+    
+    # === MÉTHODES POUR EFFETS SUR ENNEMIS ===
+    
+    def apply_debuff(self, debuff_type: str, value: int):
+        """Applique un debuff à l'ennemi"""
+        if not hasattr(self, 'debuffs'):
+            self.debuffs = {}
+        self.debuffs[debuff_type] = value
+    
+    def apply_status_effect(self, effect_type: str, duration: int):
+        """Applique un effet de statut à l'ennemi"""
+        if not hasattr(self, 'status_effects'):
+            self.status_effects = {}
+        self.status_effects[effect_type] = duration
+    
+    def apply_mark(self, mark_type: str, mark_data: Dict):
+        """Applique une marque à l'ennemi"""
+        if not hasattr(self, 'marks'):
+            self.marks = {}
+        self.marks[mark_type] = mark_data
+    
+    def get_effective_attack(self) -> int:
+        """Attaque effective avec debuffs"""
+        base_stats = self.get_stats_for_players(4)  # Utiliser stats pour 4 joueurs par défaut
+        base_attack = base_stats.get('damage', 0)
+        
+        reduction = 0
+        if hasattr(self, 'debuffs') and 'attack_reduction' in self.debuffs:
+            reduction = self.debuffs['attack_reduction']
+        
+        return max(0, base_attack - reduction)
+    
+    def get_effective_precision(self) -> int:
+        """Précision effective avec debuffs"""
+        # Les ennemis n'ont pas de stat précision dans le CSV actuel
+        # Utiliser la defense comme base (règles simplifiées)
+        base_precision = 10  # Valeur par défaut
+        
+        reduction = 0
+        if hasattr(self, 'debuffs') and 'precision_reduction' in self.debuffs:
+            reduction = self.debuffs['precision_reduction']
+        
+        return max(0, base_precision - reduction)
+    
+    def is_stunned(self) -> bool:
+        """Vérifie si l'ennemi est stunned"""
+        if not hasattr(self, 'status_effects'):
+            return False
+        return self.status_effects.get('stunned', 0) > 0
+    
+    def tick_status_effects(self):
+        """Décremente la durée des effets de statut"""
+        if not hasattr(self, 'status_effects'):
+            return
+        
+        expired_effects = []
+        for effect_name, duration in self.status_effects.items():
+            if duration > 0:
+                self.status_effects[effect_name] = duration - 1
+                if self.status_effects[effect_name] <= 0:
+                    expired_effects.append(effect_name)
+        
+        # Supprimer les effets expirés
+        for effect in expired_effects:
+            del self.status_effects[effect]
 
 class Equipment(BaseModel):
     """Modèle équipement"""
@@ -991,3 +1415,48 @@ class Equipment(BaseModel):
     defense: int = 0
     spells: int = 0
     health: int = 0
+    
+    def get_stat_bonus(self, stat_type: str) -> int:
+        """Retourne le bonus pour un type de stat spécifique"""
+        if stat_type == 'precision':
+            return self.precision
+        elif stat_type == 'physical_damage':
+            return self.physical_damage
+        elif stat_type == 'magical_damage':
+            return self.magical_damage
+        elif stat_type == 'defense':
+            return self.defense
+        elif stat_type == 'spells':
+            return self.spells
+        elif stat_type == 'health':
+            return self.health
+        return 0
+    
+    def is_special_object(self) -> bool:
+        """Vérifie si c'est un objet spécial (O-1 à O-4)"""
+        return self.code.startswith('O-')
+    
+    def get_equipment_summary(self) -> Dict[str, Any]:
+        """Résumé de l'équipement pour l'interface"""
+        stats = []
+        if self.precision > 0:
+            stats.append(f"Précision +{self.precision}")
+        if self.physical_damage > 0:
+            stats.append(f"Dégâts +{self.physical_damage}")
+        if self.magical_damage > 0:
+            stats.append(f"Magie +{self.magical_damage}")
+        if self.defense > 0:
+            stats.append(f"Parade +{self.defense}")
+        if self.spells > 0:
+            stats.append(f"Sorts +{self.spells}")
+        if self.health > 0:
+            stats.append(f"Santé +{self.health}")
+        
+        return {
+            'name': self.name,
+            'type': self.type,
+            'code': self.code,
+            'is_special': self.is_special_object(),
+            'stats_text': ", ".join(stats) if stats else "Aucun bonus",
+            'stats_count': len(stats)
+        }

@@ -1,0 +1,621 @@
+=== RAPPORT DE TEST DES CAPACITÉS PÉRIPLES ===
+Généré le: 2025-08-09 14:45:26
+Total capacités testées: 56
+
+📊 STATISTIQUES:
+  • Tests réussis: 48
+  • Tests échoués: 8
+  • Taux de réussite: 85.7%
+
+📋 CAPACITÉS PAR HÉROS:
+  • Elneha: 6 capacités
+  • Liarie: 6 capacités
+  • Atucan: 6 capacités
+  • Kraor: 6 capacités
+  • Thordius: 6 capacités
+  • Stephe: 6 capacités
+  • Lame: 6 capacités
+  • Raishi: 6 capacités
+
+🔬 DÉTAIL DES TESTS:
+
+============================================================
+👤 Elneha (P-1)
+============================================================
+
+🔮 Capacité 1: Forme d'ours
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Permet à Elneha de se métamorphoser en Ours.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 3 sorts
+     • Transformation: human → bear
+     • Effet: Transformation en 🐻 Forme d'ours
+
+🔮 Capacité 2: Soin mineur
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Soigner jusqu'à 4 blessures de n'importe quel personnage.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 3 sorts
+
+🔮 Capacité 3: Forme de loup
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Permet à Elneha de se métamorphoser en Loup.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 3 sorts
+     • Transformation: human → wolf
+     • Effet: Transformation en 🐺 Forme de loup
+
+🔮 Capacité 4: Soin multiple
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_allies
+   Description: Soigner jusqu'à 4 blessures de tous les personnages.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 3 sorts
+
+🔮 Capacité 5: Onde tonnante
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: all_enemies
+   Description: Inflige 4 dégats magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour ce tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 3 sorts
+
+🔮 Capacité 6: Résurrection
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Soigne la totalité des blessures d'un personnage inconscient. Ce dernier peut effectuer son tour au moment où il reprend conscience.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 3 sorts
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-1
+
+============================================================
+👤 Liarie (P-2)
+============================================================
+
+🔮 Capacité 1: Eclair magique
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: enemy
+   Description: Inflige 4 dégâts magiques à un ennemi, sans qu'il puisse riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 10 sorts
+
+🔮 Capacité 2: Armure du mage
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Gagne un jeton de parade supplémentaire par tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 10 sorts
+
+🔮 Capacité 3: Mur de glace
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: enemy
+   Description: Inflige 2 dégâts magiques aux adversaires situés dans le groupe de tête, et les fait reculer d'un rang.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 10 sorts
+
+🔮 Capacité 4: Boule de feu
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: all_enemies
+   Description: Inflige 3 dégâts magiques à tous les ennemis du combat, sans qu'ils puissent riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 10 sorts
+
+🔮 Capacité 5: Vol de vie
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: enemy
+   Description: Inflige 3 dégâts magiques à un ennemi et soigne autant de blessures au personnage qui utilise ce sort, sans que l'ennemi puisse riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 10 sorts
+
+🔮 Capacité 6: Pluie de météores
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: all_enemies
+   Description: Inflige 6 dégâts magiques à tous les adversaires présents lors du combat et les empêche d'agir le tour suivant.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 10 sorts
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-2
+
+============================================================
+👤 Atucan (P-3)
+============================================================
+
+🔮 Capacité 1: Imposition des mains
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Soigne 3 blessures de n'importe quel personnage.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 2 sorts
+
+🔮 Capacité 2: Parade
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Gagne un jeton de parade supplémentaire par tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 2 sorts
+
+🔮 Capacité 3: Châtiment divin
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: enemy
+   Description: Inflige 6 dégâts magiques à un ennemi, sans qu'il puisse riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 2 sorts
+
+🔮 Capacité 4: Aura sacrée
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_allies
+   Description: Tous les personnages gagnent un jeton de parade supplémentaire par tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 2 sorts
+
+🔮 Capacité 5: Soin supérieur
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Soigne 6 blessures de n'importe quel personnage.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 2 sorts
+
+🔮 Capacité 6: Jugement dernier
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: all_enemies
+   Description: Inflige 8 dégâts magiques à tous les adversaires présents lors du combat.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 2 sorts
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-3
+
+============================================================
+👤 Kraor (P-4)
+============================================================
+
+🔮 Capacité 1: Cueilleur / Chasseur
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Récolte une potion de soin ou, inflige 4 dégâts physiques à un ennemi à distance.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 1 sorts
+
+🔮 Capacité 2: Marque du chasseur
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_allies
+   Description: Marque un ennemi. Tous les personnages infligent +2 dégâts contre cet ennemi.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 1 sorts
+
+🔮 Capacité 3: Ambidextre
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Double les dégâts d'une attaque réussie, que ce soit au corps à corps ou à distance.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 1 sorts
+
+🔮 Capacité 4: Pluie de projectiles
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_enemies
+   Description: Inflige 2 dégâts physiques à tous les ennemis du combat, que ce soit au corps à corps ou à distance.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 1 sorts
+
+🔮 Capacité 5: Soin mineur
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Soigne 2 blessures de n'importe quel personnage.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 1 sorts
+
+🔮 Capacité 6: Tir rapide
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Effectue 3 attaques à distance consécutives, en lançant le dé pour chacune d'entre elles.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 1 sorts
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-4
+
+============================================================
+👤 Thordius (P-5)
+============================================================
+
+🔮 Capacité 1: Défense sans armure
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Gagne un jeton de parade supplémentaire par tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 2: Rage de berserker
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Inflige +2 dégâts physiques par attaque mais subit une blessure à chaque tour, tant que l'effet est actif.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 3: Charge de taureau
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Double les dégâts d'une attaque réussie, et gagne un jeton de parade supplémentaire ce tour-ci.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 4: Témérité
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_enemies
+   Description: Tous les adversaires attaquent ce personnage en priorité. En contrepartie il gagne +2 dégâts physiques par attaque.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 5: Critique brutal
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Inflige 8 dégâts physiques à un ennemi, sans qu'il puisse riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 6: Rage insatiable
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Inflige +3 dégâts physiques par attaque, mais subit une blessure à chaque tour tant que l'effet est actif.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-5
+
+============================================================
+👤 Stephe (P-6)
+============================================================
+
+🔮 Capacité 1: Affaiblissement
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Un ennemi perd 2 points d'attaque jusqu'à la fin du combat.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 4 sorts
+
+🔮 Capacité 2: Accord interdit
+   Coût: 1 sorts
+   Type: Magique
+   Empêche attaque: Oui
+   Cible: all_enemies
+   Description: Inflige 3 dégâts magiques à tous les adversaires, et les empêche d'agir le tour suivant.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 4 sorts
+
+🔮 Capacité 3: Inspiration
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Un personnage peut attaquer deux fois ce tour-ci.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 4 sorts
+
+🔮 Capacité 4: Invisibilité
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Un personnage ne peut plus subir d'attaque jusqu'au début de son prochain tour, sauf dégâts de zone.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 4 sorts
+
+🔮 Capacité 5: Soin majeur
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Soigne 5 blessures de n'importe quel personnage.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 4 sorts
+
+🔮 Capacité 6: Mot de mort
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Tue instantanément un ennemi ayant subi au moins la moitié de ses points de vie en dégâts, quel que soit son nombre de points de vie restants.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Consomme 4 sorts
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-6
+
+============================================================
+👤 Lame (P-7)
+============================================================
+
+🔮 Capacité 1: Attaque furtive
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Double les dégâts d'une attaque réussie, sans que l'ennemi puisse riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 2: Dérobade
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Gagne un jeton de parade supplémentaire par tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 3: Vol à la tire
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Vole une potion de soin, ou inflige 2 dégâts physiques à un ennemi.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 4: Bombe fumigène
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_enemies
+   Description: Tous les adversaires perdent leur action pour ce tour, et leur précision est réduite de 3 jusqu'à la fin du combat.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 5: Attaque tournoyante
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: all_enemies
+   Description: Inflige 3 dégâts physiques à tous les ennemis du combat, sans qu'ils puissent riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 6: Assaut furieux
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Effectue 4 attaques consécutives, en lançant le dé pour chacune d'entre elles.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-7
+
+============================================================
+👤 Raishi (P-8)
+============================================================
+
+🔮 Capacité 1: Point faible
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Inflige +3 dégâts physiques supplémentaires lors d'une attaque réussie, sans que l'ennemi puisse riposter.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 2: Attaques multiples
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Effectue 2 attaques consécutives, en lançant le dé pour chacune d'entre elles.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 3: Purification
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Enlève tous les effets néfastes d'un personnage et lui fait regagner 2 blessures.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 4: Déluge de coups
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: self
+   Description: Effectue 3 attaques consécutives, en lançant le dé pour chacune d'entre elles.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 5: Paume ouverte
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: enemy
+   Description: Inflige 4 dégâts physiques à un ennemi, sans qu'il puisse riposter. Cet ennemi perd également son tour.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+🔮 Capacité 6: Zui quan
+   Coût: 0 sorts
+   Type: Physique
+   Empêche attaque: Non
+   Cible: ally
+   Description: Gagne +1 dégât physique et +1 parade par tour, de façon cumulative jusqu'à la fin du combat. L'effet se déclenche au début du tour du personnage.
+   
+   🎯 EFFETS RÉELS DÉTECTÉS:
+     • Aucun effet détectable
+
+============================================================
+👤 Inconnu (N/A)
+============================================================
+
+❌ Capacité N/A: ERREUR
+   Erreur: Capacité 7 non trouvée pour P-8
+
+============================================================
+❌ TESTS ÉCHOUÉS
+============================================================
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-1
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-2
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-3
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-4
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-5
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-6
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-7
+
+• N/A - Capacité N/A
+  Erreur: Capacité 7 non trouvée pour P-8
+

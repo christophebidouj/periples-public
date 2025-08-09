@@ -32,7 +32,7 @@ class Ability(BaseModel):
     
     # Identifiants
     hero_code: str
-    ability_number: int = Field(..., ge=1, le=6)
+    ability_number: int = Field(..., ge=1, le=7)
     name: str
     
     # Coût et limitations

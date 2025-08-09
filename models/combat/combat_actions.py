@@ -1,87 +1,114 @@
 """
 Gestionnaire des actions de combat (attaques, capacités, potions)
-Extrait de combat_engine.py pour modularité
+VERSION MISE À JOUR - Utilise le système modulaire d'effets de capacités
 """
 
 import random
 import streamlit as st
+from models.combat.abilities import AbilityEffectsManager
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 class CombatActions:
-    """Gestion des actions de combat pour héros et pets"""
+    """Gestion des actions de combat pour héros et pets avec système d'effets modulaire"""
     
     def __init__(self, spell_manager, rules):
         self.spell_manager = spell_manager
         self.rules = rules
+        
+        # NOUVEAU - Système modulaire d'effets
+        self.ability_effects_manager = AbilityEffectsManager(spell_manager)
     
     def hero_attack(self, hero, enemies: list, player_count: int, log: list):
-        """Attaque héros avec objets spéciaux (O-4 Lyre phoenix) + support Pets"""
+        """Attaque héros avec objets spéciaux + système d'effets modulaire"""
         if not enemies:
             return
             
         target = enemies[0]  # Premier ennemi
+        
+        # NOUVEAU - Vérifier modificateurs d'attaque avant l'attaque
+        attack_modifiers = CharacterAbilitiesIntegration.check_attack_modifiers(hero)
         
         attack_roll = random.randint(1, 20)
         
         # Détection type d'attaque (physique ou magique)
         attack_info = hero.get_attack_damage_info()
         damage_type = attack_info['damage_type']
-        damage_value = attack_info['damage_value']
+        base_damage_value = attack_info['damage_value']
+        
+        # NOUVEAU - Appliquer modificateurs de dégâts
+        damage_value = base_damage_value
+        if attack_modifiers['damage_multiplier'] > 1.0:
+            damage_value = int(base_damage_value * attack_modifiers['damage_multiplier'])
+        damage_value += attack_modifiers['damage_bonus']
+        
+        # NOUVEAU - Vérifier bonus de marquage (Kraor)
+        mark_bonus = self._get_mark_bonus_for_target(hero, target)
+        damage_value += mark_bonus
         
         # Nom du combattant (héros ou Pet)
         combatant_name = getattr(hero, 'display_name', hero.name)
         
         # Critique
         if self.rules.criticals and attack_roll == 20:
-            damage = damage_value * 2
-            damage_result = target.apply_damage_with_parade(damage)
+            final_damage = damage_value * 2
+            damage_result = target.apply_damage_with_parade(final_damage)
             
-            # Log avec jet de dé et type de dégâts
+            # Log avec modificateurs
             total_attack = attack_roll + hero.get_total_precision()
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
-            log.append(f"{damage_type_emoji} CRITIQUE ! {combatant_name} (🎲 20+{hero.get_total_precision()}={total_attack}) → {target.name}: {damage} dégâts {damage_type}s")
+            
+            log_parts = [f"{damage_type_emoji} CRITIQUE ! {combatant_name} (🎲 20+{hero.get_total_precision()}={total_attack}) → {target.name}: {final_damage} dégâts {damage_type}s"]
+            
+            # NOUVEAU - Log des modificateurs actifs
+            self._add_modifier_logs(log_parts, attack_modifiers, mark_bonus, damage_value, base_damage_value)
+            
+            log.append(' '.join(log_parts))
             
             # Log conversion selon l'objet spécial
-            if attack_info.get('conversion_source') == 'lyre_phoenix':
-                log.append(f"  🎵 Lyre phoenix: attaque convertie en dégâts magiques")
-            elif attack_info.get('conversion_source') == 'gemme_pouvoir':
-                form_display = attack_info.get('form_display', 'forme inconnue')
-                log.append(f"  💎 Gemme de pouvoir: {form_display} → attaque magique")
-            elif attack_info.get('pet_attack'):
-                log.append(f"  🐾 Attaque de Pet invoqué")
+            self._add_conversion_logs(log, attack_info)
             
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
             
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
+            
+            # NOUVEAU - Consommer buffs temporaires après attaque réussie
+            CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
             return
         
         # Échec critique
         if self.rules.criticals and attack_roll == 1:
             total_attack = attack_roll + hero.get_total_precision()
             log.append(f"💢 ÉCHEC CRITIQUE ! {combatant_name} (🎲 1+{hero.get_total_precision()}={total_attack}) manque complètement")
+            
+            # NOUVEAU - Consommer buffs même en cas d'échec critique
+            CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
             return
         
         # Attaque normale
         total_attack = attack_roll + hero.get_total_precision()
         if total_attack >= target.defense:
-            damage = damage_value
-            damage_result = target.apply_damage_with_parade(damage)
+            damage_result = target.apply_damage_with_parade(damage_value)
             
-            # Log avec jet de dé et type de dégâts
+            # Log avec modificateurs
             damage_type_text = "magiques" if damage_type == "magical" else "physiques"
-            log_parts = [f"{combatant_name} (🎲 {attack_roll}+{hero.get_total_precision()}={total_attack} vs défense {target.defense}) → {target.name}: {damage} dégâts {damage_type_text}"]
+            log_parts = [f"{combatant_name} (🎲 {attack_roll}+{hero.get_total_precision()}={total_attack} vs défense {target.defense}) → {target.name}: {damage_value} dégâts {damage_type_text}"]
+            
+            # NOUVEAU - Log des modificateurs
+            modifier_details = []
+            if attack_modifiers['damage_multiplier'] > 1.0:
+                modifier_details.append(f"x{attack_modifiers['damage_multiplier']}")
+            if attack_modifiers['damage_bonus'] > 0:
+                modifier_details.append(f"+{attack_modifiers['damage_bonus']}")
+            if mark_bonus > 0:
+                modifier_details.append(f"+{mark_bonus} marque")
+            
+            if modifier_details:
+                log_parts.append(f"({' '.join(modifier_details)})")
             
             # Log conversion selon l'objet spécial
-            conversion_log = ""
-            if attack_info.get('conversion_source') == 'lyre_phoenix':
-                conversion_log = "(🎵 Lyre phoenix)"
-            elif attack_info.get('conversion_source') == 'gemme_pouvoir':
-                form_display = attack_info.get('form_display', '').replace('🐻 ', '🐻').replace('🐺 ', '🐺')
-                conversion_log = f"(💎 {form_display})"
-            elif attack_info.get('pet_attack'):
-                conversion_log = "(🐾 Pet)"
-            
+            conversion_log = self._get_conversion_log(attack_info)
             if conversion_log:
                 log_parts.append(conversion_log)
             
@@ -99,11 +126,17 @@ class CombatActions:
             
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
+            
+            # NOUVEAU - Consommer buffs temporaires après attaque réussie
+            CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
         else:
             log.append(f"{combatant_name} (🎲 {attack_roll}+{hero.get_total_precision()}={total_attack} vs défense {target.defense}) manque {target.name}")
+            
+            # NOUVEAU - Consommer buffs même en cas d'échec
+            CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
     
     def try_health_potion(self, hero, log: list):
-        """IA utilise potions intelligemment"""
+        """IA utilise potions intelligemment - INCHANGÉ"""
         if not hasattr(hero, 'use_health_potion'):
             return
         
@@ -119,7 +152,9 @@ class CombatActions:
                     log.append(f"🧪 {combatant_name} boit une potion : {result['message']}")
     
     def try_ability_with_summon(self, hero, enemies: list, log: list, active_pets: list) -> bool:
-        """IA capacités intelligente + gestion invocations + vérification sorts CENTRALISÉE"""
+        """
+        IA capacités intelligente + gestion invocations + NOUVEAU système modulaire d'effets
+        """
         if not hasattr(hero, 'get_available_abilities'):
             return False
         
@@ -176,7 +211,7 @@ class CombatActions:
         return False
     
     def use_summon_ability(self, hero, ability, log: list, active_pets: list) -> bool:
-        """Utilise une capacité d'invocation"""
+        """Utilise une capacité d'invocation - INCHANGÉ"""
         # Supprimer Pet existant du même propriétaire
         active_pets[:] = [p for p in active_pets if not (hasattr(p, 'owner_code') and p.owner_code == hero.code)]
         
@@ -188,6 +223,9 @@ class CombatActions:
             
             # Initialiser sorts pour le Pet
             self.spell_manager.initialize_spells(new_pet)
+            
+            # NOUVEAU - Initialiser attributs d'effets pour le Pet
+            CharacterAbilitiesIntegration.add_required_attributes(new_pet)
             
             active_pets.append(new_pet)
             
@@ -202,12 +240,13 @@ class CombatActions:
         return False
     
     def use_ability(self, hero, ability, log: list) -> bool:
-        """Utilise une capacité avec gestion CENTRALISÉE des sorts + ciblage tactique"""
+        """
+        NOUVEAU - Utilise une capacité avec le système modulaire d'effets
+        """
         
         # Vérification CENTRALISÉE des sorts
         can_use, reason = self.spell_manager.can_use_magical_ability(hero, ability)
         if not can_use:
-            # Ne devrait jamais arriver si le filtrage est correct
             combatant_name = getattr(hero, 'display_name', hero.name)
             log.append(f"❌ {combatant_name} ne peut pas utiliser {ability.name}: {reason}")
             return False
@@ -215,17 +254,19 @@ class CombatActions:
         # Consommation CENTRALISÉE des sorts
         spell_cost = getattr(ability, 'spell_cost', 0)
         if not self.spell_manager.consume_spells(hero, spell_cost):
-            # Ne devrait jamais arriver si la vérification est correcte
             combatant_name = getattr(hero, 'display_name', hero.name)
             log.append(f"❌ {combatant_name} échec consommation sorts pour {ability.name}")
             return False
+        
+        # NOUVEAU - Appliquer effets de début de tour si nécessaire
+        self.ability_effects_manager.apply_turn_start_effects(hero, log)
         
         # Utilisation de la capacité sur le Character
         action = hero.use_ability(ability)
         if not action.success:
             return False
         
-        # Affichage utilisation capacité avec formes
+        # Affichage utilisation capacité
         combatant_name = getattr(hero, 'display_name', hero.name)
         log.append(f"🔮 {combatant_name} utilise {ability.name}")
         
@@ -235,114 +276,65 @@ class CombatActions:
             log.append(f"  💫 Coût: {spell_cost} sorts (reste: {current_spells})")
             log.append(f"  🚫 Attaque physique bloquée (règle capacité magique)")
         
-        # Log des effets de transformation (Elneha)
-        if action.effects_applied:
-            for effect in action.effects_applied:
-                if "Transformation" in effect:
-                    log.append(f"  🔄 {effect}")
+        # NOUVEAU - Appliquer effets avec le système modulaire
+        effects_applied = self.ability_effects_manager.apply_ability_effects(hero, ability, log)
         
-        # Effets simples selon description
-        desc = ability.description.lower()
+        if not effects_applied:
+            # Fallback : affichage générique si aucun effet spécifique
+            log.append(f"  ✨ Effet de {ability.name} appliqué")
         
-        if "soin" in ability.name.lower():
-            heal = 8 if "8 blessures" in desc else 4 if "4 blessures" in desc else 2
-            actual = hero.heal(heal)
-            if actual > 0:
-                log.append(f"  💚 {combatant_name} récupère {actual} PV")
-        
-        elif any(word in desc for word in ["dégât", "inflige"]):
-            # Appliquer VRAIS dégâts aux ennemis avec ciblage tactique
-            return self.apply_ability_damage(hero, ability, spell_cost, log)
+        # NOUVEAU - Appliquer effets de fin de capacité
+        self.ability_effects_manager.apply_turn_end_effects(hero, log)
         
         return True
     
-    def apply_ability_damage(self, hero, ability, spell_cost: int, log: list) -> bool:
-        """Applique les dégâts d'une capacité aux ennemis avec ciblage tactique"""
-        # Récupérer tous les ennemis vivants
-        alive_enemies = [e for e in st.session_state.get('current_enemies', []) if e.is_alive()]
-        if not alive_enemies:
-            return True
-        
-        # Extraire dégâts de la description
-        desc = ability.description.lower()
-        damage = 6 if "6 dégâts" in desc else 4 if "4 dégâts" in desc else 3
-        
-        combatant_name = getattr(hero, 'display_name', hero.name)
-        
-        # Gestion AoE (tous les adversaires)
-        if "tous les adversaires" in desc:
-            log.append(f"  ⚡ Dégâts magiques AoE: {damage} à tous les ennemis")
-            for enemy in alive_enemies:
-                damage_result = enemy.apply_damage_with_parade(damage)
-                log.append(f"    → {enemy.name}: {damage_result['health_damage']} dégâts")
-                if damage_result['blocked_by_parade'] > 0:
-                    log.append(f"      🛡️ ({damage_result['blocked_by_parade']} bloqués par parade)")
-                if not enemy.is_alive():
-                    log.append(f"    💀 {enemy.name} vaincu !")
-        else:
-            # Ciblage tactique selon type de capacité
-            if spell_cost > 0:
-                # Capacité MAGIQUE = attaque à distance = choix tactique
-                player_count = len(st.session_state.get('selected_heroes', []))
-                target = self._choose_target_tactically(alive_enemies, player_count)
-                targeting_reason = "ciblage tactique"
-            else:
-                # Capacité PHYSIQUE = corps à corps = premier ennemi obligatoire
-                target = alive_enemies[0]
-                targeting_reason = "corps à corps"
-            
-            # Application des dégâts
-            damage_result = target.apply_damage_with_parade(damage)
-            
-            # Log détaillé
-            damage_type = "magiques" if spell_cost > 0 else "physiques"
-            log.append(f"  ⚡ {combatant_name} → {target.name}: {damage} dégâts {damage_type} ({targeting_reason})")
-            
-            if damage_result['blocked_by_parade'] > 0:
-                log.append(f"    🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
-            else:
-                log.append(f"    💥 {damage_result['health_damage']} aux PV")
-            
-            # Jetons parade restants
-            if target.max_parade_tokens > 0:
-                log.append(f"    🛡️ {target.name}: {target.current_parade_tokens}/{target.max_parade_tokens} jetons restants")
-            
-            if not target.is_alive():
-                log.append(f"    💀 {target.name} vaincu !")
-        
-        return True
+    # === NOUVELLES MÉTHODES UTILITAIRES ===
     
-    def _choose_target_tactically(self, enemies: list, player_count: int):
-        """IA tactique pour choisir la meilleure cible (style D&D)"""
-        if len(enemies) == 1:
-            return enemies[0]
+    def _get_mark_bonus_for_target(self, attacker, target) -> int:
+        """Vérifie si la cible est marquée et retourne le bonus de dégâts"""
+        if not hasattr(target, 'marks'):
+            return 0
         
-        scores = []
-        for enemy in enemies:
-            score = 0
-            
-            # 1. Priorité ennemis affaiblis (finir les blessés)
-            health_percent = (enemy.current_health / enemy.max_health) * 100
-            if health_percent < 30:
-                score += 50  # Haute priorité - finir les mourants
-            elif health_percent < 60:
-                score += 20
-            
-            # 2. Priorité ennemis magiques (plus dangereux)
-            if getattr(enemy, 'is_magical', False):
-                score += 30
-            
-            # 3. Favoriser cibles avec dégâts élevés (menace offensive)
-            enemy_stats = enemy.get_stats_for_players(player_count)
-            if enemy_stats['damage'] > 8:
-                score += 15
-            
-            # 4. Malus pour ennemis très résistants (éviter les tanks)
-            if enemy_stats['health'] > 20:
-                score -= 5
-            
-            scores.append((enemy, score))
+        # Marque du chasseur (Kraor)
+        if 'chasseur' in target.marks:
+            mark_info = target.marks['chasseur']
+            return mark_info.get('bonus_damage', 0)
         
-        # Retourner l'ennemi avec le meilleur score tactique
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return scores[0][0]
+        return 0
+    
+    def _add_modifier_logs(self, log_parts: list, modifiers: dict, mark_bonus: int, final_damage: int, base_damage: int):
+        """Ajoute les logs des modificateurs d'attaque"""
+        modifier_details = []
+        
+        if modifiers['damage_multiplier'] > 1.0:
+            modifier_details.append(f"x{modifiers['damage_multiplier']}")
+        
+        if modifiers['damage_bonus'] > 0:
+            modifier_details.append(f"+{modifiers['damage_bonus']}")
+        
+        if mark_bonus > 0:
+            modifier_details.append(f"+{mark_bonus} marque")
+        
+        if modifier_details:
+            log_parts.append(f"({' '.join(modifier_details)})")
+    
+    def _add_conversion_logs(self, log: list, attack_info: dict):
+        """Ajoute les logs de conversion d'objets spéciaux"""
+        if attack_info.get('conversion_source') == 'lyre_phoenix':
+            log.append(f"  🎵 Lyre phoenix: attaque convertie en dégâts magiques")
+        elif attack_info.get('conversion_source') == 'gemme_pouvoir':
+            form_display = attack_info.get('form_display', 'forme inconnue')
+            log.append(f"  💎 Gemme de pouvoir: {form_display} → attaque magique")
+        elif attack_info.get('pet_attack'):
+            log.append(f"  🐾 Attaque de Pet invoqué")
+    
+    def _get_conversion_log(self, attack_info: dict) -> str:
+        """Retourne le log de conversion en format court"""
+        if attack_info.get('conversion_source') == 'lyre_phoenix':
+            return "(🎵 Lyre phoenix)"
+        elif attack_info.get('conversion_source') == 'gemme_pouvoir':
+            form_display = attack_info.get('form_display', '').replace('🐻 ', '🐻').replace('🐺 ', '🐺')
+            return f"(💎 {form_display})"
+        elif attack_info.get('pet_attack'):
+            return "(🐾 Pet)"
+        return ""
