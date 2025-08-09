@@ -46,6 +46,11 @@ class CombatEngine:
         heroes_combat = [hero.model_copy() for hero in heroes]
         enemies_combat = [enemy.model_copy() for enemy in enemies]
         
+        # NOUVEAU - Stocker les ennemis pour le ciblage tactique
+        if 'current_enemies' not in st.session_state:
+            st.session_state.current_enemies = []
+        st.session_state.current_enemies = enemies_combat
+        
         # Liste des Pets invoqués
         active_pets = []
         
@@ -618,8 +623,43 @@ class CombatEngine:
         
         return False
     
+    def _choose_target_tactically(self, enemies: List, player_count: int):
+        """IA tactique pour choisir la meilleure cible (style D&D)"""
+        if len(enemies) == 1:
+            return enemies[0]
+        
+        scores = []
+        for enemy in enemies:
+            score = 0
+            
+            # 1. Priorité ennemis affaiblis (finir les blessés)
+            health_percent = (enemy.current_health / enemy.max_health) * 100
+            if health_percent < 30:
+                score += 50  # Haute priorité - finir les mourants
+            elif health_percent < 60:
+                score += 20
+            
+            # 2. Priorité ennemis magiques (plus dangereux)
+            if getattr(enemy, 'is_magical', False):
+                score += 30
+            
+            # 3. Favoriser cibles avec dégâts élevés (menace offensive)
+            enemy_stats = enemy.get_stats_for_players(player_count)
+            if enemy_stats['damage'] > 8:
+                score += 15
+            
+            # 4. Malus pour ennemis très résistants (éviter les tanks)
+            if enemy_stats['health'] > 20:
+                score -= 5
+            
+            scores.append((enemy, score))
+        
+        # Retourner l'ennemi avec le meilleur score tactique
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return scores[0][0]
+    
     def _use_ability(self, hero, ability, log: List[str]) -> bool:
-        """Utilise une capacité avec gestion CENTRALISÉE des sorts"""
+        """Utilise une capacité avec gestion CENTRALISÉE des sorts + ciblage tactique"""
         
         # Vérification CENTRALISÉE des sorts
         can_use, reason = self._can_use_magical_ability(hero, ability)
@@ -668,8 +708,64 @@ class CombatEngine:
                 log.append(f"  💚 {combatant_name} récupère {actual} PV")
         
         elif any(word in desc for word in ["dégât", "inflige"]):
-            damage = 6 if "6 dégâts" in desc else 4 if "4 dégâts" in desc else 3
-            log.append(f"  ⚡ Dégâts magiques: {damage}")
+            # NOUVEAU - Appliquer VRAIS dégâts aux ennemis avec ciblage tactique
+            return self._apply_ability_damage(hero, ability, spell_cost, log)
+        
+        return True
+    
+    def _apply_ability_damage(self, hero, ability, spell_cost: int, log: List[str]) -> bool:
+        """Applique les dégâts d'une capacité aux ennemis avec ciblage tactique"""
+        # Récupérer tous les ennemis vivants
+        alive_enemies = [e for e in st.session_state.get('current_enemies', []) if e.is_alive()]
+        if not alive_enemies:
+            return True
+        
+        # Extraire dégâts de la description
+        desc = ability.description.lower()
+        damage = 6 if "6 dégâts" in desc else 4 if "4 dégâts" in desc else 3
+        
+        combatant_name = getattr(hero, 'display_name', hero.name)
+        
+        # Gestion AoE (tous les adversaires)
+        if "tous les adversaires" in desc:
+            log.append(f"  ⚡ Dégâts magiques AoE: {damage} à tous les ennemis")
+            for enemy in alive_enemies:
+                damage_result = enemy.apply_damage_with_parade(damage)
+                log.append(f"    → {enemy.name}: {damage_result['health_damage']} dégâts")
+                if damage_result['blocked_by_parade'] > 0:
+                    log.append(f"      🛡️ ({damage_result['blocked_by_parade']} bloqués par parade)")
+                if not enemy.is_alive():
+                    log.append(f"    💀 {enemy.name} vaincu !")
+        else:
+            # Ciblage tactique selon type de capacité
+            if spell_cost > 0:
+                # Capacité MAGIQUE = attaque à distance = choix tactique
+                player_count = len(st.session_state.get('selected_heroes', []))
+                target = self._choose_target_tactically(alive_enemies, player_count)
+                targeting_reason = "ciblage tactique"
+            else:
+                # Capacité PHYSIQUE = corps à corps = premier ennemi obligatoire
+                target = alive_enemies[0]
+                targeting_reason = "corps à corps"
+            
+            # Application des dégâts
+            damage_result = target.apply_damage_with_parade(damage)
+            
+            # Log détaillé
+            damage_type = "magiques" if spell_cost > 0 else "physiques"
+            log.append(f"  ⚡ {combatant_name} → {target.name}: {damage} dégâts {damage_type} ({targeting_reason})")
+            
+            if damage_result['blocked_by_parade'] > 0:
+                log.append(f"    🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
+            else:
+                log.append(f"    💥 {damage_result['health_damage']} aux PV")
+            
+            # Jetons parade restants
+            if target.max_parade_tokens > 0:
+                log.append(f"    🛡️ {target.name}: {target.current_parade_tokens}/{target.max_parade_tokens} jetons restants")
+            
+            if not target.is_alive():
+                log.append(f"    💀 {target.name} vaincu !")
         
         return True
     
