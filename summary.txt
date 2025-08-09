@@ -27,30 +27,38 @@
 - **Support Pets complet** : Invocation + combat + métriques
 - **Règles officielles** : Conforme au livre de règles V3.0
 
-### 🚨 **BUG CRITIQUE PERSISTANT**
+### ✅ **BUGS RÉSOLUS**
 
-#### Problème : Sorts Négatifs
+#### ~~Problème : Sorts Négatifs~~ → **RÉSOLU**
+~~Statut : 🔴 NON RÉSOLU~~  
+**Nouveau statut : ✅ RÉSOLU**
+
+Le bug critique des sorts négatifs a été corrigé. Le système de gestion centralisée des sorts fonctionne correctement.
+
+### 🔄 **NOUVELLE PRIORITÉ : REFACTORISATION**
+
+#### Problème Actuel : Fichier combat_engine.py Ingérable
+**Statut** : 🟡 **REFACTORISATION PLANIFIÉE**
+
+**Problème** :
+- combat_engine.py : **978 lignes** (fichier monstrueux)
+- Impossible à réviser efficacement avec IA
+- Maintenance difficile
+
+**Solution Prévue** : Split en 5 fichiers
 ```
-Atucan utilise Jugement dernier
-💫 Coût: 2 sorts (reste: -2)
+models/combat/
+├── spell_manager.py      # ~120 lignes - Gestion sorts
+├── combat_actions.py     # ~200 lignes - Attaques + capacités + pets  
+├── turn_manager.py       # ~220 lignes - Tours + IA tactique
+├── combat_logger.py      # ~180 lignes - Logs + formatage
+└── combat_engine.py      # ~250 lignes - Orchestrateur + résultats
 ```
 
-**Statut** : 🔴 **NON RÉSOLU** malgré multiples tentatives de correction
-
-**Impact** : 
-- Les héros peuvent utiliser des capacités magiques sans avoir de sorts
-- Les compteurs de sorts deviennent négatifs
-- Violation des règles officielles du jeu
-
-**Tentatives de correction échouées** :
-1. ✗ Vérification dans `_can_use_magical_ability()`
-2. ✗ Filtrage préalable dans `_try_ability_with_summon()`
-3. ✗ Double vérification dans `_use_ability()`
-4. ✗ Refonte complète de la logique de vérification
-
-**Cause probable** : La vérification des sorts n'est pas effectuée au bon endroit ou la valeur `current_spells` n'est pas correctement initialisée/accessible.
-
-**Action requise** : Debug approfondi du flux d'exécution pour identifier où la vérification échoue.
+**Bénéfices Attendus** :
+- Fichiers gérables pour travail avec IA
+- Maintenance simplifiée
+- Architecture plus claire
 
 ### 🎯 Métriques et Performances
 
@@ -71,7 +79,7 @@ Atucan utilise Jugement dernier
 - **Parade rechargeable** : ✅ Fonctionnel
 - **Objets spéciaux** : ✅ 4/4 opérationnels
 - **Pets invoqués** : ✅ Combat + métriques
-- **Sorts magiques** : 🔴 **BUG CRITIQUE**
+- **Sorts magiques** : ✅ **RÉSOLU**
 
 #### Interface
 - **Builds authentiques** : ✅ Calcul depuis équipements
@@ -81,20 +89,20 @@ Atucan utilise Jugement dernier
 
 ### 🔄 Actions Prioritaires
 
-1. **🚨 URGENT** : Résoudre le bug sorts négatifs
-2. **🔧 Maintenance** : Tests de régression sur le système de combat
-3. **📈 Amélioration** : Optimisation logs de combat
-4. **🎮 Gameplay** : Extension système Pets (autres héros)
+1. **🔧 PRIORITÉ** : Refactorisation combat_engine.py (978 → 5 fichiers)
+2. **📈 Amélioration** : Optimisation logs de combat
+3. **🎮 Gameplay** : Extension système Pets (autres héros)
+4. **🔍 Tests** : Tests de régression post-refactorisation
 
 ### 🏗️ Architecture Technique
 
-#### Structure Propre
+#### Structure Actuelle
 ```
 périples-balance-workshop/
 ├── app.py                    # ✅ Application principale MIGRÉE
 ├── models/
 │   ├── character.py          # ✅ VirtualAbility + parade + objets spéciaux
-│   ├── combat_engine.py      # 🔴 BUG CRITIQUE sorts négatifs
+│   ├── combat_engine.py      # 🟡 978 lignes - À refactoriser
 │   └── abilities.py          # ✅ Système séquentiel
 ├── data/
 │   ├── heroes.csv           # ✅ 8 héros principaux
@@ -116,9 +124,10 @@ périples-balance-workshop/
 - **Builds authentiques** : Fidélité au jeu original
 - **Performance optimale** : Cache et calculs optimisés
 - **Flexibilité** : Builds prédéfinis + custom
+- **Stabilité** : Aucun bug critique
 
 #### Points d'Amélioration
-- **Bug sorts** : Impact critique sur l'expérience
+- **Architecture** : Refactorisation combat_engine.py en cours
 - **Logs verbeux** : Optimisation possible des messages
 - **Mode tutorial** : Guide pour nouveaux utilisateurs
 
@@ -126,20 +135,22 @@ périples-balance-workshop/
 
 #### Code
 - **Lisibilité** : ✅ Fonctions courtes et documentées
-- **Maintenabilité** : ✅ Architecture modulaire propre
+- **Maintenabilité** : 🟡 **Amélioration prévue** (refactorisation)
 - **Performance** : ✅ Cache et optimisations
-- **Fiabilité** : 🔴 **BUG CRITIQUE affecte la stabilité**
+- **Fiabilité** : ✅ **Aucun bug critique**
 
 #### Fonctionnalités
-- **Complétude** : 95% (bloqué par bug sorts)
+- **Complétude** : ✅ 100% (tous systèmes opérationnels)
 - **Conformité règles** : ✅ Respect livre V3.0
 - **Innovation** : ✅ Système parade + objets spéciaux
-- **Extensibilité** : ✅ Architecture évolutive
+- **Extensibilité** : 🟡 **Amélioration prévue** (architecture modulaire)
 
 ---
 
-## 🚨 **RÉSUMÉ EXÉCUTIF**
+## 🚀 **RÉSUMÉ EXÉCUTIF**
 
-Le projet Périples Balance Workshop est **techniquement avancé** avec une architecture solide et des fonctionnalités innovantes (parade rechargeable, objets spéciaux, Pets). Cependant, un **bug critique persistant** concernant les sorts négatifs empêche une utilisation fiable du système de combat.
+Le projet Périples Balance Workshop est **pleinement fonctionnel** avec une architecture solide et des fonctionnalités innovantes (parade rechargeable, objets spéciaux, Pets). **Tous les bugs critiques sont résolus**.
 
-**Priorité absolue** : Résolution du bug sorts avant toute autre développement.
+**Prochaine étape** : Refactorisation du fichier combat_engine.py (978 lignes → 5 fichiers modulaires) pour améliorer la maintenabilité et faciliter le travail avec IA.
+
+**État général : ✅ STABLE ET OPÉRATIONNEL**

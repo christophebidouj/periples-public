@@ -5,6 +5,7 @@ VERSION CONCISE - Code simplifié pour débutants Python
 
 import pandas as pd
 import os
+import random
 from typing import List, Dict, Any
 import streamlit as st
 
@@ -17,6 +18,12 @@ try:
     ABILITIES_AVAILABLE = True
 except ImportError:
     ABILITIES_AVAILABLE = False
+
+def safe_randint(min_val: int, max_val: int) -> int:
+    """Version sécurisée de randint qui évite les crashes"""
+    if min_val >= max_val:
+        return min_val
+    return random.randint(min_val, max_val)
 
 class DataLoader:
     """Charge les données du jeu depuis Excel/CSV"""

@@ -4,6 +4,7 @@ Cartes héros, récapitulatif d'équipe, statistiques
 NOUVEAU : Sélecteurs de difficulté (Facile/Normal/Difficile)
 AJOUT : Expander détails builds avec données pré-calculées (OPTIMISÉ)
 VERSION MIGRÉE : Système basé sur équipements réels
+CORRECTION : Selectbox désactivée (pas masquée) pour builds custom
 """
 
 import streamlit as st
@@ -363,6 +364,7 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     Affiche une carte héros avec style gaming et sélecteur de difficulté
     Utilise les builds pré-calculés pour une réactivité immédiate avec callback
     VERSION MIGRÉE : Stats calculées depuis équipements réels
+    CORRECTION : Selectbox désactivée (pas masquée) pour builds custom
     
     Args:
         hero: Objet Character
@@ -382,8 +384,25 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
             st.session_state.hero_difficulties = {}
         st.session_state.hero_difficulties[hero.code] = new_difficulty
     
-    # Vérifier si le héros a un build custom
-    if hero.code in current_custom_builds:
+    # Variables communes
+    difficulty_levels = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
+    current_difficulty = st.session_state.get('hero_difficulties', {}).get(hero.code, "🔵 Normal")
+    has_custom_build = hero.code in current_custom_builds
+    
+    # Selectbox TOUJOURS présente - désactivée si build custom
+    selectbox_key = f"difficulty_{hero.code}"
+    selected_difficulty = st.selectbox(
+        "Niveau :",
+        options=difficulty_levels,
+        index=difficulty_levels.index(current_difficulty),
+        key=selectbox_key,
+        on_change=on_difficulty_change,
+        disabled=has_custom_build,  # ✅ Désactivée si custom
+        label_visibility="collapsed"
+    )
+    
+    # Détermination du build selon le type
+    if has_custom_build:
         # BUILD CUSTOM - Créer build_info avec détails custom
         custom = current_custom_builds[hero.code]
         
@@ -403,25 +422,8 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
             'difficulty_level': 'Custom',
             'build_details': custom_build_details
         }
-        
-        # Pas de selectbox pour les builds custom
-        selected_difficulty = None
     else:
-        # BUILDS FIXES - Selectbox avec callback
-        difficulty_levels = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
-        current_difficulty = st.session_state.get('hero_difficulties', {}).get(hero.code, "🔵 Normal")
-        
-        # Selectbox avec callback immédiat
-        selectbox_key = f"difficulty_{hero.code}"
-        selected_difficulty = st.selectbox(
-            "Niveau :",
-            options=difficulty_levels,
-            index=difficulty_levels.index(current_difficulty),
-            key=selectbox_key,
-            on_change=on_difficulty_change,
-            label_visibility="collapsed"
-        )
-        
+        # BUILDS FIXES - Utiliser difficulté sélectionnée
         # Utiliser la valeur mise à jour par le callback
         updated_difficulty = st.session_state.get('hero_difficulties', {}).get(hero.code, "🔵 Normal")
         difficulty_index = difficulty_levels.index(updated_difficulty)

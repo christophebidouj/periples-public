@@ -80,60 +80,103 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 - **Système d'historique** : Undo/Redo fonctionnels
 - **Support des builds** : Utilise les builds sélectionnés (prédéfinis + custom)
 
-## Nouveautés Version Actuelle
+## État Actuel du Projet
 
-### ✅ Migration Système Builds (Dernière Mise à Jour)
+### ✅ **FONCTIONNALITÉS COMPLÈTES**
 
-#### Ancien Système Supprimé
-- ❌ **Stats hardcodées** dans `hero_builds_data.py`
-- ❌ **Fonction `get_hero_stats_by_difficulty()`** obsolète
-- ❌ **Méthodes `take_damage()`** remplacées par système parade
+#### Systèmes Opérationnels
+- ✅ **Système de combat** : Entièrement fonctionnel avec toutes les règles V3.0
+- ✅ **Gestion des sorts** : Système centralisé stable
+- ✅ **Objets spéciaux** : 4/4 objets opérationnels en combat
+- ✅ **Support Pets** : Invocation + combat + métriques complètes
+- ✅ **Système parade** : Jetons rechargeables pour héros et ennemis
+- ✅ **Builds authentiques** : Calcul depuis 56 équipements réels
 
-#### Nouveau Système Authentique
-- ✅ **Calcul depuis équipements réels** : `get_hero_build_from_equipment()`
-- ✅ **56 équipements complets** : Tous les codes des builds existent
-- ✅ **Capacités séquentielles** : `get_abilities_for_level()` pour 1→6
-- ✅ **Interface Forge slider** : 0-6 au lieu de checkboxes
+#### Interface Utilisateur
+- ✅ **Navigation optimisée** : Grille 2x4 héros + recherche ennemis
+- ✅ **Forge modernisée** : Slider séquentiel capacités 0-6
+- ✅ **Mode Sandbox** : Contrôle manuel complet
+- ✅ **Cache performant** : Streamlit optimisé
 
-### ✅ Système VirtualAbility pour Pets
-- **Problème résolu** : Contrainte Pydantic `ability_number <= 6`
-- **Solution** : `VirtualAbility` pour invocation (numéro 99 sans validation)
-- **Compatible** : Interface identique avec `Ability` normale
-- **Extensible** : Pour futures capacités spéciales
+### 🔄 **AMÉLIORATION PRÉVUE : REFACTORISATION**
 
-### ✅ Support Complet des Pets
-- **Invocation** : Kraor avec O-3 Médaillon d'appel
-- **Combat** : Pets agissent avec les héros, reçoivent dégâts
-- **Logs** : `display_name` pour distinction héros/pets
-- **Métriques** : Inclus dans résultats finaux
+#### Problème Identifié
+- **combat_engine.py** : 978 lignes (fichier trop volumineux)
+- **Impact** : Difficile à maintenir et travailler avec IA
+- **Solution** : Split en 5 fichiers modulaires
 
-### ✅ Interface Forge Séquentielle
-- **Slider 0-6** : Remplace 6 checkboxes individuelles
-- **Logique séquentielle** : Capacités acquises 1→2→3→...→6
-- **Référence builds** : Comparaison Facile/Normal/Difficile
-- **Validation automatique** : Vérification séquence
+#### Plan de Refactorisation
+```
+models/combat/
+├── spell_manager.py      # ~120 lignes - Gestion sorts centralisée
+├── combat_actions.py     # ~200 lignes - Attaques + capacités + pets
+├── turn_manager.py       # ~220 lignes - Tours + IA tactique
+├── combat_logger.py      # ~180 lignes - Logs + formatage
+└── combat_engine.py      # ~250 lignes - Orchestrateur + résultats
+```
+
+#### Bénéfices Attendus
+- Fichiers gérables pour le travail avec IA (120-250 lignes vs 978)
+- Maintenance simplifiée avec responsabilités claires
+- Architecture plus évolutive
+- Conservation de toutes les fonctionnalités existantes
 
 ## Architecture Technique
 
-### Optimisations Récentes
+### Optimisations Actuelles
 - **Système authentique** : 100% basé sur équipements réels, 0% stats hardcodées
 - **Cache Streamlit optimisé** : `@st.cache_data` pour données statiques
 - **VirtualAbility** : Évite conflits Pydantic pour capacités spéciales
 - **Interface séquentielle** : Slider moderne pour capacités
 - **Support Pets complet** : Gestion combat + métriques
 
-### Structure des Données Migrées
-```python
-# Calcul stats depuis équipements réels
-def get_hero_build_from_equipment(hero_code, heroes_list, equipment_list, loader, difficulty):
-    build_config = get_hero_detailed_build(hero_code, difficulty)
-    equipment_items = [eq for eq in equipment_list if eq.code in build_config['equipment']]
-    hero_equipped.equip_items(equipment_items)
-    return {'stats': hero_equipped.get_stats_summary()['total']}
+### Structure Actuelle
+```
+périples-balance-workshop/
+├── app.py                          # Application principale (VERSION MIGRÉE)
+├── models/
+│   ├── character.py                # VirtualAbility + système parade + objets spéciaux
+│   ├── abilities.py                # Système de capacités séquentielles
+│   ├── combat_engine.py            # ⚠️ 978 lignes - À refactoriser
+│   └── rules_engine.py             # Règles de jeu
+├── ui/
+│   ├── styling.py                  # Thème interface
+│   └── components/                 # Composants interface
+│       ├── hero_components.py      # MIGRÉ - Calcul depuis équipements réels
+│       ├── ui_elements.py          # Éléments UI propres
+│       ├── button_utils.py         # Utilitaires boutons colorés
+│       ├── forge_abilities_components.py  # MIGRÉ - Interface slider séquentiel
+│       └── sandbox_interface.py    # Mode Sandbox
+├── utils/
+│   ├── data_loader.py             # Chargement des données (version 8 héros)
+│   └── abilities_loader.py        # Import des capacités
+├── data/
+│   ├── heroes.csv                # 8 héros principaux
+│   ├── enemies.csv               # Données ennemis
+│   ├── equipment.csv             # 56 équipements complets (52 + 4 objets spéciaux)
+│   ├── ability_names.csv         # Capacités officielles (noms du livre de règles)
+│   └── images/                   # Images JPG optimisées
+└── hero_builds_data.py           # NETTOYÉ - Builds authentiques sans stats temporaires
+```
 
-# Capacités séquentielles 
-abilities_level = build_config.get('abilities_level', 1)
-unlocked_numbers = get_abilities_for_level(hero_code, abilities_level)  # [1,2,3...]
+### Structure Post-Refactorisation (Prévue)
+```
+périples-balance-workshop/
+├── app.py                          # Application principale
+├── models/
+│   ├── character.py                # Classes de base
+│   ├── abilities.py                # Système capacités
+│   ├── rules_engine.py             # Règles de jeu
+│   └── combat/                     # ⭐ NOUVEAU - Module combat modulaire
+│       ├── spell_manager.py        # Gestion sorts centralisée
+│       ├── combat_actions.py       # Attaques + capacités + pets
+│       ├── turn_manager.py         # Tours + IA tactique
+│       ├── combat_logger.py        # Logs + formatage
+│       └── combat_engine.py        # Orchestrateur allégé
+├── ui/ [inchangé]
+├── utils/ [inchangé]
+├── data/ [inchangé]
+└── hero_builds_data.py [inchangé]
 ```
 
 ## Installation et Utilisation
@@ -174,36 +217,6 @@ streamlit run app.py
 3. Générer l'initiative et contrôler manuellement chaque personnage
 4. Utiliser l'historique pour tester différentes approches
 
-## Structure du Projet
-
-```
-périples-balance-workshop/
-├── app.py                          # Application principale (VERSION MIGRÉE)
-├── models/
-│   ├── character.py                # VirtualAbility + système parade + objets spéciaux
-│   ├── abilities.py                # Système de capacités séquentielles
-│   ├── combat_engine.py            # Support Pets + objets spéciaux + parade
-│   └── rules_engine.py             # Règles de jeu
-├── ui/
-│   ├── styling.py                  # Thème interface
-│   └── components/                 # Composants interface
-│       ├── hero_components.py      # MIGRÉ - Calcul depuis équipements réels
-│       ├── ui_elements.py          # Éléments UI propres
-│       ├── button_utils.py         # Utilitaires boutons colorés
-│       ├── forge_abilities_components.py  # MIGRÉ - Interface slider séquentiel
-│       └── sandbox_interface.py    # Mode Sandbox
-├── utils/
-│   ├── data_loader.py             # Chargement des données (version 8 héros)
-│   └── abilities_loader.py        # Import des capacités
-├── data/
-│   ├── heroes.csv                # 8 héros principaux
-│   ├── enemies.csv               # Données ennemis
-│   ├── equipment.csv             # 56 équipements complets (52 + 4 objets spéciaux)
-│   ├── ability_names.csv         # Capacités officielles (noms du livre de règles)
-│   └── images/                   # Images JPG optimisées
-└── hero_builds_data.py           # NETTOYÉ - Builds authentiques sans stats temporaires
-```
-
 ## Équilibrage et Métriques
 
 ### Workflow d'Équilibrage
@@ -223,7 +236,7 @@ périples-balance-workshop/
 
 ## Notes Développement
 
-### Architecture Post-Migration
+### État Post-Migration
 - **Stats authentiques** : Calculées depuis 56 équipements réels
 - **Capacités séquentielles** : Interface slider 0-6 moderne
 - **VirtualAbility** : Solution élégante pour capacités spéciales
@@ -236,11 +249,11 @@ périples-balance-workshop/
 - **VirtualAbility** : Compatible compilation (pas de validation Pydantic)
 - **Système authentique** : Basé sur données locales
 
-### Code Style Maintenu
-- **Fonctions courtes** : Lisibilité pour débutants Python
-- **Cache documenté** : `@st.cache_data` avec commentaires
-- **Gestion erreurs** : `try/except` avec fallbacks gracieux
-- **Architecture propre** : Séparation claire des responsabilités
+### Roadmap Technique
+1. **Phase 1** : Refactorisation combat_engine.py (5 fichiers modulaires)
+2. **Phase 2** : Optimisation logs de combat
+3. **Phase 3** : Extension système Pets (autres héros)
+4. **Phase 4** : Tests de régression et validation
 
 ## État du Système
 
@@ -250,12 +263,13 @@ périples-balance-workshop/
 - **Système Pets** : Invocation + combat + métriques
 - **Interface moderne** : Slider séquentiel pour capacités
 - **Cache optimisé** : Performance maximale
+- **Gestion des sorts** : Système centralisé stable
 
-### 🔄 Améliorations Futures Possibles
-- Extension système Pets (autres héros)
-- Nouveaux objets spéciaux
-- Mode multijoueur avancé
-- Export/import builds
+### 🔄 Améliorations Prévues
+- **Refactorisation** : combat_engine.py → 5 fichiers modulaires
+- **Optimisation** : Logs de combat plus concis
+- **Extension** : Système Pets pour autres héros
+- **Documentation** : Guide utilisateur intégré
 
 ## Équipe et Contribution
 
