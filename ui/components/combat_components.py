@@ -1,6 +1,7 @@
 """
 Composants de combat pour le Simulateur Périples
 Résultats, métriques, logs et analyses de combat
+VERSION AVEC SUPPORT STATUS COLORÉ
 """
 
 import streamlit as st
@@ -114,24 +115,145 @@ def display_heroes_individual_table(resource_metrics: Dict[str, Any]):
 
 def display_combat_log(log_lines: List[str]):
     """
-    Affiche le journal de combat avec styles formatés
-    Version finale - Journal visible directement, pas de boutons problématiques
+    Affiche le journal de combat avec styles formatés + SUPPORT STATUS COLORÉ
     
     Args:
         log_lines: Liste des lignes de log du combat
     """
     st.subheader("📜 Journal de Combat")
     
-    # Application des styles à chaque ligne
-    formatted_log = [style_combat_log_entry(line) for line in log_lines]
+    # Traitement spécial des lignes avec fond coloré
+    formatted_lines = []
+    
+    for line in log_lines:
+        # NOUVEAU - Détection et style spécial pour les lignes STATUS
+        if "**📊 📊 STATUS:" in line:
+            # Nettoyer la ligne des marqueurs spéciaux
+            clean_line = line.replace("**📊 📊 STATUS:", "STATUS:").replace("📊 📊**", "")
+            
+            # Style avec fond bleu clair et bordure
+            status_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(25, 118, 210, 0.1)); 
+                       border-left: 5px solid #2196f3; 
+                       border-radius: 8px;
+                       padding: 12px 16px; 
+                       margin: 12px 0; 
+                       font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace; 
+                       font-size: 13px; 
+                       color: #1565c0; 
+                       font-weight: bold;
+                       box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);">
+                📊 {clean_line}
+            </div>
+            """
+            formatted_lines.append(status_styled)
+        
+        # Styles existants pour les autres lignes importantes
+        elif "=== ROUND" in line:
+            round_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(139, 69, 19, 0.12), rgba(160, 82, 45, 0.08)); 
+                       border: 2px solid #8b4513; 
+                       border-radius: 10px;
+                       padding: 12px; 
+                       margin: 15px 0; 
+                       text-align: center; 
+                       font-weight: bold; 
+                       font-size: 16px; 
+                       color: #8b4513;
+                       font-family: "Cinzel", serif;'>
+                {line}
+            </div>
+            """
+            formatted_lines.append(round_styled)
+        
+        elif "🛡️ Phase des Héros" in line:
+            heroes_phase_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(34, 139, 34, 0.12), rgba(0, 100, 0, 0.08)); 
+                       border-left: 4px solid #228b22; 
+                       border-radius: 6px;
+                       padding: 10px 12px; 
+                       margin: 8px 0; 
+                       font-weight: bold; 
+                       color: #006400;'>
+                {line}
+            </div>
+            """
+            formatted_lines.append(heroes_phase_styled)
+        
+        elif "👹 Phase des Ennemis" in line:
+            enemies_phase_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(220, 20, 60, 0.12), rgba(139, 0, 0, 0.08)); 
+                       border-left: 4px solid #dc143c; 
+                       border-radius: 6px;
+                       padding: 10px 12px; 
+                       margin: 8px 0; 
+                       font-weight: bold; 
+                       color: #8b0000;'>
+                {line}
+            </div>
+            """
+            formatted_lines.append(enemies_phase_styled)
+        
+        elif "🏆" in line or "VICTOIRE" in line:
+            victory_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(34, 139, 34, 0.2), rgba(0, 100, 0, 0.15)); 
+                       border: 3px solid #228b22; 
+                       border-radius: 10px;
+                       padding: 15px; 
+                       margin: 15px 0; 
+                       text-align: center; 
+                       font-weight: bold; 
+                       font-size: 18px; 
+                       color: #006400;'>
+                {line}
+            </div>
+            """
+            formatted_lines.append(victory_styled)
+        
+        elif "💀 DÉFAITE" in line or "DÉFAITE" in line:
+            defeat_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(220, 20, 60, 0.2), rgba(139, 0, 0, 0.15)); 
+                       border: 3px solid #dc143c; 
+                       border-radius: 10px;
+                       padding: 15px; 
+                       margin: 15px 0; 
+                       text-align: center; 
+                       font-weight: bold; 
+                       font-size: 18px; 
+                       color: #8b0000;'>
+                {line}
+            </div>
+            """
+            formatted_lines.append(defeat_styled)
+        
+        elif "CRITIQUE" in line and "⚡" in line:
+            critical_styled = f"""
+            <div style='background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.15)); 
+                       border-left: 4px solid #ffd700; 
+                       border-radius: 6px;
+                       padding: 8px 12px; 
+                       margin: 5px 0; 
+                       font-weight: bold; 
+                       color: #ff8c00;'>
+                {line}
+            </div>
+            """
+            formatted_lines.append(critical_styled)
+        
+        # Lignes normales avec style par défaut
+        else:
+            # Utilise la fonction de style existante pour les autres lignes
+            formatted_lines.append(style_combat_log_entry(line))
     
     # Construction du conteneur HTML avec scroll
     log_html = """
-    <div style='max-height: 500px; overflow-y: auto; padding: 15px; 
-                background: rgba(244,228,188,0.3); border-radius: 10px; 
+    <div style='max-height: 600px; overflow-y: auto; padding: 15px; 
+                background: rgba(244,228,188,0.3); 
+                border: 1px solid rgba(139,69,19,0.2);
+                border-radius: 10px; 
                 font-family: monospace;'>
     """
-    log_html += "".join(formatted_log)
+    log_html += "".join(formatted_lines)
     log_html += "</div>"
     
     st.markdown(log_html, unsafe_allow_html=True)

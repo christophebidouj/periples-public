@@ -62,6 +62,11 @@ class CombatEngine:
         for round_num in range(1, self.rules.max_rounds + 1):
             log.append(f"=== ROUND {round_num} ===")
             
+            # NOUVEAU - Status initial du round
+            status_line = self._format_status_line(heroes_combat, enemies_combat, active_pets)
+            log.append(status_line)
+            log.append("")  # Ligne vide pour clarté
+            
             # Phase héros + Pets (rechargent parade + agissent)
             self._heroes_turn(heroes_combat, enemies_combat, player_count, log, active_pets)
             if self._check_victory(enemies_combat, "héros", round_num, log):
@@ -150,6 +155,72 @@ class CombatEngine:
         """Reset le compteur de capacités magiques pour un nouveau tour"""
         combatant_id = self._get_combatant_id(combatant)
         self.combatant_magic_abilities_this_turn[combatant_id] = 0
+    
+    def _format_status_line(self, heroes: List, enemies: List, active_pets: List = None) -> str:
+        """Formate une ligne de status avec PV, parade et indicateurs critiques"""
+        active_pets = active_pets or []
+        
+        # Formater héros + pets
+        allies_status = []
+        for ally in heroes + active_pets:
+            name = getattr(ally, 'display_name', ally.name)
+            current_hp = ally.current_health
+            max_hp = ally.get_total_health()
+            current_parade = getattr(ally, 'current_parade_tokens', 0)
+            max_parade = getattr(ally, 'max_parade_tokens', 0)
+            
+            # Indicateurs de santé
+            health_percent = (current_hp / max_hp) * 100
+            if health_percent < 25:
+                health_indicator = "🔴"  # Critique
+            elif health_percent < 50:
+                health_indicator = "🟡"  # Blessé
+            else:
+                health_indicator = ""
+            
+            # Format: Nom(PV,parade) avec indicateurs
+            if max_parade > 0:
+                ally_status = f"{health_indicator}{name}({current_hp}/{max_hp}PV,{current_parade}🛡️)"
+            else:
+                ally_status = f"{health_indicator}{name}({current_hp}/{max_hp}PV)"
+            
+            allies_status.append(ally_status)
+        
+        # Formater ennemis
+        enemies_status = []
+        for enemy in enemies:
+            if not enemy.is_alive():
+                continue  # Skip ennemis morts
+                
+            current_hp = enemy.current_health
+            max_hp = enemy.max_health
+            current_parade = getattr(enemy, 'current_parade_tokens', 0)
+            max_parade = getattr(enemy, 'max_parade_tokens', 0)
+            
+            # Indicateurs de santé
+            health_percent = (current_hp / max_hp) * 100
+            if health_percent < 25:
+                health_indicator = "🔴"  # Critique
+            elif health_percent < 50:
+                health_indicator = "🟡"  # Blessé
+            else:
+                health_indicator = ""
+            
+            # Format ennemi
+            if max_parade > 0:
+                enemy_status = f"{health_indicator}{enemy.name}({current_hp}/{max_hp}PV,{current_parade}🛡️)"
+            else:
+                enemy_status = f"{health_indicator}{enemy.name}({current_hp}/{max_hp}PV)"
+            
+            enemies_status.append(enemy_status)
+        
+        # Assembler la ligne finale avec mise en valeur COULEUR
+        allies_part = " | ".join(allies_status)
+        enemies_part = " | ".join(enemies_status) if enemies_status else "Aucun ennemi"
+        
+        # VERSION AVEC COULEUR ET EMOJIS
+        status_content = f"{allies_part} vs {enemies_part}"
+        return f"📊 **STATUS:** {status_content}"
     
     def _prepare_heroes(self, heroes: List, log: List[str]):
         """Initialise héros pour combat + détection objets spéciaux + gestion sorts centralisée"""
