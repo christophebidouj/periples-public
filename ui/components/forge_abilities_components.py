@@ -139,9 +139,6 @@ def display_abilities_selection_section(hero_code: str, abilities: List, current
     else:
         st.info("💤 Aucune capacité maîtrisée")
     
-    # Comparaison avec les builds prédéfinis
-    display_difficulty_comparison(hero_code)
-    
     return selected_numbers
 
 def display_sequential_abilities_preview(abilities: List, selected_numbers: List[int]):
@@ -214,55 +211,6 @@ def display_ability_compact_card(ability, position: int):
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-def display_difficulty_comparison(hero_code: str):
-    """Affiche une comparaison avec les niveaux prédéfinis"""
-    try:
-        from hero_builds_data import get_hero_detailed_build
-        
-        # Récupération des niveaux prédéfinis
-        facile_config = get_hero_detailed_build(hero_code, "Facile")
-        normal_config = get_hero_detailed_build(hero_code, "Normal")
-        difficile_config = get_hero_detailed_build(hero_code, "Difficile")
-        
-        facile_level = facile_config.get('abilities_level', 6)
-        normal_level = normal_config.get('abilities_level', 3)
-        difficile_level = difficile_config.get('abilities_level', 1)
-        
-        # Affichage comparatif
-        st.markdown("### 📊 Référence Builds Prédéfinis")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown(f"""
-            <div style="background: #22803030; border-radius: 6px; padding: 8px; text-align: center;">
-                <div style="color: #228030; font-weight: bold;">🟢 Facile</div>
-                <div>Niveau {facile_level}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-            <div style="background: #4169e130; border-radius: 6px; padding: 8px; text-align: center;">
-                <div style="color: #4169e1; font-weight: bold;">🔵 Normal</div>
-                <div>Niveau {normal_level}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-            <div style="background: #dc143c30; border-radius: 6px; padding: 8px; text-align: center;">
-                <div style="color: #dc143c; font-weight: bold;">🔴 Difficile</div>
-                <div>Niveau {difficile_level}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.caption("💡 Utilisez ces niveaux comme référence pour équilibrer votre build custom")
-        
-    except Exception:
-        # Fallback si hero_builds_data pas disponible
-        st.caption("💡 Niveau 1-2 = Débutant, 3-4 = Intermédiaire, 5-6 = Expert")
 
 # === INTERFACE POTIONS (inchangée) ===
 

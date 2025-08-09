@@ -4,21 +4,21 @@
 
 ## Présentation
 
-Le Périples Balance Workshop est un outil de simulation développé pour le jeu de société **Périples** © Bastien LIAUTY. Il permet de tester l'équilibrage des combats, équipements, capacités spéciales et potions de santé.
+Le Périples Balance Workshop est un outil de simulation développé pour le jeu de société **Périples** © Bastien LIAUTY. Il permet de tester l'équilibrage des combats, équipements, capacités spéciales et potions de santé avec un système entièrement basé sur des équipements authentiques.
 
 ### Objectifs
 - Équilibrage des ennemis selon le nombre de joueurs
-- Validation des règles de combat
-- Test des équipements et builds personnalisés
-- Simulation des capacités spéciales des héros
-- Gestion des potions de santé
-- Analyse statistique des combats
+- Validation des règles de combat avec système de jetons parade rechargeable
+- Test des équipements et builds personnalisés basés sur 56 équipements réels
+- Simulation des capacités spéciales des héros (système séquentiel 1→6)
+- Gestion des potions de santé et objets spéciaux uniques
+- Analyse statistique des combats incluant les Pets invoqués
 
-## Fonctionnalités
+## Fonctionnalités Principales
 
 ### Sélection des Équipes
 - **8 héros principaux** avec formes d'Elneha gérées en combat
-- **3 builds prédéfinis par héros** (Facile, Normal, Difficile)
+- **3 builds prédéfinis par héros** basés sur équipements réels (Facile/Normal/Difficile)
 - **72 ennemis évolutifs** selon le nombre de joueurs
 - **Interface grille 2x4** pour navigation optimisée
 - Sélecteur de difficulté intégré pour chaque héros
@@ -26,33 +26,52 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 - Recherche d'ennemis par nom ou numéro
 - Récapitulatif de formation avant combat
 
-### Système de Builds Prédéfinis
+### Système de Builds Authentiques
 
 #### 3 Niveaux de Difficulté
-- **🟢 Facile** : Équipements améliorés, statistiques renforcées
-- **🔵 Normal** : Équipements standards, équilibrage de référence
-- **🔴 Difficile** : Équipements basiques, challenge accru
+- **🟢 Facile** : Équipements renforcés + objets spéciaux, 6 capacités
+- **🔵 Normal** : Équipements standards, 3 capacités
+- **🔴 Difficile** : Équipements basiques, 1 capacité
 
 #### Architecture Optimisée
-- **Données pré-calculées** : Builds, équipements, capacités et potions calculés au démarrage
+- **Calcul depuis équipements réels** : Stats calculées dynamiquement depuis 56 équipements
 - **Cache Streamlit** : `@st.cache_data` pour équipements et capacités
-- **Réactivité instantanée** : Callbacks natifs Streamlit avec données en mémoire
-- **Aucune requête en cours d'usage** : CSV lu une seule fois au chargement
+- **Réactivité instantané** : Callbacks natifs Streamlit avec données en mémoire
+- **Plus de stats hardcodées** : Système 100% authentique
 
-### Forge des Équipements
-- **52 équipements** répartis en 3 catégories (Armes, Armures, Accessoires)
-- **48 capacités spéciales** (6 par héros) avec noms officiels du livre de règles
+### Forge des Équipements Modernisée
+- **56 équipements** répartis en 3 catégories (Armes, Armures, Accessoires)
+- **48 capacités spéciales** avec noms officiels du livre de règles
+- **Interface slider séquentiel** : Capacités 0-6 au lieu de checkboxes individuelles
 - **Système de potions** : Petites (4 PV) et Grandes (PV max)
 - **Builds personnalisés** combinant équipements, capacités et potions
-- **Interface expanders natifs** Streamlit pour meilleure compatibilité
-- **Les builds custom remplacent automatiquement les prédéfinis**
+- **Comparaison builds prédéfinis** : Référence pour équilibrage
 
-### Moteur de Combat
+### Moteur de Combat Avancé
 - **Implémentation des règles officielles** V3.0
 - **Support des 3 builds** : Utilise automatiquement le niveau sélectionné ou le build custom
 - **IA tactique** pour l'utilisation des capacités et potions
 - **Système de jetons parade rechargeable** pour héros et ennemis
-- **Journal détaillé** des actions de combat
+- **Support complet des Pets** invoqués en combat
+- **Journal détaillé** des actions avec jets de dés affichés
+
+### 4 Objets Spéciaux Opérationnels
+
+#### O-1 : Gemme de pouvoir (Elneha)
+- **Effet** : Formes d'ours/loup → attaques magiques
+- **Combat** : Transformation automatique + conversion des dégâts
+
+#### O-2 : Baton de puissance (Liarie)
+- **Effet** : +1 utilisation pour toutes les capacités magiques
+- **Combat** : Bonus appliqué au début du combat
+
+#### O-3 : Médaillon d'appel (Kraor)
+- **Effet** : Invoque un Pet (Précision 4, Dégâts magiques 4, Santé 15)
+- **Combat** : Pet agit avec les héros, peut être ciblé par les ennemis
+
+#### O-4 : Lyre phoenix (Stèphe)
+- **Effet** : +4 sorts + toutes les attaques → dégâts magiques
+- **Combat** : Conversion automatique + logs contextuels
 
 ### Mode Sandbox
 - **Contrôle manuel complet** des combats pour tests d'équilibrage avancés
@@ -61,97 +80,60 @@ Le Périples Balance Workshop est un outil de simulation développé pour le jeu
 - **Système d'historique** : Undo/Redo fonctionnels
 - **Support des builds** : Utilise les builds sélectionnés (prédéfinis + custom)
 
-## Nouveautés Récentes
+## Nouveautés Version Actuelle
 
-### ✅ Système de Boutons Flexible (Dernière Mise à Jour)
+### ✅ Migration Système Builds (Dernière Mise à Jour)
 
-#### Problème Résolu
-- **Suppression du CSS hyper-agressif** qui forçait brutalement tous les boutons en bordeaux
-- **Fin des conflits avec Streamlit** - système respectueux des types natifs
-- **Conservation du thème bordeaux** comme style par défaut
+#### Ancien Système Supprimé
+- ❌ **Stats hardcodées** dans `hero_builds_data.py`
+- ❌ **Fonction `get_hero_stats_by_difficulty()`** obsolète
+- ❌ **Méthodes `take_damage()`** remplacées par système parade
 
-#### Nouveau Système de Couleurs
-- 🔴 **Bordeaux** (défaut) - thème de base conservé
-- 🟢 **Vert** (succès/validation) - `success_button()`
-- 🔵 **Bleu** (information/neutre) - `info_button()`
-- 🟠 **Orange** (avertissement) - `warning_button()`
-- 🔴 **Rouge** (danger/suppression) - `danger_button()`
-- 🟣 **Violet** (capacités magiques) - `magic_button()`
-- ⚫ **Gris** (neutre/désactivé) - `neutral_button()`
-- 🟡 **Doré** (premium/spécial) - `gold_button()`
+#### Nouveau Système Authentique
+- ✅ **Calcul depuis équipements réels** : `get_hero_build_from_equipment()`
+- ✅ **56 équipements complets** : Tous les codes des builds existent
+- ✅ **Capacités séquentielles** : `get_abilities_for_level()` pour 1→6
+- ✅ **Interface Forge slider** : 0-6 au lieu de checkboxes
 
-#### Usage Simple
-```python
-from ui.components.button_utils import success_button, danger_button, magic_button
+### ✅ Système VirtualAbility pour Pets
+- **Problème résolu** : Contrainte Pydantic `ability_number <= 6`
+- **Solution** : `VirtualAbility` pour invocation (numéro 99 sans validation)
+- **Compatible** : Interface identique avec `Ability` normale
+- **Extensible** : Pour futures capacités spéciales
 
-# Boutons colorés
-if success_button("✅ Valider", "btn_validate"):
-    handle_validation()
+### ✅ Support Complet des Pets
+- **Invocation** : Kraor avec O-3 Médaillon d'appel
+- **Combat** : Pets agissent avec les héros, reçoivent dégâts
+- **Logs** : `display_name` pour distinction héros/pets
+- **Métriques** : Inclus dans résultats finaux
 
-if danger_button("🗑️ Supprimer", "btn_delete"):
-    handle_deletion()
-
-# Boutons contextuels
-if create_contextual_button('combat', '⚔️ Attaque', 'btn_attack'):
-    handle_combat()
-```
-
-### ✅ Capacités Officielles (Mise à Jour Récente)
-- **Noms officiels** : Tous les noms de capacités mis à jour selon le livre de règles
-- **Correspondance exacte** : P-1 Druide → "Forme d'ours", P-2 Mage → "Éclair magique", etc.
-- **48 capacités** avec noms corrects pour les 8 héros principaux
-
-### ✅ Optimisation Performance (Précédente)
-
-#### Système de Cache Intelligent
-- **Cache équipements** : `load_equipment_details_cache()` avec `@st.cache_data`
-- **Cache capacités** : `load_abilities_details_cache()` pour tous les héros
-- **Pré-calcul build détails** : Équipements, capacités et potions inclus dans `preloaded_builds`
-
-#### Élimination des Requêtes Répétées
-- **Plus de lecture CSV** en cours d'utilisation (équipements lus 1x au démarrage)
-- **Plus de `DataLoader()`** créé à chaque affichage
-- **Plus d'import répétés** de `get_abilities_for_hero`
-- **Données en mémoire** : Affichage instantané des détails builds
-
-#### Expander Détails Builds
-- **Affichage complet** : Équipements avec stats, capacités avec coûts, potions
-- **Performance optimisée** : Données pré-calculées, zéro latence
-- **Support builds custom** : Calcul à la volée avec caches
-
-### Migration 8 Héros (Précédente)
-- **Supprimés** : P-9 à P-12 (pseudo-héros)
-- **Conservés** : 8 héros principaux (P-1 à P-8)
-- **Grille 2x4** optimisée
-- **Session state** nettoyé automatiquement
+### ✅ Interface Forge Séquentielle
+- **Slider 0-6** : Remplace 6 checkboxes individuelles
+- **Logique séquentielle** : Capacités acquises 1→2→3→...→6
+- **Référence builds** : Comparaison Facile/Normal/Difficile
+- **Validation automatique** : Vérification séquence
 
 ## Architecture Technique
 
 ### Optimisations Récentes
-- **Système de boutons flexible** : Évite les conflits CSS avec Streamlit
-- **Système de cache Streamlit** : `@st.cache_data` pour données statiques
-- **Pré-calcul complet** : Builds avec détails calculés une seule fois au chargement
-- **Performance optimisée** : Élimination des lectures CSV et requêtes répétées
-- **Expander détails** : Affichage instantané des équipements/capacités/potions
+- **Système authentique** : 100% basé sur équipements réels, 0% stats hardcodées
+- **Cache Streamlit optimisé** : `@st.cache_data` pour données statiques
+- **VirtualAbility** : Évite conflits Pydantic pour capacités spéciales
+- **Interface séquentielle** : Slider moderne pour capacités
+- **Support Pets complet** : Gestion combat + métriques
 
-### Structure des Données
+### Structure des Données Migrées
 ```python
-# Structure des builds pré-calculés avec détails complets
-preloaded_builds = {
-    "P-1": [
-        {
-            'build_name': '🟢 Build Renforcé',
-            'stats': {...},
-            'build_details': {
-                'equipment': [...],    # Détails complets équipements
-                'abilities': [...],    # Détails complets capacités  
-                'potions': {...}       # Quantités potions
-            }
-        },
-        # ... Normal, Difficile
-    ],
-    # ... P-2 à P-8
-}
+# Calcul stats depuis équipements réels
+def get_hero_build_from_equipment(hero_code, heroes_list, equipment_list, loader, difficulty):
+    build_config = get_hero_detailed_build(hero_code, difficulty)
+    equipment_items = [eq for eq in equipment_list if eq.code in build_config['equipment']]
+    hero_equipped.equip_items(equipment_items)
+    return {'stats': hero_equipped.get_stats_summary()['total']}
+
+# Capacités séquentielles 
+abilities_level = build_config.get('abilities_level', 1)
+unlocked_numbers = get_abilities_for_level(hero_code, abilities_level)  # [1,2,3...]
 ```
 
 ## Installation et Utilisation
@@ -174,10 +156,17 @@ streamlit run app.py
 
 #### Sélection des Équipes
 1. Choisir 2+ héros dans la grille 2x4
-2. Sélectionner le niveau de difficulté (réactivité en 1 clic)
-3. **Cliquer sur l'expander** pour voir détails du build (équipements, capacités, potions)
+2. Sélectionner le niveau de difficulté (stats calculées depuis équipements)
+3. **Cliquer sur l'expander** pour voir détails authentiques du build
 4. Sélectionner les ennemis
 5. Valider la formation et configurer les règles
+
+#### Forge des Équipements
+1. Sélectionner héros et voir ses stats de base
+2. **Utiliser le slider 0-6** pour choisir le niveau de capacités
+3. Sélectionner équipements parmi les 56 disponibles
+4. Configurer potions (Petites/Grandes)
+5. Sauvegarder le build custom
 
 #### Mode Sandbox
 1. Configurer les équipes dans l'onglet "Sélection"
@@ -185,43 +174,23 @@ streamlit run app.py
 3. Générer l'initiative et contrôler manuellement chaque personnage
 4. Utiliser l'historique pour tester différentes approches
 
-#### Utilisation des Boutons Colorés
-```python
-# Import des utilitaires
-from ui.components.button_utils import (
-    ButtonStyle, success_button, danger_button, 
-    magic_button, create_contextual_button
-)
-
-# Boutons spécialisés
-if success_button("✅ Sauvegarder", "btn_save"):
-    save_data()
-
-if danger_button("🗑️ Reset", "btn_reset"):
-    reset_data()
-
-# Boutons contextuels
-if create_contextual_button('abilities', '🔮 Lancer Sort', 'btn_cast'):
-    cast_spell()
-```
-
 ## Structure du Projet
 
 ```
 périples-balance-workshop/
-├── app.py                          # Application principale (version 8 héros)
+├── app.py                          # Application principale (VERSION MIGRÉE)
 ├── models/
-│   ├── character.py                # Modèles héros/ennemis avec système parade
-│   ├── abilities.py                # Système de capacités
-│   ├── combat_engine.py            # Moteur de combat et IA
+│   ├── character.py                # VirtualAbility + système parade + objets spéciaux
+│   ├── abilities.py                # Système de capacités séquentielles
+│   ├── combat_engine.py            # Support Pets + objets spéciaux + parade
 │   └── rules_engine.py             # Règles de jeu
 ├── ui/
-│   ├── styling.py                  # Thème interface AVEC SYSTÈME FLEXIBLE
+│   ├── styling.py                  # Thème interface
 │   └── components/                 # Composants interface
-│       ├── hero_components.py      # Composants héros OPTIMISÉS avec cache
-│       ├── ui_elements.py          # Éléments UI PROPRES (sans forçage CSS)
-│       ├── button_utils.py         # NOUVEAU - Utilitaires boutons colorés
-│       ├── forge_abilities_components.py  # Interface capacités/potions
+│       ├── hero_components.py      # MIGRÉ - Calcul depuis équipements réels
+│       ├── ui_elements.py          # Éléments UI propres
+│       ├── button_utils.py         # Utilitaires boutons colorés
+│       ├── forge_abilities_components.py  # MIGRÉ - Interface slider séquentiel
 │       └── sandbox_interface.py    # Mode Sandbox
 ├── utils/
 │   ├── data_loader.py             # Chargement des données (version 8 héros)
@@ -229,64 +198,74 @@ périples-balance-workshop/
 ├── data/
 │   ├── heroes.csv                # 8 héros principaux
 │   ├── enemies.csv               # Données ennemis
-│   ├── equipment.csv             # 52 équipements avec détails
-│   ├── ability_names.csv         # CAPACITÉS OFFICIELLES (noms du livre de règles)
+│   ├── equipment.csv             # 56 équipements complets (52 + 4 objets spéciaux)
+│   ├── ability_names.csv         # Capacités officielles (noms du livre de règles)
 │   └── images/                   # Images JPG optimisées
-└── hero_builds_data.py           # Builds prédéfinis détaillés P-1 à P-8
+└── hero_builds_data.py           # NETTOYÉ - Builds authentiques sans stats temporaires
 ```
 
 ## Équilibrage et Métriques
 
 ### Workflow d'Équilibrage
-1. Tester les 3 niveaux de difficulté avec différentes configurations
-2. **Consulter détails builds** via expanders pour comprendre les compositions
+1. Tester les 3 niveaux de difficulté avec calcul depuis équipements réels
+2. **Consulter détails builds** via expanders pour voir équipements authentiques
 3. Analyser les métriques de combat (taux de survie, durée, ressources)
-4. Ajuster les builds personnalisés avec boutons colorés appropriés
-5. Utiliser le Mode Sandbox pour tests précis
-6. Itérer jusqu'à obtenir un équilibrage satisfaisant
+4. **Utiliser le slider capacités** pour builds personnalisés
+5. **Tester objets spéciaux** : O-1 (formes), O-2 (bonus), O-3 (pets), O-4 (magie)
+6. Utiliser le Mode Sandbox pour tests précis
 
 ### Métriques Importantes
-- **Taux de survie** : Pourcentage de héros survivants
+- **Taux de survie** : Héros + Pets survivants
 - **Durée de combat** : Nombre de rounds
 - **Usage des ressources** : Utilisation des sorts, potions et capacités
-- **Analyse par difficulté** : Comparaison des performances entre builds
+- **Objets spéciaux** : Impact des 4 objets uniques
+- **Pets** : Performance des créatures invoquées
 
 ## Notes Développement
 
-### Performance et Architecture
-- **Système de boutons flexible** : Compatible PyInstaller, évite les conflits Streamlit
-- **Cache Streamlit** : Utilisé pour données statiques (équipements, capacités)
-- **Pré-calcul** : Privilégier le calcul au démarrage vs calcul à la demande
-- **Session state minimal** : Éviter de stocker des données lourdes
-- **Callbacks natifs** : Utiliser `on_change` pour réactivité instantanée
-
-### Système de Boutons
-- **CSS non-agressif** : Évite le forçage brutal avec `!important`
-- **Classes ciblées** : Styles appliqués via attributs `data-*`
-- **Compatibilité** : Respecte les types Streamlit (`primary`, `secondary`)
-- **Extensibilité** : Facile d'ajouter de nouveaux styles
+### Architecture Post-Migration
+- **Stats authentiques** : Calculées depuis 56 équipements réels
+- **Capacités séquentielles** : Interface slider 0-6 moderne
+- **VirtualAbility** : Solution élégante pour capacités spéciales
+- **Cache optimisé** : Données pré-calculées pour réactivité
+- **Support Pets complet** : Combat + métriques + logs
 
 ### Compatibilité PyInstaller
 - **Imports conditionnels** : `try/except` pour modules optionnels
 - **Chemins relatifs** : `data/` pour fichiers CSV et images
-- **Pas de dépendances lourdes** : Privilégier stdlib Python
-- **Boutons natifs** : Système compatible compilation
+- **VirtualAbility** : Compatible compilation (pas de validation Pydantic)
+- **Système authentique** : Basé sur données locales
 
-### Code Style
+### Code Style Maintenu
 - **Fonctions courtes** : Lisibilité pour débutants Python
 - **Cache documenté** : `@st.cache_data` avec commentaires
 - **Gestion erreurs** : `try/except` avec fallbacks gracieux
-- **Boutons sémantiques** : Usage contextuel des couleurs
+- **Architecture propre** : Séparation claire des responsabilités
+
+## État du Système
+
+### ✅ Complètement Fonctionnel
+- **Migration builds** : 100% basé sur équipements réels
+- **4 objets spéciaux** : Tous opérationnels en combat
+- **Système Pets** : Invocation + combat + métriques
+- **Interface moderne** : Slider séquentiel pour capacités
+- **Cache optimisé** : Performance maximale
+
+### 🔄 Améliorations Futures Possibles
+- Extension système Pets (autres héros)
+- Nouveaux objets spéciaux
+- Mode multijoueur avancé
+- Export/import builds
 
 ## Équipe et Contribution
 
 - **Game Design** : Bastien LIAUTY (Créateur Périples)
 - **Développement** : Christophe Bidouj
 
-### Spécifications Techniques
+### Spécifications Techniques Actuelles
 - **Langage** : Python 3.10+
 - **Interface** : Streamlit natif optimisé avec callbacks
-- **Architecture** : Cache Streamlit + pré-calcul + système de boutons flexible
+- **Architecture** : Cache Streamlit + calcul équipements réels + VirtualAbility
 - **Déploiement** : Compatible PyInstaller
 
 ## Licence
@@ -297,8 +276,9 @@ périples-balance-workshop/
 
 ### Usage Autorisé
 - Tests d'équilibrage pour l'équipe de développement
-- Validation des règles et mécaniques
+- Validation des règles et mécaniques avec équipements authentiques
 - Développement et amélioration du jeu
-- Tests de progression de difficulté entre les 3 builds prédéfinis
+- Tests de progression de difficulté entre les 3 builds basés sur équipements réels
+- Expérimentation avec les 4 objets spéciaux et système de Pets
 
 L'usage commercial ou la redistribution ne sont pas autorisés.

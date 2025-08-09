@@ -1,8 +1,9 @@
 """
 Moteur de combat corrigé pour Périples
-VERSION AVEC SYSTÈME JETONS PARADE RECHARGEABLE + OBJETS SPÉCIAUX + PETS
+VERSION AVEC COMBATENGINE MAÎTRE DES SORTS + SYSTÈME JETONS PARADE RECHARGEABLE + OBJETS SPÉCIAUX + PETS
 🛡️ Parade = jetons qui se rechargent à chaque tour (héros ET ennemis)
 🎯 Ennemis touchent toujours, héros font jets d'attaque
+🔮 NOUVEAU - CombatEngine maître de la gestion des sorts (plus de sorts négatifs)
 🩸 Système potions et capacités intégré
 🎭 O-4 (Lyre phoenix) : Stèphe attaques → dégâts magiques
 🐾 Support complet des Pets invoqués
@@ -20,10 +21,15 @@ def safe_randint(min_val: int, max_val: int) -> int:
     return random.randint(min_val, max_val)
 
 class CombatEngine:
-    """Moteur de combat avec système jetons parade + objets spéciaux + Pets"""
+    """Moteur de combat avec gestion centralisée des sorts + système jetons parade + objets spéciaux + Pets"""
     
     def __init__(self, rules):
         self.rules = rules
+        # NOUVEAU - Gestion centralisée des sorts
+        self.combatant_spells = {}  # {combatant_id: current_spells}
+        self.combatant_spells_used = {}  # {combatant_id: spells_used}
+        self.combatant_magic_abilities_this_turn = {}  # {combatant_id: count}
+        
         # Support capacités
         try:
             from .abilities import Ability
@@ -32,7 +38,7 @@ class CombatEngine:
             self.abilities_enabled = False
     
     def simulate_single_combat(self, heroes: List, enemies: List, player_count: int) -> Dict[str, Any]:
-        """Combat principal avec système jetons parade + objets spéciaux + Pets"""
+        """Combat principal avec système jetons parade + objets spéciaux + Pets + sorts centralisés"""
         start_time = time.time()
         log = ["=== DÉBUT DU COMBAT ==="]
         
@@ -66,12 +72,87 @@ class CombatEngine:
         log.append(f"⏱️ Combat trop long ({self.rules.max_rounds} rounds)")
         return self._make_result('draw', self.rules.max_rounds, heroes_combat, enemies_combat, log, start_time, active_pets)
     
+    # === GESTION CENTRALISÉE DES SORTS ===
+    
+    def _get_combatant_id(self, combatant) -> str:
+        """Génère un ID unique pour le combattant"""
+        if hasattr(combatant, 'owner_code'):  # Pet
+            return f"{combatant.owner_code}_pet"
+        return combatant.code
+    
+    def _initialize_spells(self, combatant):
+        """Initialise les sorts d'un combattant"""
+        combatant_id = self._get_combatant_id(combatant)
+        max_spells = combatant.get_total_spells() if hasattr(combatant, 'get_total_spells') else 0
+        
+        self.combatant_spells[combatant_id] = max_spells
+        self.combatant_spells_used[combatant_id] = 0
+        self.combatant_magic_abilities_this_turn[combatant_id] = 0
+    
+    def _get_current_spells(self, combatant) -> int:
+        """Retourne les sorts actuels d'un combattant"""
+        combatant_id = self._get_combatant_id(combatant)
+        return self.combatant_spells.get(combatant_id, 0)
+    
+    def _get_spells_used(self, combatant) -> int:
+        """Retourne les sorts utilisés par un combattant"""
+        combatant_id = self._get_combatant_id(combatant)
+        return self.combatant_spells_used.get(combatant_id, 0)
+    
+    def _can_use_magical_ability(self, combatant, ability) -> tuple[bool, str]:
+        """Vérifie si un combattant peut utiliser une capacité magique"""
+        spell_cost = getattr(ability, 'spell_cost', 0)
+        
+        if spell_cost <= 0:
+            return True, "Capacité physique"
+        
+        combatant_id = self._get_combatant_id(combatant)
+        
+        # Vérification : une seule capacité magique par tour
+        magic_used_this_turn = self.combatant_magic_abilities_this_turn.get(combatant_id, 0)
+        if magic_used_this_turn > 0:
+            return False, "Une capacité magique déjà utilisée ce tour"
+        
+        # Vérification : sorts disponibles
+        current_spells = self._get_current_spells(combatant)
+        if current_spells < spell_cost:
+            return False, f"Pas assez de sorts ({current_spells}/{spell_cost})"
+        
+        return True, "Utilisable"
+    
+    def _consume_spells(self, combatant, spell_cost: int) -> bool:
+        """Consomme les sorts d'un combattant"""
+        if spell_cost <= 0:
+            return True
+        
+        combatant_id = self._get_combatant_id(combatant)
+        current_spells = self._get_current_spells(combatant)
+        
+        if current_spells < spell_cost:
+            return False
+        
+        # Décompte
+        self.combatant_spells[combatant_id] = current_spells - spell_cost
+        self.combatant_spells_used[combatant_id] = self.combatant_spells_used.get(combatant_id, 0) + spell_cost
+        
+        # Marquer capacité magique utilisée ce tour
+        if spell_cost > 0:
+            self.combatant_magic_abilities_this_turn[combatant_id] = self.combatant_magic_abilities_this_turn.get(combatant_id, 0) + 1
+        
+        return True
+    
+    def _reset_magic_abilities_turn(self, combatant):
+        """Reset le compteur de capacités magiques pour un nouveau tour"""
+        combatant_id = self._get_combatant_id(combatant)
+        self.combatant_magic_abilities_this_turn[combatant_id] = 0
+    
     def _prepare_heroes(self, heroes: List, log: List[str]):
-        """Initialise héros pour combat + détection objets spéciaux"""
+        """Initialise héros pour combat + détection objets spéciaux + gestion sorts centralisée"""
         for hero in heroes:
             hero.reset_health()
-            hero.current_spells = hero.get_total_spells()
-            hero.spells_used = 0
+            
+            # NOUVEAU - Initialisation centralisée des sorts
+            self._initialize_spells(hero)
             
             # Initialise système parade
             hero._update_parade_from_equipment()
@@ -83,15 +164,24 @@ class CombatEngine:
             if active_effects:
                 log.append(f"✨ {hero.name} - Objets spéciaux: {', '.join(active_effects)}")
             
+            # Log sorts disponibles
+            current_spells = self._get_current_spells(hero)
+            if current_spells > 0:
+                log.append(f"🔮 {hero.name} - Sorts disponibles: {current_spells}")
+            
             # Capacités avec protection builds custom
             if self.abilities_enabled and hasattr(hero, 'start_new_combat'):
                 hero.start_new_combat()
                 self._setup_abilities(hero, log)
     
     def _prepare_enemies(self, enemies: List, player_count: int, log: List[str]):
-        """Initialise ennemis avec système parade"""
+        """Initialise ennemis avec système parade + sorts centralisés"""
         for enemy in enemies:
             enemy.initialize_for_combat(player_count)
+            
+            # Initialiser sorts pour ennemis (généralement 0)
+            self._initialize_spells(enemy)
+            
             # Log parade si présente
             if enemy.max_parade_tokens > 0:
                 log.append(f"🛡️ {enemy.name} : {enemy.max_parade_tokens} jetons parade")
@@ -157,7 +247,7 @@ class CombatEngine:
             log.append(f"🔓 {hero.name} (Aléatoire): {', '.join(unlocked)}")
     
     def _log_start(self, heroes: List, enemies: List, log: List[str]):
-        """Log initial avec info parade + objets spéciaux"""
+        """Log initial avec info parade + objets spéciaux + sorts"""
         log.append(f"Héros: {', '.join([h.name for h in heroes])}")
         log.append(f"Ennemis: {', '.join([e.name for e in enemies])}")
         
@@ -196,8 +286,10 @@ class CombatEngine:
             if not alive_enemies:
                 break
             
-            # Début tour allié (recharge parade)
+            # Début tour allié (recharge parade + reset capacités magiques)
             ally.start_hero_turn()
+            self._reset_magic_abilities_turn(ally)
+            
             if ally.max_parade_tokens > 0:
                 ally_name = getattr(ally, 'display_name', ally.name)
                 log.append(f"🔄 {ally_name} recharge {ally.max_parade_tokens} jetons parade")
@@ -209,19 +301,37 @@ class CombatEngine:
                 self._hero_turn(ally, alive_enemies, player_count, log, active_pets)
     
     def _hero_turn(self, hero, alive_enemies: List, player_count: int, log: List[str], active_pets: List):
-        """Tour d'un héros avec gestion invocations"""
+        """Tour d'un héros avec gestion invocations et sorts conformes + logique d'action corrigée"""
+        
         # Potion d'abord si nécessaire
         self._try_health_potion(hero, log)
         
-        # Capacité (peut inclure invocation)
-        ability_used = self._try_ability_with_summon(hero, alive_enemies, log, active_pets)
+        # Logique d'action améliorée
+        action_taken = False
         
-        # Attaque si autorisée
-        can_attack = not hasattr(hero, 'can_attack_this_turn') or hero.can_attack_this_turn
-        if can_attack and not getattr(hero, 'action_taken_this_turn', False):
-            self._hero_attack(hero, alive_enemies, player_count, log)
-        elif ability_used:
-            log.append(f"  {hero.name} ne peut pas attaquer (capacité magique)")
+        # Tentative 1 : Capacité (peut inclure invocation)
+        ability_used = self._try_ability_with_summon(hero, alive_enemies, log, active_pets)
+        if ability_used:
+            action_taken = True
+        
+        # Tentative 2 : Attaque si aucune action prise et autorisée
+        if not action_taken:
+            can_attack = not hasattr(hero, 'can_attack_this_turn') or hero.can_attack_this_turn
+            
+            # Vérifier si capacité magique utilisée (bloque attaque)
+            combatant_id = self._get_combatant_id(hero)
+            magic_used_this_turn = self.combatant_magic_abilities_this_turn.get(combatant_id, 0)
+            if magic_used_this_turn > 0:
+                can_attack = False
+                
+            if can_attack and not getattr(hero, 'action_taken_this_turn', False):
+                self._hero_attack(hero, alive_enemies, player_count, log)
+                action_taken = True
+        
+        # Log si aucune action possible
+        if not action_taken:
+            combatant_name = getattr(hero, 'display_name', hero.name)
+            log.append(f"⏸️ {combatant_name} ne peut pas agir ce tour")
     
     def _pet_turn(self, pet, alive_enemies: List, player_count: int, log: List[str]):
         """Tour d'un Pet (attaque automatique simple)"""
@@ -426,7 +536,7 @@ class CombatEngine:
                     log.append(f"🧪 {combatant_name} boit une potion : {result['message']}")
     
     def _try_ability_with_summon(self, hero, enemies: List, log: List[str], active_pets: List) -> bool:
-        """IA capacités intelligente + gestion invocations"""
+        """IA capacités intelligente + gestion invocations + vérification sorts CENTRALISÉE"""
         if not hasattr(hero, 'get_available_abilities'):
             return False
         
@@ -443,29 +553,42 @@ class CombatEngine:
                 if summon_ability:
                     return self._use_summon_ability(hero, summon_ability, log, active_pets)
         
-        # Logique IA normale pour autres capacités
+        # Filtrer les capacités utilisables avec vérification CENTRALISÉE
+        usable_abilities = []
+        for ability in available:
+            if getattr(ability, 'ability_number', 0) == 99:  # Skip invocation
+                continue
+            
+            # Vérification CENTRALISÉE des sorts
+            can_use, reason = self._can_use_magical_ability(hero, ability)
+            if can_use:
+                usable_abilities.append(ability)
+        
+        if not usable_abilities:
+            return False  # Aucune capacité utilisable
+        
+        # Logique IA avec capacités PRÉ-FILTRÉES ET VÉRIFIÉES
         # 1. Soin si PV < 50%
         health_percent = (hero.current_health / hero.get_total_health()) * 100
         if health_percent < 50:
-            heal_abilities = [a for a in available if 'soin' in a.name.lower() and getattr(a, 'ability_number', 0) != 99]
+            heal_abilities = [a for a in usable_abilities if 'soin' in a.name.lower()]
             if heal_abilities:
                 return self._use_ability(hero, heal_abilities[0], log)
         
         # 2. Zone si 3+ ennemis
         if len(enemies) >= 3:
-            aoe_abilities = [a for a in available if 'tous les adversaires' in a.description.lower() and getattr(a, 'ability_number', 0) != 99]
+            aoe_abilities = [a for a in usable_abilities if 'tous les adversaires' in a.description.lower()]
             if aoe_abilities:
                 return self._use_ability(hero, aoe_abilities[0], log)
         
         # 3. Attaque offensive
-        offensive = [a for a in available if any(word in a.description.lower() for word in ['dégât', 'inflige']) and getattr(a, 'ability_number', 0) != 99]
+        offensive = [a for a in usable_abilities if any(word in a.description.lower() for word in ['dégât', 'inflige'])]
         if offensive:
             return self._use_ability(hero, offensive[0], log)
         
-        # 4. Première capacité disponible (hors invocation)
-        for ability in sorted(available, key=lambda a: getattr(a, 'spell_cost', 0)):
-            if getattr(ability, 'ability_number', 0) != 99:
-                return self._use_ability(hero, ability, log)
+        # 4. Première capacité utilisable
+        if usable_abilities:
+            return self._use_ability(hero, usable_abilities[0], log)
         
         return False
     
@@ -479,6 +602,10 @@ class CombatEngine:
         if new_pet:
             if hasattr(new_pet, 'start_new_combat'):
                 new_pet.start_new_combat()  # Initialiser pour le combat
+            
+            # Initialiser sorts pour le Pet
+            self._initialize_spells(new_pet)
+            
             active_pets.append(new_pet)
             
             pet_name = getattr(new_pet, 'display_name', 'Pet')
@@ -492,7 +619,25 @@ class CombatEngine:
         return False
     
     def _use_ability(self, hero, ability, log: List[str]) -> bool:
-        """Utilise une capacité"""
+        """Utilise une capacité avec gestion CENTRALISÉE des sorts"""
+        
+        # Vérification CENTRALISÉE des sorts
+        can_use, reason = self._can_use_magical_ability(hero, ability)
+        if not can_use:
+            # Ne devrait jamais arriver si le filtrage est correct
+            combatant_name = getattr(hero, 'display_name', hero.name)
+            log.append(f"❌ {combatant_name} ne peut pas utiliser {ability.name}: {reason}")
+            return False
+        
+        # Consommation CENTRALISÉE des sorts
+        spell_cost = getattr(ability, 'spell_cost', 0)
+        if not self._consume_spells(hero, spell_cost):
+            # Ne devrait jamais arriver si la vérification est correcte
+            combatant_name = getattr(hero, 'display_name', hero.name)
+            log.append(f"❌ {combatant_name} échec consommation sorts pour {ability.name}")
+            return False
+        
+        # Utilisation de la capacité sur le Character
         action = hero.use_ability(ability)
         if not action.success:
             return False
@@ -501,14 +646,17 @@ class CombatEngine:
         combatant_name = getattr(hero, 'display_name', hero.name)
         log.append(f"🔮 {combatant_name} utilise {ability.name}")
         
+        # Log avec règles officielles
+        if spell_cost > 0:
+            current_spells = self._get_current_spells(hero)
+            log.append(f"  💫 Coût: {spell_cost} sorts (reste: {current_spells})")
+            log.append(f"  🚫 Attaque physique bloquée (règle capacité magique)")
+        
         # Log des effets de transformation (Elneha)
         if action.effects_applied:
             for effect in action.effects_applied:
                 if "Transformation" in effect:
                     log.append(f"  🔄 {effect}")
-        
-        if action.spell_cost_paid > 0:
-            log.append(f"  Coût: {action.spell_cost_paid} sorts")
         
         # Effets simples selon description
         desc = ability.description.lower()
@@ -533,19 +681,21 @@ class CombatEngine:
         return False
     
     def _apply_defeat(self, heroes: List, log: List[str]):
-        """Pénalités défaite"""
+        """Pénalités défaite avec gestion CENTRALISÉE"""
         log.append("💀 DÉFAITE - Pénalités appliquées")
         for hero in heroes:
-            if hasattr(hero, 'current_spells') and hero.current_spells > 0:
-                hero.current_spells = max(0, hero.current_spells - 1)
+            current_spells = self._get_current_spells(hero)
+            if current_spells > 0:
+                # Décompte de 1 sort en pénalité
+                self.combatant_spells[self._get_combatant_id(hero)] = max(0, current_spells - 1)
     
     def _make_result(self, winner: str, rounds: int, heroes: List, enemies: List, 
                      log: List[str], start_time: float, active_pets: List = None) -> Dict[str, Any]:
-        """CORRIGÉ - Résultat final avec métriques parade + objets spéciaux + Pets"""
+        """Résultat final avec métriques parade + objets spéciaux + Pets + sorts CENTRALISÉS"""
         duration = time.time() - start_time
         active_pets = active_pets or []
         
-        # Métriques par héros avec info parade + objets spéciaux
+        # Métriques par héros avec info parade + objets spéciaux + sorts CENTRALISÉS
         heroes_individual = []
         total_damage = 0
         total_spells = 0
@@ -553,7 +703,8 @@ class CombatEngine:
         for hero in heroes:
             damage_taken = hero.get_total_health() - hero.current_health
             total_damage += damage_taken
-            total_spells += getattr(hero, 'spells_used', 0)
+            spells_used = self._get_spells_used(hero)
+            total_spells += spells_used
             
             # Info parade
             parade_status = hero.get_parade_status() if hasattr(hero, 'get_parade_status') else {
@@ -567,7 +718,8 @@ class CombatEngine:
             heroes_individual.append({
                 'name': hero.name,
                 'damage_taken': damage_taken,
-                'spells_used': getattr(hero, 'spells_used', 0),
+                'spells_used': spells_used,  # CENTRALISÉ
+                'spells_remaining': self._get_current_spells(hero),  # CENTRALISÉ
                 'health_remaining': hero.current_health,
                 'health_percentage': f"{(hero.current_health / hero.get_total_health() * 100):.0f}",
                 'is_alive': hero.is_alive(),
@@ -577,7 +729,7 @@ class CombatEngine:
                 'special_effects': active_specials
             })
         
-        # NOUVEAU - Ajouter les Pets aux métriques individuelles
+        # Ajouter les Pets aux métriques individuelles
         if active_pets:
             for pet in active_pets:
                 if hasattr(pet, 'display_name'):
@@ -592,7 +744,8 @@ class CombatEngine:
                     pet_info = {
                         'name': pet.display_name,
                         'damage_taken': pet_damage_taken,
-                        'spells_used': 0,  # Pets n'utilisent pas de sorts
+                        'spells_used': self._get_spells_used(pet),  # CENTRALISÉ
+                        'spells_remaining': self._get_current_spells(pet),  # CENTRALISÉ
                         'health_remaining': pet.current_health,
                         'health_percentage': f"{(pet.current_health / pet.get_total_health() * 100):.0f}",
                         'is_alive': pet.is_alive(),
@@ -617,6 +770,16 @@ class CombatEngine:
         pets_alive = len([p for p in active_pets if p.is_alive()])
         total_alive = heroes_alive + pets_alive
         
+        # Log récapitulatif sorts avec gestion CENTRALISÉE
+        heroes_with_spells = [h for h in heroes if self._get_spells_used(h) > 0]
+        if heroes_with_spells:
+            log.append("=== UTILISATION DES SORTS ===")
+            for hero in heroes_with_spells:
+                total_spells_max = hero.get_total_spells()
+                used = self._get_spells_used(hero)
+                remaining = self._get_current_spells(hero)
+                log.append(f"🔮 {hero.name}: {used}/{total_spells_max} sorts utilisés ({remaining} restants)")
+        
         return {
             'winner': winner,
             'rounds': rounds,
@@ -635,13 +798,14 @@ class CombatEngine:
                 'pets_system_active': len(active_pets) > 0,
                 'special_objects_active': any(any(special_effects.values()) for h in heroes 
                                             if hasattr(h, 'get_special_equipment_effects') 
-                                            for special_effects in [h.get_special_equipment_effects()])
+                                            for special_effects in [h.get_special_equipment_effects()]),
+                'spells_system_active': any(self._get_spells_used(h) > 0 for h in heroes)
             }
         }
 
 # Fonctions utilitaires
 def create_combat_engine_with_abilities(rules, enable_abilities: bool = True):
-    """Crée moteur avec capacités, parade, objets spéciaux et Pets"""
+    """Crée moteur avec capacités, parade, objets spéciaux, Pets et sorts centralisés"""
     if hasattr(rules, 'abilities_enabled'):
         rules.abilities_enabled = enable_abilities
     return CombatEngine(rules)

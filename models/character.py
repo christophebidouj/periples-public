@@ -1,9 +1,10 @@
 """
 Modèles de personnages pour le Simulateur Périples
-VERSION CORRIGÉE avec VirtualAbility pour invocation + système de jetons parade rechargeable + effets spéciaux
+VERSION CORRIGÉE avec VirtualAbility pour invocation + système de jetons parade rechargeable + effets spéciaux + GESTION SORTS
 🛡️ Parade = jetons rechargeable à chaque tour (héros ET ennemis)
 🩸 Potions de santé dans builds custom
 🎭 O-4 (Lyre phoenix) : +4 sorts + attaques magiques pour Stèphe
+🔮 Gestion sorts conforme aux règles officielles
 """
 
 from pydantic import BaseModel, Field
@@ -84,7 +85,7 @@ class HealthPotion(BaseModel):
         return False
 
 class Character(BaseModel):
-    """Héros avec système de jetons parade rechargeable + effets spéciaux"""
+    """Héros avec système de jetons parade rechargeable + effets spéciaux + gestion sorts"""
     
     # Stats de base
     code: str
@@ -102,6 +103,9 @@ class Character(BaseModel):
     # Combat
     current_spells: Optional[int] = None
     spells_used: int = 0
+    
+    # NOUVEAU - Gestion sorts conforme aux règles
+    magic_abilities_used_this_turn: int = 0
     
     # Système de jetons parade
     max_parade_tokens: int = 0
@@ -140,6 +144,12 @@ class Character(BaseModel):
         # Initialiser forme pour Elneha
         if self.code == "P-1":
             self.current_form = "human"
+        
+        # NOUVEAU - Initialiser attributs sorts
+        if not hasattr(self, 'magic_abilities_used_this_turn'):
+            self.magic_abilities_used_this_turn = 0
+        if not hasattr(self, 'spells_used'):
+            self.spells_used = 0
     
     # === SYSTÈME OBJETS SPÉCIAUX ===
     
@@ -490,7 +500,14 @@ class Character(BaseModel):
         return self.current_health >= self.get_total_health()
     
     def reset_health(self):
+        """MODIFIÉ - Reset santé + attributs sorts"""
         self.current_health = self.get_total_health()
+        
+        # NOUVEAU - Initialiser attributs sorts si pas encore fait
+        if not hasattr(self, 'magic_abilities_used_this_turn'):
+            self.magic_abilities_used_this_turn = 0
+        if not hasattr(self, 'spells_used'):
+            self.spells_used = 0
     
     # === ÉQUIPEMENTS ===
     
@@ -712,10 +729,13 @@ class Character(BaseModel):
         self.potion_used_this_turn = False
     
     def start_new_combat(self):
-        """Prépare nouveau combat"""
+        """MODIFIÉ - Prépare nouveau combat + gestion sorts"""
         self.reset_turn_state()
         self.current_spells = self.get_total_spells()
         self.spells_used = 0
+        
+        # NOUVEAU - Initialiser compteur capacités magiques
+        self.magic_abilities_used_this_turn = 0
         
         # Reset capacités
         for ability in self.abilities:
@@ -737,8 +757,13 @@ class Character(BaseModel):
                 ability.uses_per_combat += 1  # Modifier aussi la base pour reset_combat_uses()
     
     def start_hero_turn(self):
-        """Début du tour héros (recharge parade)"""
+        """MODIFIÉ - Début du tour héros (recharge parade + reset sorts)"""
         self.reset_turn_state()
+        
+        # NOUVEAU - Reset compteur capacités magiques par tour
+        self.magic_abilities_used_this_turn = 0
+        
+        # Recharger jetons parade
         self.refresh_parade_tokens()
     
     def get_combat_status(self) -> Dict:
@@ -767,11 +792,16 @@ class Character(BaseModel):
         }
 
 class Pet(Character):
-    """Pet invoqué avec système de jetons parade + héritage Character"""
+    """Pet invoqué avec système de jetons parade + héritage Character + gestion sorts"""
     
     owner_code: str  # Code du héros qui l'a invoqué (ex: "P-4")
     owner_name: str  # Nom du héros qui l'a invoqué (ex: "Kraor")
     pet_type: str = "summoned"  # Type de Pet pour extensions futures
+    
+    # NOUVEAU - Attributs sorts pour Pets
+    magic_abilities_used_this_turn: int = 0
+    spells_used: int = 0
+    current_spells: int = 0  # Pets n'ont pas de sorts
     
     @property
     def display_name(self) -> str:
@@ -795,6 +825,10 @@ class Pet(Character):
             # Parade = 0 selon règles
             max_parade_tokens=0,
             current_parade_tokens=0,
+            # NOUVEAU - Attributs sorts pour Pets
+            magic_abilities_used_this_turn=0,
+            spells_used=0,
+            current_spells=0,
             # Équipement spécial pour dégâts magiques
             equipped_items=[]  # On ajoutera un équipement virtuel pour les dégâts magiques
         )
@@ -819,6 +853,26 @@ class Pet(Character):
     def get_available_abilities(self) -> List:
         """Pets n'ont pas de capacités spéciales (pour l'instant)"""
         return []
+    
+    def start_new_combat(self):
+        """NOUVEAU - Initialise le Pet pour un nouveau combat"""
+        self.current_health = self.health
+        self.magic_abilities_used_this_turn = 0
+        self.spells_used = 0
+        self.current_spells = 0
+        
+        # Pas de parade pour les Pets par défaut
+        self.current_parade_tokens = 0
+        self.max_parade_tokens = 0
+    
+    def start_hero_turn(self):
+        """NOUVEAU - Début du tour Pet"""
+        # Reset compteur capacités magiques par tour
+        self.magic_abilities_used_this_turn = 0
+        
+        # Recharger jetons parade (si le Pet en a)
+        if hasattr(self, 'refresh_parade_tokens'):
+            self.refresh_parade_tokens()
 
 class Enemy(BaseModel):
     """Modèle ennemi avec système de jetons parade rechargeable"""

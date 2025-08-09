@@ -1,148 +1,145 @@
-# PÉRIPLES BALANCE WORKSHOP - RÉSUMÉ OBJETS SPÉCIAUX
+# Périples Balance Workshop - Summary
 
-## CONTEXTE GÉNÉRAL
-- Projet : Simulateur d'équilibrage pour le jeu de société "Périples" de Bastien LIAUTY
-- Objectif : Intégrer 4 objets spéciaux avec effets complexes nécessitant du code spécifique
-- Version : Système avec 8 héros (P-1 à P-8) et builds prédéfinis (Facile/Normal/Difficile)
+## État Actuel du Projet
 
-## OBJETS SPÉCIAUX - ÉTAT FINAL
+### ✅ Fonctionnalités Opérationnelles
 
-### O-1 : Gemme de pouvoir (P-1 Elneha) ✅ TERMINÉ
-- **Effet** : Attaques formes d'ours (capacité 1) et loup (capacité 3) → dégâts magiques
-- **Stats** : Toutes à 0 (conversion de type uniquement)
-- **Implementation** : Système de formes + conversion magique fonctionnel
+#### Interface Utilisateur
+- **Sélection d'équipes** : Grille 2x4 pour 8 héros principaux avec 3 niveaux de difficulté
+- **Expanders détails builds** : Affichage complet des équipements, capacités et potions
+- **Forge des équipements** : Interface slider séquentiel 0-6 pour capacités
+- **Mode Sandbox** : Contrôle manuel complet des combats
+- **Système de recherche** : Ennemis par nom ou numéro
 
-### O-2 : Baton de puissance (P-2 Liarie) ✅ TERMINÉ  
-- **Effet** : +1 utilisation sur toutes les capacités magiques (spell_cost > 0)
-- **Stats** : Physical_Damage 1, autres à 0
-- **Implementation** : Bonus appliqué au début du combat
+#### Système de Builds Authentiques
+- **56 équipements réels** : Stats calculées dynamiquement depuis équipements
+- **3 niveaux de difficulté** : 🟢 Facile / 🔵 Normal / 🔴 Difficile
+- **Cache Streamlit optimisé** : `@st.cache_data` pour performance maximale
+- **Builds personnalisés** : Combinaison équipements + capacités + potions
 
-### O-3 : Médaillon d'appel (P-4 Kraor) ✅ TERMINÉ
-- **Effet** : Invoque un Pet (Précision 4, Dégâts magiques 4, Parade 0, Santé 15)
-- **Stats** : Toutes à 0
-- **Implementation** : Système Pet complet + invocation en combat
+#### Moteur de Combat V3.0
+- **Système jetons parade rechargeable** : Héros ET ennemis
+- **4 objets spéciaux opérationnels** :
+  - O-1 : Gemme de pouvoir (Elneha - formes)
+  - O-2 : Baton de puissance (Liarie - +1 capacité magique)
+  - O-3 : Médaillon d'appel (Kraor - invocation Pet)
+  - O-4 : Lyre phoenix (Stèphe - attaques magiques)
+- **Support Pets complet** : Invocation + combat + métriques
+- **Règles officielles** : Conforme au livre de règles V3.0
 
-### O-4 : Lyre phoenix (P-6 Stèphe) ✅ TERMINÉ
-- **Effet** : +4 sorts + toutes les attaques → dégâts magiques  
-- **Stats** : Spells 4, autres à 0
-- **Implementation** : Conversion attaques + bonus sorts fonctionnel
+### 🚨 **BUG CRITIQUE PERSISTANT**
 
-## ÉTAT ACTUEL DES FICHIERS
-
-### ✅ FICHIERS COMPLÉTÉS ET FONCTIONNELS
-
-#### equipment.csv
-- ✅ 4 objets spéciaux ajoutés (O-1 à O-4)
-- ⚠️ Total : 50 équipements (manque 6 pour atteindre 56 total)
-
-#### hero_builds_data.py
-- ✅ Système de niveaux de capacités séquentielles (abilities_level)
-- ✅ Builds mis à jour avec objets spéciaux dans builds Facile
-- ✅ Fonction get_abilities_for_level() pour capacités 1 à N
-- ⚠️ **Fonction temporaire get_hero_stats_by_difficulty() à remplacer**
-
-#### character.py
-- ✅ Système jetons parade rechargeable complet
-- ✅ Classe Pet(Character) avec create_kraor_pet()
-- ✅ Tous les objets spéciaux intégrés dans get_special_equipment_effects()
-- ✅ Système de formes d'Elneha (O-1)
-- ✅ Méthodes d'invocation pour Kraor (O-3)
-- ⚠️ **2 méthodes obsolètes take_damage() à supprimer**
-
-#### combat_engine.py  
-- ✅ Support complet des 4 objets spéciaux
-- ✅ Gestion des Pets en combat (active_pets, _pet_turn, _use_summon_ability)
-- ✅ Jets de dés affichés avec conversions magiques
-- ✅ Logs contextuels pour tous les objets spéciaux
-- ✅ Pets inclus comme cibles d'attaque des ennemis
-
-## SYSTÈME OPÉRATIONNEL CONFIRMÉ
-
-### ✅ Tous les objets spéciaux fonctionnels
-- **O-1** : Formes d'Elneha avec attaques magiques
-- **O-2** : Bonus capacités pour Liarie détecté au combat
-- **O-3** : Invocation de Pet par Kraor avec Médaillon
-- **O-4** : Attaques magiques pour Stèphe avec Lyre
-
-### ✅ Intégration builds prédéfinis
-- P-1 Facile : inclut O-1 (Gemme de pouvoir)
-- P-2 Facile : inclut O-2 (Baton de puissance) 
-- P-4 Facile : inclut O-3 (Médaillon d'appel)
-- P-6 Facile : inclut O-4 (Lyre phoenix)
-
-### ✅ Capacités séquentielles
-- Système abilities_level opérationnel (1-6)
-- Compatible avec interface Forge actuelle
-- get_abilities_for_level() fonctionnelle
-
-## TÂCHES RESTANTES
-
-### 🔴 PRIORITÉ 1 - Migration système de builds
-1. **Remplacer get_hero_stats_by_difficulty()** par calcul depuis équipements
-2. **Intégrer get_hero_detailed_build()** dans app.py 
-3. **Supprimer stats temporaires** hardcodées
-
-### 🔴 PRIORITÉ 2 - Nettoyage code
-4. **Supprimer méthodes obsolètes** take_damage() dans Character/Enemy
-5. **Compléter equipment.csv** (ajouter 6 équipements manquants)
-
-### 🟡 AMÉLIORATIONS FUTURES
-6. **Interface Forge** - Slider 0-6 pour sélection capacités séquentielles
-7. **Tests d'intégration** - Validation complète objets spéciaux en combat
-
-## LOGS EXEMPLES OPÉRATIONNELS
-
-### O-4 (Lyre phoenix) :
+#### Problème : Sorts Négatifs
 ```
-Stèphe (🎲 15+4=19 vs défense 12) → Gobelin: 6 dégâts magiques (🎵 Lyre phoenix) 4 aux PV
+Atucan utilise Jugement dernier
+💫 Coût: 2 sorts (reste: -2)
 ```
 
-### O-1 (Gemme de pouvoir) :
+**Statut** : 🔴 **NON RÉSOLU** malgré multiples tentatives de correction
+
+**Impact** : 
+- Les héros peuvent utiliser des capacités magiques sans avoir de sorts
+- Les compteurs de sorts deviennent négatifs
+- Violation des règles officielles du jeu
+
+**Tentatives de correction échouées** :
+1. ✗ Vérification dans `_can_use_magical_ability()`
+2. ✗ Filtrage préalable dans `_try_ability_with_summon()`
+3. ✗ Double vérification dans `_use_ability()`
+4. ✗ Refonte complète de la logique de vérification
+
+**Cause probable** : La vérification des sorts n'est pas effectuée au bon endroit ou la valeur `current_spells` n'est pas correctement initialisée/accessible.
+
+**Action requise** : Debug approfondi du flux d'exécution pour identifier où la vérification échoue.
+
+### 🎯 Métriques et Performances
+
+#### Optimisations Récentes
+- **Architecture authentique** : 100% basé sur équipements réels
+- **VirtualAbility** : Évite conflits Pydantic pour capacités spéciales (Pets)
+- **Cache Streamlit** : Données statiques pré-calculées
+- **Interface séquentielle** : Slider moderne pour capacités
+
+#### Compatibilité
+- **PyInstaller** : Compatible compilation sans erreurs
+- **Streamlit 1.28+** : Callbacks natifs optimisés
+- **Python 3.10+** : Architecture moderne
+
+### 📊 Systèmes Intégrés
+
+#### Combat
+- **Parade rechargeable** : ✅ Fonctionnel
+- **Objets spéciaux** : ✅ 4/4 opérationnels
+- **Pets invoqués** : ✅ Combat + métriques
+- **Sorts magiques** : 🔴 **BUG CRITIQUE**
+
+#### Interface
+- **Builds authentiques** : ✅ Calcul depuis équipements
+- **Forge modernisée** : ✅ Slider séquentiel
+- **Mode Sandbox** : ✅ Contrôle manuel
+- **Logs détaillés** : ✅ Actions avec jets de dés
+
+### 🔄 Actions Prioritaires
+
+1. **🚨 URGENT** : Résoudre le bug sorts négatifs
+2. **🔧 Maintenance** : Tests de régression sur le système de combat
+3. **📈 Amélioration** : Optimisation logs de combat
+4. **🎮 Gameplay** : Extension système Pets (autres héros)
+
+### 🏗️ Architecture Technique
+
+#### Structure Propre
 ```
-🔮 Elneha utilise Forme d'ours
-  🔄 Transformation en 🐻 Forme d'ours
-Elneha (🎲 16+5=21 vs défense 12) → Gobelin: 4 dégâts magiques (💎 🐻 Forme d'ours) 4 aux PV
+périples-balance-workshop/
+├── app.py                    # ✅ Application principale MIGRÉE
+├── models/
+│   ├── character.py          # ✅ VirtualAbility + parade + objets spéciaux
+│   ├── combat_engine.py      # 🔴 BUG CRITIQUE sorts négatifs
+│   └── abilities.py          # ✅ Système séquentiel
+├── data/
+│   ├── heroes.csv           # ✅ 8 héros principaux
+│   ├── equipment.csv        # ✅ 56 équipements (52 + 4 objets)
+│   └── ability_names.csv    # ✅ Capacités officielles
+└── hero_builds_data.py      # ✅ Builds authentiques
 ```
 
-### O-2 (Baton de puissance) :
-```
-⚡ Liarie - Baton de puissance: +1 utilisation pour Éclair magique, Boule de feu
-```
+#### Migration Complète
+- ❌ **Stats hardcodées** supprimées
+- ✅ **Calcul depuis équipements réels** implémenté
+- ✅ **Capacités séquentielles 1→6** fonctionnelles
+- ✅ **Interface Forge slider** opérationnelle
 
-### O-3 (Médaillon d'appel) :
-```
-🔮 Kraor utilise Invoquer Pet
-  ✨ Minion de Kraor invoqué ! (Précision: 4, Dégâts magiques: 4, Santé: 15)
-```
+### 🎮 Expérience Utilisateur
 
-## ARCHITECTURE TECHNIQUE VALIDÉE
+#### Points Forts
+- **Interface intuitive** : Navigation fluide et moderne
+- **Builds authentiques** : Fidélité au jeu original
+- **Performance optimale** : Cache et calculs optimisés
+- **Flexibilité** : Builds prédéfinis + custom
 
-### Contraintes respectées :
-- ✅ Compatible PyInstaller 
-- ✅ Cache Streamlit (@st.cache_data) optimisé
-- ✅ Système de builds prédéfinis + custom opérationnel
-- ✅ Interface grille 2x4 pour 8 héros
+#### Points d'Amélioration
+- **Bug sorts** : Impact critique sur l'expérience
+- **Logs verbeux** : Optimisation possible des messages
+- **Mode tutorial** : Guide pour nouveaux utilisateurs
 
-### Pattern confirmé fonctionnel :
-- Détection objets : has_equipment()
-- Effets dynamiques : get_special_equipment_effects()
-- Application combat : get_attack_damage_info() + logs contextuels
-- Init combat : start_new_combat() pour bonus permanents
-- Invocation : système Pet complet avec gestion en combat
+### 📈 Métriques de Qualité
 
-## PROCHAINES ÉTAPES TECHNIQUES
+#### Code
+- **Lisibilité** : ✅ Fonctions courtes et documentées
+- **Maintenabilité** : ✅ Architecture modulaire propre
+- **Performance** : ✅ Cache et optimisations
+- **Fiabilité** : 🔴 **BUG CRITIQUE affecte la stabilité**
 
-### Étape 1 : Migration builds (Priorité 1)
-- Modifier app.py pour utiliser get_hero_detailed_build()
-- Intégrer calcul stats depuis équipements réels
-- Supprimer get_hero_stats_by_difficulty() temporaire
+#### Fonctionnalités
+- **Complétude** : 95% (bloqué par bug sorts)
+- **Conformité règles** : ✅ Respect livre V3.0
+- **Innovation** : ✅ Système parade + objets spéciaux
+- **Extensibilité** : ✅ Architecture évolutive
 
-### Étape 2 : Nettoyage (Priorité 2)  
-- Supprimer méthodes take_damage() obsolètes
-- Compléter equipment.csv à 56 équipements
-- Tests de régression complets
+---
 
-## STATUT FINAL
-**SYSTÈME OBJETS SPÉCIAUX : 100% OPÉRATIONNEL**
-**ARCHITECTURE : STABLE ET FONCTIONNELLE**
-**RESTE : MIGRATION BUILDS + NETTOYAGE CODE**
+## 🚨 **RÉSUMÉ EXÉCUTIF**
+
+Le projet Périples Balance Workshop est **techniquement avancé** avec une architecture solide et des fonctionnalités innovantes (parade rechargeable, objets spéciaux, Pets). Cependant, un **bug critique persistant** concernant les sorts négatifs empêche une utilisation fiable du système de combat.
+
+**Priorité absolue** : Résolution du bug sorts avant toute autre développement.

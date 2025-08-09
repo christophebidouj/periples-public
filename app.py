@@ -311,82 +311,82 @@ def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
 # === ONGLETS ===
 
 def tab_selection(data):
-    """Onglet sélection des équipes avec système de builds prédéfinis - Version 8 héros"""
+    """Onglet sélection des équipes avec layout optimisé pour cartes héros"""
     st.header("🏰 Sélection des Équipes")
     
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     nb_heroes = len(st.session_state.selected_heroes)
     nb_enemies = len(st.session_state.selected_enemies)
     
-    # Reset avec indicateurs
-    if display_progress_indicators_with_reset(nb_heroes, nb_enemies):
-        safe_session_update('selected_heroes', [])
-        safe_session_update('selected_enemies', [])
-        safe_session_update('hero_difficulties', {})
-        st.success("✅ Sélections effacées !")
-        st.rerun()
+    # Reset avec indicateurs - Layout compact
+    col_progress, col_reset = st.columns([4, 1])
+    with col_progress:
+        if nb_heroes < 2:
+            st.warning(f"🎯 Sélectionnez au moins 2 héros ({nb_heroes}/2)")
+        elif nb_enemies == 0:
+            st.info("🎯 Maintenant sélectionnez vos ennemis")
+        else:
+            st.success(f"🎯 Prêt ! {nb_heroes} héros et {nb_enemies} ennemis")
     
-    # === HÉROS ===
+    with col_reset:
+        if nb_heroes > 0 or nb_enemies > 0:
+            if st.button("🗑️ Reset", 
+                        key=f"reset_btn_{nb_heroes}_{nb_enemies}",
+                        help=f"Effacer {nb_heroes} héros et {nb_enemies} ennemis sélectionnés",
+                        use_container_width=True):
+                safe_session_update('selected_heroes', [])
+                safe_session_update('selected_enemies', [])
+                safe_session_update('hero_difficulties', {})
+                st.success("✅ Sélections effacées !")
+                st.rerun()
+    
+    # === HÉROS - Layout optimisé ===
     st.subheader("🛡️ Héros Disponibles")
     
-    # Info système builds prédéfinis
-    st.info("🎯 **Nouveau :** Chaque héros peut être configuré en 3 niveaux de difficulté avec équipements adaptés !")
-    
-    # Info Elneha (simplifiée pour version 8 héros)
+    # Info simplifiée
     if 'P-1' in st.session_state.selected_heroes:
         st.info("🐻 Elneha sélectionnée (formes d'animal gérées en combat)")
     
     # PRÉ-CALCUL DES BUILDS (mise en cache)
     preloaded_builds = get_preloaded_builds(heroes, data['equipment'], loader)
     
-    # NOUVEAU - Grille héros 2x4 (8 héros au lieu de 12)
-    st.write(f"**{len(heroes)} héros principaux disponibles :**")
-    
-    # Première ligne (4 héros)
-    cols1 = st.columns(4)
+    # NOUVEAU - Grille héros compacte 2x4
     current_builds = st.session_state.get('custom_builds', {})
     hero_changes = []
     
-    for i in range(4):
-        if i < len(heroes):
-            hero = heroes[i]
-            is_selected = hero.code in st.session_state.selected_heroes
-            
-            with cols1[i]:
-                if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
-                    hero_changes.append(hero.code)
+    # Grille 2x4 - Plus compacte
+    for row in range(2):
+        cols = st.columns(4, gap="small")
+        for col_idx in range(4):
+            hero_idx = row * 4 + col_idx
+            if hero_idx < len(heroes):
+                hero = heroes[hero_idx]
+                is_selected = hero.code in st.session_state.selected_heroes
+                
+                with cols[col_idx]:
+                    if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
+                        hero_changes.append(hero.code)
     
-    # Deuxième ligne (4 héros restants)
-    cols2 = st.columns(4)
-    for i in range(4, 8):
-        if i < len(heroes):
-            hero = heroes[i]
-            is_selected = hero.code in st.session_state.selected_heroes
-            
-            with cols2[i-4]:
-                if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
-                    hero_changes.append(hero.code)
-    
-    # Application des changements héros uniquement
+    # Application des changements héros
     if hero_changes:
         for hero_code in hero_changes:
             toggle_hero_selection(hero_code)
         st.rerun()
     
-    # === ENNEMIS ===
+    # === ENNEMIS - Layout optimisé ===
     st.subheader("👹 Ennemis")
     player_count = max(2, nb_heroes) if nb_heroes >= 2 else 2
     
-    # Recherche
-    col1, col2 = st.columns([1, 3])
-    with col1:
+    # Recherche compacte
+    col_search, col_info = st.columns([1, 2])
+    with col_search:
         search = st.text_input("Recherche", placeholder="Ex: 34, Dragon...", 
                               label_visibility="collapsed", key="enemy_search")
-    with col2:
+    with col_info:
         if search.strip():
-            st.success("🎯 Actif")
+            st.success("🎯 Recherche active")
         else:
-            st.info("📜 Compendium des monstres")
+            st.info("💡 Tapez un numéro ou nom pour chercher")
     
     # Filtrage
     if search.strip():
@@ -394,24 +394,20 @@ def tab_selection(data):
         filtered = [e for e in enemies if term in e.code.split('-')[-1].lower() or term in e.name.lower()]
     else:
         filtered = enemies[:15]
-        st.info("💡 Tapez un numéro ou nom pour chercher")
     
-    # Grille ennemis 5 par ligne
+    # Grille ennemis compacte
     if filtered:
-        st.write(f"**{len(filtered)} ennemis:**")
-        cols = st.columns(5)
+        cols = st.columns(5, gap="small")
         enemy_changes = []
         
         for i, enemy in enumerate(filtered):
             is_selected = enemy.code in st.session_state.selected_enemies
             
             with cols[i % 5]:
-                button_key = f"enemy_select_{enemy.code}_{i}"
-                
                 if display_enemy_card(enemy, is_selected, player_count):
                     enemy_changes.append(enemy.code)
         
-        # Application batch des changements ennemis
+        # Application des changements ennemis
         if enemy_changes:
             for enemy_code in enemy_changes:
                 toggle_enemy_selection(enemy_code)
@@ -439,7 +435,7 @@ def tab_selection(data):
             'initiative': st.checkbox("🎲 Initiative", value=True)
         }
     with col2:
-        st.info("⚔️ Combat avec builds prédéfinis selon niveaux sélectionnés")
+        st.info("⚔️ Combat avec builds selon niveaux sélectionnés")
     
     # Bouton combat
     ready = nb_heroes >= 2 and nb_enemies > 0
@@ -453,7 +449,6 @@ def tab_selection(data):
                 'rules': rules
             })
             st.success("⚡ Combat engagé ! 👉 Allez dans 'Chroniques' 👈")
-            st.balloons()
     else:
         st.button("⚔️ FORMATION INCOMPLÈTE", disabled=True, use_container_width=True)
 
@@ -463,14 +458,18 @@ def tab_forge(data):
     
     heroes, equipment = data['heroes'], data['equipment']
     
-    # Sélection héros (8 héros uniquement)
+    # Sélection héros (8 héros uniquement) - LARGEUR RÉDUITE
     hero_options = {h.code: f"{get_hero_icon(h.name)} {h.name}" for h in heroes}
-    selected_code = st.selectbox(
-        "Héros:", 
-        list(hero_options.keys()), 
-        format_func=lambda x: hero_options[x],
-        key="forge_hero_selector"
-    )
+    
+    col_hero, col_spacer = st.columns([2, 3])
+    with col_hero:
+        selected_code = st.selectbox(
+            "Héros:", 
+            list(hero_options.keys()), 
+            format_func=lambda x: hero_options[x],
+            key="forge_hero_selector"
+        )
+    
     selected_hero = next(h for h in heroes if h.code == selected_code)
     
     # Stats et build actuels MIGRÉS
@@ -481,21 +480,15 @@ def tab_forge(data):
     current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
     display_current_build_info(current_build)
     
-    # Gestion builds
-    col1, col2 = st.columns(2)
-    with col1:
+    # Gestion builds - LARGEUR BOUTON RESET RÉDUITE
+    col_reset, col_spacer = st.columns([1, 4])
+    with col_reset:
         if st.button("🔄 Reset", key="forge_reset", use_container_width=True):
             if selected_code in st.session_state.custom_builds:
                 builds = st.session_state.custom_builds.copy()
                 del builds[selected_code]
                 safe_session_update('custom_builds', builds)
                 st.rerun()
-    with col2:
-        if current_build['is_custom'] and st.button("🗑️ Supprimer", key="forge_delete", use_container_width=True):
-            builds = st.session_state.custom_builds.copy()
-            del builds[selected_code]
-            safe_session_update('custom_builds', builds)
-            st.rerun()
     
     # === ÉQUIPEMENTS ===
     st.subheader("⚔️ Équipements")
@@ -592,7 +585,6 @@ def tab_forge(data):
             safe_session_update('custom_builds', builds)
             
             st.success(f"✅ Build '{build_data['name']}' sauvegardé !")
-            st.balloons()
             time.sleep(0.5)
             st.rerun()
 
