@@ -13,7 +13,7 @@ import os
 import random
 from typing import List, Dict
 from models.character import Character, Enemy
-from models.combat_engine import CombatEngine
+from models.combat.combat_engine import CombatEngine
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader, cleanup_removed_heroes_from_session
 import ui.components.sandbox_interface

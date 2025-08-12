@@ -1,71 +1,56 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Script de test des capacités - Périples Balance Workshop
-Test automatisé de chaque capacité pour analyser ses effets réels en combat
+Tests mécaniques des capacités - Périples Balance Workshop
+Vérifie que chaque capacité produit des effets réels, pas juste des logs
 """
 
 import sys
 import os
+import random
+from typing import Dict, List, Any, Optional
 import pandas as pd
-from typing import Dict, List, Any
-import time
 
 # Ajouter le répertoire racine au path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Imports du projet
-from utils.abilities_loader import AbilitiesLoader, load_all_abilities
 from utils.data_loader import DataLoader
 from models.character import Character, Enemy
-from models.combat_engine import CombatEngine
+from models.combat.combat_engine import CombatEngine
 from models.rules_engine import GameRules
+from models.abilities import Ability
 
-class AbilityTester:
-    """Testeur automatisé des capacités"""
+class AbilityMechanicsTest:
+    """Testeur des mécaniques réelles des capacités"""
     
     def __init__(self):
         self.loader = DataLoader()
-        self.abilities_loader = AbilitiesLoader()
         self.heroes = []
         self.enemies = []
         self.equipment = []
         self.abilities_by_hero = {}
+        self.test_results = []
         
-        print("🧪 === TESTEUR DE CAPACITÉS PÉRIPLES ===")
+        print("🔬 === TESTEUR MÉCANIQUES CAPACITÉS ===")
         self._load_data()
     
     def _load_data(self):
-        """Charge toutes les données nécessaires"""
-        print("📊 Chargement des données...")
-        
+        """Charge données complètes"""
         try:
-            # Charger héros, ennemis, équipements
             self.heroes = self.loader.load_heroes()
             self.enemies = self.loader.load_enemies()
             self.equipment = self.loader.load_equipment()
-            
-            # Charger capacités directement depuis CSV
             self.abilities_by_hero = self._load_abilities_from_csv()
             
-            print(f"✅ Données chargées:")
-            print(f"  • {len(self.heroes)} héros")
-            print(f"  • {len(self.enemies)} ennemis")
-            print(f"  • {len(self.equipment)} équipements")
-            print(f"  • {len(self.abilities_by_hero)} héros avec capacités")
-            
+            print(f"✅ Données chargées: {len(self.heroes)} héros, {len(self.abilities_by_hero)} héros avec capacités")
         except Exception as e:
-            print(f"❌ Erreur chargement: {e}")
+            print(f"❌ Erreur: {e}")
             sys.exit(1)
     
     def _load_abilities_from_csv(self) -> Dict[str, List]:
-        """Charge les capacités directement depuis ability_names.csv"""
-        from models.abilities import Ability, AbilityEffect, TargetType
-        
+        """Charge capacités depuis CSV"""
         abilities_by_hero = {}
         
         try:
-            # Lire le CSV
             df = pd.read_csv("data/ability_names.csv")
             
             for _, row in df.iterrows():
@@ -74,452 +59,522 @@ class AbilityTester:
                 name = row['generated_name']
                 description = row['clean_description']
                 
-                # Filtrer seulement les héros P-1 à P-8 ET capacités 1-6
+                # Filtrer héros P-1 à P-8, capacités 1-6
                 if hero_code not in ['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7', 'P-8']:
                     continue
+                if not (1 <= ability_number <= 6):
+                    continue
                 
-                if ability_number < 1 or ability_number > 7:
-                    continue  # Skip capacités hors limites Pydantic (maintenant 1-7)
-                
-                # Déterminer coût en sorts (estimation basique)
+                # Coût en sorts
                 spell_cost = 1 if any(word in description.lower() for word in ['magique', 'sort', 'magie']) else 0
                 
-                # Déterminer limitations d'usage
-                uses_per_combat = None
-                if 'combat' in description.lower():
-                    if '1' in description and 'fois' in description.lower():
-                        uses_per_combat = 1
-                    elif '2' in description and 'fois' in description.lower():
-                        uses_per_combat = 2
-                
-                # Créer la capacité
                 ability = Ability(
                     hero_code=hero_code,
                     ability_number=ability_number,
                     name=name,
                     spell_cost=spell_cost,
                     description=description,
-                    uses_per_combat=uses_per_combat,
-                    effects=self._create_effects_from_description(description),
-                    target_type=self._guess_target_from_description(description),
+                    effects=[],
                     is_unlocked=False
                 )
                 
-                # Organiser par héros
                 if hero_code not in abilities_by_hero:
                     abilities_by_hero[hero_code] = []
-                
                 abilities_by_hero[hero_code].append(ability)
             
-            print(f"📋 Capacités CSV chargées:")
-            for hero_code, abilities in abilities_by_hero.items():
-                print(f"  • {hero_code}: {len(abilities)} capacités")
-            
             return abilities_by_hero
-            
         except Exception as e:
-            print(f"❌ Erreur lecture CSV: {e}")
+            print(f"❌ Erreur CSV: {e}")
             return {}
     
-    def _create_effects_from_description(self, description: str) -> List:
-        """Crée des effets basés sur la description"""
-        from models.abilities import AbilityEffect
-        
-        effects = []
-        desc_lower = description.lower()
-        
-        # Détection soins
-        if any(word in desc_lower for word in ['soin', 'soigne', 'guérit', 'récupère']):
-            # Extraire valeur si possible
-            import re
-            numbers = re.findall(r'\d+', description)
-            heal_value = int(numbers[0]) if numbers else 3
-            
-            effects.append(AbilityEffect(
-                type="heal",
-                value=heal_value,
-                description=f"Soigne {heal_value} PV"
-            ))
-        
-        # Détection dégâts
-        elif any(word in desc_lower for word in ['dégât', 'attaque', 'inflige', 'frappe']):
-            import re
-            numbers = re.findall(r'\d+', description)
-            damage_value = int(numbers[0]) if numbers else 3
-            
-            damage_type = "magical_damage" if "magique" in desc_lower else "damage"
-            effects.append(AbilityEffect(
-                type=damage_type,
-                value=damage_value,
-                description=f"Inflige {damage_value} dégâts"
-            ))
-        
-        # Transformations
-        elif any(word in desc_lower for word in ['forme', 'transformation', 'métamorphose']):
-            effects.append(AbilityEffect(
-                type="transformation",
-                description="Transformation de forme"
-            ))
-        
-        # Invocation
-        elif any(word in desc_lower for word in ['invoque', 'appel', 'créature']):
-            effects.append(AbilityEffect(
-                type="summon",
-                description="Invoque une créature"
-            ))
-        
-        # Effet générique
-        else:
-            effects.append(AbilityEffect(
-                type="special",
-                description=description[:50] + "..." if len(description) > 50 else description
-            ))
-        
-        return effects
-    
-    def _guess_target_from_description(self, description: str):
-        """Devine le type de cible"""
-        from models.abilities import TargetType
-        
-        desc_lower = description.lower()
-        
-        if any(phrase in desc_lower for phrase in ['tous les adversaires', 'tous les ennemis']):
-            return TargetType.ALL_ENEMIES
-        elif any(phrase in desc_lower for phrase in ['tous les personnages', 'toute l\'équipe']):
-            return TargetType.ALL_ALLIES
-        elif any(word in desc_lower for word in ['adversaire', 'ennemi', 'cible']):
-            return TargetType.ENEMY
-        elif any(word in desc_lower for word in ['allié', 'personnage', 'équipier']):
-            return TargetType.ALLY
-        else:
-            return TargetType.SELF
-    
-    def create_test_hero(self, hero_code: str, ability_number: int) -> Character:
-        """Crée un héros de test avec une capacité spécifique"""
-        base_hero = next((h for h in self.heroes if h.code == hero_code), None)
-        if not base_hero:
-            return None
-        
-        # Copier le héros
-        test_hero = base_hero.model_copy()
-        
-        # Ajouter les capacités du héros
-        if hero_code in self.abilities_by_hero:
-            test_hero.add_abilities(self.abilities_by_hero[hero_code])
-        
-        # Déverrouiller seulement la capacité testée + ses prérequis
-        test_hero.unlocked_abilities = []
-        
-        # Déverrouiller toutes les capacités de 1 jusqu'à celle testée (prérequis séquentiels)
-        for i in range(1, ability_number + 1):
-            test_hero.unlock_ability(i)
-        
-        # Préparer pour combat
-        test_hero.start_new_combat()
-        
-        return test_hero
-    
-    def create_test_enemy(self) -> Enemy:
-        """Crée un ennemi de test standard"""
-        # Utiliser le premier ennemi disponible
-        base_enemy = self.enemies[0].model_copy()
-        base_enemy.initialize_for_combat(2)  # Pour 2 joueurs
-        return base_enemy
-    
-    def test_ability_effect(self, hero_code: str, ability_number: int) -> Dict[str, Any]:
-        """Test une capacité spécifique et analyse ses effets"""
-        
+    def test_ability_mechanics(self, hero_code: str, ability_number: int) -> Dict[str, Any]:
+        """
+        Test complet des mécaniques d'une capacité
+        Vérifie les effets RÉELS, pas juste les logs
+        """
         # Créer héros de test
-        test_hero = self.create_test_hero(hero_code, ability_number)
+        test_hero = self._create_test_hero(hero_code, ability_number)
         if not test_hero:
             return {'error': f'Héros {hero_code} non trouvé'}
         
         # Trouver la capacité
-        ability = next((a for a in test_hero.abilities if a.ability_number == ability_number and a.is_unlocked), None)
+        ability = next((a for a in test_hero.abilities 
+                       if a.ability_number == ability_number and a.is_unlocked), None)
         if not ability:
-            return {'error': f'Capacité {ability_number} non trouvée pour {hero_code}'}
+            return {'error': f'Capacité {ability_number} non trouvée'}
         
-        # État initial du héros
-        initial_state = {
-            'health': test_hero.current_health,
-            'spells': test_hero.get_total_spells(),
-            'form': getattr(test_hero, 'current_form', None)
-        }
+        # États initiaux
+        initial_state = self._capture_hero_state(test_hero)
         
-        # Créer ennemi de test
-        test_enemy = self.create_test_enemy()
-        initial_enemy_health = test_enemy.current_health
+        # Créer environnement de test
+        test_enemies = [self._create_test_enemy() for _ in range(2)]
+        test_allies = [self._create_allied_hero() for _ in range(2)]
         
-        # Test en combat réel
-        rules = GameRules(criticals=False, initiative=False)
-        engine = CombatEngine(rules)
+        initial_enemies_state = [self._capture_enemy_state(e) for e in test_enemies]
+        initial_allies_state = [self._capture_hero_state(a) for a in test_allies]
         
-        # Simuler utilisation capacité
-        effects_detected = self._simulate_ability_usage(test_hero, ability, test_enemy, engine)
+        # Appliquer la capacité avec système complet
+        mechanics_detected = self._apply_ability_with_full_system(
+            test_hero, ability, test_enemies, test_allies
+        )
         
-        # Analyser les changements
-        final_state = {
-            'health': test_hero.current_health,
-            'spells': engine.spell_manager.get_current_spells(test_hero),
-            'form': getattr(test_hero, 'current_form', None)
-        }
+        # États finaux
+        final_state = self._capture_hero_state(test_hero)
+        final_enemies_state = [self._capture_enemy_state(e) for e in test_enemies]
+        final_allies_state = [self._capture_hero_state(a) for a in test_allies]
         
-        final_enemy_health = test_enemy.current_health
-        
-        # Déterminer les effets réels
-        real_effects = []
-        
-        # Soins
-        if final_state['health'] > initial_state['health']:
-            heal_amount = final_state['health'] - initial_state['health']
-            real_effects.append(f"Soigne {heal_amount} PV")
-        
-        # Dégâts à l'ennemi
-        if final_enemy_health < initial_enemy_health:
-            damage_dealt = initial_enemy_health - final_enemy_health
-            real_effects.append(f"Inflige {damage_dealt} dégâts à l'ennemi")
-        
-        # Consommation de sorts
-        if final_state['spells'] < initial_state['spells']:
-            spells_used = initial_state['spells'] - final_state['spells']
-            real_effects.append(f"Consomme {spells_used} sorts")
-        
-        # Transformation (Elneha)
-        if initial_state['form'] != final_state['form']:
-            real_effects.append(f"Transformation: {initial_state['form']} → {final_state['form']}")
-        
-        # Effets spéciaux détectés
-        real_effects.extend(effects_detected)
+        # Analyser changements mécaniques
+        real_mechanics = self._analyze_mechanical_changes(
+            initial_state, final_state,
+            initial_enemies_state, final_enemies_state,
+            initial_allies_state, final_allies_state,
+            ability
+        )
         
         return {
             'hero_code': hero_code,
             'hero_name': test_hero.name,
             'ability_number': ability_number,
             'ability_name': ability.name,
-            'spell_cost': ability.spell_cost,
             'description': ability.description,
-            'uses_per_combat': ability.uses_per_combat,
-            'real_effects': real_effects if real_effects else ['Aucun effet détectable'],
-            'prevents_attack': ability.prevents_attack,
-            'target_type': ability.target_type.value,
-            'initial_state': initial_state,
-            'final_state': final_state,
-            'enemy_damage_dealt': initial_enemy_health - final_enemy_health
+            'spell_cost': ability.spell_cost,
+            'detected_mechanics': mechanics_detected,
+            'real_mechanics': real_mechanics,
+            'has_real_effects': len(real_mechanics) > 0,
+            'mechanics_score': self._calculate_mechanics_score(real_mechanics, ability)
         }
     
-    def _simulate_ability_usage(self, hero: Character, ability, enemy: Enemy, engine: CombatEngine) -> List[str]:
-        """Simule l'utilisation d'une capacité et détecte les effets spéciaux"""
-        special_effects = []
+    def _create_test_hero(self, hero_code: str, ability_number: int) -> Optional[Character]:
+        """Crée héros de test configuré"""
+        base_hero = next((h for h in self.heroes if h.code == hero_code), None)
+        if not base_hero:
+            return None
         
-        # Vérifier si c'est une capacité d'invocation
-        if hero.code == "P-4" and hasattr(hero, 'can_summon_pet') and hero.can_summon_pet():
-            if getattr(ability, 'ability_number', 0) == 99:  # VirtualAbility pour invocation
-                special_effects.append("Invoque un Pet (Précision 4, Dégâts magiques 4, Santé 15)")
+        test_hero = base_hero.model_copy()
         
-        # Utiliser la capacité via le héros
-        try:
-            action = hero.use_ability(ability)
-            if action.success:
-                # Analyser les effets appliqués
-                for effect in action.effects_applied:
-                    special_effects.append(f"Effet: {effect}")
-        except Exception as e:
-            special_effects.append(f"Erreur lors de l'utilisation: {e}")
+        # Ajouter capacités
+        if hero_code in self.abilities_by_hero:
+            test_hero.add_abilities(self.abilities_by_hero[hero_code])
         
-        # Vérifier les effets sur les statistiques d'attaque
-        if hasattr(hero, 'get_attack_damage_info'):
-            attack_info = hero.get_attack_damage_info()
-            if attack_info.get('is_converted'):
-                source = attack_info.get('conversion_source', 'inconnu')
-                if source == 'lyre_phoenix':
-                    special_effects.append("Conversion attaques → magiques (Lyre phoenix)")
-                elif source == 'gemme_pouvoir':
-                    form = attack_info.get('form_display', '')
-                    special_effects.append(f"Attaques magiques en {form} (Gemme de pouvoir)")
+        # Déverrouiller capacités 1 → ability_number
+        for i in range(1, ability_number + 1):
+            test_hero.unlock_ability(i)
         
-        return special_effects
+        # Préparer pour combat
+        test_hero.start_new_combat()
+        
+        # Blesser légèrement pour tester soins
+        test_hero.current_health = max(1, test_hero.current_health - 5)
+        
+        return test_hero
     
-    def test_all_abilities(self) -> List[Dict[str, Any]]:
-        """Test toutes les capacités de tous les héros"""
-        results = []
-        total_abilities = 0
+    def _create_test_enemy(self) -> Enemy:
+        """Crée ennemi de test"""
+        enemy = self.enemies[0].model_copy()
+        enemy.initialize_for_combat(2)
+        # Blesser légèrement
+        enemy.current_health = max(1, enemy.current_health - 3)
+        return enemy
+    
+    def _create_allied_hero(self) -> Character:
+        """Crée héros allié pour tests de soin de groupe"""
+        ally = self.heroes[1].model_copy()
+        ally.start_new_combat()
+        # Blesser pour tester soins
+        ally.current_health = max(1, ally.current_health - 4)
+        return ally
+    
+    def _capture_hero_state(self, hero: Character) -> Dict:
+        """Capture état complet d'un héros"""
+        return {
+            'health': hero.current_health,
+            'max_health': hero.get_total_health(),
+            'spells': getattr(hero, 'current_spells', hero.get_total_spells()),
+            'parade_tokens': getattr(hero, 'current_parade_tokens', 0),
+            'max_parade_tokens': getattr(hero, 'max_parade_tokens', 0),
+            'form': getattr(hero, 'current_form', None),
+            'temporary_buffs': getattr(hero, 'temporary_buffs', {}),
+            'permanent_buffs': getattr(hero, 'permanent_buffs', {}),
+            'persistent_effects': getattr(hero, 'active_persistent_effects', []),
+            'potions': self._count_potions(hero),
+            'total_damage': hero.get_total_damage(),
+            'total_precision': hero.get_total_precision()
+        }
+    
+    def _capture_enemy_state(self, enemy: Enemy) -> Dict:
+        """Capture état ennemi"""
+        return {
+            'health': enemy.current_health,
+            'max_health': enemy.max_health,
+            'parade_tokens': getattr(enemy, 'current_parade_tokens', 0),
+            'debuffs': getattr(enemy, 'debuffs', {}),
+            'status_effects': getattr(enemy, 'status_effects', {}),
+            'marks': getattr(enemy, 'marks', {})
+        }
+    
+    def _count_potions(self, hero: Character) -> int:
+        """Compte potions totales"""
+        if not hasattr(hero, 'health_potions'):
+            return 0
+        return sum(potion.quantity for potion in hero.health_potions)
+    
+    def _apply_ability_with_full_system(self, hero: Character, ability: Ability, 
+                                      enemies: List[Enemy], allies: List[Character]) -> List[str]:
+        """
+        Applique capacité avec système complet (moteur de combat)
+        Retourne mécaniques détectées pendant l'application
+        """
+        mechanics_log = []
         
-        print("\n🔬 === DÉBUT DES TESTS ===")
+        try:
+            # Simuler contexte combat complet
+            rules = GameRules(criticals=False, initiative=False)
+            engine = CombatEngine(rules)
+            
+            # Mettre ennemis/alliés dans session pour ciblage
+            import streamlit as st
+            if 'current_enemies' not in st.session_state:
+                st.session_state.current_enemies = []
+            if 'current_heroes' not in st.session_state:
+                st.session_state.current_heroes = []
+            
+            st.session_state.current_enemies = enemies
+            st.session_state.current_heroes = allies + [hero]
+            
+            # Initialiser sorts dans moteur
+            engine.spell_manager.initialize_spells(hero)
+            
+            # Utiliser capacité via moteur combat
+            success = engine.combat_actions.use_ability(hero, ability, mechanics_log)
+            
+            if success:
+                mechanics_log.append("Capacité utilisée avec succès")
+            else:
+                mechanics_log.append("Échec utilisation capacité")
+                
+        except Exception as e:
+            mechanics_log.append(f"Erreur système: {e}")
+        
+        return mechanics_log
+    
+    def _analyze_mechanical_changes(self, initial_hero: Dict, final_hero: Dict,
+                                  initial_enemies: List[Dict], final_enemies: List[Dict],
+                                  initial_allies: List[Dict], final_allies: List[Dict],
+                                  ability: Ability) -> List[str]:
+        """
+        Analyse COMPLÈTE des changements mécaniques
+        Retourne liste des effets mécaniques réels détectés
+        """
+        mechanics = []
+        
+        # === EFFETS SUR LE HÉROS ===
+        
+        # Soins
+        if final_hero['health'] > initial_hero['health']:
+            heal_amount = final_hero['health'] - initial_hero['health']
+            mechanics.append(f"SOIN: +{heal_amount} PV")
+        
+        # Transformations (Elneha)
+        if initial_hero['form'] != final_hero['form']:
+            mechanics.append(f"TRANSFORMATION: {initial_hero['form']} → {final_hero['form']}")
+        
+        # Consommation sorts
+        if final_hero['spells'] < initial_hero['spells']:
+            used = initial_hero['spells'] - final_hero['spells']
+            mechanics.append(f"SORTS: -{used} consommés")
+        
+        # Parade modifiée
+        if final_hero['parade_tokens'] != initial_hero['parade_tokens']:
+            diff = final_hero['parade_tokens'] - initial_hero['parade_tokens']
+            mechanics.append(f"PARADE: {'+' if diff > 0 else ''}{diff} jetons")
+        
+        # Buffs temporaires
+        new_buffs = set(final_hero['temporary_buffs'].keys()) - set(initial_hero['temporary_buffs'].keys())
+        for buff in new_buffs:
+            mechanics.append(f"BUFF_TEMP: {buff}")
+        
+        # Buffs permanents
+        new_permanent = set(final_hero['permanent_buffs'].keys()) - set(initial_hero['permanent_buffs'].keys())
+        for buff in new_permanent:
+            mechanics.append(f"BUFF_PERM: {buff}")
+        
+        # Effets persistants
+        new_effects = len(final_hero['persistent_effects']) - len(initial_hero['persistent_effects'])
+        if new_effects > 0:
+            mechanics.append(f"EFFET_PERSISTANT: +{new_effects}")
+        
+        # Potions gagnées
+        if final_hero['potions'] > initial_hero['potions']:
+            gained = final_hero['potions'] - initial_hero['potions']
+            mechanics.append(f"POTIONS: +{gained}")
+        
+        # Changements stats
+        if final_hero['total_damage'] != initial_hero['total_damage']:
+            diff = final_hero['total_damage'] - initial_hero['total_damage']
+            mechanics.append(f"DÉGÂTS: {'+' if diff > 0 else ''}{diff}")
+        
+        # === EFFETS SUR LES ENNEMIS ===
+        
+        for i, (init_enemy, final_enemy) in enumerate(zip(initial_enemies, final_enemies)):
+            enemy_name = f"Ennemi{i+1}"
+            
+            # Dégâts infligés
+            if final_enemy['health'] < init_enemy['health']:
+                damage = init_enemy['health'] - final_enemy['health']
+                mechanics.append(f"DÉGÂTS_ENNEMI: {damage} à {enemy_name}")
+            
+            # Debuffs appliqués
+            new_debuffs = set(final_enemy['debuffs'].keys()) - set(init_enemy['debuffs'].keys())
+            for debuff in new_debuffs:
+                value = final_enemy['debuffs'][debuff]
+                mechanics.append(f"DEBUFF: {debuff} -{value} sur {enemy_name}")
+            
+            # Effets de statut
+            new_status = set(final_enemy['status_effects'].keys()) - set(init_enemy['status_effects'].keys())
+            for status in new_status:
+                duration = final_enemy['status_effects'][status]
+                mechanics.append(f"STATUS: {status} ({duration} tours) sur {enemy_name}")
+            
+            # Marques
+            new_marks = set(final_enemy['marks'].keys()) - set(init_enemy['marks'].keys())
+            for mark in new_marks:
+                mechanics.append(f"MARQUE: {mark} sur {enemy_name}")
+            
+            # Parade réduite
+            if final_enemy['parade_tokens'] < init_enemy['parade_tokens']:
+                reduced = init_enemy['parade_tokens'] - final_enemy['parade_tokens']
+                mechanics.append(f"PARADE_RÉDUITE: -{reduced} sur {enemy_name}")
+        
+        # === EFFETS SUR LES ALLIÉS ===
+        
+        for i, (init_ally, final_ally) in enumerate(zip(initial_allies, final_allies)):
+            ally_name = f"Allié{i+1}"
+            
+            # Soins sur alliés
+            if final_ally['health'] > init_ally['health']:
+                heal = final_ally['health'] - init_ally['health']
+                mechanics.append(f"SOIN_ALLIÉ: +{heal} PV à {ally_name}")
+            
+            # Buffs partagés
+            new_buffs = set(final_ally['temporary_buffs'].keys()) - set(init_ally['temporary_buffs'].keys())
+            for buff in new_buffs:
+                mechanics.append(f"BUFF_ALLIÉ: {buff} sur {ally_name}")
+        
+        return mechanics
+    
+    def _calculate_mechanics_score(self, mechanics: List[str], ability: Ability) -> int:
+        """
+        Calcule score de mécaniques (0-100)
+        100 = Capacité avec effets mécaniques complets
+        0 = Capacité sans effets mécaniques
+        """
+        if not mechanics:
+            return 0
+        
+        score = 0
+        
+        # Points par type d'effet mécanique
+        effect_points = {
+            'SOIN': 15,
+            'DÉGÂTS_ENNEMI': 20,
+            'TRANSFORMATION': 10,
+            'BUFF_TEMP': 10,
+            'BUFF_PERM': 15,
+            'DEBUFF': 15,
+            'STATUS': 10,
+            'MARQUE': 10,
+            'EFFET_PERSISTANT': 20,
+            'PARADE': 5,
+            'SORTS': 5,  # Consommation normale
+            'POTIONS': 5
+        }
+        
+        for mechanic in mechanics:
+            for effect_type, points in effect_points.items():
+                if effect_type in mechanic:
+                    score += points
+                    break
+        
+        # Bonus pour capacités complexes (multiples effets)
+        if len(mechanics) >= 3:
+            score += 10
+        if len(mechanics) >= 5:
+            score += 10
+        
+        # Malus si que consommation sorts (effet minimal)
+        if len(mechanics) == 1 and 'SORTS:' in mechanics[0]:
+            score = max(5, score)
+        
+        return min(100, score)
+    
+    def test_all_abilities(self) -> List[Dict]:
+        """Test toutes les capacités"""
+        results = []
+        
+        print("\n🔬 === DÉBUT TESTS MÉCANIQUES ===")
         
         for hero_code, abilities_list in self.abilities_by_hero.items():
             hero_name = next((h.name for h in self.heroes if h.code == hero_code), hero_code)
-            print(f"\n👤 Testeur {hero_name} ({hero_code})...")
+            print(f"\n👤 Test {hero_name} ({hero_code})...")
             
             for ability in abilities_list:
-                total_abilities += 1
-                print(f"  🔮 Test capacité {ability.ability_number}: {ability.name}")
+                print(f"  🔮 Capacité {ability.ability_number}: {ability.name}")
                 
                 try:
-                    result = self.test_ability_effect(hero_code, ability.ability_number)
+                    result = self.test_ability_mechanics(hero_code, ability.ability_number)
                     results.append(result)
                     
-                    # Affichage rapide du résultat
                     if 'error' in result:
                         print(f"    ❌ {result['error']}")
                     else:
-                        effects_summary = ", ".join(result['real_effects'][:2])  # 2 premiers effets
-                        if len(result['real_effects']) > 2:
-                            effects_summary += "..."
-                        print(f"    ✅ Effets: {effects_summary}")
+                        score = result['mechanics_score']
+                        mechanics_count = len(result['real_mechanics'])
+                        
+                        if score >= 80:
+                            print(f"    ✅ Score: {score}/100 ({mechanics_count} mécaniques)")
+                        elif score >= 50:
+                            print(f"    🟡 Score: {score}/100 ({mechanics_count} mécaniques)")
+                        else:
+                            print(f"    🔴 Score: {score}/100 ({mechanics_count} mécaniques)")
                 
                 except Exception as e:
                     error_result = {
                         'hero_code': hero_code,
                         'ability_number': ability.ability_number,
-                        'error': f'Exception: {e}'
+                        'error': f'Exception: {e}',
+                        'mechanics_score': 0
                     }
                     results.append(error_result)
                     print(f"    💥 Exception: {e}")
         
-        print(f"\n📊 Tests terminés: {len(results)} capacités testées")
+        print(f"\n📊 Tests terminés: {len(results)} capacités")
         return results
     
-    def generate_report(self, results: List[Dict[str, Any]]) -> str:
-        """Génère un rapport détaillé des tests"""
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        filename = f"test_abilities_report_{timestamp}.txt"
+    def generate_mechanics_report(self, results: List[Dict]) -> str:
+        """Génère rapport détaillé des mécaniques"""
+        import time
         
-        # Protection division par zéro
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"test_mechanics_report_{timestamp}.txt"
+        
         if not results:
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write("=== RAPPORT DE TEST DES CAPACITÉS PÉRIPLES ===\n")
-                f.write(f"Généré le: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write("AUCUNE CAPACITÉ TESTÉE - Problème de chargement des données\n")
+                f.write("=== RAPPORT MÉCANIQUES CAPACITÉS ===\n")
+                f.write("AUCUN TEST EFFECTUÉ\n")
             return filename
         
+        # Analyse des résultats
+        successful_tests = [r for r in results if 'error' not in r]
+        failed_tests = [r for r in results if 'error' in r]
+        
+        # Calculs statistiques
+        scores = [r['mechanics_score'] for r in successful_tests]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        high_quality = [r for r in successful_tests if r['mechanics_score'] >= 80]
+        medium_quality = [r for r in successful_tests if 50 <= r['mechanics_score'] < 80]
+        low_quality = [r for r in successful_tests if r['mechanics_score'] < 50]
+        
         with open(filename, 'w', encoding='utf-8') as f:
-            f.write("=== RAPPORT DE TEST DES CAPACITÉS PÉRIPLES ===\n")
+            f.write("=== RAPPORT MÉCANIQUES CAPACITÉS PÉRIPLES ===\n")
             f.write(f"Généré le: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"Total capacités testées: {len(results)}\n\n")
             
-            # Statistiques
-            successful_tests = [r for r in results if 'error' not in r]
-            failed_tests = [r for r in results if 'error' in r]
-            
-            f.write(f"📊 STATISTIQUES:\n")
+            # Statistiques globales
+            f.write("📊 STATISTIQUES GLOBALES:\n")
             f.write(f"  • Tests réussis: {len(successful_tests)}\n")
             f.write(f"  • Tests échoués: {len(failed_tests)}\n")
-            f.write(f"  • Taux de réussite: {len(successful_tests)/len(results)*100:.1f}%\n\n")
+            f.write(f"  • Score moyen: {avg_score:.1f}/100\n")
+            f.write(f"  • Qualité élevée (≥80): {len(high_quality)}\n")
+            f.write(f"  • Qualité moyenne (50-79): {len(medium_quality)}\n")
+            f.write(f"  • Qualité faible (<50): {len(low_quality)}\n\n")
             
-            # Capacités par héros
+            # Analyse par héros
+            f.write("📋 ANALYSE PAR HÉROS:\n")
             heroes_stats = {}
             for result in successful_tests:
                 hero_name = result.get('hero_name', 'Inconnu')
                 if hero_name not in heroes_stats:
-                    heroes_stats[hero_name] = 0
-                heroes_stats[hero_name] += 1
+                    heroes_stats[hero_name] = {'count': 0, 'total_score': 0, 'capacities': []}
+                
+                heroes_stats[hero_name]['count'] += 1
+                heroes_stats[hero_name]['total_score'] += result['mechanics_score']
+                heroes_stats[hero_name]['capacities'].append(result)
             
-            f.write("📋 CAPACITÉS PAR HÉROS:\n")
-            for hero_name, count in heroes_stats.items():
-                f.write(f"  • {hero_name}: {count} capacités\n")
+            for hero_name, stats in heroes_stats.items():
+                avg_score = stats['total_score'] / stats['count']
+                f.write(f"  • {hero_name}: {stats['count']} capacités, score moyen {avg_score:.1f}\n")
             f.write("\n")
             
-            # Détail des capacités
-            f.write("🔬 DÉTAIL DES TESTS:\n\n")
+            # Détail par qualité
+            f.write("🏆 CAPACITÉS HAUTE QUALITÉ (≥80):\n")
+            for result in sorted(high_quality, key=lambda x: x['mechanics_score'], reverse=True):
+                f.write(f"  • {result['hero_name']} - {result['ability_name']} (Score: {result['mechanics_score']})\n")
+                for mechanic in result['real_mechanics']:
+                    f.write(f"    → {mechanic}\n")
+                f.write("\n")
             
-            current_hero = None
-            for result in results:
-                hero_name = result.get('hero_name', 'Inconnu')
-                
-                # Séparateur par héros
-                if hero_name != current_hero:
-                    f.write(f"{'='*60}\n")
-                    f.write(f"👤 {hero_name} ({result.get('hero_code', 'N/A')})\n")
-                    f.write(f"{'='*60}\n\n")
-                    current_hero = hero_name
-                
-                if 'error' in result:
-                    f.write(f"❌ Capacité {result.get('ability_number', 'N/A')}: ERREUR\n")
-                    f.write(f"   Erreur: {result['error']}\n\n")
-                    continue
-                
-                f.write(f"🔮 Capacité {result['ability_number']}: {result['ability_name']}\n")
-                f.write(f"   Coût: {result['spell_cost']} sorts\n")
-                f.write(f"   Type: {'Magique' if result['spell_cost'] > 0 else 'Physique'}\n")
-                f.write(f"   Empêche attaque: {'Oui' if result['prevents_attack'] else 'Non'}\n")
-                f.write(f"   Cible: {result['target_type']}\n")
-                
-                if result['uses_per_combat']:
-                    f.write(f"   Utilisations/combat: {result['uses_per_combat']}\n")
-                
-                f.write(f"   Description: {result['description']}\n")
-                f.write(f"   \n")
-                f.write(f"   🎯 EFFETS RÉELS DÉTECTÉS:\n")
-                for effect in result['real_effects']:
-                    f.write(f"     • {effect}\n")
-                
-                if result['enemy_damage_dealt'] > 0:
-                    f.write(f"   💥 Dégâts infligés à l'ennemi: {result['enemy_damage_dealt']}\n")
-                
+            f.write("🟡 CAPACITÉS QUALITÉ MOYENNE (50-79):\n")
+            for result in sorted(medium_quality, key=lambda x: x['mechanics_score'], reverse=True):
+                f.write(f"  • {result['hero_name']} - {result['ability_name']} (Score: {result['mechanics_score']})\n")
+                if result['real_mechanics']:
+                    f.write(f"    → {', '.join(result['real_mechanics'][:3])}\n")
+                f.write("\n")
+            
+            f.write("🔴 CAPACITÉS QUALITÉ FAIBLE (<50):\n")
+            for result in sorted(low_quality, key=lambda x: x['mechanics_score']):
+                f.write(f"  • {result['hero_name']} - {result['ability_name']} (Score: {result['mechanics_score']})\n")
+                f.write(f"    Description: {result.get('description', 'N/A')}\n")
+                if result['real_mechanics']:
+                    f.write(f"    Mécaniques: {', '.join(result['real_mechanics'])}\n")
+                else:
+                    f.write(f"    ❌ AUCUNE MÉCANIQUE DÉTECTÉE\n")
                 f.write("\n")
             
             # Échecs
             if failed_tests:
-                f.write(f"{'='*60}\n")
-                f.write(f"❌ TESTS ÉCHOUÉS\n")
-                f.write(f"{'='*60}\n\n")
-                
+                f.write("❌ TESTS ÉCHOUÉS:\n")
                 for result in failed_tests:
-                    f.write(f"• {result.get('hero_code', 'N/A')} - Capacité {result.get('ability_number', 'N/A')}\n")
-                    f.write(f"  Erreur: {result['error']}\n\n")
+                    f.write(f"  • {result.get('hero_code', 'N/A')} - Capacité {result.get('ability_number', 'N/A')}\n")
+                    f.write(f"    Erreur: {result['error']}\n\n")
         
         return filename
     
-    def run_full_test(self):
-        """Lance le test complet et génère le rapport"""
-        print("🚀 Lancement du test complet des capacités...")
+    def run_full_mechanics_test(self):
+        """Lance test complet des mécaniques"""
+        print("🚀 === LANCEMENT TESTS MÉCANIQUES COMPLETS ===")
         
-        # Test toutes les capacités
+        # Tests
         results = self.test_all_abilities()
         
-        # Générer rapport
-        print(f"\n📝 Génération du rapport...")
-        report_file = self.generate_report(results)
+        # Rapport
+        print(f"\n📝 Génération rapport...")
+        report_file = self.generate_mechanics_report(results)
         
-        print(f"✅ Rapport généré: {report_file}")
-        print(f"📊 Résumé:")
-        
+        # Résumé
         successful = [r for r in results if 'error' not in r]
         failed = [r for r in results if 'error' in r]
         
-        print(f"  • {len(successful)} capacités testées avec succès")
-        print(f"  • {len(failed)} échecs")
-        
-        if results:  # Protection division par zéro
-            print(f"  • Taux de réussite: {len(successful)/len(results)*100:.1f}%")
-        else:
-            print(f"  • Aucune capacité testée - Vérifier les données")
-        
-        # Aperçu des effets les plus courants
-        all_effects = []
-        for result in successful:
-            all_effects.extend(result['real_effects'])
-        
-        if all_effects:
-            print(f"\n🔍 Aperçu des effets détectés:")
-            effects_count = {}
-            for effect in all_effects:
-                key = effect.split()[0] if effect.split() else effect
-                effects_count[key] = effects_count.get(key, 0) + 1
+        if successful:
+            scores = [r['mechanics_score'] for r in successful]
+            avg_score = sum(scores) / len(scores)
+            high_quality = len([r for r in successful if r['mechanics_score'] >= 80])
             
-            for effect, count in sorted(effects_count.items(), key=lambda x: x[1], reverse=True)[:5]:
-                print(f"  • {effect}: {count} occurrences")
+            print(f"✅ Rapport: {report_file}")
+            print(f"📊 Résultats:")
+            print(f"  • {len(successful)} capacités testées")
+            print(f"  • Score moyen: {avg_score:.1f}/100")
+            print(f"  • Haute qualité: {high_quality}/{len(successful)}")
+            print(f"  • Échecs: {len(failed)}")
         else:
-            print(f"\n⚠️ Aucun effet détecté - Problème de chargement des capacités")
+            print(f"❌ Aucun test réussi")
 
 def main():
     """Fonction principale"""
     try:
-        tester = AbilityTester()
-        tester.run_full_test()
-        
-        print(f"\n🎉 Test terminé avec succès !")
-        
+        tester = AbilityMechanicsTest()
+        tester.run_full_mechanics_test()
+        print(f"\n🎉 Tests mécaniques terminés !")
     except Exception as e:
         print(f"💥 Erreur fatale: {e}")
         import traceback
