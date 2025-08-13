@@ -47,8 +47,13 @@ class GenericEffectsHandler:
         
         return effects_applied
     
+    # REMPLACER DANS models/combat/abilities/generic_effects.py
+# Ligne ~35-50 environ (méthode _apply_transformation_effects)
+
     def _apply_transformation_effects(self, hero, ability, log: List[str]) -> bool:
-        """Gestion des transformations (Elneha formes)"""
+        """CORRECTION - Gestion des transformations avec VRAIS bonus mécaniques"""
+        
+        # Vérifier que c'est Elneha
         if hero.code != "P-1":
             return False
         
@@ -58,12 +63,47 @@ class GenericEffectsHandler:
         combatant_name = getattr(hero, 'display_name', hero.name)
         
         if ability.ability_number == 1:  # Forme d'ours
+            # 1. Changer la forme
             hero.set_form("bear")
-            log.append(f"  🐻 {combatant_name} se transforme en ours")
+            
+            # 2. NOUVEAU - Initialiser current_attack si absent
+            if not hasattr(hero, 'current_attack'):
+                hero.current_attack = hero.damage
+            if not hasattr(hero, 'current_defense'):
+                hero.current_defense = hero.defense
+            
+            # 3. NOUVEAU - Appliquer les VRAIS bonus mécaniques
+            # Forme d'Ours : +2 ATT, +1 DEF (selon les règles)
+            hero.current_attack += 2
+            hero.current_defense += 1
+            
+            # 4. Log avec détails mécaniques
+            log.append(f"  🐻 {combatant_name} se transforme en ours (+2 ATT, +1 DEF)")
+            log.append(f"    📊 ATT: {hero.current_attack-2} → {hero.current_attack}")
+            log.append(f"    📊 DEF: {hero.current_defense-1} → {hero.current_defense}")
+            
             return True
+            
         elif ability.ability_number == 3:  # Forme de loup
+            # 1. Changer la forme
             hero.set_form("wolf")
-            log.append(f"  🐺 {combatant_name} se transforme en loup")
+            
+            # 2. NOUVEAU - Initialiser stats si absent
+            if not hasattr(hero, 'current_attack'):
+                hero.current_attack = hero.damage
+            if not hasattr(hero, 'current_precision'):
+                hero.current_precision = hero.precision
+            
+            # 3. NOUVEAU - Appliquer les VRAIS bonus mécaniques
+            # Forme de Loup : +1 ATT, +2 PRÉCISION (selon les règles)
+            hero.current_attack += 1
+            hero.current_precision += 2
+            
+            # 4. Log avec détails mécaniques
+            log.append(f"  🐺 {combatant_name} se transforme en loup (+1 ATT, +2 PRÉCISION)")
+            log.append(f"    📊 ATT: {hero.current_attack-1} → {hero.current_attack}")
+            log.append(f"    📊 PREC: {hero.current_precision-2} → {hero.current_precision}")
+            
             return True
         
         return False

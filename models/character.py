@@ -593,6 +593,15 @@ class Character(BaseModel):
             self.magic_abilities_used_this_turn = 0
         if not hasattr(self, 'spells_used'):
             self.spells_used = 0
+    def reset_current_stats(self):
+        """Remet les stats à leur valeur de base (pour nouveau combat)"""
+        self.current_attack = self.damage
+        self.current_defense = self.defense  
+        self.current_precision = self.precision
+        
+        # Reset forme pour Elneha
+        if self.code == "P-1":
+            self.current_form = "human"
     
     # === ÉQUIPEMENTS ===
     
@@ -624,10 +633,15 @@ class Character(BaseModel):
     def get_total_precision(self) -> int:
         return self.precision + self.get_equipment_bonus('precision')
     
+
     def get_total_damage(self) -> int:
         """Version améliorée de get_total_damage qui inclut les bonus d'effets"""
-        # Dégâts de base
-        base_damage = self.damage + self.get_equipment_bonus('physical_damage')
+        
+        # NOUVEAU - Utiliser current_attack si disponible (stats modifiées par capacités)
+        base_attack = getattr(self, 'current_attack', self.damage)
+        
+        # Dégâts de base avec équipements
+        base_damage = base_attack + self.get_equipment_bonus('physical_damage')
         
         # Bonus des effets persistants
         persistent_bonus = 0
@@ -648,6 +662,12 @@ class Character(BaseModel):
         mark_bonus = self._get_mark_damage_bonus()
         
         return base_damage + persistent_bonus + temp_bonus + mark_bonus
+
+    # AJOUTER AUSSI - Méthode pour get_total_precision modifiée
+    def get_total_precision(self) -> int:
+        """Version améliorée incluant current_precision"""
+        base_precision = getattr(self, 'current_precision', self.precision)
+        return base_precision + self.get_equipment_bonus('precision')
     
     def _get_mark_damage_bonus(self) -> int:
         """Calcule le bonus de dégâts contre les ennemis marqués"""
@@ -1039,10 +1059,13 @@ class Character(BaseModel):
         self.potion_used_this_turn = False
     
     def start_new_combat(self):
-        """MODIFIÉ - Prépare nouveau combat + gestion sorts + effets"""
+        """MODIFIÉ - Prépare nouveau combat + reset stats"""
         self.reset_turn_state()
         self.current_spells = self.get_total_spells()
         self.spells_used = 0
+        
+        # NOUVEAU - Reset stats modifiables
+        self.reset_current_stats()
         
         # NOUVEAU - Initialiser compteur capacités magiques
         self.magic_abilities_used_this_turn = 0
@@ -1192,20 +1215,7 @@ class Pet(Character):
         """Pets n'ont pas de capacités spéciales (pour l'instant)"""
         return []
     
-    def start_new_combat(self):
-        """NOUVEAU - Initialise le Pet pour un nouveau combat avec effets"""
-        self.current_health = self.health
-        self.magic_abilities_used_this_turn = 0
-        self.spells_used = 0
-        self.current_spells = 0
         
-        # Pas de parade pour les Pets par défaut
-        self.current_parade_tokens = 0
-        self.max_parade_tokens = 0
-        
-        # NOUVEAU - Initialiser attributs effets pour les Pets
-        self._add_required_attributes()
-    
     def start_hero_turn(self):
         """NOUVEAU - Début du tour Pet avec effets"""
         # Reset compteur capacités magiques par tour
@@ -1435,6 +1445,7 @@ class Equipment(BaseModel):
     def is_special_object(self) -> bool:
         """Vérifie si c'est un objet spécial (O-1 à O-4)"""
         return self.code.startswith('O-')
+    
     
     def get_equipment_summary(self) -> Dict[str, Any]:
         """Résumé de l'équipement pour l'interface"""
