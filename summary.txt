@@ -1,175 +1,380 @@
-# Périples Balance Workshop - Summary
+# 📋 RÉSUMÉ COMPLET - MIGRATION CAPACITÉS INDIVIDUELLES PÉRIPLES
 
-## État Actuel du Projet
+## 🎯 CONTEXTE ET DÉCISION STRATÉGIQUE
 
-### ✅ **MISE À JOUR : 12/08/2025**
+**Projet** : Simulateur Périples Balance Workshop pour tests de jeu de société  
+**Problème identifié** : Système de parsing de texte défaillant (2/48 capacités fonctionnelles)  
+**Décision** : Migration complète vers architecture de capacités individuelles codées  
+**Contrainte absolue** : Ne rien casser au projet existant pendant la migration
 
-#### **✅ ARCHITECTURE CORRIGÉE**
-- **Incohérence résolue** : `combat_engine.py` déplacé de `models/` vers `models/combat/`
-- **Imports corrigés** : `from models.combat.combat_engine import CombatEngine`
-- **Structure cohérente** : Architecture modulaire maintenant conforme à la documentation
+---
 
-#### **🔴 PROBLÈME CRITIQUE IDENTIFIÉ : SYSTÈME DE CAPACITÉS DÉFAILLANT**
+## 📊 ÉTAT ACTUEL DÉTAILLÉ
 
-**Test mécaniques capacités (test_abilities.py) :**
-- **Score moyen : 24.9/100** (critique)
-- **0 capacité haute qualité** (≥80)
-- **33/40 capacités score <50** (effets insuffisants)
-- **8 échecs** de chargement
+### ✅ **ÉLÉMENTS STABLES À PRÉSERVER**
 
-**Capacités sans effets mécaniques (score 0) :**
-- Armure du mage (Liarie)
-- Parade (Atucan) 
-- Aura sacrée (Atucan)
-- Dérobade (Lame)
-- Bombe fumigène (Lame)
+#### Infrastructure Pydantic (FONCTIONNELLE) ✅
+- **Fichier** : `models/character.py`
+- **Ajouts réussis** : Attributs `current_attack`, `current_defense`, `current_precision`
+- **Correction appliquée** : Méthode `reset_current_stats()` utilise `self.max_parade_tokens`
+- **Test validé** : `current_attack: True` dans diagnostic
+- **⚠️ RÈGLE** : Ne jamais modifier ce fichier pendant la migration
 
-**Diagnostic :** Le système modulaire d'effets (`models/combat/abilities/`) n'est **PAS CONNECTÉ** au moteur de combat.
+#### Transformations Elneha (MÉCANIQUES RÉELLES) ✅
+- **Forme d'Ours** : +2 ATT, +1 DEF (ability_number=1, Hero P-1)
+- **Forme de Loup** : +1 ATT, +2 PREC (ability_number=3, Hero P-1)  
+- **Implémentation** : Méthode `_apply_transformation_effects()` dans `generic_effects.py`
+- **Logs détaillés** : Valeurs avant/après affichées correctement
+- **⚠️ RÈGLE** : Garder cette implémentation intacte (ne pas migrer)
 
-### ✅ Fonctionnalités Opérationnelles
+#### Architecture modulaire (STABLE) ✅
+- **Orchestrateur** : `AbilityEffectsManager` (entry point principal)
+- **Gestionnaire générique** : `GenericEffectsHandler` (effets standards)
+- **Extensions spécifiques** : `HeroSpecificEffects` (capacités uniques)
+- **Test de validation** : `diagnostic_capacites.py` (fonctionne parfaitement)
 
-#### Interface Utilisateur
-- **Sélection d'équipes** : Grille 2x4 pour 8 héros principaux avec 3 niveaux de difficulté
-- **Expanders détails builds** : Affichage complet des équipements, capacités et potions
-- **Forge des équipements** : Interface slider séquentiel 0-6 pour capacités
-- **Mode Sandbox** : Contrôle manuel complet des combats
-- **Système de recherche** : Ennemis par nom ou numéro
-- **Selectbox désactivée** pour builds custom - Alignement visuel préservé
+### ❌ **PROBLÈMES FONDAMENTAUX IDENTIFIÉS**
 
-#### Système de Builds Authentiques
-- **56 équipements réels** : Stats calculées dynamiquement depuis équipements
-- **3 niveaux de difficulté** : 🟢 Facile / 🔵 Normal / 🔴 Difficile
-- **Cache Streamlit optimisé** : `@st.cache_data` pour performance maximale
-- **Builds personnalisés** : Combinaison équipements + capacités + potions
+#### Parsing de texte défaillant
+- **Méthodes problématiques** :
+  - `_extract_heal_amount()` : Patterns regex inadéquats
+  - `_apply_healing_effects()` : Conditions de détection incorrectes 
+  - `get_generic_preview()` : Double vérification qui échoue
+- **Conséquence** : 12 capacités de soin détectées comme cosmétiques
+- **Tentatives de correction** : Multiples modifications sans succès
 
-#### Moteur de Combat V3.0 - **ARCHITECTURE REFACTORISÉE**
-- **✅ REFACTORISATION TERMINÉE** : 978 lignes → 5 fichiers modulaires
-- **✅ ARCHITECTURE CORRIGÉE** : Tous fichiers dans `models/combat/`
-- **Système jetons parade rechargeable** : Héros ET ennemis
-- **4 objets spéciaux opérationnels** :
-  - O-1 : Gemme de pouvoir (Elneha - formes)
-  - O-2 : Baton de puissance (Liarie - +1 capacité magique)
-  - O-3 : Médaillon d'appel (Kraor - invocation Pet)
-  - O-4 : Lyre phoenix (Stèphe - attaques magiques)
-- **Support Pets complet** : Invocation + combat + métriques
-- **Règles officielles** : Conforme au livre de règles V3.0
+#### Limitations structurelles
+- **Maintenance complexe** : Regex fragiles et interdépendantes
+- **Debugging difficile** : Effets de bord imprévisibles
+- **Évolutivité limitée** : Impossible d'implémenter des mécaniques complexes
+- **Tests unitaires impossibles** : Logique dispersée dans le parsing
 
-### 🔴 **SYSTÈME DE CAPACITÉS - STATUS CRITIQUE**
+---
 
-#### **ARCHITECTURE MODULAIRE CRÉÉE MAIS NON INTÉGRÉE**
+## 🏗️ NOUVELLE ARCHITECTURE - CAPACITÉS INDIVIDUELLES
+
+### **Principe architectural** :
+- **1 capacité = 1 classe Python dédiée** héritant de `BaseAbility`
+- **Logique métier explicite** : Plus de parsing, que du code direct
+- **Isolation complète** : Chaque capacité indépendante des autres
+- **Maintenabilité optimale** : 1 bug = 1 fichier = 1 fonction
+
+### **Mapping des données** :
+- **Source** : `ability_names.csv` (59 lignes, 4 colonnes)
+- **Structure** : `hero_code` (P-1 à P-8) + `ability_number` (1-6) + `generated_name` + `clean_description`
+- **Cible** : 48 classes individuelles (8 héros × 6 capacités)
+
+### **Hiérarchie des fichiers** :
 ```
 models/combat/abilities/
-├── __init__.py                 # ✅ Créé
-├── ability_manager.py          # ✅ Créé - Orchestrateur central
-├── persistent_effects.py      # ✅ Créé - Effets durables
-├── generic_effects.py         # ✅ Créé - Effets standards
-├── hero_specific.py           # ✅ Créé - Mécaniques uniques
-└── character_integration.py   # ✅ Créé - Extensions Character
+├── individual_abilities/           # NOUVEAU module principal
+│   ├── __init__.py                # Initialisation module
+│   ├── base_ability.py            # Classe abstraite de base
+│   ├── ability_registry.py        # Registre central des 48 capacités
+│   ├── heroes/                    # Capacités par héros
+│   │   ├── __init__.py
+│   │   ├── elneha.py             # P-1: 6 classes (ElnehaSoinMineur, etc.)
+│   │   ├── liarie.py             # P-2: 6 classes
+│   │   ├── atucan.py             # P-3: 6 classes  
+│   │   ├── kraor.py              # P-4: 6 classes
+│   │   ├── thordius.py           # P-5: 6 classes
+│   │   ├── stephe.py             # P-6: 6 classes
+│   │   ├── lame.py               # P-7: 6 classes
+│   │   └── raishi.py             # P-8: 6 classes
+│   └── utils/                     # Utilitaires communs
+│       ├── targeting.py           # Logique de ciblage (plus blessé, etc.)
+│       ├── damage_calc.py         # Calculs de dégâts avec parade
+│       └── healing_calc.py        # Calculs de soins optimisés
+├── generic_effects.py             # CONSERVER (transformations Elneha)
+└── ability_effects_manager.py     # MODIFIER (ajouter support individuel)
 ```
 
-#### **PROBLÈMES BLOQUANTS**
-1. **Imports manquants** dans `combat_actions.py`
-2. **AbilityEffectsManager non utilisé** 
-3. **Système modulaire déconnecté** du moteur principal
-4. **Effets persistants non appliqués**
+---
 
-#### **RÉSULTATS TESTS DÉTAILLÉS**
+## 🚀 PLAN DE MIGRATION OPTIMISÉ - 5 JOURS (4h/jour)
 
-**Capacités fonctionnelles partiellement (50-79) :**
-- Onde tonnante (Elneha) : 55 - AoE détecté
-- Boule de feu (Liarie) : 55 - AoE détecté
-- Vol de vie (Liarie) : 50 - Soin + dégâts
+### **JOUR 1 : FONDATIONS + PILOTE ELNEHA (4h)**
+**Session 1 (2h)** : Infrastructure complète
+- Créer structure de dossiers (30 min)
+- Implémenter `BaseAbility` (45 min) 
+- Implémenter `AbilityRegistry` (45 min)
 
-**Capacités scores faibles (15-25) :**
-- Soins basiques : Détection mais effets limités
-- Transformations : Changement forme mais pas de bonus
-- Buffs temporaires : Non persistants
+**Session 2 (2h)** : Première intégration
+- Créer 2 capacités pilotes Elneha (90 min)
+- Modifier `AbilityEffectsManager` (30 min)
 
-**Capacités cassées (score 0) :**
-- Effets persistants : Armure mage, Parade
-- Debuffs ennemis : Bombe fumigène
-- Buffs de groupe : Aura sacrée
+**Validation** : 4 capacités mécaniques (2 transformations + 2 individuelles)
 
-### ✅ **REFACTORISATION COMBAT ENGINE TERMINÉE**
+### **JOUR 2 : ELNEHA + LIARIE COMPLETS (4h)**
+**Session 1 (2h)** : Finir Elneha (4 capacités restantes)
+**Session 2 (2h)** : Créer Liarie complet (6 capacités)
 
-#### Architecture Modulaire Correcte
+**Validation** : 14 capacités mécaniques (2 + 12 individuelles)
+
+### **JOUR 3 : ATUCAN + KRAOR (4h)**
+**Session 1 (2h)** : Atucan (6 capacités)
+**Session 2 (2h)** : Kraor (6 capacités)
+
+**Validation** : 26 capacités mécaniques (2 + 24 individuelles)
+
+### **JOUR 4 : THORDIUS + STEPHE (4h)**
+**Session 1 (2h)** : Thordius (6 capacités)
+**Session 2 (2h)** : Stephe (6 capacités)
+
+**Validation** : 38 capacités mécaniques (2 + 36 individuelles)
+
+### **JOUR 5 : LAME + RAISHI + FINALISATION (4h)**
+**Session 1 (2h)** : Lame (6 capacités)
+**Session 2 (1.5h)** : Raishi (6 capacités)
+**Session 3 (0.5h)** : Bascule finale
+
+**Validation finale** : 50 capacités mécaniques (2 + 48 individuelles) 🎯
+
+---
+
+## 📊 DONNÉES DE RÉFÉRENCE
+
+### **Capacités de soin identifiées** (12 capacités cosmétiques actuelles) :
+| Héros | Code | Capacité | Description réelle | Valeur attendue |
+|-------|------|----------|-------------------|-----------------|
+| Elneha | P-1 | Soin mineur | "Soigner jusqu'à 4 blessures" | 4 PV |
+| Elneha | P-1 | Soin multiple | "Soigner jusqu'à 4 blessures de tous" | 4 PV AoE |
+| Elneha | P-1 | Résurrection | "Totalité des blessures d'un inconscient" | PV max |
+| Liarie | P-2 | Vol de vie | "Inflige 3 dégâts et soigne autant" | 3 PV + 3 dégâts |
+| Atucan | P-3 | Imposition des mains | "Soigne 3 blessures" | 3 PV |
+| Atucan | P-3 | Soin supérieur | "Soigne 6 blessures" | 6 PV |
+| Kraor | P-4 | Soin mineur | "Soigne 2 blessures" | 2 PV |
+| Thordius | P-5 | Rage insatiable | "Combat avec régénération" | Variable |
+| Stephe | P-6 | Affaiblissement | "Réduit attaque ennemi" | Debuff |
+| Stephe | P-6 | Soin majeur | "Soigne 5 blessures" | 5 PV |
+| Stephe | P-6 | Mot de mort | "Instant kill conditionnel" | Mécanique spéciale |
+| Raishi | P-8 | Purification | "Enlève effets + 2 blessures" | 2 PV + Cleanse |
+
+### **Autres capacités par type** (36 capacités restantes) :
+- **Dégâts simples** : 8 capacités (projectiles, attaques magiques)
+- **Dégâts de zone** : 6 capacités (AoE, tous les ennemis)
+- **Buffs/Debuffs** : 10 capacités (bonus stats, malédictions)
+- **Mécaniques spéciales** : 8 capacités (téléportation, invocation, etc.)
+- **Attaques multiples** : 4 capacités (combos, enchaînements)
+
+---
+
+## 🔧 DÉTAILS TECHNIQUES DE MIGRATION
+
+### **Template de classe individuelle** :
+```python
+class [HeroName][AbilityName](BaseAbility):
+    """[Hero] Capacité [N]: [Nom] - [Description courte]"""
+    
+    hero_code = "[P-X]"
+    ability_number = X
+    
+    def __init__(self):
+        super().__init__(
+            hero_code="[P-X]",
+            ability_number=X,
+            name="[Nom de la capacité]",
+            description="[Description complète from CSV]"
+        )
+    
+    def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
+        """Implémentation des effets mécaniques précis"""
+        
+        # 1. Validation des prérequis
+        if not self._validate_usage(caster, targets, context):
+            return False
+        
+        # 2. Calculs des effets (dégâts, soins, etc.)
+        effect_value = self._calculate_effect(caster, context)
+        
+        # 3. Application sur les cibles
+        success = self._apply_to_targets(caster, targets, effect_value, log)
+        
+        # 4. Logging détaillé des résultats
+        self._log_results(caster, targets, effect_value, success, log)
+        
+        return success
+    
+    def _validate_usage(self, caster, targets, context) -> bool:
+        """Vérifie si la capacité peut être utilisée"""
+        pass
+    
+    def _calculate_effect(self, caster, context) -> int:
+        """Calcule la valeur d'effet (dégâts, soins, etc.)"""
+        pass
+    
+    def _apply_to_targets(self, caster, targets, value, log) -> bool:
+        """Applique l'effet aux cibles"""
+        pass
+    
+    def _log_results(self, caster, targets, value, success, log):
+        """Log détaillé pour debugging et interface"""
+        pass
+
+# Auto-enregistrement
+ABILITY_REGISTRY.register([HeroName][AbilityName])
 ```
-models/combat/
-├── spell_manager.py      # ✅ 120 lignes - Gestion sorts centralisée
-├── combat_logger.py      # ✅ 180 lignes - Logs + formatage
-├── combat_actions.py     # ✅ 200 lignes - Attaques + capacités + pets
-├── turn_manager.py       # ✅ 220 lignes - Tours + IA tactique
-├── combat_engine.py      # ✅ 250 lignes - Orchestrateur + résultats
-└── abilities/            # 🔴 NON INTÉGRÉ - Système capacités modulaire
-    ├── ability_manager.py      # Orchestrateur capacités
-    ├── persistent_effects.py   # Effets durables  
-    ├── generic_effects.py      # Effets standards
-    ├── hero_specific.py        # Mécaniques uniques
-    └── character_integration.py # Extensions Character
+
+### **Gestion des cibles** :
+```python
+def _get_appropriate_targets(self, hero, ability):
+    """Détermine les cibles selon le type de capacité"""
+    
+    # Capacités de soin → Alliés blessés
+    if "soin" in ability.description.lower():
+        allies = self._get_all_allies()
+        return [a for a in allies if a.is_alive()]
+    
+    # Capacités de dégâts → Ennemis vivants  
+    elif "dégât" in ability.description.lower():
+        return self._get_alive_enemies()
+    
+    # Capacités de buff → Caster ou équipe
+    elif "bonus" in ability.description.lower():
+        return [hero] + self._get_all_allies()
+    
+    # Par défaut → Tous les combattants
+    return self._get_all_allies() + self._get_alive_enemies()
 ```
 
-### 🔄 **ACTIONS PRIORITAIRES**
-
-#### **URGENT - Intégration Système Capacités**
-1. **Modifier `combat_actions.py`** :
-   ```python
-   from models.combat.abilities import AbilityEffectsManager
-   ```
-2. **Connecter AbilityEffectsManager** au moteur
-3. **Implémenter effets persistants** : Armure mage, Rage berserker
-4. **Activer debuffs ennemis** : Bombe fumigène, Affaiblissement
-5. **Corriger transformations** : Bonus formes Elneha
-
-#### **Moyen Terme**
-- Tests de régression post-intégration
-- Validation 48 capacités fonctionnelles
-- Optimisation performances
-
-#### **Long Terme**
-- Extension système Pets (autres héros)
-- Tests unitaires complets
-- Mode tutorial
-
-### 🏗️ Architecture Technique Correcte
-
-```
-périples-balance-workshop/
-├── app.py                          # ✅ Application principale
-├── models/
-│   ├── character.py                # ✅ VirtualAbility + parade + objets
-│   ├── abilities.py                # ✅ Système séquentiel
-│   ├── rules_engine.py             # ✅ Règles de jeu
-│   └── combat/                     # ✅ Module combat modulaire
-│       ├── spell_manager.py        # ✅ Gestion sorts centralisée
-│       ├── combat_logger.py        # ✅ Logs + formatage
-│       ├── combat_actions.py       # 🔴 À MODIFIER - Intégrer AbilityEffectsManager
-│       ├── turn_manager.py         # ✅ Tours + IA tactique
-│       ├── combat_engine.py        # ✅ Orchestrateur allégé
-│       └── abilities/              # 🔴 CRÉÉ MAIS NON INTÉGRÉ
-│           ├── __init__.py                 # ✅ Exports modulaires
-│           ├── ability_manager.py          # ✅ Orchestrateur central
-│           ├── persistent_effects.py       # ✅ Effets persistants
-│           ├── generic_effects.py          # ✅ Effets standards
-│           ├── hero_specific.py           # ✅ Mécaniques uniques
-│           └── character_integration.py    # ✅ Extensions Character
+### **Contexte de combat** :
+```python
+def _build_context(self, hero, ability):
+    """Construit le contexte pour l'exécution de capacité"""
+    return {
+        'combat_round': st.session_state.get('combat_round', 1),
+        'hero_health_percent': hero.current_health / hero.get_total_health(),
+        'allies_count': len(self._get_all_allies()),
+        'enemies_count': len(self._get_alive_enemies()),
+        'spell_cost': getattr(ability, 'spell_cost', 0),
+        'ability_uses_remaining': getattr(ability, 'uses_remaining', None)
+    }
 ```
 
-## 📊 **BILAN ÉTAT ACTUEL**
+---
 
-### ✅ **RÉUSSITES**
-- Architecture modulaire cohérente et maintenable
-- Refactorisation combat engine terminée
-- 4 objets spéciaux opérationnels
-- Système parade + Pets fonctionnels
-- Interface utilisateur complète
+## ⚠️ POINTS D'ATTENTION CRITIQUES
 
-### 🔴 **ÉCHECS CRITIQUES**
-- **75% capacités sans effets réels** (score <50)
-- **Architecture modulaire non connectée**
-- **Effets persistants défaillants**
-- **Tests révèlent défaillances majeures**
+### **Préservation absolue** :
+1. **Ne jamais modifier** `models/character.py` pendant la migration
+2. **Garder intactes** les transformations Elneha (P-1, abilities 1 et 3)
+3. **Conserver** `diagnostic_capacites.py` comme référence de validation
+4. **Maintenir** tous les imports existants fonctionnels
 
-### 🎯 **PRIORITÉ ABSOLUE**
-**Connecter le système modulaire d'effets au moteur de combat** pour transformer les capacités cosmétiques en mécaniques fonctionnelles.
+### **Gestion des erreurs** :
+```python
+def execute(self, caster, targets, context, log):
+    try:
+        # Logique de la capacité
+        return self._execute_core_logic(caster, targets, context, log)
+    except Exception as e:
+        # Log d'erreur détaillé mais non bloquant
+        log.append(f"❌ Erreur {self.name}: {str(e)}")
+        return False  # Capacité échoue mais ne casse pas le combat
+```
 
-**État général : 🟡 ARCHITECTURE EXCELLENTE, INTÉGRATION INCOMPLÈTE**
+### **Tests de régression obligatoires** :
+```bash
+# À exécuter après CHAQUE modification
+python diagnostic_capacites.py
+python -c "from models.character import Character; print('✅ Import Character OK')"
+python -c "from models.combat.abilities.ability_effects_manager import AbilityEffectsManager; print('✅ Import Manager OK')"
+```
+
+### **Métriques de validation par phase** :
+- **Phase 1** : Imports réussis, 0 capacité individuelle, 2 capacités mécaniques maintenues
+- **Phase 2** : 2-6 capacités individuelles, 4-8 capacités mécaniques total
+- **Phase 3** : Validation technique, performances équivalentes
+- **Phase 4** : Progression linéaire +6 capacités par héros, arriver à 48 total
+- **Phase 5** : 48/48 capacités mécaniques, 0 cosmétique, 0 erreur
+
+---
+
+## 🎯 RÉSULTATS ATTENDUS FINAUX
+
+### **Diagnostic final espéré** :
+```
+============================================================
+📊 RAPPORT FINAL - ÉTAT DES CAPACITÉS  
+============================================================
+📈 STATISTIQUES:
+   ✅ Capacités mécaniques: 48
+   ❌ Capacités cosmétiques: 0
+   💥 Capacités en erreur: 0
+   ⚠️ Effets manquants: 0
+
+✅ CAPACITÉS AVEC EFFETS MÉCANIQUES RÉELS:
+   ✅ Elneha: Forme d'ours → +2 ATT, +1 DEF
+   ✅ Elneha: Forme de loup → +1 ATT, +2 PREC  
+   ✅ Elneha: Soin mineur → 4 PV à un allié
+   ✅ Elneha: Soin multiple → 4 PV à tous les alliés
+   ✅ Elneha: Résurrection → PV max à un inconscient
+   ✅ Elneha: Onde statique → 2 dégâts AoE
+   ✅ Liarie: [6 capacités individuelles]
+   ✅ Atucan: [6 capacités individuelles]
+   ✅ Kraor: [6 capacités individuelles]
+   ✅ Thordius: [6 capacités individuelles]
+   ✅ Stephe: [6 capacités individuelles]
+   ✅ Lame: [6 capacités individuelles]
+   ✅ Raishi: [6 capacités individuelles]
+
+🎯 CONCLUSION POUR TESTS JEU DE SOCIÉTÉ:
+✅ SYSTÈME PRÊT
+✅ Toutes les capacités ont des effets mécaniques réels
+✅ Résultats de combat fiables et précis
+```
+
+### **Avantages obtenus** :
+- **Maintenabilité parfaite** : 1 bug = 1 fonction dans 1 fichier précis
+- **Performance optimale** : Plus de regex lentes, que du code Python direct
+- **Évolutivité maximale** : Nouvelles mécaniques facilement ajoutables
+- **Tests unitaires possibles** : Chaque capacité testable en isolation
+- **Documentation automatique** : Code auto-documenté par design
+- **Debugging simplifié** : Stack traces précises, pas d'effets de bord
+
+### **Impact sur les tests de jeu de société** :
+- **Précision absolue** : Chaque capacité fait exactement ce qu'elle doit faire
+- **Répétabilité garantie** : Mêmes inputs = mêmes outputs toujours
+- **Traçabilité complète** : Logs détaillés de chaque action
+- **Validation métier** : Chaque capacité validable individuellement
+
+---
+
+## 📚 DOCUMENTATION POUR LE PROCHAIN CLAUDE
+
+### **Commandes essentielles** :
+```bash
+# Validation complète du système
+python diagnostic_capacites.py
+
+# Test d'import des modules critiques  
+python -c "from models.character import Character; print('Character OK')"
+python -c "from models.combat.abilities.ability_effects_manager import AbilityEffectsManager; print('Manager OK')"
+
+# Validation du registre des capacités (après Phase 2+)
+python -c "from models.combat.abilities.individual_abilities.ability_registry import ABILITY_REGISTRY; print(f'Capacités: {len(ABILITY_REGISTRY.get_all_abilities())}')"
+
+# Test spécifique d'une capacité (exemple)
+python -c "from models.combat.abilities.individual_abilities.ability_registry import ABILITY_REGISTRY; print('Soin mineur:', ABILITY_REGISTRY.get_ability('P-1', 2))"
+```
+
+### **Fichiers critiques à ne jamais modifier** :
+- `models/character.py` (infrastructure Pydantic stable)
+- `diagnostic_capacites.py` (référence de validation)
+- Section transformations dans `generic_effects.py` (Elneha formes)
+
+### **Fichiers à créer/modifier par phase** :
+- **Phase 1** : Créer toute la structure `individual_abilities/`
+- **Phase 2** : Créer `heroes/elneha.py`, modifier `ability_effects_manager.py`
+- **Phase 3** : Tests approfondis, pas de nouveaux fichiers
+- **Phase 4** : Créer `heroes/[nom].py` pour chaque héros restant
+- **Phase 5** : Nettoyage optionnel, documentation
+
+### **Points de validation obligatoires** :
+1. Après chaque phase : `diagnostic_capacites.py` ne doit jamais régresser
+2. Les transformations Elneha doivent TOUJOURS rester mécaniques
+3. Le nombre de capacités mécaniques doit progresser linéairement
+4. Aucune erreur d'import ne doit apparaître
+5. Les performances ne doivent pas se dégrader
+
+**Cette migration représente un changement architectural majeur qui transformera définitivement le simulateur en outil de test fiable et maintenable pour le jeu de société Périples.** 🚀

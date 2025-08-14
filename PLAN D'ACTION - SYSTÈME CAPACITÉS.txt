@@ -1,0 +1,211 @@
+# 🎯 PLAN D'ACTION ACTUALISÉ - MIGRATION CAPACITÉS INDIVIDUELLES
+
+**OBJECTIF PRINCIPAL** : Migrer de 2/48 capacités mécaniques (4.2%) vers 48/48 capacités individuelles (100%)  
+**APPROCHE** : Architecture par capacités individuelles codées (abandon du parsing de texte)  
+**CONTRAINTE ABSOLUE** : NE RIEN CASSER au projet existant pendant la migration
+
+---
+
+## 📊 **ÉTAT ACTUEL DÉTAILLÉ**
+
+### ✅ **ACQUIS À PRÉSERVER** (NE JAMAIS TOUCHER)
+- **Infrastructure Pydantic** : Attributs `current_attack`, `current_defense`, `current_precision` dans Character
+- **Transformations Elneha** : Forme d'ours (+2 ATT, +1 DEF) et Forme de loup (+1 ATT, +2 PREC)
+- **Tests de validation** : `diagnostic_capacites.py` fonctionne parfaitement
+- **Architecture modulaire** : `AbilityEffectsManager` → `GenericEffectsHandler` → Effets spécifiques
+
+### ❌ **PROBLÈME FONDAMENTAL IDENTIFIÉ**
+- **Parsing de texte défaillant** : `_extract_heal_amount()` et conditions de détection échouent
+- **12 capacités cosmétiques** : Aucun effet mécanique réel malgré corrections multiples
+- **Maintenance complexe** : Regex fragiles, effets de bord, debugging difficile
+- **Limitation évolutive** : Impossible d'implémenter des mécaniques complexes via parsing
+
+---
+
+## 🏗️ **NOUVELLE ARCHITECTURE - CAPACITÉS INDIVIDUELLES**
+
+### **Principe fondamental** :
+Chaque capacité = 1 fonction Python dédiée avec logique métier précise
+
+### **Structure des fichiers** :
+```
+models/combat/abilities/
+├── individual_abilities/           # NOUVEAU dossier principal
+│   ├── __init__.py                # Init du module
+│   ├── base_ability.py            # Classe de base pour toutes les capacités
+│   ├── ability_registry.py        # Registre central des 48 capacités
+│   ├── heroes/                    # Dossier par héros (8 héros × 6 capacités)
+│   │   ├── __init__.py
+│   │   ├── elneha.py             # P-1: 6 capacités individuelles
+│   │   ├── liarie.py             # P-2: 6 capacités individuelles  
+│   │   ├── atucan.py             # P-3: 6 capacités individuelles
+│   │   ├── kraor.py              # P-4: 6 capacités individuelles
+│   │   ├── thordius.py           # P-5: 6 capacités individuelles
+│   │   ├── stephe.py             # P-6: 6 capacités individuelles
+│   │   ├── lame.py               # P-7: 6 capacités individuelles
+│   │   └── raishi.py             # P-8: 6 capacités individuelles
+│   └── utils/                     # Utilitaires communs
+│       ├── __init__.py
+│       ├── targeting.py           # Logique de ciblage
+│       ├── damage_calc.py         # Calculs de dégâts
+│       └── healing_calc.py        # Calculs de soins
+├── generic_effects.py             # CONSERVER (fallback et transformations)
+└── ability_effects_manager.py     # MODIFIER (ajouter support individuel)
+```
+
+---
+
+## 🚀 **PHASES DE MIGRATION OPTIMISÉES (4h/jour)**
+
+### **JOUR 1 : FONDATIONS + PILOTE ELNEHA (4h total)**
+**Objectif** : Créer l'infrastructure ET commencer les capacités
+
+#### **Première session (2h)** : Infrastructure de base
+1. **Créer structure** (30 min)
+```bash
+mkdir -p models/combat/abilities/individual_abilities/heroes
+mkdir -p models/combat/abilities/individual_abilities/utils
+touch models/combat/abilities/individual_abilities/__init__.py
+touch models/combat/abilities/individual_abilities/heroes/__init__.py
+touch models/combat/abilities/individual_abilities/utils/__init__.py
+```
+
+2. **Créer `base_ability.py`** (45 min)
+```python
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Optional
+
+class BaseAbility(ABC):
+    """Classe de base pour toutes les capacités individuelles"""
+    
+    def __init__(self, hero_code: str, ability_number: int, name: str, description: str):
+        self.hero_code = hero_code
+        self.ability_number = ability_number  
+        self.name = name
+        self.description = description
+    
+    @abstractmethod
+    def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
+        """Exécute la capacité avec effets mécaniques réels"""
+        pass
+    
+    def get_preview(self) -> str:
+        """Retourne un aperçu des effets de la capacité"""
+        return f"📋 {self.name}: Effet mécanique défini"
+```
+
+3. **Créer `ability_registry.py`** (45 min)
+```python
+from typing import Dict, Type
+from .base_ability import BaseAbility
+
+class AbilityRegistry:
+    """Registre central des 48 capacités individuelles"""
+    
+    def __init__(self):
+        self._abilities: Dict[str, Type[BaseAbility]] = {}
+    
+    def register(self, ability_class: Type[BaseAbility]):
+        """Enregistre une capacité dans le registre"""
+        key = f"{ability_class.hero_code}_{ability_class.ability_number}"
+        self._abilities[key] = ability_class
+    
+    def get_ability(self, hero_code: str, ability_number: int) -> Optional[Type[BaseAbility]]:
+        """Récupère une capacité par son code héros et numéro"""
+        key = f"{hero_code}_{ability_number}"
+        return self._abilities.get(key)
+
+# Instance globale du registre
+ABILITY_REGISTRY = AbilityRegistry()
+```
+
+#### **Deuxième session (2h)** : Première capacité + intégration
+1. **Créer `heroes/elneha.py`** avec 2 capacités pilotes (90 min)
+2. **Modifier `ability_effects_manager.py`** pour intégration (30 min)
+
+### **JOUR 2 : COMPLÉTER ELNEHA + LIARIE (4h total)**
+**Objectif** : 12 capacités fonctionnelles (6 Elneha + 6 Liarie)
+
+#### **Session 1 (2h)** : Finir Elneha (4 capacités restantes)
+- 30 min par capacité en moyenne (familiarisation avec le pattern)
+
+#### **Session 2 (2h)** : Créer `heroes/liarie.py` (6 capacités)
+- 20 min par capacité (pattern maîtrisé)
+
+**Validation** : `diagnostic_capacites.py` doit montrer ~14 capacités mécaniques
+
+### **JOUR 3 : ATUCAN + KRAOR (4h total)**
+**Objectif** : +12 capacités (24 total)
+
+#### **Session 1 (2h)** : Créer `heroes/atucan.py` (6 capacités)
+#### **Session 2 (2h)** : Créer `heroes/kraor.py` (6 capacités)
+- 20 min par capacité (rythme de croisière)
+
+**Validation** : `diagnostic_capacites.py` doit montrer ~26 capacités mécaniques
+
+### **JOUR 4 : THORDIUS + STEPHE (4h total)**
+**Objectif** : +12 capacités (36 total)
+
+#### **Session 1 (2h)** : Créer `heroes/thordius.py` (6 capacités)
+#### **Session 2 (2h)** : Créer `heroes/stephe.py` (6 capacités)
+- Rythme maintenu : 20 min par capacité
+
+**Validation** : `diagnostic_capacites.py` doit montrer ~38 capacités mécaniques
+
+### **JOUR 5 : LAME + RAISHI + FINALISATION (4h total)**
+**Objectif** : Finir les 48 capacités
+
+#### **Session 1 (2h)** : Créer `heroes/lame.py` (6 capacités)
+#### **Session 2 (1.5h)** : Créer `heroes/raishi.py` (6 capacités)
+#### **Session 3 (0.5h)** : Bascule finale et validation
+
+**Validation finale** : `diagnostic_capacites.py` doit montrer 48/48 capacités mécaniques
+
+---
+
+## 📊 **MÉTRIQUES DE VALIDATION OPTIMISÉES**
+
+### **Progression quotidienne attendue** :
+- **Jour 1** : 2 capacités individuelles (Elneha pilotes) + infrastructure
+- **Jour 2** : 12 capacités individuelles total (6 Elneha + 6 Liarie)
+- **Jour 3** : 24 capacités individuelles total (+12 Atucan/Kraor)
+- **Jour 4** : 36 capacités individuelles total (+12 Thordius/Stephe)
+- **Jour 5** : 48 capacités individuelles total (+12 Lame/Raishi)
+
+### **Validation `diagnostic_capacites.py`** :
+- **Jour 1** : ~4 capacités mécaniques (2 transformations + 2 individuelles)
+- **Jour 2** : ~14 capacités mécaniques (2 + 12)
+- **Jour 3** : ~26 capacités mécaniques (2 + 24) 
+- **Jour 4** : ~38 capacités mécaniques (2 + 36)
+- **Jour 5** : **50 capacités mécaniques (2 + 48)** 🎯
+
+### **Tests de non-régression quotidiens** :
+```bash
+# À exécuter chaque soir
+python diagnostic_capacites.py                           # Progression des capacités
+python -c "from models.character import Character; print('Import OK')"  # Stabilité système
+python -c "from models.combat.abilities.individual_abilities.ability_registry import ABILITY_REGISTRY; print(f'Registre: {len(ABILITY_REGISTRY.get_all_abilities())}')"  # Comptage individuel
+```
+
+---
+
+## ⚠️ **RÈGLES DE SÉCURITÉ ABSOLUES**
+
+1. **JAMAIS modifier `generic_effects.py`** pendant la migration (préserve les transformations)
+2. **TOUJOURS tester `diagnostic_capacites.py`** après chaque modification
+3. **GARDER les anciens fichiers** jusqu'à validation finale complète
+4. **UNE PHASE À LA FOIS** - Ne jamais mélanger les phases
+5. **BACKUP quotidien** avant chaque phase importante
+
+---
+
+## 🎯 **RÉSULTAT FINAL ATTENDU**
+
+- **48 capacités individuelles** codées précisément 
+- **Maintenabilité parfaite** : 1 bug = 1 fichier = 1 fonction
+- **Performance optimale** : Plus de regex, que du code direct
+- **Évolutivité maximale** : Nouvelles mécaniques facilement ajoutables  
+- **Tests unitaires possibles** : Chaque capacité testable isolément
+- **Documentation automatique** : Code auto-documenté par design
+
+**Cette migration transformera définitivement le simulateur en outil de test de jeu de société fiable et précis.** 🚀

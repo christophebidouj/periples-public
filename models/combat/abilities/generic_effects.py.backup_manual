@@ -112,19 +112,15 @@ class GenericEffectsHandler:
         """Gestion des soins"""
         description = ability.description.lower()
         
-        if not any(keyword in description for keyword in ['soigne', 'regagne', 'soin', 'guéri', 'blessures', 'purification', 'résurrection']):
+        if not any(keyword in description for keyword in ['soin', 'guéri', 'blessures']):
             return False
         
         combatant_name = getattr(hero, 'display_name', hero.name)
         
         # Extraction valeur de soin
         heal_amount = self._extract_heal_amount(description, ability.name)
-        if heal_amount <= 0 and heal_amount != -1:
+        if heal_amount <= 0:
             return False
-
-        # === GESTION VALEURS SPÉCIALES ===
-        if heal_amount == -1:  # Totalité des blessures
-            heal_amount = hero.get_total_health()  # PV max complet
         
         # Déterminer la cible
         target_type = getattr(ability, 'target_type', 'self')
@@ -408,72 +404,26 @@ class GenericEffectsHandler:
     # === MÉTHODES UTILITAIRES ===
     
     def _extract_heal_amount(self, description: str, ability_name: str) -> int:
-        """
-        MÉTHODE CORRIGÉE - Extraction valeur de soin depuis description
+        """Extrait la valeur de soin depuis la description"""
+        # Recherche pattern "X blessures"
+        heal_match = re.search(r'(\d+)\s*blessures?', description)
+        if heal_match:
+            return int(heal_match.group(1))
         
-        Patterns validés depuis les descriptions réelles :
-        - "Soigne 2 blessures" → 2 PV
-        - "Soigne 3 blessures" → 3 PV  
-        - "Soigne 4 blessures" → 4 PV
-        - "Soigne 5 blessures" → 5 PV
-        - "Soigne 6 blessures" → 6 PV
-        - "totalité des blessures" → PV max complet
-        - "regagne X blessures" → X PV
-        """
-        import re
-        
-        description = description.lower()
-        
-        # === PATTERNS SPÉCIFIQUES VALIDÉS ===
-        
-        # 1. Totalité des blessures = soin complet
-        if "totalité des blessures" in description:
-            return -1  # Signal pour PV_max complet
-        
-        # 2. Patterns numériques précis : "soigne X blessures" ou "regagne X blessures"
-        heal_patterns = [
-            r'soigne(?:\s+jusqu\'à)?\s+(\d+)\s+blessures?',
-            r'regagne(?:\s+jusqu\'à)?\s+(\d+)\s+blessures?',
-            r'(\d+)\s+blessures?'  # Pattern générique en dernier
-        ]
-        
-        for pattern in heal_patterns:
-            heal_match = re.search(pattern, description)
-            if heal_match:
-                return int(heal_match.group(1))
-        
-        # === CAS SPÉCIAUX PAR NOM ===
-        
+        # Cas spéciaux par nom
         name_lower = ability_name.lower()
-        
-        # Noms spécifiques identifiés
         if 'mineur' in name_lower:
-            return 2  # Valeur par défaut pour soins mineurs
-        elif 'majeur' in name_lower:
-            return 5  # Valeur par défaut pour soins majeurs  
-        elif 'supérieur' in name_lower:
-            return 6  # Valeur par défaut pour soins supérieurs
+            return 2
+        elif 'majeur' in name_lower or 'supérieur' in name_lower:
+            return 6
         elif 'multiple' in name_lower:
-            return 4  # Soin multiple d'Elneha
-        elif 'résurrection' in name_lower:
-            return -1  # Soin complet
-        elif 'purification' in name_lower:
-            return 2  # Purification de Raishi
-        elif 'méditation' in name_lower:
-            return 3  # Méditation de Raishi
-        elif 'imposition' in name_lower:
-            return 3  # Imposition des mains d'Atucan
+            return 4
         
-        # === PATTERNS DE DÉGÂTS + SOIN (Vol de vie) ===
+        # Recherche autres patterns
+        if 'totalité' in description or 'inconscient' in description:
+            return 999  # Soin complet
         
-        # "Inflige X dégâts et soigne autant de blessures"
-        damage_heal_match = re.search(r'inflige\s+(\d+)\s+dégâts.*soigne\s+autant', description)
-        if damage_heal_match:
-            return int(damage_heal_match.group(1))  # Vol de vie : même valeur que dégâts
-        
-        # === VALEUR PAR DÉFAUT ===
-        
-        return 2  # Valeur par défaut sécurisée pour les soins non identifiés
+        return 3  # Valeur par défaut
     
     def _extract_damage_amount(self, description: str, ability_name: str) -> int:
         """Extrait la valeur de dégâts depuis la description"""

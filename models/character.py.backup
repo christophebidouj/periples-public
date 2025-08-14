@@ -97,12 +97,6 @@ class Character(BaseModel):
     health: int
     current_health: Optional[int] = None
     
-    # === STATS MODIFIABLES PAR CAPACITÉS ===
-    current_attack: Optional[int] = None
-    current_defense: Optional[int] = None
-    current_precision: Optional[int] = None
-    current_magical_damage: Optional[int] = None
-
     # Équipements
     equipped_items: List['Equipment'] = []
     build_name: Optional[str] = None
@@ -599,11 +593,10 @@ class Character(BaseModel):
             self.magic_abilities_used_this_turn = 0
         if not hasattr(self, 'spells_used'):
             self.spells_used = 0
-            
     def reset_current_stats(self):
         """Remet les stats à leur valeur de base (pour nouveau combat)"""
         self.current_attack = self.damage
-        self.current_defense = self.max_parade_tokens  # ← Utilise la parade max
+        self.current_defense = self.defense  
         self.current_precision = self.precision
         
         # Reset forme pour Elneha
