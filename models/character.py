@@ -624,30 +624,28 @@ class Character(BaseModel):
         total = 0
         for item in self.equipped_items:
             if stat_type == 'precision':
-                total += item.precision
+                total += item.precision if item.precision is not None else 0
             elif stat_type == 'physical_damage':
-                total += item.physical_damage
+                total += item.physical_damage if item.physical_damage is not None else 0
             elif stat_type == 'magical_damage':
-                total += item.magical_damage
+                total += item.magical_damage if item.magical_damage is not None else 0
             elif stat_type == 'defense':
-                total += item.defense
+                total += item.defense if item.defense is not None else 0
             elif stat_type == 'spells':
-                total += item.spells
+                total += item.spells if item.spells is not None else 0
             elif stat_type == 'health':
-                total += item.health
+                total += item.health if item.health is not None else 0
         return total
     
-    def get_total_precision(self) -> int:
-        return self.precision + self.get_equipment_bonus('precision')
-    
-
     def get_total_damage(self) -> int:
         """Version améliorée de get_total_damage qui inclut les bonus d'effets"""
         
         # NOUVEAU - Utiliser current_attack si disponible (stats modifiées par capacités)
         base_attack = getattr(self, 'current_attack', self.damage)
+        if base_attack is None:
+            base_attack = 0
         
-        # Dégâts de base avec équipements
+        # DÉgâts de base avec équipements
         base_damage = base_attack + self.get_equipment_bonus('physical_damage')
         
         # Bonus des effets persistants
@@ -674,7 +672,10 @@ class Character(BaseModel):
     def get_total_precision(self) -> int:
         """Version améliorée incluant current_precision"""
         base_precision = getattr(self, 'current_precision', self.precision)
-        return base_precision + self.get_equipment_bonus('precision')
+        if base_precision is None:
+            base_precision = 0
+        equipment_bonus = self.get_equipment_bonus('precision')
+        return base_precision + equipment_bonus
     
     def _get_mark_damage_bonus(self) -> int:
         """Calcule le bonus de dégâts contre les ennemis marqués"""
