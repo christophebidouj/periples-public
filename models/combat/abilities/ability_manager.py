@@ -36,6 +36,9 @@ class AbilityEffectsManager:
         self.individual_abilities_used = 0
         self.legacy_abilities_used = 0
     
+# CORRECTION ability_manager.py - Ligne ~30-60
+# Remplacer la méthode apply_ability_effects()
+
     def apply_ability_effects(self, hero, ability, log: List[str], context: Dict[str, Any] = None) -> bool:
         
         # NOUVEAU - Étape 1: Vérifier si une capacité individuelle existe
@@ -44,9 +47,10 @@ class AbilityEffectsManager:
             if individual_result is not None:
                 return individual_result
         
-        # Étape 2: Fallback sur l'ancien système modulaire (PRÉSERVÉ)
-        return self._apply_legacy_system(hero, ability, log)
-    
+        # DÉSACTIVÉ - Ancien système
+        # return self._apply_legacy_system(hero, ability, log)
+        return False
+        
     def _try_individual_ability(self, hero, ability, log: List[str], context: Dict[str, Any] = None):
         """
         NOUVEAU - Tente d'exécuter une capacité individuelle

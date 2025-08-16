@@ -1,234 +1,157 @@
 # SUMMARY_CONSOLIDATED.md
 # 📋 RÉSUMÉ CONSOLIDÉ - MIGRATION CAPACITÉS INDIVIDUELLES PÉRIPLES
 
-## 🎯 CONTEXTE ET DÉCISION STRATÉGIQUE
+## 🎯 CONTEXTE ET OBJECTIF
 
 **Projet** : Simulateur Périples Balance Workshop pour tests de jeu de société  
-**Problème identifié** : Système de parsing de texte défaillant (2/48 capacités fonctionnelles)  
-**Décision** : Migration complète vers architecture de capacités individuelles codées  
+**Problème** : Système de parsing de texte défaillant (2/59 capacités fonctionnelles)  
+**Solution** : Migration complète vers architecture de capacités individuelles codées  
 **Contrainte absolue** : **Préserver et améliorer toutes les fonctionnalités existantes** sans régression
 
-**🏆 STATUS** : ⚠️ **ÉTAT À VÉRIFIER** - Documentation indique Phase 1-2 complètes, validation requise
+## 📊 DONNÉES SOURCES DISPONIBLES
 
----
+### 📋 Capacités à implémenter (59 total)
+- **P-1 (Elneha)** : 7 capacités - Druide transformations/soins
+- **P-2 (Liarie)** : 7 capacités - Mage dégâts magiques
+- **P-3 (Atucan)** : 7 capacités - Paladin soins/défense
+- **P-4 (Kraor)** : 7 capacités - Chasseur marquage/physique
+- **P-5 (Thordius)** : 7 capacités - Berserker rage/dégâts
+- **P-6 (Stephe)** : 7 capacités - Barde contrôle/buffs
+- **P-7 (Lame)** : 7 capacités - Voleur furtif/poison
+- **P-8 (Raishi)** : 7 capacités - Moine attaques/méditation
+- **P-10, P-11, P-12** : 3 capacités bonus
 
-## 📊 ÉTAT SUPPOSÉ SELON DOCUMENTATION
+### 📂 Fichiers sources
+- ✅ `ability_names.csv` : Descriptions complètes des 59 capacités
+- ✅ `heroes.csv` : Stats de base héros (8 lignes)
+- ✅ `equipment.csv` : Équipements (85 items)
+- ✅ `enemies.csv` : Ennemis avec stats multi-joueurs (72 ennemis)
+- ✅ `diagnostic_capacites.py` : Script vérification état
+- ✅ `Data_cards.xlsx`, `Sorts.xlsx` : Données Excel complémentaires
 
-### ✅ **ÉLÉMENTS STABLES PRÉSERVÉS**
+## 🏗️ ARCHITECTURE CIBLE
 
-#### Infrastructure Pydantic (FONCTIONNELLE)
-- **Fichier** : `models/character.py` - **JAMAIS MODIFIÉ**
-- **Attributs préservés** : `current_attack`, `current_defense`, `current_precision` 
-- **Système de formes** : `current_form`, `set_form()` - **UTILISÉ par capacités individuelles**
-- **Méthode** : `reset_current_stats()` - **COMPATIBLE**
-
-#### Transformations legacy (PRÉSERVÉES)  
-- **Forme d'Ours legacy** : Dans `generic_effects.py` - **INTACTE**
-- **Forme de Loup legacy** : Dans `generic_effects.py` - **INTACTE**
-- **Méthode** : `_apply_transformation_effects()` - **NON MODIFIÉE**
-
-#### Architecture modulaire (STABLE)
-- **AbilityManager** : **MODIFIÉ avec succès** - Support individual + fallback legacy
-- **GenericEffectsHandler** : **PRÉSERVÉ** - Effets standards intacts
-- **HeroSpecificEffects** : **PRÉSERVÉ** - Capacités spéciales intactes  
-- **PersistentEffectsSystem** : **PRÉSERVÉ** - Effets persistants intacts
-
-### ✅ **NOUVEAU SYSTÈME SUPPOSÉ OPÉRATIONNEL**
-
-#### Infrastructure capacités individuelles
-- **Dossier principal** : `models/combat/abilities/individual_abilities/` **CRÉÉ**
-- **BaseAbility** : Classe abstraite complète avec utilitaires (_apply_healing, _apply_damage, etc.)
-- **AbilityRegistry** : Système de catalogue fonctionnel avec cache et debug
-- **Intégration AbilityManager** : Priorisation capacités individuelles + fallback legacy
-
-#### Capacités supposées implémentées
-- **Phase 1** : 2 capacités pilotes Elneha (P-1-1, P-1-2)
-- **Phase 2** : 12 capacités total (6 Elneha + 6 Liarie)
-- **Test validation** : `diagnostic_capacites.py` - **FONCTIONNE PARFAITEMENT**
-
----
-
-## 🔧 **PROBLÈMES IDENTIFIÉS DANS DOCUMENTATION**
-
-### 1. **Double exécution des sorts** ❌→✅
-- **Problème** : Ancien système dépense sorts AVANT nouveau système
-- **Cause** : `ability_manager.py` exécute les DEUX systèmes
-- **Solution fournie** : Désactiver ancien système dans `apply_ability_effects()`
-
-### 2. **Contexte ennemi manquant** ❌→✅
-- **Problème** : Capacités AoE ne trouvent pas les ennemis
-- **Cause** : Paramètre `enemies` manquant dans `combat_actions.py`
-- **Solution fournie** : Ajouter paramètre dans appels de capacités
-
-### 3. **Incohérences entre Claudes** ⚠️
-- **Problème** : Différentes visions de l'état du projet
-- **Cause** : Contexte partagé incomplet
-- **Solution** : **VÉRIFICATION OBLIGATOIRE avant développement**
-
----
-
-## 📋 **COMMANDES DE DIAGNOSTIC ESSENTIELLES**
-
-### **Tests de validation obligatoires** :
-```bash
-# Vérifier état actuel RÉEL
-python diagnostic_capacites.py
-
-# Vérifier registre capacités
-python -c "
-from models.combat.abilities.individual_abilities import ABILITY_REGISTRY
-ABILITY_REGISTRY.print_debug_info()
-print(f'📊 Total: {ABILITY_REGISTRY.get_registered_count()}/48')
-"
-
-# Tests imports critiques
-python -c "from models.character import Character; print('✅ Character OK')"
-python -c "from models.combat.abilities.ability_manager import AbilityEffectsManager; print('✅ Manager OK')"
-
-# Test Streamlit (validation fonctionnelle)
-streamlit run app.py
-```
-
-### **Résultats attendus selon documentation** :
-- **diagnostic_capacites.py** : ✅ 12/48 capacités, exécution réussie
-- **ABILITY_REGISTRY** : ✅ 12 capacités enregistrées 
-- **Character import** : ✅ Sans erreur
-- **AbilityManager** : ✅ Support individuel + legacy
-
----
-
-## 🗂️ **STRUCTURE SUPPOSÉE ACTUELLE**
-
+### Structure individual_abilities
 ```
 models/combat/abilities/individual_abilities/
-├── __init__.py                    # Point d'entrée + registre
-├── base_ability.py               # Classe abstraite BaseAbility
-├── ability_registry.py           # Système de catalogue
-├── heroes/
-│   ├── __init__.py              # Imports + statistiques
-│   ├── elneha.py                # ✅ 6 capacités Elneha (P-1)
-│   └── liarie.py                # ✅ 6 capacités Liarie (P-2)
-└── utils/
-    └── __init__.py              # Vide pour l'instant
-
-diagnostic_capacites.py           # ✅ Script diagnostic existant
-test_phase2.py                    # ✅ Script validation Phase 2
+├── base_ability.py              # Classe abstraite + utilitaires
+├── ability_registry.py          # Catalogue avec cache et debug
+├── __init__.py                  # Expose ABILITY_REGISTRY
+└── heroes/
+    ├── __init__.py
+    ├── elneha.py               # P-1: 7 capacités druide
+    ├── liarie.py               # P-2: 7 capacités mage  
+    ├── atucan.py               # P-3: 7 capacités paladin
+    ├── kraor.py                # P-4: 7 capacités chasseur
+    ├── thordius.py             # P-5: 7 capacités berserker
+    ├── stephe.py               # P-6: 7 capacités barde
+    ├── lame.py                 # P-7: 7 capacités voleur
+    └── raishi.py               # P-8: 7 capacités moine
 ```
 
----
+### Intégration système existant
+- **AbilityManager** : Modifié pour prioriser individual_abilities + fallback legacy
+- **Character/Hero** : API préservée (`current_attack`, `current_defense`, `current_precision`)
+- **GenericEffectsHandler** : Préservé - Effets standards intacts
+- **Legacy transformations** : Forme d'Ours/Loup dans `generic_effects.py` intactes
 
-## 📊 **MÉTRIQUES DE PROGRESSION SUPPOSÉES**
+## 🚀 PLAN D'EXÉCUTION
 
-### **État supposé actuel** :
-- **Capacités individuelles** : 12/48 (25%)
-- **Capacités mécaniques totales** : ~14 (12 individuelles + 2 legacy)
-- **Système individuel** : 100% opérationnel 
-- **Héros avec capacités** : P-1 (6/6), P-2 (6/6)
-
-### **Objectifs Phase 3** :
-- **Capacités individuelles** : 24/48 (50%)
-- **Capacités mécaniques totales** : ~26
-- **Héros avec capacités** : P-1 (6/6), P-2 (6/6), P-3 (6/6), P-4 (6/6)
-
----
-
-## ⚠️ **RÈGLES DE SÉCURITÉ ABSOLUES**
-
-### **Fichiers INTERDITS de modification** :
-- `models/character.py` - Infrastructure Pydantic stable
-- `models/combat/abilities/generic_effects.py` - Transformations legacy  
-- `models/combat/abilities/persistent_effects.py` - Effets persistants
-- `models/combat/abilities/hero_specific.py` - Capacités spéciales
-- `diagnostic_capacites.py` - Référence validation
-
-### **Principe fondamental** :
-**Préserver et améliorer toutes les fonctionnalités existantes** sans régression. Éviter l'effet yoyo construction/destruction.
-
----
-
-## 🗄️ **DONNÉES SOURCES**
-
-### **ability_names.csv** - Structure :
-```csv
-hero_code,ability_number,generated_name,clean_description
-P-1,1,Forme d'ours,Permet à Elneha de se métamorphoser en Ours.
-P-1,2,Soin mineur,Soigner jusqu'à 4 blessures de n'importe quel personnage.
-P-1,3,Forme de loup,Permet à Elneha de se métamorphoser en Loup.
+### Phase 0 : Vérification état réel
+```bash
+python diagnostic_capacites.py
 ```
+**Objectif** : Confirmer état vs documentation avant développement
 
-### **Héros codes et priorités** :
-- **P-1 (Elneha)** : Druide transformations - 6 capacités
-- **P-2 (Liarie)** : Mage élémentaire - 6 capacités  
-- **P-3 (Atucan)** : Paladin défensif - 6 capacités
-- **P-4 (Kraor)** : Chasseur marquage - 6 capacités
-- **P-5 à P-8** : Phases futures (24 capacités restantes)
+### Phase 1 : Infrastructure + Pilotes (2 capacités)
+- Créer `BaseAbility`, `AbilityRegistry`, structure de base
+- Implémenter 2 capacités test Elneha (Forme d'ours, Soin mineur)
+- **Validation** : `diagnostic_capacites.py` → 2/59 enregistrées
 
----
+### Phase 2 : Elneha + Liarie complets (14 capacités)
+- Compléter P-1 (5 capacités restantes)
+- Créer P-2 complet (7 capacités)
+- **Validation** : Test Streamlit avec 2 héros
 
-## 🔧 **ARCHITECTURE TECHNIQUE ÉTABLIE**
+### Phase 3-5 : Héros restants (59 capacités)
+- P-3/P-4 → 28 capacités (50%)
+- P-5/P-6 → 42 capacités (75%)  
+- P-7/P-8 + bonus → 59 capacités (100%)
 
-### **Pattern de création de capacités** :
+## 🔧 PROTOCOLE DE VALIDATION
+
+### Validation par capacité (obligatoire)
+1. **Création technique** (15-20 min) : Implémentation + tests
+2. **Validation humaine** (10 min) : Test combat réel Streamlit
+3. **Décision** : ✅ Validé / ❌ Correction requise / 🔄 Retest
+
+### Tests non-régression
+- **Import sans erreur** après chaque capacité
+- **diagnostic_capacites.py** ne régresse jamais
+- **Streamlit fonctionnel** fin de chaque phase
+
+## 📋 API CONSISTENCY
+
+### Character (Héros)
 ```python
-@register_ability
-class [HeroName][AbilityName](BaseAbility):
-    hero_code = "P-X"
-    ability_number = Y
-    name = "Nom exact"
-    description = "Description exacte du CSV"
-    
-    def __init__(self):
-        super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = X  # 0 = physique, 1+ = magique
-    
-    def execute(self, caster, targets, context, log):
-        # Logique métier complète
-        # Utiliser méthodes utilitaires : _apply_healing, _apply_damage, etc.
+hero.get_attack_damage_info()['damage_value']
+hero.get_total_precision()
+hero.is_alive()
+hero.apply_damage_with_parade(damage)
 ```
 
-### **Tests non-régression obligatoires** :
-1. **Après chaque capacité** : Import sans erreur
-2. **Après chaque héros** : `diagnostic_capacites.py` ne régresse jamais
-3. **Fin de phase** : Test Streamlit (`streamlit run app.py`)
+### Enemy (Ennemis)
+```python
+enemy.get_damage_info(player_count)['damage_value']
+enemy.defense
+enemy.is_alive()
+enemy.apply_damage_with_parade(damage)
+```
 
----
+### Fonction utilitaire recommandée
+```python
+def get_entity_damage_info(entity, player_count=None):
+    if hasattr(entity, 'get_attack_damage_info'):
+        return entity.get_attack_damage_info()
+    elif hasattr(entity, 'get_damage_info'):
+        return entity.get_damage_info(player_count)
+    else:
+        raise AttributeError(f"Méthode damage_info manquante pour {type(entity)}")
+```
 
-## 🎯 **VALIDATION FINALE - VISION COMPLÈTE**
+## ⚠️ RÈGLES CRITIQUES
 
-### **Objectif final** :
+### Contraintes absolues
+- **Préserver** toutes fonctionnalités existantes
+- **Validation humaine** obligatoire par capacité
+- **Tests non-régression** après chaque modification
+- **API consistency** - Vérifier méthodes avant utilisation
+
+### Méthodologie
+1. **TOUJOURS** commencer par `python diagnostic_capacites.py`
+2. **Vérifier** état réel vs documentation
+3. **Adapter** plan selon réalité terrain
+4. **Développer** seulement après confirmation état
+
+## 🎯 OBJECTIF FINAL
+
 ```
 ================== SIMULATION FINALE ==================
-✅ Capacités mécaniques: 50 (48 individuelles + 2 legacy)
-❌ Capacités cosmétiques: 0  
-🎭 Héros complets: 8/8 (P-1 à P-8)
+✅ Capacités mécaniques: 61 (59 individuelles + 2 legacy)
+🎭 Héros complets: 8/8 (P-1 à P-8) + 3 bonus
 📈 Migration: 100% réussie
-🏆 SIMULATEUR PÉRIPLES TRANSFORMÉ EN OUTIL FIABLE
+🏆 SIMULATEUR PÉRIPLES FIABLE ET MAINTENABLE
 ========================================================
 ```
 
-### **Bénéfices finaux attendus** :
-- **Maintenabilité parfaite** : 1 bug = 1 fichier = 1 fonction
-- **Performance optimale** : Plus de regex, que du code direct  
-- **Évolutivité maximale** : Nouvelles mécaniques facilement ajoutables
-- **Tests unitaires possibles** : Chaque capacité testable isolément
-- **Documentation automatique** : Code auto-documenté par design
+**Bénéfices attendus** :
+- Maintenabilité parfaite (1 bug = 1 fichier = 1 fonction)
+- Performance optimale (plus de regex, code direct)
+- Évolutivité maximale (nouvelles mécaniques facilement ajoutables)
+- Tests unitaires possibles (chaque capacité testable isolément)
 
 ---
 
-## 📝 **AMÉLIORATIONS PRÉVUES**
-
-### **Refactorisation combat_engine.py** :
-- **Problème** : 978 lignes (fichier trop volumineux)
-- **Solution** : Split en 5 fichiers modulaires (~200 lignes chacun)
-- **Bénéfice** : Maintenance simplifiée pour travail avec IA
-
-### **Optimisations actuelles** :
-- **Système authentique** : 100% basé sur équipements réels
-- **Cache Streamlit optimisé** : `@st.cache_data` pour données statiques
-- **VirtualAbility** : Évite conflits Pydantic
-- **Interface séquentielle** : Slider moderne pour capacités
-
----
-
-**Date consolidation** : Décembre 2024  
-**Version** : Consolidation de tous les résumés existants  
-**Usage** : Document de référence pour continuation du projet par autres Claudes
+**Version** : Consolidation complète Décembre 2024  
+**Usage** : Document de référence pour continuation du projet par autres Claudes  
+**Prochaine étape** : `python diagnostic_capacites.py` pour vérifier état réel

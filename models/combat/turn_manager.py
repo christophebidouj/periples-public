@@ -92,6 +92,13 @@ class TurnManager:
             if enemy.max_parade_tokens > 0:
                 log.append(f"🔄 {enemy.name} recharge {enemy.max_parade_tokens} jetons parade")
             
+            # NOUVEAU - Vérifier stun avant action
+            from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
+            status = CharacterAbilitiesIntegration.check_enemy_status_effects(enemy)
+            if not status['can_act']:
+                log.append(f"😵 {enemy.name} est étourdi et ne peut pas agir")
+                continue  # Skip ce tour
+            
             # RÈGLE OFFICIELLE : Ennemis attaquent l'équipe (héros + pets)
             enemy_stats = enemy.get_stats_for_players(player_count)
             damage = enemy_stats['damage']
@@ -123,7 +130,7 @@ class TurnManager:
                 # Retirer Pet de la liste s'il meurt
                 if hasattr(target, 'owner_code') and target in active_pets:
                     active_pets.remove(target)
-    
+        
     def heroes_distribute_damage(self, heroes: list, damage: int, enemy_name: str, log: list):
         """IA qui simule la décision tactique des JOUEURS pour répartir les dégâts"""
         if len(heroes) == 1:

@@ -249,11 +249,11 @@ class CombatActions:
         # NOUVEAU - Appliquer effets avec le système modulaire + contexte fixé
         effects_applied = self.ability_effects_manager.apply_ability_effects(hero, ability, log, context)
         
-        if not effects_applied:
+        #if not effects_applied:
             # Fallback : affichage basique si capacité non trouvée
-            combatant_name = getattr(hero, 'display_name', hero.name)
-            log.append(f"📖 {combatant_name} utilise {ability.name}")
-            log.append(f"   (Effet générique - capacité non implémentée)")
+        #    combatant_name = getattr(hero, 'display_name', hero.name)
+        #    log.append(f"📖 {combatant_name} utilise {ability.name}")
+        #    log.append(f"   (Effet générique - capacité non implémentée)")
         
         # Marquer action prise après utilisation
         hero.action_taken_this_turn = True

@@ -263,9 +263,10 @@ class ElnehaOndeTonnante(BaseAbility):
                 results.append(f"{enemy.name}: {damage_dealt} dégâts")
                 
                 # Effet spécial: perte d'action (stun)
-                if hasattr(enemy, 'is_stunned'):
-                    enemy.is_stunned = True
-                    stunned_enemies.append(enemy.name)
+                if not hasattr(enemy, 'status_effects'):
+                    enemy.status_effects = {}
+                enemy.status_effects['stunned'] = 1
+                stunned_enemies.append(enemy.name)
             
             log.append(f"⚡ {caster.name} lance {self.name} !")
             log.append(f"   Dégâts: " + ", ".join(results))

@@ -110,10 +110,9 @@ def filter_heroes_to_main_8(heroes_list: List) -> List:
 
 def get_hero_build_from_equipment(hero_code: str, heroes_list: List, equipment_list: List, loader, difficulty: str) -> Dict:
     """
-    NOUVEAU - Calcule les stats depuis les équipements réels selon hero_builds_data.py
-    Remplace get_hero_stats_by_difficulty()
+    CORRIGÉ - Builds par défaut avec TOUTES les capacités (abilities_level ignoré)
     """
-    from hero_builds_data import get_hero_detailed_build, get_abilities_for_level
+    from hero_builds_data import get_hero_detailed_build
     
     # Récupération build détaillé
     build_config = get_hero_detailed_build(hero_code, difficulty)
@@ -126,24 +125,20 @@ def get_hero_build_from_equipment(hero_code: str, heroes_list: List, equipment_l
     equipment_items = [eq for eq in equipment_list if eq.code in build_config.get('equipment', [])]
     hero_equipped.equip_items(equipment_items, build_config.get('name', 'Build Standard'))
     
-    # Application capacités selon abilities_level
-    abilities_level = build_config.get('abilities_level', 1)
-    if abilities_level > 0:
-        try:
-            hero_abilities = loader.get_hero_abilities(hero_code)
-            if hero_abilities:
-                # Capacités séquentielles 1 à abilities_level
-                unlocked_numbers = get_abilities_for_level(hero_code, abilities_level)
-                selected_abilities = [a for a in hero_abilities if a.ability_number in unlocked_numbers]
-                
-                if hasattr(hero_equipped, 'add_abilities') and selected_abilities:
-                    hero_equipped.add_abilities(selected_abilities)
-                    hero_equipped.unlocked_abilities = unlocked_numbers.copy()
-                    for ability in hero_equipped.abilities:
-                        if ability.ability_number in unlocked_numbers:
-                            ability.is_unlocked = True
-        except Exception:
-            pass
+    # 🔧 CORRECTION: TOUTES les capacités pour builds par défaut
+    try:
+        hero_abilities = loader.get_hero_abilities(hero_code)
+        if hero_abilities:
+            # IGNORER abilities_level - donner TOUTES les capacités
+            all_ability_numbers = [a.ability_number for a in hero_abilities]
+            
+            if hasattr(hero_equipped, 'add_abilities'):
+                hero_equipped.add_abilities(hero_abilities)  # TOUTES les capacités
+                hero_equipped.unlocked_abilities = all_ability_numbers.copy()
+                for ability in hero_equipped.abilities:
+                    ability.is_unlocked = True  # TOUTES débloquées
+    except Exception:
+        pass
     
     # Application potions
     potions_config = build_config.get('potions', {'small': 1, 'large': 0})
@@ -162,7 +157,7 @@ def get_hero_build_from_equipment(hero_code: str, heroes_list: List, equipment_l
         'stats': hero_equipped.get_stats_summary(),
         'abilities_info': {
             'has_custom_abilities': False,
-            'abilities_level': abilities_level
+            'abilities_level': 'TOUTES'  # Indiquer que toutes sont disponibles
         }
     }
 
