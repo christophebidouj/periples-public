@@ -1,211 +1,232 @@
+# PLAN_D_ACTION_ACTUALISÉ.md
 # 🎯 PLAN D'ACTION ACTUALISÉ - MIGRATION CAPACITÉS INDIVIDUELLES
 
 **OBJECTIF PRINCIPAL** : Migrer de 2/48 capacités mécaniques (4.2%) vers 48/48 capacités individuelles (100%)  
 **APPROCHE** : Architecture par capacités individuelles codées (abandon du parsing de texte)  
-**CONTRAINTE ABSOLUE** : NE RIEN CASSER au projet existant pendant la migration
+**CONTRAINTE ABSOLUE** : **Préserver et améliorer toutes les fonctionnalités existantes** sans régression
 
-**STATUS ACTUEL** : ✅ **PHASE 1 TERMINÉE AVEC SUCCÈS** - Infrastructure + 2 capacités pilotes opérationnelles
-
----
-
-## 🏆 **PHASE 1 - RÉALISATIONS ACCOMPLIES** ✅
-
-### ✅ **Infrastructure complète créée et validée**
-- **Dossiers créés** : `models/combat/abilities/individual_abilities/` avec sous-structure complète
-- **Classe BaseAbility** : Implémentée avec toutes méthodes utilitaires (_apply_healing, _apply_damage, etc.)
-- **AbilityRegistry** : Système de catalogue fonctionnel avec cache et debug
-- **Intégration AbilityManager** : Priorisation capacités individuelles + fallback legacy
-
-### ✅ **Capacités pilotes Elneha opérationnelles**
-- **P-1-1 Forme d'ours** : Transformation +2 ATT, +1 DEF (compatible système existant current_form)
-- **P-1-2 Soin mineur** : Soigne 4 PV, coût 1 sort, ciblage flexible
-- **Test validé** : `diagnostic_capacites.py` confirme exécution réussie
-
-### ✅ **Fichiers créés et contenu vérifié**
-```
-models/combat/abilities/individual_abilities/
-├── __init__.py                # Point d'entrée avec get_ability(), get_registry_stats()
-├── base_ability.py            # Classe abstraite complète avec utilitaires
-├── ability_registry.py        # Registre + cache + debug (ABILITY_REGISTRY global)
-├── heroes/
-│   ├── __init__.py           # Import Elneha + statistiques chargement
-│   └── elneha.py             # ElnehaFormeOurs + ElnehaSoinMineur + helpers
-└── utils/
-    └── __init__.py           # Vide pour l'instant
-```
-
-### ✅ **Intégration système validée**
-- **AbilityManager modifié** : Support capacités individuelles en priorité avec fallback
-- **Statistiques migration** : Tracking usage individual vs legacy
-- **Rétrocompatibilité** : 100% préservée, ancien système intact
-- **Test final** : ✅ 2/48 capacités enregistrées, 1 capacité individuelle exécutée avec succès
+**STATUS ACTUEL** : ⚠️ **VÉRIFICATION REQUISE** - État réel vs documentation à confirmer
 
 ---
 
-## 🎯 **PHASE 2 - OBJECTIFS PRÉCIS** (À COMMENCER)
+## 🚨 **NOUVELLE MÉTHODOLOGIE - VÉRIFICATION OBLIGATOIRE**
 
-### **Session 1 (2h) : Compléter Elneha (4 capacités restantes)**
+### **Principe fondamental** :
+**Vérifier les fonctions existantes AVANT de coder de nouvelles fonctionnalités**
+- Souvent, c'est simplement parce que ce sont 2 Claudes différents qui n'ont pas conscience du contexte
+- Ne pas créer du code existant par manque de contexte
 
-#### **Capacités à créer** (basées sur ability_names.csv) :
-- **P-1-3 Forme de loup** : "Permet à Elneha de se métamorphoser en Loup." → +1 ATT, +2 PREC
-- **P-1-4 Soin multiple** : "Soigner jusqu'à 4 blessures de tous les personnages." → AoE healing
-- **P-1-5 Onde tonnante** : "Inflige 4 dégâts magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour ce tour." → AoE damage + stun
-- **P-1-6 Résurrection** : "Soigne la totalité des blessures d'un personnage inconscient. Ce dernier peut effectuer son tour au moment où il reprend conscience." → Full heal inconscient
-
-#### **Fichier à modifier** : `models/combat/abilities/individual_abilities/heroes/elneha.py`
-- Ajouter 4 classes : `ElnehaFormeLoup`, `ElnehaSoinMultiple`, `ElnehaOndeTonnante`, `ElnehaResurrection`
-- Pattern établi : hériter BaseAbility, décorateur @register_ability, méthodes execute/can_execute/get_preview
-
-### **Session 2 (2h) : Créer Liarie complète (6 capacités)**
-
-#### **Capacités Liarie à créer** (P-2, ability_numbers 1-6) :
-- **Rechercher dans ability_names.csv** les descriptions exactes pour P-2
-- **Nouveau fichier** : `models/combat/abilities/individual_abilities/heroes/liarie.py`
-- **Pattern identique** : 6 classes avec logique métier explicite
-
-#### **Validation phase 2** : 
-- **Attendu** : `diagnostic_capacites.py` doit montrer ~14 capacités mécaniques
-- **Progression** : 2/48 → 12/48 capacités individuelles (25%)
+### **Process de vérification** :
+1. **TOUJOURS commencer par** : `python diagnostic_capacites.py`
+2. **Analyser les résultats réels** vs documentation supposée
+3. **Identifier les écarts** entre état réel et supposé
+4. **Corriger/compléter** selon les résultats RÉELS
+5. **Développer** seulement après confirmation de l'état
 
 ---
 
-## 🗂️ **DONNÉES SOURCES CRITIQUES**
+## 🔍 **PHASE 0 - VÉRIFICATION ÉTAT RÉEL** (PRIORITÉ ABSOLUE)
 
-### **ability_names.csv** - Structure validée :
-```
-hero_code,ability_number,generated_name,clean_description
-P-1,1,Forme d'ours,Permet à Elneha de se métamorphoser en Ours.
-P-1,2,Soin mineur,Soigner jusqu'à 4 blessures de n'importe quel personnage.
-P-1,3,Forme de loup,Permet à Elneha de se métamorphoser en Loup.
-... (59 lignes total)
-```
-
-### **Héros codes et priorités** :
-- **P-1 (Elneha)** : 2/6 ✅, reste 4 à faire
-- **P-2 (Liarie)** : 0/6, à créer complètement  
-- **P-3 à P-8** : Phase 3+ (6 héros × 6 capacités = 36 capacités)
-
----
-
-## 🔧 **ARCHITECTURE TECHNIQUE ÉTABLIE**
-
-### **Pattern de création de capacités** :
-```python
-@register_ability
-class [HeroName][AbilityName](BaseAbility):
-    hero_code = "P-X"
-    ability_number = Y
-    name = "Nom exact"
-    description = "Description exacte du CSV"
-    
-    def __init__(self):
-        super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = X  # 0 = physique, 1+ = magique
-        # Autres attributs spécifiques
-    
-    def execute(self, caster, targets, context, log):
-        # Logique métier complète ici
-        # Utiliser méthodes utilitaires : _apply_healing, _apply_damage, etc.
-        # Retourner True si effet appliqué
-    
-    def can_execute(self, caster, context):
-        # Conditions d'exécution
-    
-    def get_preview(self):
-        # Aperçu pour interface
-```
-
-### **Système de formes Elneha** (établi Phase 1) :
-- **Utiliser** : `caster.set_form("bear")` ou `caster.current_form = "bear"`
-- **NE PAS utiliser** : `active_transformation` (n'existe pas)
-- **Formes valides** : "human", "bear", "wolf"
-
-### **Tests de validation obligatoires** :
+### **Commandes de diagnostic critiques** :
 ```bash
-# Après chaque modification
-python diagnostic_capacites.py
-python -c "from models.combat.abilities.individual_abilities import ABILITY_REGISTRY; print(f'Capacités: {ABILITY_REGISTRY.get_registered_count()}/48')"
-python -c "from models.character import Character; print('✅ Character OK')"
-```
-
----
-
-## 📊 **MÉTRIQUES DE PROGRESSION VALIDÉES**
-
-### **État actuel confirmé** (fin Phase 1) :
-- **Capacités individuelles** : 2/48 (4.2%)
-- **Capacités mécaniques totales** : ~4 (2 individuelles + 2 transformations legacy)
-- **Système individuel** : 100% opérationnel
-- **Héros avec capacités** : P-1 (2/6)
-
-### **Objectifs Phase 2** :
-- **Capacités individuelles** : 12/48 (25%)
-- **Capacités mécaniques totales** : ~14
-- **Héros avec capacités** : P-1 (6/6), P-2 (6/6)
-
-### **Validation automatique** :
-```python
-# Vérification progression Phase 2
-count = ABILITY_REGISTRY.get_registered_count()
-if count >= 12:
-    print("🎯 PHASE 2 RÉUSSIE - 12+ capacités individuelles")
-else:
-    print(f"⚠️ Phase 2 incomplète: {count}/12 capacités")
-```
-
----
-
-## ⚠️ **RÈGLES DE SÉCURITÉ ABSOLUES**
-
-### **Fichiers à NE JAMAIS modifier** :
-- `models/character.py` (infrastructure Pydantic stable)
-- `diagnostic_capacites.py` (référence de validation)
-- `models/combat/abilities/generic_effects.py` (transformations legacy)
-- `models/combat/abilities/persistent_effects.py` (système d'effets)
-- `models/combat/abilities/hero_specific.py` (capacités spéciales)
-
-### **Fichiers à modifier uniquement** :
-- **Phase 2** : `models/combat/abilities/individual_abilities/heroes/elneha.py` (ajouter 4 capacités)
-- **Phase 2** : Créer `models/combat/abilities/individual_abilities/heroes/liarie.py` (6 capacités)
-- **Jamais** : Modifier l'AbilityManager (déjà intégré Phase 1)
-
-### **Tests de non-régression** :
-1. **Après chaque capacité** : Test import sans erreur
-2. **Après chaque héros** : `diagnostic_capacites.py` ne doit jamais régresser  
-3. **Fin de phase** : Test Streamlit (`streamlit run app.py`)
-
----
-
-## 🎯 **INSTRUCTIONS POUR LE PROCHAIN CLAUDE**
-
-### **Commandes de diagnostic essentielles** :
-```bash
-# Vérifier état actuel
+# 1. Diagnostic principal
 python diagnostic_capacites.py
 
-# Vérifier registre
+# 2. Test registre (si existe)
 python -c "
 from models.combat.abilities.individual_abilities import ABILITY_REGISTRY
 ABILITY_REGISTRY.print_debug_info()
 print(f'📊 Total: {ABILITY_REGISTRY.get_registered_count()}/48')
 "
 
-# Test imports critiques
+# 3. Tests imports critiques
 python -c "from models.character import Character; print('✅ Character OK')"
 python -c "from models.combat.abilities.ability_manager import AbilityEffectsManager; print('✅ Manager OK')"
+
+# 4. Test interface (optionnel)
+streamlit run app.py
 ```
 
-### **Prochaines étapes Phase 2** :
-1. **Analyser ability_names.csv** pour P-1 capacités 3-6 et P-2 capacités 1-6
-2. **Compléter elneha.py** avec 4 capacités restantes
-3. **Créer liarie.py** avec 6 capacités nouvelles  
-4. **Valider progression** avec diagnostic
-5. **Tester stabilité** avec Streamlit
+### **Interprétation des résultats** :
 
-### **En cas de problème** :
-- **Import errors** : Vérifier syntaxe classes et décorateurs @register_ability
-- **Capacités non détectées** : Vérifier hero_code et ability_number exacts
-- **Erreurs exécution** : Vérifier utilisation méthodes utilitaires BaseAbility
-- **Régression** : Ne jamais modifier les fichiers interdits
+#### **Si tous imports OK + capacités détectées** :
+- ✅ Infrastructure opérationnelle
+- → Continuer développement selon plan
 
-**🚀 PHASE 1 TERMINÉE AVEC SUCCÈS - PRÊT POUR PHASE 2 VERS 12 CAPACITÉS INDIVIDUELLES**
+#### **Si erreurs d'import** :
+- ❌ Infrastructure défaillante
+- → Corriger infrastructure d'abord
+
+#### **Si 0 capacités mais imports OK** :
+- ⚠️ Infrastructure existe mais vide
+- → Créer capacités de base
+
+#### **Si diagnostic inexistant** :
+- 🔧 Créer script de diagnostic simple
+- → Établir état de référence
+
+---
+
+## 📋 **PHASES DE DÉVELOPPEMENT ACTUALISÉES**
+
+### **PHASE 1 : INFRASTRUCTURE + PILOTES** 
+**Objectif** : Base technique + 2 capacités de test
+
+#### **Infrastructure requise** :
+- `models/combat/abilities/individual_abilities/base_ability.py`
+- `models/combat/abilities/individual_abilities/ability_registry.py`
+- `models/combat/abilities/individual_abilities/__init__.py`
+- Intégration avec `AbilityManager` existant
+
+#### **Capacités pilotes** :
+- **P-1-1** : Forme d'ours (transformation +2 ATT, +1 DEF)
+- **P-1-2** : Soin mineur (4 PV, coût 1 sort)
+
+#### **Validation Phase 1** :
+- `diagnostic_capacites.py` → 2/48 capacités enregistrées
+- Aucune régression fonctionnalités existantes
+
+### **PHASE 2 : ELNEHA + LIARIE COMPLETS**
+**Objectif** : 12 capacités (25% progression)
+
+#### **Développement** :
+- Compléter `elneha.py` (4 capacités restantes)
+- Créer `liarie.py` (6 capacités nouvelles)
+
+#### **Validation Phase 2** :
+- `diagnostic_capacites.py` → 12/48 capacités
+- Test Streamlit complet avec 2 héros
+
+### **PHASE 3 : ATUCAN + KRAOR**
+**Objectif** : 24 capacités (50% progression)
+
+#### **Développement** :
+- Créer `atucan.py` (6 capacités paladin défensif)
+- Créer `kraor.py` (6 capacités chasseur marquage)
+
+#### **Validation Phase 3** :
+- `diagnostic_capacites.py` → 24/48 capacités
+- Mécaniques avancées (protection groupe, marquage)
+
+### **PHASE 4-5 : FINALISATION**
+**Objectif** : 48 capacités (100%)
+
+#### **Développement** :
+- P-5 (Thordius), P-6 (Stephe), P-7 (Lame), P-8 (Raishi)
+- 24 capacités finales
+
+---
+
+## 🔧 **PROTOCOLE DE VALIDATION HUMAINE**
+
+### **Principe** :
+**CHAQUE capacité créée doit être validée manuellement avant de passer à la suivante**
+
+### **Process par capacité** :
+1. **Création technique** (15-20 min) : Implémentation + tests automatiques
+2. **🔍 VALIDATION HUMAINE** (10 min) :
+   - **Tester en combat réel** avec Streamlit
+   - **Vérifier mécaniques** selon description CSV
+   - **Valider logs** et effets visuels
+   - **Confirmer** ou **demander correction**
+
+### **Décision de validation** :
+- **✅ VALIDÉ** : Capacité approuvée, passer à la suivante
+- **❌ CORRECTION REQUISE** : Corriger immédiatement avant de continuer
+- **🔄 RETEST** : Tester à nouveau après correction
+
+### **Règles strictes** :
+- **AUCUNE capacité** ne peut être considérée comme "terminée" sans validation humaine
+- **AUCUNE phase** ne peut commencer sans validation complète de la phase précédente
+- **En cas de problème** : Corriger immédiatement, ne jamais reporter
+
+---
+
+## ⚠️ **RÈGLES DE SÉCURITÉ MISES À JOUR**
+
+### **Contrainte absolue révisée** :
+**Préserver et améliorer toutes les fonctionnalités existantes** sans régression
+- ✅ Modifier fichiers nécessaires pour corriger bugs
+- ✅ Améliorer architecture (refactorisation)
+- ✅ Étendre capacités sans impacter mécaniques existantes
+- ❌ Éviter effet yoyo construction/destruction
+
+### **Fichiers critiques (modification contrôlée)** :
+- `models/character.py` - Modifications mineures autorisées si nécessaire
+- `models/combat/abilities/ability_manager.py` - Peut être modifié pour intégration
+- `diagnostic_capacites.py` - Référence, modifications exceptionnelles
+
+### **Tests non-régression obligatoires** :
+1. **Après chaque modification** : Import sans erreur
+2. **Après chaque capacité** : `diagnostic_capacites.py` ne régresse jamais
+3. **Après chaque phase** : Test Streamlit complet
+
+---
+
+## 📊 **MÉTRIQUES DE SUCCÈS**
+
+### **Indicateurs techniques** :
+- **Capacités enregistrées** : X/48 dans ABILITY_REGISTRY
+- **Import sans erreur** : Tous modules se chargent
+- **Performance** : Temps d'exécution ≤ baseline
+- **Compatibilité** : Interface Streamlit fonctionnelle
+
+### **Indicateurs fonctionnels** :
+- **Combat opérationnel** : Toutes capacités utilisables
+- **Logs explicites** : Messages clairs pour chaque action
+- **Mécaniques correctes** : Effets conformes aux règles
+- **Aucune régression** : Fonctionnalités existantes préservées
+
+---
+
+## 🎯 **INSTRUCTIONS POUR CONTINUATION**
+
+### **Pour le prochain Claude** :
+1. **COMMENCER PAR** : `python diagnostic_capacites.py`
+2. **ANALYSER** : Résultats réels vs ce document
+3. **ADAPTER** : Plan selon état réel découvert
+4. **DÉVELOPPER** : Seulement après confirmation état
+
+### **En cas de problèmes** :
+- **Import errors** : Vérifier syntaxe et dépendances
+- **Capacités non détectées** : Vérifier registre et décorateurs
+- **Erreurs exécution** : Valider utilisation méthodes utilitaires
+- **Incohérences** : Référer à ce document consolidé
+
+### **Escalade** :
+Si état réel diffère significativement de la documentation :
+1. **Documenter** : Écart découvert
+2. **Analyser** : Cause de l'incohérence  
+3. **Corriger** : Plan selon réalité terrain
+4. **Mettre à jour** : Documentation consolidée
+
+---
+
+## 📁 **FICHIERS DE RÉFÉRENCE**
+
+### **Documentation consolidée** :
+- `SUMMARY_CONSOLIDATED.md` - État supposé complet
+- `PLAN_D_ACTION_ACTUALISÉ.md` - Ce document (méthodologie)
+- `diagnostic_capacites.py` - Script de vérification
+
+### **Données sources** :
+- `ability_names.csv` - Descriptions capacités
+- `equipment.csv`, `heroes.csv`, `enemies.csv` - Données jeu
+
+### **Structure supposée** :
+```
+models/combat/abilities/individual_abilities/
+├── base_ability.py
+├── ability_registry.py  
+├── __init__.py
+└── heroes/
+    ├── __init__.py
+    ├── elneha.py
+    └── liarie.py
+```
+
+---
+
+**Dernière mise à jour** : Décembre 2024  
+**Méthodologie** : Vérification obligatoire avant développement  
+**Usage** : Guide de référence pour tous les Claudes

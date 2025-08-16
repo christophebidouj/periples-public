@@ -1,4 +1,4 @@
-# ability_manager_updated
+# ability_manager.py
 """
 Gestionnaire principal des effets de capacités
 VERSION MISE À JOUR - Support des capacités individuelles + système modulaire existant
@@ -36,32 +36,18 @@ class AbilityEffectsManager:
         self.individual_abilities_used = 0
         self.legacy_abilities_used = 0
     
-    def apply_ability_effects(self, hero, ability, log: List[str]) -> bool:
-        """
-        Point d'entrée principal pour appliquer les effets d'une capacité
-        NOUVEAU: Priorise les capacités individuelles puis fallback sur l'ancien système
-        
-        Args:
-            hero: Héros utilisant la capacité
-            ability: Capacité à appliquer
-            log: Journal de combat
-            
-        Returns:
-            bool: True si des effets ont été appliqués
-        """
-        if not ability or not hasattr(ability, 'description'):
-            return False
+    def apply_ability_effects(self, hero, ability, log: List[str], context: Dict[str, Any] = None) -> bool:
         
         # NOUVEAU - Étape 1: Vérifier si une capacité individuelle existe
         if INDIVIDUAL_ABILITIES_AVAILABLE and hasattr(ability, 'ability_number'):
-            individual_result = self._try_individual_ability(hero, ability, log)
+            individual_result = self._try_individual_ability(hero, ability, log, context)
             if individual_result is not None:
                 return individual_result
         
         # Étape 2: Fallback sur l'ancien système modulaire (PRÉSERVÉ)
         return self._apply_legacy_system(hero, ability, log)
     
-    def _try_individual_ability(self, hero, ability, log: List[str]):
+    def _try_individual_ability(self, hero, ability, log: List[str], context: Dict[str, Any] = None):
         """
         NOUVEAU - Tente d'exécuter une capacité individuelle
         
@@ -74,11 +60,12 @@ class AbilityEffectsManager:
             
             if individual_ability:
                 # Préparer le contexte pour l'exécution
-                context = {
+                base_context = {
                     'spell_manager': self.spell_manager,
                     'hero': hero,
                     'ability': ability
                 }
+                context = {**base_context, **(context or {})}
                 
                 # Déterminer les cibles (pour l'instant, le lanceur par défaut)
                 # TODO: Améliorer le système de ciblage dans les prochaines versions
@@ -120,7 +107,7 @@ class AbilityEffectsManager:
         
         # 3. Gérer les effets persistants
         if self._activates_persistent_effect(ability):
-            self.persistent_system.add_persistent_effect(hero, ability, log)
+            self.persistent_system.activate_persistent_effect(hero, ability, log)
             effects_applied = True
         
         if effects_applied:
@@ -158,7 +145,7 @@ class AbilityEffectsManager:
         
         # Mots-clés indiquant un effet persistant
         persistent_keywords = [
-            'par tour', 'tant que', 'jusqu\'à', 'à chaque tour',
+            'par tour', 'tant que', 'jusqu\'à ', 'à chaque tour',
             'de façon cumulative', 'reste actif', 'armure du mage',
             'rage de berserker', 'rage insatiable', 'témérité'
         ]
@@ -235,32 +222,6 @@ class AbilityEffectsManager:
             'individual_abilities_used': self.individual_abilities_used,
             'legacy_abilities_used': self.legacy_abilities_used,
             'total_abilities_used': total_used,
-            'individual_percentage': (self.individual_abilities_used / total_used * 100) if total_used > 0 else 0,
             'individual_system_available': INDIVIDUAL_ABILITIES_AVAILABLE,
-            'registered_abilities': ABILITY_REGISTRY.get_registered_count() if INDIVIDUAL_ABILITIES_AVAILABLE else 0
+            'migration_percentage': (self.individual_abilities_used / total_used * 100) if total_used > 0 else 0
         }
-    
-    def print_migration_progress(self):
-        """NOUVEAU - Affiche les progrès de la migration"""
-        stats = self.get_migration_stats()
-        
-        print("\n" + "="*60)
-        print("📊 PROGRÈS MIGRATION CAPACITÉS INDIVIDUELLES")
-        print("="*60)
-        print(f"🔧 Capacités individuelles utilisées: {stats['individual_abilities_used']}")
-        print(f"🔄 Ancien système utilisé: {stats['legacy_abilities_used']}")
-        print(f"📈 Pourcentage migré: {stats['individual_percentage']:.1f}%")
-        
-        if INDIVIDUAL_ABILITIES_AVAILABLE:
-            print(f"📝 Capacités enregistrées: {stats['registered_abilities']}/48")
-            if hasattr(ABILITY_REGISTRY, 'print_debug_info'):
-                ABILITY_REGISTRY.print_debug_info()
-        else:
-            print("❌ Système de capacités individuelles non disponible")
-        
-        print("="*60)
-    
-    def reset_migration_stats(self):
-        """NOUVEAU - Remet à zéro les statistiques de migration"""
-        self.individual_abilities_used = 0
-        self.legacy_abilities_used = 0
