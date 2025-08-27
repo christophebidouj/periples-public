@@ -1,15 +1,13 @@
 # PLAN_D_ACTION_ACTUALISÉ.md
 # 🎯 PLAN D'ACTION ACTUALISÉ - MIGRATION CAPACITÉS INDIVIDUELLES
 
-**OBJECTIF PRINCIPAL** : Migrer de 2/48 capacités mécaniques (4.2%) vers 48/48 capacités individuelles (100%)  
-**APPROCHE** : Architecture par capacités individuelles codées (abandon du parsing de texte)  
-**CONTRAINTE ABSOLUE** : **Préserver et améliorer toutes les fonctionnalités existantes** sans régression
-
-**STATUS ACTUEL** : ⚠️ **VÉRIFICATION REQUISE** - État réel vs documentation à confirmer
+**OBJECTIF PRINCIPAL** : Migrer de 12/59 capacités mécaniques vers 59/59 capacités individuelles (100%)  
+**ÉTAT ACTUEL** : Phase 1-2 TERMINÉES ET VALIDÉES - P-1/P-2 opérationnels, comptage sorts corrigé  
+**CONTRAINTE ABSOLUE** : Préserver et améliorer toutes les fonctionnalités existantes sans régression
 
 ---
 
-## 🚨 **NOUVELLE MÉTHODOLOGIE - VÉRIFICATION OBLIGATOIRE**
+## 🚨 MÉTHODOLOGIE - VÉRIFICATION OBLIGATOIRE
 
 ### **Principe fondamental** :
 **Vérifier les fonctions existantes AVANT de coder de nouvelles fonctionnalités**
@@ -25,106 +23,106 @@
 
 ---
 
-## 🔍 **PHASE 0 - VÉRIFICATION ÉTAT RÉEL** (PRIORITÉ ABSOLUE)
+## 📊 ÉTAT CONFIRMÉ ET VALIDÉ (Août 2025)
 
-### **Commandes de diagnostic critiques** :
+### ✅ CORRECTIONS TECHNIQUES APPLIQUÉES ET TESTÉES
+- **Double exécution** : Ancien système désactivé (`ability_manager.py` return False)
+- **Logs fallback** : Supprimés (`combat_actions.py` commenté)
+- **Système stun** : Implémenté (`turn_manager.py` avec vérification)
+- **Builds fixes** : Toutes capacités débloquées (plus d'attribution aléatoire)
+- **AttributeError** : Corrigé (utilise `status_effects` au lieu de `is_stunned`)
+- **Compteur sorts** : RÉSOLU (`base_ability.py` utilise SpellManager)
+
+### 🎭 HÉROS IMPLÉMENTÉS ET VALIDÉS
+- **P-1 (Elneha)** : 6 capacités druide ✅ (comptage sorts fonctionnel)
+- **P-2 (Liarie)** : 6 capacités mage ✅ (comptage sorts fonctionnel)
+- **Total actuel** : 12/59 capacités (20%)
+
+### 📊 OBSERVATION COMPTEUR SORTS
+- **Fonctionnel** : P-1, P-2 (capacités individuelles)
+- **Affiche 0** : P-3 à P-8 (normal, pas encore implémentées)
+- **Cause** : Ancien système ne synchronise pas avec SpellManager
+- **Auto-résolution** : Se corrigera avec implémentation futures phases
+
+---
+
+## 🔧 COMMANDES DE DIAGNOSTIC CRITIQUES
+
 ```bash
 # 1. Diagnostic principal
 python diagnostic_capacites.py
 
-# 2. Test registre (si existe)
+# 2. Test registre (si existe)  
 python -c "
 from models.combat.abilities.individual_abilities import ABILITY_REGISTRY
 ABILITY_REGISTRY.print_debug_info()
-print(f'📊 Total: {ABILITY_REGISTRY.get_registered_count()}/48')
+print(f'📊 Total: {ABILITY_REGISTRY.get_registered_count()}/59')
 "
 
 # 3. Tests imports critiques
 python -c "from models.character import Character; print('✅ Character OK')"
 python -c "from models.combat.abilities.ability_manager import AbilityEffectsManager; print('✅ Manager OK')"
 
-# 4. Test interface (optionnel)
+# 4. Test interface (validation fonctionnelle)
 streamlit run app.py
 ```
 
 ### **Interprétation des résultats** :
 
-#### **Si tous imports OK + capacités détectées** :
-- ✅ Infrastructure opérationnelle
-- → Continuer développement selon plan
+#### **Si 12 capacités détectées** :
+- ✅ Infrastructure opérationnelle selon documentation
+- → Continuer développement Phase 3
 
-#### **Si erreurs d'import** :
-- ❌ Infrastructure défaillante
-- → Corriger infrastructure d'abord
-
-#### **Si 0 capacités mais imports OK** :
-- ⚠️ Infrastructure existe mais vide
-- → Créer capacités de base
-
-#### **Si diagnostic inexistant** :
-- 🔧 Créer script de diagnostic simple
-- → Établir état de référence
+#### **Si différent** :
+- ⚠️ Écart documentation vs réalité
+- → Adapter plan selon état réel découvert
 
 ---
 
-## 📋 **PHASES DE DÉVELOPPEMENT ACTUALISÉES**
+## 📋 PHASES DE DÉVELOPPEMENT ACTUALISÉES
 
-### **PHASE 1 : INFRASTRUCTURE + PILOTES** 
-**Objectif** : Base technique + 2 capacités de test
+### ✅ **PHASES 1-2 TERMINÉES**
+- Infrastructure complète opérationnelle
+- P-1 et P-2 implémentés et validés
+- Ancien système complètement désactivé
+- Système stun fonctionnel
 
-#### **Infrastructure requise** :
-- `models/combat/abilities/individual_abilities/base_ability.py`
-- `models/combat/abilities/individual_abilities/ability_registry.py`
-- `models/combat/abilities/individual_abilities/__init__.py`
-- Intégration avec `AbilityManager` existant
+### 🎯 **PHASE 3 : ATUCAN + KRAOR** (Prochaine)
+**Objectif** : 24 capacités (40% progression)
 
-#### **Capacités pilotes** :
-- **P-1-1** : Forme d'ours (transformation +2 ATT, +1 DEF)
-- **P-1-2** : Soin mineur (4 PV, coût 1 sort)
+#### **P-3 Atucan (Paladin défensif)** :
+1. **Imposition des mains** - Soin 3 PV
+2. **Parade** - +1 jeton parade permanent
+3. **Châtiment divin** - 6 dégâts magiques sans riposte
+4. **Aura sacrée** - Parade groupe (+1 tous)
+5. **Soin supérieur** - 6 PV soin
+6. **Jugement dernier** - 8 dégâts magiques AoE
+7. **Bénédiction** - +2 précision groupe fin combat
 
-#### **Validation Phase 1** :
-- `diagnostic_capacites.py` → 2/48 capacités enregistrées
-- Aucune régression fonctionnalités existantes
+#### **P-4 Kraor (Chasseur marquage)** :
+1. **Cueilleur/Chasseur** - Potion soin OU 4 dégâts physiques
+2. **Marque du chasseur** - Marque ennemi (+2 dégâts groupe)
+3. **Ambidextre** - Double dégâts une attaque
+4. **Pluie de projectiles** - 2 dégâts physiques AoE
+5. **Soin mineur** - 2 PV soin
+6. **Tir rapide** - 3 attaques distance consécutives
+7. **Flèche empoisonnée** - 2 dégâts + poison (-2 PV/tour)
 
-### **PHASE 2 : ELNEHA + LIARIE COMPLETS**
-**Objectif** : 12 capacités (25% progression)
-
-#### **Développement** :
-- Compléter `elneha.py` (4 capacités restantes)
-- Créer `liarie.py` (6 capacités nouvelles)
-
-#### **Validation Phase 2** :
-- `diagnostic_capacites.py` → 12/48 capacités
-- Test Streamlit complet avec 2 héros
-
-### **PHASE 3 : ATUCAN + KRAOR**
-**Objectif** : 24 capacités (50% progression)
-
-#### **Développement** :
-- Créer `atucan.py` (6 capacités paladin défensif)
-- Créer `kraor.py` (6 capacités chasseur marquage)
-
-#### **Validation Phase 3** :
-- `diagnostic_capacites.py` → 24/48 capacités
-- Mécaniques avancées (protection groupe, marquage)
-
-### **PHASE 4-5 : FINALISATION**
-**Objectif** : 48 capacités (100%)
-
-#### **Développement** :
-- P-5 (Thordius), P-6 (Stephe), P-7 (Lame), P-8 (Raishi)
-- 24 capacités finales
+### 🎯 **PHASES 4-6 : FINALISATION**
+- **Phase 4** : P-5 Thordius (Berserker) + P-6 Stephe (Barde) → 36/59
+- **Phase 5** : P-7 Lame (Voleur) + P-8 Raishi (Moine) → 52/59  
+- **Phase 6** : P-10, P-11, P-12 (Bonus) → 59/59 (100%)
 
 ---
 
-## 🔧 **PROTOCOLE DE VALIDATION HUMAINE**
+## 🔧 PROTOCOLE DE VALIDATION HUMAINE
 
 ### **Principe** :
 **CHAQUE capacité créée doit être validée manuellement avant de passer à la suivante**
 
 ### **Process par capacité** :
 1. **Création technique** (15-20 min) : Implémentation + tests automatiques
-2. **🔍 VALIDATION HUMAINE** (10 min) :
+2. **Validation humaine** (10 min) :
    - **Tester en combat réel** avec Streamlit
    - **Vérifier mécaniques** selon description CSV
    - **Valider logs** et effets visuels
@@ -142,7 +140,7 @@ streamlit run app.py
 
 ---
 
-## ⚠️ **RÈGLES DE SÉCURITÉ MISES À JOUR**
+## ⚠️ RÈGLES DE SÉCURITÉ MISES À JOUR
 
 ### **Contrainte absolue révisée** :
 **Préserver et améliorer toutes les fonctionnalités existantes** sans régression
@@ -163,10 +161,10 @@ streamlit run app.py
 
 ---
 
-## 📊 **MÉTRIQUES DE SUCCÈS**
+## 📊 MÉTRIQUES DE SUCCÈS
 
 ### **Indicateurs techniques** :
-- **Capacités enregistrées** : X/48 dans ABILITY_REGISTRY
+- **Capacités enregistrées** : X/59 dans ABILITY_REGISTRY
 - **Import sans erreur** : Tous modules se chargent
 - **Performance** : Temps d'exécution ≤ baseline
 - **Compatibilité** : Interface Streamlit fonctionnelle
@@ -179,7 +177,7 @@ streamlit run app.py
 
 ---
 
-## 🎯 **INSTRUCTIONS POUR CONTINUATION**
+## 🎯 INSTRUCTIONS POUR CONTINUATION
 
 ### **Pour le prochain Claude** :
 1. **COMMENCER PAR** : `python diagnostic_capacites.py`
@@ -202,31 +200,6 @@ Si état réel diffère significativement de la documentation :
 
 ---
 
-## 📁 **FICHIERS DE RÉFÉRENCE**
-
-### **Documentation consolidée** :
-- `SUMMARY_CONSOLIDATED.md` - État supposé complet
-- `PLAN_D_ACTION_ACTUALISÉ.md` - Ce document (méthodologie)
-- `diagnostic_capacites.py` - Script de vérification
-
-### **Données sources** :
-- `ability_names.csv` - Descriptions capacités
-- `equipment.csv`, `heroes.csv`, `enemies.csv` - Données jeu
-
-### **Structure supposée** :
-```
-models/combat/abilities/individual_abilities/
-├── base_ability.py
-├── ability_registry.py  
-├── __init__.py
-└── heroes/
-    ├── __init__.py
-    ├── elneha.py
-    └── liarie.py
-```
-
----
-
-**Dernière mise à jour** : Décembre 2024  
+**Dernière mise à jour** : Décembre 2024 après corrections techniques  
 **Méthodologie** : Vérification obligatoire avant développement  
 **Usage** : Guide de référence pour tous les Claudes

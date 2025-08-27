@@ -211,28 +211,19 @@ class BaseAbility(ABC):
         return True
     
     def _consume_spell_cost(self, caster, cost: int, spell_manager, log: List[str]) -> bool:
-        """
-        Utilitaire pour consommer les sorts nécessaires
-        
-        Args:
-            caster: Lanceur de la capacité
-            cost: Coût en sorts
-            spell_manager: Gestionnaire des sorts
-            log: Liste des logs
-            
-        Returns:
-            bool: True si le coût a pu être payé
-        """
         if cost <= 0:
             return True
             
-        if caster.current_spells >= cost:
-            caster.current_spells -= cost
+        # CORRECTION : Utiliser spell_manager au lieu de caster.current_spells
+        success = spell_manager.consume_spells(caster, cost)
+        if success:
             if cost > 0:
-                log.append(f"🔮 {caster.name} dépense {cost} sort(s) ({caster.current_spells + cost} → {caster.current_spells})")
+                current = spell_manager.get_current_spells(caster)
+                log.append(f"🔮 {caster.name} dépense {cost} sort(s) ({current + cost} → {current})")
             return True
         else:
-            log.append(f"❌ {caster.name} n'a pas assez de sorts (besoin: {cost}, disponible: {caster.current_spells})")
+            current = spell_manager.get_current_spells(caster)
+            log.append(f"❌ {caster.name} n'a pas assez de sorts (besoin: {cost}, disponible: {current})")
             return False
     
     def _get_all_allies(self, caster, context: Dict[str, Any]) -> List:

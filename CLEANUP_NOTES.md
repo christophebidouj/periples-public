@@ -4,30 +4,33 @@
 ## 🎯 OBJECTIF
 Supprimer le code legacy devenu inutile après migration complète vers capacités individuelles.
 
+## ⚠️ ÉTAT ACTUEL (Mis à jour Décembre 2024)
+- **Ancien système DÉSACTIVÉ** dans `ability_manager.py` (return False)
+- **Fallback COMMENTÉ** dans `combat_actions.py` 
+- **Capacités individuelles** : P-1, P-2 implémentées (12/59)
+- **Système stun** : Implémenté dans `turn_manager.py`
+
 ## 📂 FICHIERS À NETTOYER
 
 ### `models/combat/abilities/ability_manager.py`
-- **Supprimer** : `_apply_legacy_system()` (ligne ~80-120)
-- **Supprimer** : `_is_hero_specific_ability()` (ligne ~125-140)
-- **Supprimer** : `_activates_persistent_effect()` (ligne ~145-160)
-- **Supprimer** : Imports modules legacy (`generic_effects`, `hero_specific`, `persistent_effects`)
-- **Conserver** : Uniquement `_try_individual_ability()` et `apply_ability_effects()`
+- **DÉJÀ FAIT** : `_apply_legacy_system()` désactivé (return False ligne ~55)
+- **À SUPPRIMER** : `_apply_legacy_system()`, `_is_hero_specific_ability()`, `_activates_persistent_effect()`
+- **À SUPPRIMER** : Imports modules legacy (`generic_effects`, `hero_specific`, `persistent_effects`)
+- **CONSERVER** : `_try_individual_ability()` et `apply_ability_effects()`
+
+### `combat_actions.py`  
+- **DÉJÀ FAIT** : Fallback générique commenté ligne ~245-250
+- **À SUPPRIMER** : Code commenté après migration complète
 
 ### `models/combat/abilities/generic_effects.py`
-- **ACTION** : Analyser si utilisé ailleurs
-- **SI PAS UTILISÉ** : Supprimer entièrement
-- **SI UTILISÉ** : Marquer comme @deprecated
+- **ATTENTION** : Contient système stun générique utilisé par ancien système
+- **ACTION** : Analyser après migration complète P-3 à P-8
 
 ### `models/combat/abilities/hero_specific.py`
-- **ACTION** : Supprimer (remplacé par capacités individuelles)
+- **ACTION** : Supprimer après migration complète (remplacé par individual_abilities)
 
 ### `models/combat/abilities/persistent_effects.py`
-- **ACTION** : Conserver temporairement (effets de buff/debuff)
-- **VÉRIFIER** : Si utilisé par le nouveau système
-
-### `combat_actions.py`
-- **Supprimer** : Ligne ~245-250 (fallback générique commenté)
-- **Nettoyer** : Contexte inutile pour ancien système
+- **CONSERVER** : Effets persistants utilisés par système global
 
 ## 🔍 MÉTHODES LEGACY À SUPPRIMER
 
