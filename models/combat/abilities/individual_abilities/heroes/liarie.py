@@ -89,7 +89,7 @@ class LiarieArmureDuMage(BaseAbility):
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 2
-        self.defense_bonus = 1
+        self.parade_bonus = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active l'armure magique du mage"""
@@ -99,31 +99,25 @@ class LiarieArmureDuMage(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Appliquer l'effet d'armure magique
-            if hasattr(caster, 'magical_armor_bonus'):
-                caster.magical_armor_bonus += self.defense_bonus
+            # FIX: Utiliser attribut existant au lieu de magical_armor_bonus
+            # Option A: Augmenter directement max_parade_tokens
+            if hasattr(caster, 'max_parade_tokens'):
+                caster.max_parade_tokens += self.parade_bonus
             else:
-                caster.magical_armor_bonus = self.defense_bonus
+                # Fallback: créer l'attribut si absent
+                caster.max_parade_tokens = self.parade_bonus
             
-            # Augmenter la défense
-            self._apply_stat_modifier(caster, "defense", self.defense_bonus, log)
+            # Option B: Utiliser système buff temporaire existant  
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['armure_mage'] = self.parade_bonus
             
-            # Marquer l'effet comme persistant pour le combat
-            if 'persistent_effects' not in context:
-                context['persistent_effects'] = {}
-            
-            caster_id = id(caster)
-            if caster_id not in context['persistent_effects']:
-                context['persistent_effects'][caster_id] = []
-            
-            context['persistent_effects'][caster_id].append({
-                'type': 'magical_armor',
-                'defense_bonus': self.defense_bonus,
-                'duration': -1  # Permanent pour le combat
-            })
+            # Recharger jetons parade immédiatement avec nouveau maximum
+            if hasattr(caster, 'current_parade_tokens'):
+                caster.current_parade_tokens = caster.max_parade_tokens
             
             log.append(f"🛡️ {caster.name} s'entoure d'une armure magique !")
-            log.append(f"   +1 jeton de parade par tour")
+            log.append(f"   +{self.parade_bonus} jeton de parade maximum")
             
             return True
             
@@ -139,7 +133,7 @@ class LiarieArmureDuMage(BaseAbility):
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"🛡️ {self.name}: +{self.defense_bonus} jeton de parade par tour (Coût: {self.spell_cost} sorts)"
+        return f"🛡️ {self.name}: +{self.parade_bonus} jeton de parade par tour (Coût: {self.spell_cost} sorts)"
 
 
 @register_ability

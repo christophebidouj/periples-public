@@ -1,11 +1,12 @@
 # heroes/__init__.py - Point d'entrée des capacités par héros
 """
 Point d'entrée pour toutes les capacités individuelles des héros
-Phase 2: Elneha (6/6) + Liarie (6/6) = 12 capacités totales
+Phase 3: Elneha (6/6) + Liarie (6/6) + Atucan (6/6) = 18 capacités totales
 
 Structure:
 - Elneha (P-1): Druide transformations et soins (6 capacités)
 - Liarie (P-2): Mage élémentaire offensive/défensive (6 capacités)
+- Atucan (P-3): Paladin défensif protection/soins divins (6 capacités)
 """
 
 # ========================================
@@ -25,7 +26,7 @@ except ImportError as e:
     print(f"⚠️ Impossible de charger les capacités d'Elneha: {e}")
     ELNEHA_LOADED = False
 
-# Import des capacités de Liarie (P-2) - NOUVEAU PHASE 2
+# Import des capacités de Liarie (P-2)
 try:
     from .liarie import (
         LiarieEclairMagique, LiarieArmureDuMage, LiarieMurDeGlace,
@@ -39,12 +40,26 @@ except ImportError as e:
     print(f"⚠️ Impossible de charger les capacités de Liarie: {e}")
     LIARIE_LOADED = False
 
+# Import des capacités d'Atucan (P-3) - NOUVEAU PHASE 3
+try:
+    from .atucan import (
+        AtucanImpositionDesMains, AtucanParade, AtucanChatimentDivin,
+        AtucanAuraSacree, AtucanSoinSuperieur, AtucanJugementDernier,
+        get_atucan_abilities_count, get_atucan_abilities_summary,
+        get_atucan_spell_costs, get_atucan_tactical_analysis
+    )
+    ATUCAN_LOADED = True
+    print("✅ Capacités d'Atucan (P-3) chargées avec succès")
+except ImportError as e:
+    print(f"⚠️ Impossible de charger les capacités d'Atucan: {e}")
+    ATUCAN_LOADED = False
+
 # Imports futurs (Phases 3+)
 # try:
-#     from .atucan import *
-#     ATUCAN_LOADED = True
+#     from .kraor import *
+#     KRAOR_LOADED = True
 # except ImportError:
-#     ATUCAN_LOADED = False
+#     KRAOR_LOADED = False
 
 # ========================================
 # EXPORTS PUBLICS
@@ -66,50 +81,61 @@ if LIARIE_LOADED:
         'LiarieBouleDeFeu', 'LiarieVolDeVie', 'LiariePluieDeMetéores'
     ])
 
+# Atucan exports - NOUVEAU
+if ATUCAN_LOADED:
+    __all__.extend([
+        'AtucanImpositionDesMains', 'AtucanParade', 'AtucanChatimentDivin',
+        'AtucanAuraSacree', 'AtucanSoinSuperieur', 'AtucanJugementDernier'
+    ])
+
 # ========================================
-# STATISTIQUES GLOBALES PHASE 2
+# STATISTIQUES GLOBALES PHASE 3
 # ========================================
 
 def get_phase2_statistics() -> dict:
-    """Retourne les statistiques complètes de la Phase 2"""
+    """Retourne les statistiques complètes - MISE À JOUR PHASE 3"""
     
     elneha_count = get_elneha_abilities_count() if ELNEHA_LOADED else 0
     liarie_count = get_liarie_abilities_count() if LIARIE_LOADED else 0
-    total_count = elneha_count + liarie_count
+    atucan_count = get_atucan_abilities_count() if ATUCAN_LOADED else 0
+    total_count = elneha_count + liarie_count + atucan_count
     
     heroes_completed = []
     if ELNEHA_LOADED and elneha_count == 6:
         heroes_completed.append("P-1 (Elneha)")
     if LIARIE_LOADED and liarie_count == 6:
         heroes_completed.append("P-2 (Liarie)")
+    if ATUCAN_LOADED and atucan_count == 6:
+        heroes_completed.append("P-3 (Atucan)")
     
     return {
-        "phase": 2,
+        "phase": 3,  # Mise à jour phase
         "heroes_completed": heroes_completed,
         "total_abilities": total_count,
         "elneha_abilities": elneha_count,
         "liarie_abilities": liarie_count,
-        "progress_percentage": round((total_count / 48) * 100, 1),
+        "atucan_abilities": atucan_count,  # Nouveau
+        "progress_percentage": round((total_count / 59) * 100, 1),  # /59 au lieu de /48
         "mechanical_abilities_estimate": total_count + 2,  # +2 legacy transformations
-        "next_phase_target": 24,  # Phase 3 objectif
+        "next_phase_target": 24,  # Phase 3 objectif avec Kraor
         "loading_status": {
             "elneha_loaded": ELNEHA_LOADED,
-            "liarie_loaded": LIARIE_LOADED
+            "liarie_loaded": LIARIE_LOADED,
+            "atucan_loaded": ATUCAN_LOADED  # Nouveau
         }
     }
 
-
 def print_phase2_summary():
-    """Affiche un résumé complet de la Phase 2"""
+    """Affiche un résumé complet - MISE À JOUR PHASE 3"""
     stats = get_phase2_statistics()
     
     print("\n" + "="*60)
-    print(f"📊 RÉSUMÉ PHASE 2 - MIGRATION CAPACITÉS INDIVIDUELLES")
+    print(f"📊 RÉSUMÉ PHASE 3 - MIGRATION CAPACITÉS INDIVIDUELLES")
     print("="*60)
     
-    print(f"🎯 Objectif Phase 2: 12 capacités individuelles")
-    print(f"✅ Réalisé: {stats['total_abilities']}/12 capacités")
-    print(f"📈 Progression globale: {stats['progress_percentage']}% (12/48)")
+    print(f"🎯 Objectif Phase 3: 18 capacités individuelles")
+    print(f"✅ Réalisé: {stats['total_abilities']}/18 capacités")
+    print(f"📈 Progression globale: {stats['progress_percentage']}% ({stats['total_abilities']}/59)")
     
     print(f"\n🎭 Héros complétés:")
     for hero in stats['heroes_completed']:
@@ -118,9 +144,11 @@ def print_phase2_summary():
     print(f"\n📊 Détail par héros:")
     print(f"   🐻 Elneha (P-1): {stats['elneha_abilities']}/6 capacités")
     print(f"   🔮 Liarie (P-2): {stats['liarie_abilities']}/6 capacités")
+    if ATUCAN_LOADED:
+        print(f"   ⚔️ Atucan (P-3): {stats['atucan_abilities']}/6 capacités")
     
     print(f"\n⚙️ Capacités mécaniques estimées: ~{stats['mechanical_abilities_estimate']}")
-    print(f"🚀 Prochaine étape: Phase 3 vers {stats['next_phase_target']} capacités")
+    print(f"🚀 Prochaine étape: Phase 3 complète vers {stats['next_phase_target']} capacités")
     
     # Afficher les résumés détaillés si disponibles
     if ELNEHA_LOADED:
@@ -129,19 +157,24 @@ def print_phase2_summary():
     if LIARIE_LOADED:
         print(f"\n{get_liarie_abilities_summary()}")
     
+    if ATUCAN_LOADED:
+        print(f"\n{get_atucan_abilities_summary()}")
+    
     print("\n" + "="*60)
-    if stats['total_abilities'] >= 12:
-        print("🎉 PHASE 2 TERMINÉE AVEC SUCCÈS !")
+    if stats['total_abilities'] >= 18:
+        print("🎉 PHASE 3 PARTIELLEMENT TERMINÉE AVEC SUCCÈS !")
+        print("📋 Prochaine étape: Implémenter P-4 Kraor pour finaliser Phase 3")
+    elif stats['total_abilities'] >= 12:
+        print("🎉 PHASE 2 TERMINÉE - Phase 3 en cours !")
     else:
-        print(f"⚠️ PHASE 2 INCOMPLÈTE ({stats['total_abilities']}/12)")
+        print(f"⚠️ PHASE INCOMPLÈTE ({stats['total_abilities']}/18)")
     print("="*60)
 
-
 def get_all_heroes_summary() -> str:
-    """Retourne un résumé de tous les héros implémentés"""
+    """Retourne un résumé de tous les héros implémentés - MISE À JOUR PHASE 3"""
     stats = get_phase2_statistics()
     
-    summary = f"📚 HÉROS IMPLÉMENTÉS - PHASE 2:\n\n"
+    summary = f"📚 HÉROS IMPLÉMENTÉS - PHASE 3:\n\n"
     
     if ELNEHA_LOADED:
         summary += get_elneha_abilities_summary() + "\n"
@@ -149,15 +182,17 @@ def get_all_heroes_summary() -> str:
     if LIARIE_LOADED:
         summary += get_liarie_abilities_summary() + "\n"
     
-    summary += f"🔮 TOTAL: {stats['total_abilities']} capacités individuelles sur 48 ({stats['progress_percentage']}%)\n"
+    if ATUCAN_LOADED:
+        summary += get_atucan_abilities_summary() + "\n"
+    
+    summary += f"🔮 TOTAL: {stats['total_abilities']} capacités individuelles sur 59 ({stats['progress_percentage']}%)\n"
     
     return summary
 
-
 def get_tactical_analysis() -> dict:
-    """Analyse tactique des héros disponibles"""
+    """Analyse tactique des héros disponibles - MISE À JOUR PHASE 3"""
     analysis = {
-        "phase": 2,
+        "phase": 3,
         "heroes_available": [],
         "synergies": [],
         "combat_roles": {}
@@ -169,7 +204,7 @@ def get_tactical_analysis() -> dict:
             "primary": "Tank/Healer",
             "secondary": "Shapeshifter",
             "strengths": ["Transformations", "Area healing", "Resurrection"],
-            "spell_costs": "1-4 sorts par capacité"
+            "spell_costs": "1-2 sorts par capacité"
         }
     
     if LIARIE_LOADED:
@@ -181,26 +216,48 @@ def get_tactical_analysis() -> dict:
             "spell_costs": "1-4 sorts par capacité"
         }
     
+    if ATUCAN_LOADED:
+        analysis["heroes_available"].append("Atucan (P-3)")
+        analysis["combat_roles"]["Atucan"] = {
+            "primary": "Tank/Support",
+            "secondary": "Divine DPS",
+            "strengths": ["Defensive buffs", "Group healing", "Divine damage"],
+            "spell_costs": "1-3 sorts par capacité"
+        }
+    
+    # Synergies mises à jour
+    synergies = []
     if ELNEHA_LOADED and LIARIE_LOADED:
-        analysis["synergies"] = [
-            "Elneha tank + Liarie DPS = équipe équilibrée",
-            "Soin multiple d'Elneha + Vol de vie de Liarie = sustain optimal",
-            "Transformations d'Elneha + sorts sans riposte de Liarie = contrôle combat"
-        ]
+        synergies.append("Elneha tank + Liarie DPS = équipe équilibrée")
+        synergies.append("Soin multiple d'Elneha + Vol de vie de Liarie = sustain optimal")
+    
+    if ATUCAN_LOADED and ELNEHA_LOADED:
+        synergies.append("Atucan parade + transformations Elneha = tank ultime")
+        synergies.append("Double soins: Elneha shapeshifter + Atucan paladin")
+    
+    if ATUCAN_LOADED and LIARIE_LOADED:
+        synergies.append("Atucan support + Liarie DPS = protection + dégâts")
+        synergies.append("Châtiment divin + sorts sans riposte = combo magique")
+    
+    if ELNEHA_LOADED and LIARIE_LOADED and ATUCAN_LOADED:
+        synergies.append("Trio équilibré: Elneha tank, Liarie DPS, Atucan support")
+        synergies.append("Triple soin: Soins naturels + magiques + divins")
+    
+    analysis["synergies"] = synergies
     
     return analysis
-
 
 # ========================================
 # VALIDATION ET TESTS
 # ========================================
 
 def validate_phase2_implementation() -> bool:
-    """Valide que toutes les capacités Phase 2 sont correctement implémentées"""
+    """Valide que toutes les capacités Phase 3 sont correctement implémentées"""
     try:
         # Vérifier les compteurs
         elneha_count = get_elneha_abilities_count() if ELNEHA_LOADED else 0
         liarie_count = get_liarie_abilities_count() if LIARIE_LOADED else 0
+        atucan_count = get_atucan_abilities_count() if ATUCAN_LOADED else 0
         
         # Vérifications
         success = True
@@ -219,16 +276,23 @@ def validate_phase2_implementation() -> bool:
             print(f"❌ Liarie: {liarie_count}/6 capacités")
             success = False
         
+        if not ATUCAN_LOADED:
+            print(f"❌ Atucan: Module non chargé")
+            success = False
+        elif atucan_count != 6:
+            print(f"❌ Atucan: {atucan_count}/6 capacités")
+            success = False
+        
         if success:
-            print(f"✅ Validation réussie: Elneha {elneha_count}/6, Liarie {liarie_count}/6")
-            print(f"🎯 Total Phase 2: {elneha_count + liarie_count}/12 capacités")
+            total = elneha_count + liarie_count + atucan_count
+            print(f"✅ Validation réussie: Elneha {elneha_count}/6, Liarie {liarie_count}/6, Atucan {atucan_count}/6")
+            print(f"🎯 Total Phase 3: {total}/18 capacités")
         
         return success
         
     except Exception as e:
         print(f"❌ Erreur validation: {e}")
         return False
-
 
 def get_loaded_heroes():
     """Retourne la liste des héros avec capacités chargées"""
@@ -238,9 +302,10 @@ def get_loaded_heroes():
         loaded.append("P-1 (Elneha)")
     if LIARIE_LOADED:
         loaded.append("P-2 (Liarie)")
+    if ATUCAN_LOADED:
+        loaded.append("P-3 (Atucan)")
     
     return loaded
-
 
 def get_loaded_abilities_count():
     """Retourne le nombre de capacités individuelles chargées"""
@@ -250,9 +315,10 @@ def get_loaded_abilities_count():
         count += get_elneha_abilities_count()
     if LIARIE_LOADED:
         count += get_liarie_abilities_count()
+    if ATUCAN_LOADED:
+        count += get_atucan_abilities_count()
     
     return count
-
 
 # ========================================
 # INFORMATION DE CHARGEMENT
@@ -266,10 +332,12 @@ def _print_loading_summary():
     
     print(f"\n📦 Module héros chargé:")
     print(f"   🎭 Héros: {', '.join(heroes_loaded) if heroes_loaded else 'Aucun'}")
-    print(f"   ⚡ Capacités: {total_loaded}/48 ({round(total_loaded/48*100, 1)}%)")
+    print(f"   ⚡ Capacités: {total_loaded}/59 ({round(total_loaded/59*100, 1)}%)")
     
-    if total_loaded >= 12:
-        print(f"   🎉 Phase 2 complète !")
+    if total_loaded >= 18:
+        print(f"   🎉 Phase 3 partiellement complète !")
+    elif total_loaded >= 12:
+        print(f"   🎉 Phase 2 complète, Phase 3 en cours...")
     elif total_loaded >= 2:
         print(f"   ⏳ Phase 2 en cours...")
     else:
@@ -277,7 +345,6 @@ def _print_loading_summary():
 
 # Exécuter le résumé automatiquement
 _print_loading_summary()
-
 
 # ========================================
 # EXPORTS FINAUX

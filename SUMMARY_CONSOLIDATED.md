@@ -8,7 +8,7 @@
 **Solution** : Migration complète vers architecture de capacités individuelles codées  
 **Contrainte absolue** : **Préserver et améliorer toutes les fonctionnalités existantes** sans régression
 
-## ⚠️ ÉTAT ACTUEL CONFIRMÉ (Août 2025)
+## ⚠️ ÉTAT ACTUEL CONFIRMÉ (Décembre 2024)
 
 ### ✅ CORRECTIONS TECHNIQUES APPLIQUÉES
 - **Double exécution** : Ancien système DÉSACTIVÉ dans `ability_manager.py`
@@ -16,23 +16,37 @@
 - **Système stun** : IMPLÉMENTÉ dans `turn_manager.py`
 - **Builds fixes** : Toutes capacités débloquées (plus d'aléatoire)
 - **Compteur sorts** : CORRIGÉ dans `base_ability.py` (utilise SpellManager)
+- **IA combat** : CORRIGÉ pour éviter usage aveugle de capacités
 
-### 🎭 CAPACITÉS IMPLÉMENTÉES ET VALIDÉES
+### 🎭 CAPACITÉS IMPLÉMENTÉES ET ÉTAT
 - **P-1 (Elneha)** : 6/6 capacités - Druide transformations/soins ✅
 - **P-2 (Liarie)** : 6/6 capacités - Mage dégâts magiques ✅
-- **TOTAL** : 12/59 capacités individuelles (20%)
+- **P-3 (Atucan)** : 6/6 capacités - Paladin défensif ⚠️ **PROBLÉMATIQUE**
+- **TOTAL** : 18/59 capacités individuelles (30%)
 
-### 🔧 PROBLÈMES RÉSOLUS
-- **AttributeError is_stunned** : Corrigé (utilise `status_effects`)
-- **Capacités stun** : Fonctionnelles avec vérification moteur combat
-- **Compteur sorts bilan** : Fonctionne pour héros avec capacités individuelles
+### 🔧 PROBLÈMES CRITIQUES IDENTIFIÉS
+
+#### **Atucan (P-3) - Non fonctionnel**
+- **Imposition des mains** : IA trop restrictive, jamais utilisé
+- **Jugement dernier** : Corrigé (utilisait mauvais ciblage AoE)
+- **Coûts sorts** : Corrigés selon données officielles `Sorts.xlsx`
+
+#### **Liarie (P-2) - Erreur attribut**
+- **Armure du mage** : Erreur `magical_armor_bonus` n'existe pas
+- **Besoin** : Créer attribut ou adapter la capacité
+
+#### **Processus de développement défaillant**
+- **Tests isolation impossibles** : Pas de contrôle direct capacités
+- **Tests déconnectés** : Diagnostic vs flux réel application
+- **Validation manuelle insuffisante** : Dépendance IA aléatoire
 
 ## 📊 DONNÉES SOURCES (59 capacités total)
 
 ### Répartition par héros
-- **P-1 à P-8** : 7 capacités chacun (56 total) - ERREUR DOCUMENTÉE : P-1/P-2 ont 6 capacités réelles
+- **P-1 à P-8** : 6-7 capacités chacun (~52 total)
 - **P-10, P-11, P-12** : 1 capacité chacun (3 bonus)
 - **Fichier source** : `ability_names.csv` (descriptions complètes)
+- **Données officielles** : `Sorts.xlsx` (coûts, limitations, stats)
 
 ## 🏗️ ARCHITECTURE CONFIRMÉE FONCTIONNELLE
 
@@ -44,8 +58,8 @@ models/combat/abilities/individual_abilities/
 ├── __init__.py                  # Expose ABILITY_REGISTRY
 └── heroes/
     ├── elneha.py               # P-1: 6 capacités ✅ (sorts comptabilisés)
-    ├── liarie.py               # P-2: 6 capacités ✅ (sorts comptabilisés)
-    ├── atucan.py               # P-3: À faire
+    ├── liarie.py               # P-2: 6 capacités ⚠️ (1 erreur attribut)
+    ├── atucan.py               # P-3: 6 capacités ⚠️ (IA défaillante)
     ├── kraor.py                # P-4: À faire
     ├── thordius.py             # P-5: À faire
     ├── stephe.py               # P-6: À faire
@@ -57,100 +71,110 @@ models/combat/abilities/individual_abilities/
 - **AbilityManager** : Priorise individual_abilities, ancien système désactivé
 - **SpellManager** : Centralise comptage sorts, synchronisé avec BaseAbility
 - **Combat** : Flux unique sans double exécution, stun fonctionnel
+- **CombatActions** : IA corrigée (suppression usage aveugle capacités)
 
-## 🚀 PLAN D'EXÉCUTION (Phase suivante)
+## 🚀 PLAN D'EXÉCUTION RÉVISÉ
 
 ### ✅ Phase 1-2 TERMINÉES ET VALIDÉES
 - Infrastructure complète et stable
-- P-1 et P-2 implémentés, testés et fonctionnels
+- P-1 fonctionnel et testé
+- P-2 fonctionnel (1 erreur à corriger)
 - Ancien système désactivé définitivement
-- Comptage sorts opérationnel
 
-### 🎯 Phase 3 : Atucan + Kraor (24 capacités - 41%)
-**Objectif** : Capacités défensives (Atucan) et marquage (Kraor)
+### 🔧 Phase 3 ACTUELLE - CORRECTION CRITIQUE
+**Objectif révisé** : Finaliser P-2 et P-3 avant continuation
 
-**Capacités Atucan (P-3)** :
-1. Imposition des mains (3 PV soin)
-2. Parade (+1 jeton permanent) 
-3. Châtiment divin (6 dégâts magiques)
-4. Aura sacrée (parade groupe)
-5. Soin supérieur (6 PV soin)
-6. Jugement dernier (8 dégâts AoE)
+#### **P-2 Liarie - FIX URGENT**
+1. **Corriger erreur Armure du mage** (`magical_armor_bonus`)
+2. Tester toutes les 6 capacités en isolation
+3. Valider fonctionnement IA
 
-**Capacités Kraor (P-4)** :
-1. Cueilleur/Chasseur (potion ou 4 dégâts)
-2. Marque du chasseur (+2 dégâts marqué)
-3. Ambidextre (double dégâts)
-4. Pluie projectiles (2 dégâts AoE)
-5. Soin mineur (2 PV soin)  
-6. Tir rapide (3 attaques)
+#### **P-3 Atucan - REFACTORING COMPLET**
+1. **Revoir logique IA** pour Imposition des mains
+2. Tester chaque capacité individuellement  
+3. Valider mécaniques défensives (bouclier, aura)
+4. Corriger toute erreur avant P-4
 
-## 🔧 DIAGNOSTIC OBLIGATOIRE
+#### **P-4 Kraor - SUSPENDU**
+- Attendre stabilisation P-2 et P-3
 
-### **Commande critique avant développement**
-```bash
-python diagnostic_capacites.py
-```
+## 📋 NOUVEAU PROCESSUS DE DÉVELOPPEMENT
 
-**Résultats attendus** :
-- ✅ 12/59 capacités enregistrées
-- ✅ P-1, P-2 détectés et fonctionnels
-- ✅ Import sans erreur
-- ✅ Comptage sorts opérationnel pour capacités individuelles
+### **Problème identifié :**
+L'approche actuelle (développement aveugle → test dans application) ne fonctionne pas.
 
-**Si différent** : Adapter le plan selon la réalité terrain
+### **Nouveau processus proposé :**
 
-## 📋 API CONSISTENCY (VALIDÉE)
+#### **Étape 1 : Mode Debug Streamlit**
+- Interface de test directe dans l'application
+- Sélection manuelle de capacité à tester
+- Logs détaillés en temps réel
 
-### Méthodes par type d'entité
+#### **Étape 2 : Scripts de test isolation**
 ```python
-# Character (Héros)  
-hero.get_attack_damage_info()['damage_value']
-hero.get_total_precision()
-
-# Enemy (Ennemis)
-enemy.get_damage_info(player_count)['damage_value'] 
-enemy.defense
-
-# Stun système (FONCTIONNEL)
-enemy.status_effects['stunned'] = 1  # ✅ Correct
-enemy.is_stunned()  # ✅ Existe et fonctionne
-
-# SpellManager (CORRIGÉ)
-spell_manager.consume_spells(caster, cost)  # ✅ Utilisé par BaseAbility
+# test_capacity_isolated.py
+def test_atucan_imposition():
+    # Test direct sans IA, contexte contrôlé
+    # Vérification prérequis, exécution, résultats
 ```
 
-### Corrections appliquées
-- `BaseAbility._consume_spell_cost()` utilise maintenant `spell_manager.consume_spells()`
-- Synchronisation comptage sorts entre capacités et bilan
+#### **Étape 3 : Validation pas-à-pas**
+1. **Test isolation** : Capacité fonctionne seule
+2. **Test intégration** : Capacité dans système complet  
+3. **Test IA** : IA choisit capacité dans bon contexte
+4. **Test validation** : Combat complet sans régression
 
-## ⚠️ OBSERVATIONS TECHNIQUES
+#### **Étape 4 : Documentation continue**
+- État de chaque capacité (fonctionnelle/problématique)
+- Prérequis et contextes d'utilisation
+- Erreurs connues et corrections appliquées
+
+## ⚠️ OBSERVATIONS TECHNIQUES CRITIQUES
+
+### Architecture validée mais incomplète
+- **Infrastructure** : Stable et performante ✅
+- **Capacités P-1** : Fonctionnelles ✅  
+- **Capacités P-2** : 5/6 fonctionnelles ⚠️
+- **Capacités P-3** : Implémentées mais non testables ❌
+- **IA Combat** : Logique améliorée mais à valider ⚠️
 
 ### Compteur sorts
-- **Fonctionne** : Héros avec capacités individuelles (P-1, P-2)
-- **Affiche 0** : Héros sans capacités individuelles (P-3 à P-8)
-- **Cause** : Ancien système ne synchronise pas avec SpellManager
-- **Solution** : Se résoudra automatiquement avec implémentation P-3 à P-8
+- **Fonctionne** : Héros P-1, P-2 avec capacités individuelles
+- **Problématique** : P-3 consomme sorts mais capacités non utilisées par IA
 
-### Architecture validée
-- Aucune régression détectée
-- Performance stable
-- Logs clairs et informatifs
-- Mécaniques conformes aux règles
-
-## 🎯 OBJECTIF FINAL
+## 🎯 OBJECTIF FINAL RÉVISÉ
 
 ```
 ================== SIMULATION FINALE ==================
 ✅ Capacités mécaniques: 61 (59 individuelles + 2 legacy)
 🎭 Héros complets: 8/8 (P-1 à P-8) + 3 bonus  
 📈 Migration: 100% réussie
+🧪 Processus test: Validé et reproductible
+🤖 IA Combat: Logique tactique fiable
 🏆 SIMULATEUR PÉRIPLES FIABLE ET MAINTENABLE
 ========================================================
 ```
 
+## 🔍 ACTIONS PRIORITAIRES
+
+### **Immédiat (Phase 3 correction)**
+1. **Corriger erreur Liarie** `magical_armor_bonus`
+2. **Créer mode debug Streamlit** pour test manuel capacités
+3. **Revoir IA Atucan** - Imposition des mains trop restrictive
+4. **Valider chaque capacité P-3** individuellement
+
+### **Court terme (Phase 3 finalisation)**  
+1. **Script test isolation** pour chaque capacité
+2. **Documentation état capacités** (fonctionnelles/problématiques)
+3. **Validation P-3 complet** avant P-4
+
+### **Long terme (Phase 4+)**
+1. **P-4 Kraor** avec nouveau processus validé
+2. **Migration P-5 à P-8** avec tests systématiques
+3. **Capacités bonus P-10 à P-12**
+
 ---
 
-**Version** : État confirmé Août 2025 après corrections SpellManager  
-**Usage** : Document de référence pour continuation Phase 3+  
-**Prochaine étape** : Implémenter P-3 Atucan (paladin défensif)
+**Version** : État critique Décembre 2024 - Processus révisé  
+**Usage** : Document de référence pour correction Phase 3  
+**Prochaine étape** : Corriger P-2/P-3 avec nouveau processus test

@@ -1,205 +1,221 @@
-# PLAN_D_ACTION_ACTUALISÉ.md
-# 🎯 PLAN D'ACTION ACTUALISÉ - MIGRATION CAPACITÉS INDIVIDUELLES
+# PLAN D'ACTION ACTUALISÉ - MIGRATION CAPACITÉS INDIVIDUELLES
+# PROCESSUS DE DÉVELOPPEMENT RÉVISÉ - PHASE 3 CRITIQUE
 
-**OBJECTIF PRINCIPAL** : Migrer de 12/59 capacités mécaniques vers 59/59 capacités individuelles (100%)  
-**ÉTAT ACTUEL** : Phase 1-2 TERMINÉES ET VALIDÉES - P-1/P-2 opérationnels, comptage sorts corrigé  
-**CONTRAINTE ABSOLUE** : Préserver et améliorer toutes les fonctionnalités existantes sans régression
+## 📋 CONTEXTE CRITIQUE
 
----
+**Situation actuelle** : Phase 3 bloquée par défaillances processus développement
+- **P-1 (Elneha)** : 6/6 ✅ Fonctionnel validé
+- **P-2 (Liarie)** : 6/6 ⚠️ 1 erreur attribut (`magical_armor_bonus`)  
+- **P-3 (Atucan)** : 6/6 ❌ Implémenté mais non fonctionnel (IA défaillante)
 
-## 🚨 MÉTHODOLOGIE - VÉRIFICATION OBLIGATOIRE
+## 🚨 PROBLÈMES IDENTIFIÉS
 
-### **Principe fondamental** :
-**Vérifier les fonctions existantes AVANT de coder de nouvelles fonctionnalités**
-- Souvent, c'est simplement parce que ce sont 2 Claudes différents qui n'ont pas conscience du contexte
-- Ne pas créer du code existant par manque de contexte
+### **Défaillances processus actuel :**
+1. **Tests impossibles** : Pas de contrôle direct capacités dans Streamlit
+2. **IA imprévisible** : Logique trop restrictive (Atucan n'utilise jamais soins)
+3. **Erreurs attributs** : `magical_armor_bonus` manquant (Liarie)
+4. **Tests déconnectés** : Diagnostic vs flux réel application
+5. **Validation aveugle** : Développement sans test immédiat
 
-### **Process de vérification** :
-1. **TOUJOURS commencer par** : `python diagnostic_capacites.py`
-2. **Analyser les résultats réels** vs documentation supposée
-3. **Identifier les écarts** entre état réel et supposé
-4. **Corriger/compléter** selon les résultats RÉELS
-5. **Développer** seulement après confirmation de l'état
+### **Conséquences :**
+- Gaspillage de temps sur capacités non testables
+- Régression fonctionnelle (capacités qui ne s'exécutent jamais)
+- Accumulation d'erreurs techniques non détectées
 
----
+## 🔄 NOUVEAU PROCESSUS DE DÉVELOPPEMENT
 
-## 📊 ÉTAT CONFIRMÉ ET VALIDÉ (Août 2025)
+### **Principe fondamental :**
+**Chaque capacité DOIT être testable individuellement avant intégration**
 
-### ✅ CORRECTIONS TECHNIQUES APPLIQUÉES ET TESTÉES
-- **Double exécution** : Ancien système désactivé (`ability_manager.py` return False)
-- **Logs fallback** : Supprimés (`combat_actions.py` commenté)
-- **Système stun** : Implémenté (`turn_manager.py` avec vérification)
-- **Builds fixes** : Toutes capacités débloquées (plus d'attribution aléatoire)
-- **AttributeError** : Corrigé (utilise `status_effects` au lieu de `is_stunned`)
-- **Compteur sorts** : RÉSOLU (`base_ability.py` utilise SpellManager)
+### **Étapes obligatoires :**
 
-### 🎭 HÉROS IMPLÉMENTÉS ET VALIDÉS
-- **P-1 (Elneha)** : 6 capacités druide ✅ (comptage sorts fonctionnel)
-- **P-2 (Liarie)** : 6 capacités mage ✅ (comptage sorts fonctionnel)
-- **Total actuel** : 12/59 capacités (20%)
+#### **1. Mode Debug Streamlit (PRIORITÉ CRITIQUE)**
+```python
+# Interface debug à intégrer dans l'application
+if st.checkbox("🔧 Mode Debug Capacités"):
+    selected_hero = st.selectbox("Héros", heroes)
+    available_abilities = selected_hero.get_available_abilities()
+    selected_ability = st.selectbox("Capacité", available_abilities)
+    
+    if st.button("▶️ Exécuter capacité"):
+        # Test direct sans IA, contexte contrôlé
+        # Logs détaillés temps réel
+        # Vérification prérequis explicite
+```
 
-### 📊 OBSERVATION COMPTEUR SORTS
-- **Fonctionnel** : P-1, P-2 (capacités individuelles)
-- **Affiche 0** : P-3 à P-8 (normal, pas encore implémentées)
-- **Cause** : Ancien système ne synchronise pas avec SpellManager
-- **Auto-résolution** : Se corrigera avec implémentation futures phases
+#### **2. Script test isolation**
+```python
+# test_capacity_isolated.py
+def test_atucan_imposition():
+    """Test Imposition des mains en isolation complète"""
+    # Créer héros et alliés blessés
+    # Exécuter capacité directement  
+    # Vérifier résultats
+    # Logs détaillés
+```
 
----
+#### **3. Validation pas-à-pas obligatoire**
+1. **Test isolation** ✅ : Capacité fonctionne seule
+2. **Test debug Streamlit** ✅ : Capacité dans interface  
+3. **Test IA contexte** ✅ : IA choisit capacité quand approprié
+4. **Test intégration complète** ✅ : Combat sans régression
 
-## 🔧 COMMANDES DE DIAGNOSTIC CRITIQUES
+## 📊 DIAGNOSTIC OBLIGATOIRE AVANT DÉVELOPPEMENT
 
+### **Commandes de vérification pré-développement :**
 ```bash
-# 1. Diagnostic principal
+# 1. État actuel registre
 python diagnostic_capacites.py
 
-# 2. Test registre (si existe)  
-python -c "
-from models.combat.abilities.individual_abilities import ABILITY_REGISTRY
-ABILITY_REGISTRY.print_debug_info()
-print(f'📊 Total: {ABILITY_REGISTRY.get_registered_count()}/59')
-"
-
-# 3. Tests imports critiques
+# 2. Test imports critiques  
 python -c "from models.character import Character; print('✅ Character OK')"
 python -c "from models.combat.abilities.ability_manager import AbilityEffectsManager; print('✅ Manager OK')"
 
-# 4. Test interface (validation fonctionnelle)
-streamlit run app.py
+# 3. Test capacités existantes
+python -c "
+from models.combat.abilities.individual_abilities.heroes.atucan import *
+print('✅ Atucan importé')
+print('Capacités:', [cls.__name__ for cls in [AtucanSoinProportionnel, AtucanJugementDernier]])
+"
+
+# 4. Vérification attributs Character
+python -c "
+from models.character import Character  
+c = Character('Test', {})
+attrs = [attr for attr in dir(c) if 'armor' in attr.lower()]
+print('Attributs armor:', attrs)
+"
 ```
 
-### **Interprétation des résultats** :
+### **Interprétation résultats :**
+- **18 capacités détectées** : Infrastructure P-3 présente 
+- **Erreur import** : Problème technique à corriger avant continuation
+- **Attributs manquants** : Créer ou adapter capacités
 
-#### **Si 12 capacités détectées** :
-- ✅ Infrastructure opérationnelle selon documentation
-- → Continuer développement Phase 3
+## 🎯 PHASES DE DÉVELOPPEMENT ACTUALISÉES
 
-#### **Si différent** :
-- ⚠️ Écart documentation vs réalité
-- → Adapter plan selon état réel découvert
+### ✅ **PHASE 1-2 VALIDÉES**
+- **P-1 (Elneha)** : Infrastructure + 6 capacités fonctionnelles
+- **P-2 (Liarie)** : 5/6 capacités fonctionnelles (1 erreur à corriger)
 
----
+### 🔧 **PHASE 3A : CORRECTION CRITIQUE (ACTUELLE)**
+**Objectif** : Stabiliser P-2 et P-3 avec nouveau processus
 
-## 📋 PHASES DE DÉVELOPPEMENT ACTUALISÉES
+#### **Tâches P-2 Liarie :**
+1. **Corriger erreur `magical_armor_bonus`**
+   - Option A : Créer attribut dans Character
+   - Option B : Adapter capacité pour attribut existant
+2. **Tester Armure du mage** en isolation
+3. **Valider 6/6 capacités** fonctionnelles
 
-### ✅ **PHASES 1-2 TERMINÉES**
-- Infrastructure complète opérationnelle
-- P-1 et P-2 implémentés et validés
-- Ancien système complètement désactivé
-- Système stun fonctionnel
+#### **Tâches P-3 Atucan :**
+1. **Créer mode debug Streamlit** pour test manuel
+2. **Tester Imposition des mains** en isolation (problème IA)
+3. **Revoir logique IA** - Atucan trop restrictif
+4. **Valider 6/6 capacités** une par une
+5. **Corriger ciblage AoE** Jugement dernier (déjà identifié)
 
-### 🎯 **PHASE 3 : ATUCAN + KRAOR** (Prochaine)
-**Objectif** : 24 capacités (40% progression)
+#### **Infrastructure développement :**
+1. **Mode debug** intégré Streamlit
+2. **Scripts test isolation** pour chaque héros
+3. **Documentation état** capacités (fonctionnelles/problématiques)
 
-#### **P-3 Atucan (Paladin défensif)** :
-1. **Imposition des mains** - Soin 3 PV
-2. **Parade** - +1 jeton parade permanent
-3. **Châtiment divin** - 6 dégâts magiques sans riposte
-4. **Aura sacrée** - Parade groupe (+1 tous)
-5. **Soin supérieur** - 6 PV soin
-6. **Jugement dernier** - 8 dégâts magiques AoE
-7. **Bénédiction** - +2 précision groupe fin combat
+### 🎯 **PHASE 3B : KRAOR (SUSPENDUE)**
+**Condition** : P-2 et P-3 100% fonctionnels et testés
 
-#### **P-4 Kraor (Chasseur marquage)** :
-1. **Cueilleur/Chasseur** - Potion soin OU 4 dégâts physiques
-2. **Marque du chasseur** - Marque ennemi (+2 dégâts groupe)
-3. **Ambidextre** - Double dégâts une attaque
-4. **Pluie de projectiles** - 2 dégâts physiques AoE
-5. **Soin mineur** - 2 PV soin
-6. **Tir rapide** - 3 attaques distance consécutives
-7. **Flèche empoisonnée** - 2 dégâts + poison (-2 PV/tour)
+#### **P-4 Kraor (Chasseur marquage) :**
+1. Cueilleur/Chasseur (potion ou 4 dégâts)
+2. Marque du chasseur (+2 dégâts marqué)  
+3. Ambidextre (double dégâts)
+4. Pluie de projectiles (2 dégâts physiques AoE)
+5. Soin mineur (2 PV soin)
+6. Tir rapide (3 attaques distance consécutives)
 
-### 🎯 **PHASES 4-6 : FINALISATION**
-- **Phase 4** : P-5 Thordius (Berserker) + P-6 Stephe (Barde) → 36/59
-- **Phase 5** : P-7 Lame (Voleur) + P-8 Raishi (Moine) → 52/59  
-- **Phase 6** : P-10, P-11, P-12 (Bonus) → 59/59 (100%)
+### 🚀 **PHASES 4-6 : FINALISATION (REPLANIFIÉES)**
+- **Phase 4** : P-5 Thordius + P-6 Stephe avec processus validé
+- **Phase 5** : P-7 Lame + P-8 Raishi  
+- **Phase 6** : P-10, P-11, P-12 (Bonus)
 
----
+## 🔍 PROTOCOLE DE VALIDATION RÉVISÉ
 
-## 🔧 PROTOCOLE DE VALIDATION HUMAINE
+### **Ancien processus défaillant :**
+1. Développer capacité aveuglément
+2. Espérer que l'IA l'utilise
+3. Constater dysfonctionnement après coup
 
-### **Principe** :
-**CHAQUE capacité créée doit être validée manuellement avant de passer à la suivante**
+### **Nouveau processus obligatoire :**
 
-### **Process par capacité** :
-1. **Création technique** (15-20 min) : Implémentation + tests automatiques
-2. **Validation humaine** (10 min) :
-   - **Tester en combat réel** avec Streamlit
-   - **Vérifier mécaniques** selon description CSV
-   - **Valider logs** et effets visuels
-   - **Confirmer** ou **demander correction**
+#### **Pour chaque capacité :**
+1. **Analyse prérequis** (15 min)
+   - Attributs Character nécessaires
+   - Contexte d'utilisation  
+   - Logique IA appropriée
 
-### **Décision de validation** :
-- **✅ VALIDÉ** : Capacité approuvée, passer à la suivante
-- **❌ CORRECTION REQUISE** : Corriger immédiatement avant de continuer
-- **🔄 RETEST** : Tester à nouveau après correction
+2. **Implémentation avec debug** (20 min)
+   - Logs détaillés intégrés
+   - Vérifications explicites
+   - Gestion erreurs robuste
 
-### **Règles strictes** :
-- **AUCUNE capacité** ne peut être considérée comme "terminée" sans validation humaine
-- **AUCUNE phase** ne peut commencer sans validation complète de la phase précédente
-- **En cas de problème** : Corriger immédiatement, ne jamais reporter
+3. **Test isolation immédiat** (10 min)
+   - Script test dédié
+   - Contexte contrôlé
+   - Validation résultats
 
----
+4. **Test interface debug** (10 min)  
+   - Mode debug Streamlit
+   - Test manuel direct
+   - Logs temps réel
 
-## ⚠️ RÈGLES DE SÉCURITÉ MISES À JOUR
+5. **Validation IA contextuelle** (15 min)
+   - Conditions déclenchement IA
+   - Test situations appropriées  
+   - Vérification usage correct
 
-### **Contrainte absolue révisée** :
-**Préserver et améliorer toutes les fonctionnalités existantes** sans régression
-- ✅ Modifier fichiers nécessaires pour corriger bugs
-- ✅ Améliorer architecture (refactorisation)
-- ✅ Étendre capacités sans impacter mécaniques existantes
-- ❌ Éviter effet yoyo construction/destruction
+6. **Test intégration finale** (10 min)
+   - Combat complet
+   - Pas de régression
+   - Performance stable
 
-### **Fichiers critiques (modification contrôlée)** :
-- `models/character.py` - Modifications mineures autorisées si nécessaire
-- `models/combat/abilities/ability_manager.py` - Peut être modifié pour intégration
-- `diagnostic_capacites.py` - Référence, modifications exceptionnelles
+### **Critères validation :**
+- ✅ **Test isolation** : Capacité s'exécute correctement
+- ✅ **Test interface** : Utilisable manuellement  
+- ✅ **Test IA** : IA l'utilise dans bon contexte
+- ✅ **Test intégration** : Pas de régression système
 
-### **Tests non-régression obligatoires** :
-1. **Après chaque modification** : Import sans erreur
-2. **Après chaque capacité** : `diagnostic_capacites.py` ne régresse jamais
-3. **Après chaque phase** : Test Streamlit complet
+## 📋 CHECKLIST PRE-DÉVELOPPEMENT MISE À JOUR
 
----
+### **Avant chaque capacité :**
+- [ ] **Mode debug** : Interface test manuel créée
+- [ ] **Attributs** : Vérifier Character possède attributs nécessaires
+- [ ] **Contexte** : Identifier quand IA doit utiliser capacité
+- [ ] **Données sources** : Consulter `Sorts.xlsx` pour valeurs officielles
+- [ ] **API existante** : Vérifier cohérence avec capacités P-1/P-2
 
-## 📊 MÉTRIQUES DE SUCCÈS
+### **Après chaque capacité :**
+- [ ] **Test isolation** : Script test dédié créé et validé
+- [ ] **Test interface** : Mode debug fonctionne
+- [ ] **Test IA** : Capacité utilisée dans contexte approprié
+- [ ] **Documentation** : État capacité documenté
+- [ ] **Intégration** : Aucune régression détectée
 
-### **Indicateurs techniques** :
-- **Capacités enregistrées** : X/59 dans ABILITY_REGISTRY
-- **Import sans erreur** : Tous modules se chargent
-- **Performance** : Temps d'exécution ≤ baseline
-- **Compatibilité** : Interface Streamlit fonctionnelle
+## 🚨 ACTIONS PRIORITAIRES IMMÉDIATES
 
-### **Indicateurs fonctionnels** :
-- **Combat opérationnel** : Toutes capacités utilisables
-- **Logs explicites** : Messages clairs pour chaque action
-- **Mécaniques correctes** : Effets conformes aux règles
-- **Aucune régression** : Fonctionnalités existantes préservées
+### **Critique (Cette session) :**
+1. **Créer mode debug Streamlit** - Interface test manuel capacités
+2. **Corriger erreur Liarie** - `magical_armor_bonus` manquant
+3. **Diagnostiquer IA Atucan** - Pourquoi Imposition des mains jamais utilisé
 
----
+### **Urgent (Prochaines sessions) :**
+1. **Scripts test isolation** pour P-2 et P-3
+2. **Revoir logique IA** combat_actions.py pour soins
+3. **Valider P-3 complet** avant P-4
 
-## 🎯 INSTRUCTIONS POUR CONTINUATION
-
-### **Pour le prochain Claude** :
-1. **COMMENCER PAR** : `python diagnostic_capacites.py`
-2. **ANALYSER** : Résultats réels vs ce document
-3. **ADAPTER** : Plan selon état réel découvert
-4. **DÉVELOPPER** : Seulement après confirmation état
-
-### **En cas de problèmes** :
-- **Import errors** : Vérifier syntaxe et dépendances
-- **Capacités non détectées** : Vérifier registre et décorateurs
-- **Erreurs exécution** : Valider utilisation méthodes utilitaires
-- **Incohérences** : Référer à ce document consolidé
-
-### **Escalade** :
-Si état réel diffère significativement de la documentation :
-1. **Documenter** : Écart découvert
-2. **Analyser** : Cause de l'incohérence  
-3. **Corriger** : Plan selon réalité terrain
-4. **Mettre à jour** : Documentation consolidée
+### **Important (Phase 3B) :**
+1. **P-4 Kraor** avec nouveau processus validé
+2. **Documentation processus** pour phases suivantes
 
 ---
 
-**Dernière mise à jour** : Décembre 2024 après corrections techniques  
-**Méthodologie** : Vérification obligatoire avant développement  
-**Usage** : Guide de référence pour tous les Claudes
+**Version** : Processus révisé Décembre 2024  
+**Usage** : Guide développement pour correction Phase 3  
+**Prochaine étape** : Créer mode debug + corriger P-2/P-3
