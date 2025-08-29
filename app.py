@@ -17,11 +17,10 @@ from models.combat.combat_engine import CombatEngine
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader, cleanup_removed_heroes_from_session
 import ui.components.sandbox_interface
-
-# Import UI
 from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waiting_combat_style
 from ui.components import *
 from ui.components.hero_components import preload_hero_builds_for_all_difficulties
+from debug_mode import create_debug_tab
 
 # Import capacités et potions
 try:
@@ -704,7 +703,7 @@ def main():
         st.stop()
     
     # Onglets
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène", "ℹ️ À Propos"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène", "🔧 Debug", "ℹ️ À Propos"])
     
     with tab1: 
         tab_selection(data)
@@ -714,7 +713,9 @@ def main():
         tab_combat(data)
     with tab4: 
         ui.components.sandbox_interface.main_sandbox_tab()
-    with tab5: 
+    with tab5:
+        create_debug_tab()    
+    with tab6: 
         display_about()
 
 if __name__ == "__main__":
