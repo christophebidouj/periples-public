@@ -1,177 +1,205 @@
 # 🎯 PLAN D'ACTION - MIGRATION CAPACITÉS PÉRIPLES
-**Version : Claude-Ready Final - Août 2025**
+**Version : Post-Debug Critical Fixes - Septembre 2025**
 
 ## ⚠️ RÈGLES ABSOLUES CLAUDE
 
 ### 🚨 AVANT TOUT DÉVELOPPEMENT
-1. **LIRE** ce plan complet (contexte + flux + API)
+1. **LIRE INTÉGRALEMENT** ce plan d'action (règle critique ajoutée)
 2. **VÉRIFIER** `Sorts.xlsx` pour données officielles
 3. **TESTER** imports : `from models.character import Character`
 4. **INTERDICTION** : Inventer valeurs numériques
+5. **APPLIQUER** fixes debug_mode.py systématiquement
 
 ### 📊 Sources données OBLIGATOIRES
 - **Noms** : `ability_names.csv` 
 - **Mécaniques** : `Sorts.xlsx` (coûts, limitations)
-- **API** : `character.py` + `data_loader.py`
+- **API** : `character.py` + `data_loader.py` + `base_ability.py` + `spell_manager.py`
 
 ---
 
-## 📈 ÉTAT ACTUEL (Mise à jour obligatoire)
-**TOTAL** : 18/59 capacités (30%) - MAJ Décembre 2024
-- **P-1 (Elneha)** : 6/6 ✅ Druide
-- **P-2 (Liarie)** : 6/6 ⚠️ Erreur `magical_armor_bonus`
-- **P-3 (Atucan)** : 6/6 ❌ IA trop restrictive
+## 📈 ÉTAT ACTUEL - RETEST COMPLET REQUIS
+**TOTAL** : 18/59 capacités (30%) - **TOUTES À RETESTER**
+- **P-1 (Elneha)** : 6/6 ⚠️ RETEST après fixes debug
+- **P-2 (Liarie)** : 6/6 ⚠️ RETEST + corriger magical_armor_bonus 
+- **P-3 (Atucan)** : 6/6 ⚠️ RETEST + revoir IA restrictive
 
-**Prochaine priorité** : Compléter debug_mode.py (BLOQUANT)
-
----
-
-## 🔄 FLUX D'EXÉCUTION (À respecter)
-
-### Utilisateur Streamlit
-```
-app.py → tabs[5] → create_debug_tab() → Test manuel
-```
-
-### Combat IA  
-```
-combat_engine.py → ability_manager.py → _try_individual_ability() 
-→ ABILITY_REGISTRY → capacity.execute() → SpellManager
-```
-
-### Fichiers critiques
-- `individual_abilities/base_ability.py` - Classe mère
-- `individual_abilities/ability_registry.py` - Catalogue
-- `individual_abilities/heroes/[hero].py` - Implémentations
-- `debug_mode.py` - **À compléter en priorité**
+**PRIORITÉ CRITIQUE** : Debug_mode.py corrigé - **retester TOUTES les capacités**
 
 ---
 
-## ⚙️ API VALIDÉE
+## ⚙️ API VALIDÉE - FIXES CRITIQUES APPLIQUÉS
 
-### Character (Hero)
+### BaseAbility (Classe mère critique)
 ```python
-hero.get_attack_damage_info()['damage_value']  # Dégâts
-hero.current_spells                            # Sorts restants
-hero.current_health                            # PV
-hero.is_alive()                               # Statut
-hero.apply_damage_with_parade(damage)         # Appliquer dégâts
-
-# Validation défensive obligatoire
-if not hasattr(user, 'current_spells'):
-    return False, "current_spells manquant"
+# ✅ API standardisée pour toutes les capacités
+class NewAbility(BaseAbility):
+    def execute(self, caster, targets, context, log):
+        # Méthodes utilitaires héritées:
+        self._consume_spell_cost(caster, cost, spell_manager, log)
+        self._get_all_enemies(caster, context)  # cherche 'alive_enemies'
+        self._get_all_allies(caster, context)   # cherche 'heroes'
+        self._apply_damage(target, amount, type, log)
+        self._apply_healing(target, amount, log)
 ```
 
-### Enemy (data_loader.py)
+### SpellManager (Gestion centralisée sorts)
 ```python
-enemy.get_damage_info(player_count)['damage_value']  # Dégâts
-enemy.defense                                        # Défense
-enemy.is_alive()                                    # Statut
-enemy.stats_by_players[player_count]                # Stats variables
+spell_manager = SpellManager()
+spell_manager.initialize_spells(combatant)  # Initialisation obligatoire
+spell_manager.get_current_spells(combatant)  # Sorts disponibles
+spell_manager.consume_spells(combatant, cost)  # Consommation
+```
+
+### Character (Hero) - Architecture sorts résolue
+```python
+# ✅ DOUBLE INITIALISATION OBLIGATOIRE
+user = Character(code="P-1", spells=5, ...)
+user.current_spells = user.spells  # FIX #1: current_spells
+
+# ✅ API validée
+hero.get_attack_damage_info()['damage_value']
+hero.current_health / hero.is_alive()
+hero.apply_damage_with_parade(damage)
+```
+
+### Enemy API
+```python
+enemy.get_damage_info(player_count)['damage_value'] 
+enemy.defense / enemy.is_alive()
+# ❌ ATTENTION: N'a PAS get_attack_damage_info()
+```
+
+### Debug Context - Clés critiques identifiées
+```python
+# ✅ CLÉS CORRECTES (BaseAbility les cherche)
+context = {
+    'spell_manager': spell_manager,
+    'heroes': allies,
+    'current_heroes': allies,  
+    'alive_enemies': enemies,
+    'current_enemies': enemies,
+    'log': execution_log,
+    'player_count': 2
+}
+
+# ❌ CLÉS FAUSSES (à éviter)
+# 'rules', 'all_heroes', 'all_enemies'
 ```
 
 ---
 
-## 🔄 PROCESSUS (45 min par capacité)
+## 🚨 ERREURS RÉSOLUES
 
-### 1. Données sources (10 min)
-- **ability_names.csv** : Nom capacité
-- **Sorts.xlsx** : Coûts + limitations officiels
-- **❌ Jamais inventer** de valeurs
+### Bug SpellManager (résolu)
+- **Problème** : `spell_manager.get_current_spells(user)` retournait 0
+- **Solution** : `spell_manager.initialize_spells(user)` obligatoire
 
-### 2. Implémentation (15 min)
+### Bug Context Debug (résolu)  
+- **Problème** : BaseAbility ne trouvait pas les ennemis
+- **Solution** : Utiliser 'alive_enemies', 'current_enemies', 'heroes'
+
+### Bug Affichage (résolu)
+- **Solution** : Noms héros avec codes (P-1 Elneha au lieu de P-1)
+
+---
+
+## 🔄 PROCESSUS RÉVISÉ (30 min par capacité)
+
+### 1. Setup Debug (5 min)
+- Mode debug avec fixes appliqués  
+- Configuration sorts/PV/ennemis
+
+### 2. Test isolation (10 min)
 ```python
-class CapaciteName(BaseAbility):
-    def __init__(self):
-        super().__init__(spell_cost=VALEUR_SORTS_XLSX)  # Officielle
-    
-    def can_be_used(self, user, targets, combat_state):
-        print(f"DEBUG: {self.name} - Vérification")
-        if not hasattr(user, 'current_spells'):
-            return False, "Attribut manquant"
-        
-    def execute(self, user, targets, combat_state):
-        try:
-            print(f"DEBUG: {self.name} - Exécution")
-            # Implémentation avec logs
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+# Template sécurisé vérifié
+class NewAbility(BaseAbility):
+    def execute(self, caster, targets, context, log):
+        spell_manager = context.get('spell_manager')
+        if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
+            return False
+        # Implémentation...
 ```
 
-### 3. Test onglet debug (15 min) - SEULE VALIDATION
-- Interface `tabs[5]` : sélection héros/capacité
-- Configuration contexte test  
-- Logs temps réel
-- Validation avant/après
+### 3. Validation (10 min)  
+- Execute() retourne True
+- Logs corrects (sorts consommés, effets appliqués)
+- État avant/après cohérent
 
 ### 4. Documentation (5 min)
-- Mise à jour section "État actuel"
-- Ajout API validée
-- Note flux si modifié
+- Mettre à jour statut dans ce plan
+- Noter API utilisée
 
 ---
 
-## 🛠️ PRIORITÉ #1 : COMPLÉTER DEBUG
+## 🛠️ PRIORITÉ #1 : RETEST SYSTÉMATIQUE
 
-### Statut actuel
+### Phase A - Validation fixes
+1. **Éclair magique P-2** - Test référence (doit fonctionner)
+2. **Armure du mage P-2** - Test sorts coûteux (doit fonctionner)  
+3. **Forme d'ours P-1** - Test transformations (doit fonctionner)
+
+### Phase B - Retest complet P-1/P-2/P-3
+- **Toutes les 18 capacités** à retester avec debug corrigé
+- **Identifier** celles qui échouent encore  
+- **Corriger** une par une
+
+### Phase C - Correction erreurs identifiées
+- **magical_armor_bonus** → max_parade_tokens (P-2)
+- **IA Atucan** trop restrictive (P-3)
+
+---
+
+## 📊 API CONSISTENCY GUIDE - TRAVAIL EFFECTUÉ
+
+### Problèmes identifiés et résolus
+1. **current_spells non initialisé** → Fix appliqué debug_mode.py
+2. **SpellManager vide** → initialize_spells() obligatoire  
+3. **Context debug incompatible** → Clés BaseAbility ajoutées
+4. **Mauvaise API Enemy** → get_damage_info(player_count) documentée
+
+### Règles validées par l'expérience
+- **SpellManager prioritaire** sur current_spells direct
+- **BaseAbility cherche clés spécifiques** dans context
+- **API Character ≠ API Enemy** (méthodes différentes)
+- **Debug doit simuler vrai contexte combat**
+
+### Template debug validé
 ```python
-# app.py ligne ~X
-with tabs[5]:
-    create_debug_tab()  # Fonction INCOMPLÈTE
+# Configuration utilisateur
+user.current_spells = user_spells  # CRITIQUE
+
+# SpellManager 
+spell_manager.initialize_spells(user)  # CRITIQUE
+
+# Context BaseAbility
+context = {'spell_manager', 'heroes', 'alive_enemies', 'log', 'player_count'}
 ```
 
-### Interface requise
-```python
-def create_debug_tab():
-    st.header("🔧 Test Capacités Manuel")
-    
-    # Sélection
-    hero_code = st.selectbox("Héros", ["P-1", "P-2", "P-3"])
-    ability_num = st.selectbox("Capacité", [1, 2, 3, 4, 5, 6])
-    
-    # Configuration
-    user_pv = st.number_input("PV", 1, 30, 15)
-    user_sorts = st.number_input("Sorts", 0, 10, 5)
-    nb_ennemis = st.selectbox("Ennemis", [1, 2, 3])
-    
-    # Test direct
-    if st.button("🧪 TESTER"):
-        # Créer contexte réel + exécuter + logs
-```
-
-**BLOQUANT** : Aucune capacité avant debug fonctionnel
-
 ---
 
-## 📊 API VALIDÉE (Enrichissement continu)
+## 🎯 ACTIONS IMMÉDIATES
 
-### ✅ P-1 Elneha validée
-**API utilisée** : `hero.current_spells`, `hero.apply_damage_with_parade()`
-**Erreurs évitées** : Aucune
+### 🔥 URGENT - Tests de validation
+1. **Tester** Éclair magique (doit infliger dégâts aux ennemis)
+2. **Tester** Armure du mage (doit consommer 2 sorts) 
+3. **Tester** une capacité P-1 et P-3
 
-### ✅ P-2 Liarie partiellement validée  
-**API utilisée** : `hero.get_total_damage()`
-**Erreurs** : `magical_armor_bonus` n'existe pas
-**À corriger** : Créer attribut ou adapter capacité
+### 📋 COURT TERME - Retest complet
+1. **Retester les 18 capacités** avec debug corrigé
+2. **Identifier** et corriger les échecs restants
+3. **Finaliser** P-1, P-2, P-3 avant P-4
 
-### ⚠️ P-3 Atucan problématique
-**Problème** : IA jamais utilise Imposition des mains
-**À revoir** : Seuils d'activation trop restrictifs
-
----
-
-## 🎯 MISE À JOUR APRÈS CHAQUE CAPACITÉ
-
-**Dans ce plan, section "État actuel" :**
-1. Incrémenter compteur capacités
-2. Marquer statut héros (✅/⚠️/❌)
-3. Noter prochaine priorité
-4. Ajouter API validée si nouvelle
-5. Documenter flux si modifié
-
-**Échec si oubli** : Capacité non terminée
+### 🚀 LONG TERME - Suite migration  
+1. **P-4 Kraor** avec processus validé
+2. **P-5 à P-8** avec debug fiable
+3. **Capacités bonus** P-10 à P-12
 
 ---
 
 ## 🎯 OBJECTIF FINAL
-**59/59 capacités** fonctionnelles via onglet debug validé
+**59/59 capacités** fonctionnelles via debug_mode.py corrigé avec architecture SpellManager maîtrisée
+
+---
+**Version** : Post-debug fixes - Retest systématique requis  
+**Usage** : Guide de développement sans régression technique  
+**Prochaine étape** : Validation fixes puis retest complet

@@ -58,10 +58,22 @@ def _create_debug_interface():
         col1, col2 = st.columns(2)
         
         with col1:
+            # Créer mapping des noms de héros
+            hero_names = {
+                'P-1': 'P-1 Elneha',
+                'P-2': 'P-2 Liarie', 
+                'P-3': 'P-3 Atucan',
+                'P-4': 'P-4 Kraor',
+                'P-5': 'P-5 Thordius',
+                'P-6': 'P-6 Stèphe',
+                'P-7': 'P-7 Lame',
+                'P-8': 'P-8 Raishi'
+            }
+            
             selected_hero_code = st.selectbox(
                 "Héros", 
                 options=list(heroes_data.keys()),
-                format_func=lambda x: f"{x} ({len(heroes_data[x])} capacités)"
+                format_func=lambda x: f"{hero_names.get(x, x)} ({len(heroes_data[x])} capacités)"
             )
         
         with col2:
@@ -118,8 +130,16 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
             
             if ability_instance:
                 st.write(f"**Coût sorts:** {ability_instance.spell_cost}")
-                if hasattr(ability_instance, 'limitation') and ability_instance.limitation:
+                
+                # Afficher limitations par combat
+                if hasattr(ability_instance, 'uses_per_combat'):
+                    st.write(f"**Utilisations/combat:** {ability_instance.uses_per_combat}")
+                    if hasattr(ability_instance, 'uses_remaining_combat'):
+                        st.write(f"**Restantes:** {ability_instance.uses_remaining_combat}")
+                elif hasattr(ability_instance, 'limitation') and ability_instance.limitation:
                     st.write(f"**Limitation:** {ability_instance.limitation}")
+                else:
+                    st.write("**Utilisations:** Illimitée")
             else:
                 st.error("❌ Impossible de créer l'instance")
                 return
@@ -135,14 +155,16 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
     
     with col1:
         st.write("**Utilisateur**")
-        user_health = st.number_input("PV", 1, 30, 15, key="user_health")
+        user_max_health = st.number_input("PV max", 1, 30, 15, key="user_max_health")
+        user_current_health = st.number_input("PV actuels", 1, user_max_health, user_max_health, key="user_current_health")
         user_spells = st.number_input("Sorts", 0, 10, 5, key="user_spells")
         user_precision = st.number_input("Précision", 1, 15, 8, key="user_precision")
     
     with col2:
         st.write("**Alliés**")
         ally_count = st.number_input("Nombre", 0, 3, 1, key="ally_count")
-        ally_health = st.number_input("PV alliés", 1, 30, 10, key="ally_health")
+        ally_max_health = st.number_input("PV max alliés", 1, 30, 10, key="ally_max_health")
+        ally_current_health = st.number_input("PV actuels alliés", 1, ally_max_health, ally_max_health, key="ally_current_health")
     
     with col3:
         st.write("**Ennemis**")
@@ -153,14 +175,14 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
     if st.button("🧪 TESTER CAPACITÉ", type="primary"):
         _execute_ability_test(
             ability_instance, hero_code,
-            user_health, user_spells, user_precision,
-            ally_count, ally_health,
+            user_max_health, user_current_health, user_spells, user_precision,
+            ally_count, ally_max_health, ally_current_health,
             enemy_count, enemy_health
         )
 
 def _execute_ability_test(ability_instance, hero_code: str, 
-                         user_health: int, user_spells: int, user_precision: int,
-                         ally_count: int, ally_health: int,
+                         user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
+                         ally_count: int, ally_max_health: int, ally_current_health: int,
                          enemy_count: int, enemy_health: int):
     """Exécute le test de la capacité"""
     
@@ -169,34 +191,46 @@ def _execute_ability_test(ability_instance, hero_code: str,
     try:
         # Créer contexte de test
         user, allies, enemies, combat_state = _create_test_context(
-            hero_code, user_health, user_spells, user_precision,
-            ally_count, ally_health, enemy_count, enemy_health
+            hero_code, user_max_health, user_current_health, user_spells, user_precision,
+            ally_count, ally_max_health, ally_current_health, enemy_count, enemy_health
         )
         
         # Déterminer cibles selon type de capacité
         targets = _determine_targets(ability_instance, user, allies, enemies)
         
-        # Phase 1: Test direct execute (pas de can_be_used selon base_ability.py)
-        with st.expander("📋 Phase 1: Test Direct Execute", expanded=True):
+        # Préparer context selon base_ability.py
+        from models.combat.spell_manager import SpellManager
+        
+        spell_manager = SpellManager()
+        spell_manager.initialize_spells(user)
+        for ally in allies:
+            spell_manager.initialize_spells(ally)
+        
+        # Log pour execute()
+        execution_log = []
+        context = {
+            'spell_manager': spell_manager,
+            'heroes': combat_state.get('allies', []),
+            'current_heroes': combat_state.get('allies', []),
+            'alive_enemies': combat_state.get('enemies', []),
+            'current_enemies': combat_state.get('enemies', []),
+            'log': execution_log,
+            'player_count': 2
+        }
+        
+        # ✅ FIX - Capturer l'état AVANT l'exécution
+        with st.expander("📋 Phase 1: État AVANT", expanded=True):
             st.write("**Contexte:**")
             st.write(f"- Sorts disponibles: {getattr(user, 'current_spells', user.spells)}/{ability_instance.spell_cost}")
             st.write(f"- PV utilisateur: {user.current_health}/{user.health}")
             st.write(f"- Nombre cibles: {len(targets)}")
+            st.write(f"- SpellManager initialisé: User sorts = {spell_manager.get_current_spells(user)}")
             
-            # Préparer context selon base_ability.py
-            from models.combat.spell_manager import SpellManager
-            
-            spell_manager = SpellManager()
-            context = {
-                'spell_manager': spell_manager,
-                'rules': combat_state.get('rules'),
-                'all_heroes': combat_state.get('allies', []),
-                'all_enemies': combat_state.get('enemies', [])
-            }
-            
-            # Log pour execute()
-            execution_log = []
-            
+            st.write("**État AVANT exécution:**")
+            _display_entities_state_enhanced(user, allies, enemies, spell_manager)
+        
+        # Phase 2: Exécution 
+        with st.expander("⚡ Phase 2: Exécution", expanded=True):
             try:
                 # Appel selon signature base_ability.py: execute(caster, targets, context, log)
                 result = ability_instance.execute(user, targets, context, execution_log)
@@ -216,16 +250,10 @@ def _execute_ability_test(ability_instance, hero_code: str,
                 st.error(f"❌ Erreur execute(): {e}")
                 result = False
         
-        # Phase 2: Exécution et résultats
-        with st.expander("⚡ Phase 2: Exécution et Résultats", expanded=True):
-            
-            # État avant
-            st.write("**État AVANT:**")
-            _display_entities_state(user, allies, enemies)
-            
-            # État après
-            st.write("**État APRÈS:**")
-            _display_entities_state(user, allies, enemies)
+        # Phase 3: Résultats APRÈS
+        with st.expander("🎯 Phase 3: État APRÈS", expanded=True):
+            st.write("**État APRÈS exécution:**")
+            _display_entities_state_enhanced(user, allies, enemies, spell_manager)
             
             # Logs de combat
             if combat_state.get("logs"):
@@ -239,9 +267,76 @@ def _execute_ability_test(ability_instance, hero_code: str,
         st.error(f"💥 Erreur critique durant test: {e}")
         st.code(traceback.format_exc())
 
-def _create_test_context(hero_code: str, user_health: int, user_spells: int, user_precision: int,
-                        ally_count: int, ally_health: int, enemy_count: int, enemy_health: int):
-    """Crée le contexte de test basé sur le vrai modèle Character"""
+def _display_entities_state_enhanced(user, allies, enemies, spell_manager=None):
+    """Affiche l'état avec attaque et parade pour débogage capacités"""
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.write("**Utilisateur:**")
+        # API RÉELLE - current_health ne peut pas dépasser max
+        max_health = user.get_total_health()
+        current_health = min(user.current_health, max_health)
+        st.write(f"PV: {current_health}/{max_health}")
+        
+        # SpellManager ou current_spells
+        if spell_manager:
+            current_spells = spell_manager.get_current_spells(user)
+            max_spells = user.get_total_spells()
+        else:
+            current_spells = getattr(user, 'current_spells', None) or user.get_total_spells()
+            max_spells = user.get_total_spells()
+            
+        st.write(f"Sorts: {current_spells}/{max_spells}")
+        st.write(f"Précision: {user.get_total_precision()}")
+        
+        # ✅ NOUVEAU - Afficher attaque et parade pour debug
+        # Attaque (peut être modifiée par capacités)
+        base_attack = getattr(user, 'damage', 0)
+        current_attack = getattr(user, 'current_attack', base_attack)
+        if current_attack != base_attack:
+            st.write(f"**Attaque: {current_attack}** (base: {base_attack})")
+        else:
+            st.write(f"Attaque: {current_attack}")
+        
+        # Parade (jetons)
+        current_parade = getattr(user, 'current_parade_tokens', 0)
+        max_parade = getattr(user, 'max_parade_tokens', 0)
+        if max_parade > 0:
+            st.write(f"**Parade: {current_parade}/{max_parade}** 🛡️")
+        
+        # Afficher transformations si Elneha
+        if user.code == "P-1" and hasattr(user, 'current_form'):
+            form_display = user.get_form_display() if hasattr(user, 'get_form_display') else user.current_form
+            st.write(f"**Forme: {form_display}**")
+    
+    with col2:
+        st.write("**Alliés:**")
+        for i, ally in enumerate(allies):
+            max_health = ally.get_total_health()
+            current_health = min(ally.current_health, max_health)
+            st.write(f"Allié {i+1}: {current_health}/{max_health} PV")
+            
+            # Attaque et parade des alliés
+            current_attack = getattr(ally, 'current_attack', getattr(ally, 'damage', 0))
+            current_parade = getattr(ally, 'current_parade_tokens', 0)
+            max_parade = getattr(ally, 'max_parade_tokens', 0)
+            
+            attack_display = f"ATT: {current_attack}"
+            if max_parade > 0:
+                attack_display += f", 🛡️{current_parade}/{max_parade}"
+            
+            st.write(f"  {attack_display}")
+    
+    with col3:
+        st.write("**Ennemis:**")
+        for i, enemy in enumerate(enemies):
+            st.write(f"Ennemi {i+1}: {enemy.current_health}/{enemy.max_health} PV")
+            st.write(f"  DEF: {getattr(enemy, 'defense', 0)}")
+
+def _create_test_context(hero_code: str, user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
+                        ally_count: int, ally_max_health: int, ally_current_health: int, enemy_count: int, enemy_health: int):
+    """Créé le contexte de test basé sur le vrai modèle Character"""
     
     from models.character import Character, Enemy
     
@@ -252,9 +347,13 @@ def _create_test_context(hero_code: str, user_health: int, user_spells: int, use
         precision=user_precision,
         damage=4,
         spells=user_spells, 
-        health=user_health
+        health=user_max_health
     )
-    # current_health s'initialise automatiquement via model_post_init
+    # Ajuster les PV actuels (pour héros blessé)
+    user.current_health = user_current_health
+    
+    # FIX CRITIQUE #1: Initialiser current_spells explicitement
+    user.current_spells = user_spells
     
     # Créer alliés
     allies = []
@@ -265,8 +364,11 @@ def _create_test_context(hero_code: str, user_health: int, user_spells: int, use
             precision=6,
             damage=2, 
             spells=3,
-            health=ally_health
+            health=ally_max_health
         )
+        # Ajuster les PV actuels des alliés
+        ally.current_health = ally_current_health
+        ally.current_spells = ally.spells
         allies.append(ally)
     
     # Créer ennemis selon structure CSV
@@ -288,7 +390,7 @@ def _create_test_context(hero_code: str, user_health: int, user_spells: int, use
         enemies.append(enemy)
     
     combat_state = {
-        "allies": [user] + allies,
+        "aliases": [user] + allies,
         "enemies": enemies,
         "turn": 1,
         "logs": []
@@ -309,28 +411,6 @@ def _determine_targets(ability_instance, user, allies, enemies):
     else:
         # Capacité mixte ou inconnue - toutes les cibles
         return [user] + allies + enemies
-
-def _display_entities_state(user, allies, enemies):
-    """Affiche l'état selon character.py exact"""
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.write("**Utilisateur:**")
-        st.write(f"PV: {user.current_health}/{user.get_total_health()}")
-        current_spells = getattr(user, 'current_spells', None) or user.get_total_spells()
-        st.write(f"Sorts: {current_spells}/{user.get_total_spells()}")
-        st.write(f"Précision: {user.get_total_precision()}")
-    
-    with col2:
-        st.write("**Alliés:**")
-        for i, ally in enumerate(allies):
-            st.write(f"Allié {i+1}: {ally.current_health}/{ally.get_total_health()} PV")
-    
-    with col3:
-        st.write("**Ennemis:**")
-        for i, enemy in enumerate(enemies):
-            st.write(f"Ennemi {i+1}: {enemy.current_health}/{enemy.max_health} PV")
 
 # ============================================================================
 # INTÉGRATION DANS L'APP PRINCIPALE
@@ -395,3 +475,27 @@ def _quick_test(hero_code: str, ability_num: int):
     
     except Exception as e:
         st.error(f"Erreur test: {e}")
+
+# ============================================================================
+# FIX FORME D'OURS - UTILISER PARADE AU LIEU DE DEFENSE
+# ============================================================================
+
+def fix_bear_form_defense():
+    """
+    Fix à appliquer dans elneha.py pour la forme d'ours:
+    
+    # Au lieu de
+    caster.current_defense += 1
+    
+    # Utiliser 
+    if not hasattr(caster, 'max_parade_tokens'):
+        caster.max_parade_tokens = 0
+    if not hasattr(caster, 'current_parade_tokens'):
+        caster.current_parade_tokens = 0
+        
+    caster.max_parade_tokens += 1
+    caster.current_parade_tokens += 1
+    
+    log.append(f"+1 Jeton parade permanent")
+    """
+    pass

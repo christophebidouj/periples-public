@@ -36,7 +36,9 @@ class ElnehaFormeOurs(BaseAbility):
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1  # Corrigé selon Excel
-    
+        self.uses_per_combat = 1
+        self.uses_remaining_combat = 1 
+
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Transforme Elneha en ours pour plus de force et défense"""
         try:
@@ -48,9 +50,23 @@ class ElnehaFormeOurs(BaseAbility):
             # Appliquer la transformation d'ours
             caster.set_form("bear")
             
+            # ✅ FIX - Initialiser les attributs si absents ou None
+            if not hasattr(caster, 'current_attack') or caster.current_attack is None:
+                caster.current_attack = caster.damage
+            if not hasattr(caster, 'current_defense') or caster.current_defense is None:
+                caster.current_defense = getattr(caster, 'defense', 0)
+            
             # Bonus ours: +2 ATT, +1 DEF
             caster.current_attack += 2
-            caster.current_defense += 1
+            if not hasattr(caster, 'max_parade_tokens'):
+                caster.max_parade_tokens = 0
+            if not hasattr(caster, 'current_parade_tokens'):
+                caster.current_parade_tokens = 0
+                
+            caster.max_parade_tokens += 1
+            caster.current_parade_tokens += 1
+
+            log.append(f"   +1 Jeton parade permanent")
             
             log.append(f"🐻 {caster.name} se transforme en ours !")
             log.append(f"   +2 Attaque, +1 Défense")

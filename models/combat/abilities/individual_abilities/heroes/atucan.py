@@ -127,19 +127,19 @@ class AtucanChatimentDivin(BaseAbility):
     hero_code = "P-3"
     ability_number = 3
     name = "Châtiment divin"  # Nom CSV compatible
-    description = "Après une attaque réussie, inflige 4 dégats magiques à cet ennemi."
+    description = "Après une attaque réussie, inflige 4 dégâts magiques à cet ennemi."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1  # OFFICIEL: 1 sort
         self.uses_per_combat = 1  # OFFICIEL: 1/combat
-        self.uses_remaining = 1
+        self.uses_remaining_combat = 1  # ✅ FIXED
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Ajoute 4 dégâts magiques après une attaque réussie"""
         try:
-            # Vérifier les utilisations restantes
-            if self.uses_remaining <= 0:
+            # ✅ FIXED: Vérifier les utilisations restantes
+            if self.uses_remaining_combat <= 0:
                 log.append(f"❌ {self.name} déjà utilisé ce combat")
                 return False
             
@@ -150,7 +150,6 @@ class AtucanChatimentDivin(BaseAbility):
             
             # Cette capacité s'active après une attaque réussie
             # Pour le moment, on l'implémente comme un buff qui s'appliquera
-# Remplacer ligne 85-91 dans atucan.py
             if not hasattr(caster, 'combat_flags'):
                 caster.combat_flags = {}
 
@@ -160,13 +159,16 @@ class AtucanChatimentDivin(BaseAbility):
                 'description': 'Châtiment divin'
             }
             
+            if not hasattr(caster, 'next_attack_bonuses'):
+                caster.next_attack_bonuses = []
+            
             caster.next_attack_bonuses.append({
                 'type': 'magical_damage_after_hit',
                 'value': 4,
                 'description': 'Châtiment divin'
             })
             
-            self.uses_remaining -= 1
+            self.uses_remaining_combat -= 1  # ✅ FIXED
             
             log.append(f"⚡ {caster.name} prépare Châtiment divin")
             log.append(f"   💥 Prochaine attaque réussie infligera +4 dégâts magiques")
@@ -239,13 +241,13 @@ class AtucanSoinDeGroupe(BaseAbility):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1  # OFFICIEL: 1 sort
         self.uses_per_combat = 1  # OFFICIEL: 1/combat
-        self.uses_remaining = 1
+        self.uses_remaining_combat = 1  # ✅ FIXED
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Répartit jusqu'à 8 PV de soin entre tous les alliés"""
         try:
-            # Vérifier les utilisations restantes
-            if self.uses_remaining <= 0:
+            # ✅ FIXED: Vérifier les utilisations restantes
+            if self.uses_remaining_combat <= 0:
                 log.append(f"❌ {self.name} déjà utilisé ce combat")
                 return False
             
@@ -277,7 +279,7 @@ class AtucanSoinDeGroupe(BaseAbility):
                 
                 log.append(f"   ❤️ {ally.name} récupère {actual_healing} PV")
             
-            self.uses_remaining -= 1
+            self.uses_remaining_combat -= 1  # ✅ FIXED
             
             return True
             
@@ -293,19 +295,19 @@ class AtucanJugementDernier(BaseAbility):
     hero_code = "P-3"
     ability_number = 6
     name = "Jugement dernier"  # Nom CSV compatible
-    description = "Inflige 6 dégats magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour les 2 prochains tours."
+    description = "Inflige 6 dégâts magiques à tous les adversaires. Cela leur fait aussi perdre leur action pour les 2 prochains tours."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 2  # OFFICIEL: 2 sorts
         self.uses_per_combat = 1  # OFFICIEL: 1/combat
-        self.uses_remaining = 1
+        self.uses_remaining_combat = 1  # ✅ FIXED
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Inflige 6 dégâts magiques à tous les ennemis + stun 2 tours"""
         try:
-            # Vérifier les utilisations restantes
-            if self.uses_remaining <= 0:
+            # ✅ FIXED: Vérifier les utilisations restantes
+            if self.uses_remaining_combat <= 0:
                 log.append(f"❌ {self.name} déjà utilisé ce combat")
                 return False
             
@@ -315,10 +317,7 @@ class AtucanJugementDernier(BaseAbility):
                 return False
             
             # Cibler tous les ennemis vivants
-            # Filtrer pour ne garder que les vrais ennemis (classe Enemy)
-            # ✅ NOUVEAU CODE
             # FIX: Utiliser _get_all_enemies() au lieu de filtrer targets
-            # Comme font les autres capacités AoE (Liarie Boule de feu, etc.)
             enemies = self._get_all_enemies(caster, context)
             if not enemies:
                 log.append(f"⚡ {caster.name} invoque le Jugement dernier mais il n'y a aucun ennemi !")
@@ -333,7 +332,13 @@ class AtucanJugementDernier(BaseAbility):
             
             for enemy in enemies:
                 # Appliquer les dégâts magiques (bypass parade)
-                damage_result = enemy.apply_damage_with_parade(damage, ignore_parade=True)
+                if hasattr(enemy, 'apply_damage_with_parade'):
+                    damage_result = enemy.apply_damage_with_parade(damage, ignore_parade=True)
+                else:
+                    # Fallback pour ennemis sans système parade
+                    old_health = enemy.current_health
+                    enemy.current_health = max(0, enemy.current_health - damage)
+                    
                 log.append(f"   💥 {enemy.name} subit {damage} dégâts magiques")
                 
                 if enemy.is_alive():
@@ -351,7 +356,7 @@ class AtucanJugementDernier(BaseAbility):
             if enemies_defeated:
                 log.append(f"   ☠️ Ennemis vaincus: {', '.join(enemies_defeated)}")
             
-            self.uses_remaining -= 1
+            self.uses_remaining_combat -= 1  # ✅ FIXED
             
             return True
             
