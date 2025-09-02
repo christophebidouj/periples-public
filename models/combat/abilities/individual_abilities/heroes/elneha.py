@@ -1,4 +1,3 @@
-# elneha.py
 # elneha.py - Capacités individuelles d'Elneha (P-1)
 """
 Capacités individuelles pour le héros Elneha (P-1)
@@ -35,22 +34,20 @@ class ElnehaFormeOurs(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # Corrigé selon Excel
+        self.spell_cost = 1
         self.uses_per_combat = 1
-        self.uses_remaining_combat = 1 
+        self.uses_remaining_combat = 1
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Transforme Elneha en ours pour plus de force et défense"""
         try:
-            # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Appliquer la transformation d'ours
             caster.set_form("bear")
             
-            # ✅ FIX - Initialiser les attributs si absents ou None
+            # Initialiser les attributs si absents ou None
             if not hasattr(caster, 'current_attack') or caster.current_attack is None:
                 caster.current_attack = caster.damage
             if not hasattr(caster, 'current_defense') or caster.current_defense is None:
@@ -66,25 +63,17 @@ class ElnehaFormeOurs(BaseAbility):
             caster.max_parade_tokens += 1
             caster.current_parade_tokens += 1
 
-            log.append(f"   +1 Jeton parade permanent")
-            
             log.append(f"🐻 {caster.name} se transforme en ours !")
-            log.append(f"   +2 Attaque, +1 Défense")
+            log.append(f"   +2 Attaque, +1 Défense, +1 Jeton parade")
             
+            self.uses_remaining_combat -= 1
             return True
             
         except Exception as e:
             log.append(f"❌ Erreur transformation ours: {str(e)}")
             return False
-    
-    def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si la transformation peut être effectuée"""
-        if caster.code != "P-1":
-            return False
-        return caster.current_spells >= self.spell_cost
-    
+
     def get_preview(self) -> str:
-        """Aperçu des effets"""
         return f"🐻 {self.name}: +2 ATT, +1 DEF (Coût: {self.spell_cost} sort)"
 
 
@@ -99,21 +88,17 @@ class ElnehaSoinMineur(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # Confirmé Excel
+        self.spell_cost = 1
         self.healing_amount = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Soigne un personnage de 4 PV"""
         try:
-            # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Déterminer la cible (premier dans targets ou caster par défaut)
             target = targets[0] if targets else caster
-            
-            # Appliquer les soins
             healed = self._apply_healing(target, self.healing_amount, log)
             
             log.append(f"🌿 {caster.name} lance {self.name} sur {target.name}")
@@ -124,15 +109,8 @@ class ElnehaSoinMineur(BaseAbility):
         except Exception as e:
             log.append(f"❌ Erreur soin mineur: {str(e)}")
             return False
-    
-    def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si le soin peut être lancé"""
-        if caster.code != "P-1":
-            return False
-        return caster.current_spells >= self.spell_cost
-    
+
     def get_preview(self) -> str:
-        """Aperçu des effets"""
         return f"🌿 {self.name}: Soigne {self.healing_amount} PV (Coût: {self.spell_cost} sort)"
 
 
@@ -147,18 +125,24 @@ class ElnehaFormeLoup(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # Corrigé selon Excel
+        self.spell_cost = 1
+        self.uses_per_combat = 1
+        self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Transforme Elneha en loup pour plus d'agilité et précision"""
         try:
-            # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Appliquer la transformation de loup
             caster.set_form("wolf")
+            
+            # Initialiser les attributs si absents ou None
+            if not hasattr(caster, 'current_attack') or caster.current_attack is None:
+                caster.current_attack = caster.damage
+            if not hasattr(caster, 'current_precision') or caster.current_precision is None:
+                caster.current_precision = caster.precision
             
             # Bonus loup: +1 ATT, +2 PREC
             caster.current_attack += 1
@@ -167,20 +151,14 @@ class ElnehaFormeLoup(BaseAbility):
             log.append(f"🐺 {caster.name} se transforme en loup !")
             log.append(f"   +1 Attaque, +2 Précision")
             
+            self.uses_remaining_combat -= 1
             return True
             
         except Exception as e:
             log.append(f"❌ Erreur transformation loup: {str(e)}")
             return False
-    
-    def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si la transformation peut être effectuée"""
-        if caster.code != "P-1":
-            return False
-        return caster.current_spells >= self.spell_cost
-    
+
     def get_preview(self) -> str:
-        """Aperçu des effets"""
         return f"🐺 {self.name}: +1 ATT, +2 PREC (Coût: {self.spell_cost} sort)"
 
 
@@ -195,28 +173,23 @@ class ElnehaSoinMultiple(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2  # Corrigé selon Excel (était 3)
+        self.spell_cost = 2
         self.healing_amount = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Soigne tous les alliés"""
         try:
-            # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Récupérer tous les alliés (incluant le lanceur)
             all_allies = self._get_all_allies(caster, context)
-            
             results = []
-            total_healed = 0
             
             for ally in all_allies:
                 healed = self._apply_healing(ally, self.healing_amount, log)
                 if healed > 0:
                     results.append(f"{ally.name}: +{healed} PV")
-                    total_healed += healed
             
             log.append(f"🌟 {caster.name} lance {self.name} !")
             if results:
@@ -229,15 +202,8 @@ class ElnehaSoinMultiple(BaseAbility):
         except Exception as e:
             log.append(f"❌ Erreur soin multiple: {str(e)}")
             return False
-    
-    def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si le soin multiple peut être lancé"""
-        if caster.code != "P-1":
-            return False
-        return caster.current_spells >= self.spell_cost
-    
+
     def get_preview(self) -> str:
-        """Aperçu des effets"""
         return f"🌟 {self.name}: Soigne {self.healing_amount} PV à tous les alliés (Coût: {self.spell_cost} sorts)"
 
 
@@ -252,18 +218,16 @@ class ElnehaOndeTonnante(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # Corrigé selon Excel (était 3)
+        self.spell_cost = 1
         self.damage_amount = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Attaque sonique contre tous les ennemis"""
         try:
-            # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Récupérer tous les ennemis
             all_enemies = self._get_all_enemies(caster, context)
             
             if not all_enemies:
@@ -274,11 +238,10 @@ class ElnehaOndeTonnante(BaseAbility):
             stunned_enemies = []
             
             for enemy in all_enemies:
-                # Infliger dégâts magiques
                 damage_dealt = self._apply_damage(enemy, self.damage_amount, "magical", log)
                 results.append(f"{enemy.name}: {damage_dealt} dégâts")
                 
-                # Effet spécial: perte d'action (stun)
+                # Effet stun
                 if not hasattr(enemy, 'status_effects'):
                     enemy.status_effects = {}
                 enemy.status_effects['stunned'] = 1
@@ -294,15 +257,8 @@ class ElnehaOndeTonnante(BaseAbility):
         except Exception as e:
             log.append(f"❌ Erreur onde tonnante: {str(e)}")
             return False
-    
-    def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si l'onde tonnante peut être lancée"""
-        if caster.code != "P-1":
-            return False
-        return caster.current_spells >= self.spell_cost
-    
+
     def get_preview(self) -> str:
-        """Aperçu des effets"""
         return f"⚡ {self.name}: {self.damage_amount} dégâts magiques à tous + stun (Coût: {self.spell_cost} sort)"
 
 
@@ -317,12 +273,11 @@ class ElnehaResurrection(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2  # Corrigé selon Excel (était 4)
+        self.spell_cost = 2
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Ressuscite un personnage inconscient avec PV complets"""
         try:
-            # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
@@ -333,16 +288,14 @@ class ElnehaResurrection(BaseAbility):
             
             target = targets[0]
             
-            # Vérifier si la cible est inconsciente (0 PV)
             if target.current_health > 0:
                 log.append(f"❌ {target.name} n'est pas inconscient")
                 return False
             
-            # Résurrection complète - restaurer tous les PV
-            max_health = target.health  # PV maximum
+            # Résurrection complète
+            max_health = target.health
             healed = self._apply_healing(target, max_health, log)
             
-            # Marquer comme pouvant agir immédiatement
             if hasattr(target, 'can_act_this_turn'):
                 target.can_act_this_turn = True
             
@@ -355,15 +308,8 @@ class ElnehaResurrection(BaseAbility):
         except Exception as e:
             log.append(f"❌ Erreur résurrection: {str(e)}")
             return False
-    
-    def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si la résurrection peut être lancée"""
-        if caster.code != "P-1":
-            return False
-        return caster.current_spells >= self.spell_cost
-    
+
     def get_preview(self) -> str:
-        """Aperçu des effets"""
         return f"✨ {self.name}: Ressuscite un inconscient à PV max (Coût: {self.spell_cost} sorts)"
 
 

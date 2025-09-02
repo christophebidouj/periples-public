@@ -255,6 +255,22 @@ def _execute_ability_test(ability_instance, hero_code: str,
             st.write("**État APRÈS exécution:**")
             _display_entities_state_enhanced(user, allies, enemies, spell_manager)
             
+            # Afficher utilisations restantes de la capacité
+            st.write("**Capacité utilisée:**")
+            if hasattr(ability_instance, 'uses_per_combat') and ability_instance.uses_per_combat is not None:
+                # Vérifier les deux attributs possibles pour compatibilité
+                remaining = getattr(ability_instance, 'uses_remaining_combat', None)
+                if remaining is None:
+                    remaining = getattr(ability_instance, 'uses_remaining', ability_instance.uses_per_combat)
+                
+                st.write(f"- **{ability_instance.name}:** {remaining}/{ability_instance.uses_per_combat} utilisations restantes")
+                
+                # Debug info si pas cohérent
+                if remaining == ability_instance.uses_per_combat:
+                    st.warning("⚠️ Utilisation non décomptée - vérifier l'implémentation")
+            else:
+                st.write(f"- **{ability_instance.name}:** Utilisations illimitées")
+            
             # Logs de combat
             if combat_state.get("logs"):
                 st.write("**Logs générés:**")
@@ -411,91 +427,3 @@ def _determine_targets(ability_instance, user, allies, enemies):
     else:
         # Capacité mixte ou inconnue - toutes les cibles
         return [user] + allies + enemies
-
-# ============================================================================
-# INTÉGRATION DANS L'APP PRINCIPALE
-# ============================================================================
-
-def integrate_debug_mode_in_app():
-    """
-    Code d'intégration pour ajouter le mode debug dans l'app principale
-    
-    À ajouter dans app.py dans la fonction main():
-    
-    # Ajouter un onglet debug
-    tabs = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène", "🔧 Debug", "ℹ️ À Propos"])
-    
-    # Dans la boucle des onglets:
-    with tabs[4]:  # Onglet Debug
-        from debug_mode import create_debug_tab
-        create_debug_tab()
-    """
-    pass
-
-# ============================================================================
-# MODE DEBUG SIDEBAR (Alternative)
-# ============================================================================
-
-def create_debug_sidebar():
-    """
-    Alternative: Mode debug dans la sidebar
-    À ajouter dans app.py:
-    
-    if st.sidebar.checkbox("🔧 Mode Debug Capacités"):
-        with st.sidebar.expander("Debug Interface", expanded=True):
-            create_debug_sidebar()
-    """
-    
-    st.write("🔧 **Debug Capacités**")
-    
-    try:
-        from models.combat.abilities.individual_abilities import ABILITY_REGISTRY
-        total = ABILITY_REGISTRY.get_registered_count()
-        st.write(f"📊 {total}/59 capacités")
-        
-        if st.button("Test Rapide P-1"):
-            _quick_test("P-1", 1)
-        
-        if st.button("Test Rapide P-2"):
-            _quick_test("P-2", 1)
-    
-    except Exception as e:
-        st.error(f"Erreur debug: {e}")
-
-def _quick_test(hero_code: str, ability_num: int):
-    """Test rapide d'une capacité"""
-    try:
-        from models.combat.abilities.individual_abilities import ABILITY_REGISTRY
-        
-        ability = ABILITY_REGISTRY.get_ability_instance(hero_code, ability_num)
-        if ability:
-            st.success(f"✅ {ability.name} - Coût: {ability.spell_cost}")
-        else:
-            st.error(f"❌ Capacité {hero_code}-{ability_num} non trouvée")
-    
-    except Exception as e:
-        st.error(f"Erreur test: {e}")
-
-# ============================================================================
-# FIX FORME D'OURS - UTILISER PARADE AU LIEU DE DEFENSE
-# ============================================================================
-
-def fix_bear_form_defense():
-    """
-    Fix à appliquer dans elneha.py pour la forme d'ours:
-    
-    # Au lieu de
-    caster.current_defense += 1
-    
-    # Utiliser 
-    if not hasattr(caster, 'max_parade_tokens'):
-        caster.max_parade_tokens = 0
-    if not hasattr(caster, 'current_parade_tokens'):
-        caster.current_parade_tokens = 0
-        
-    caster.max_parade_tokens += 1
-    caster.current_parade_tokens += 1
-    
-    log.append(f"+1 Jeton parade permanent")
-    """
-    pass

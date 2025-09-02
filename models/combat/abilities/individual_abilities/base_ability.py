@@ -43,22 +43,16 @@ class BaseAbility(ABC):
         pass
     
     def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """
-        VÃ©rifie si la capacitÃ© peut Ãªtre exÃ©cutÃ©e
-        
-        Args:
-            caster: Personnage qui veut lancer la capacitÃ©
-            context: Contexte du combat
-            
-        Returns:
-            bool: True si la capacitÃ© peut Ãªtre lancÃ©e
-        """
-        # VÃ©rifications de base par dÃ©faut
         spell_manager = context.get('spell_manager')
         if not spell_manager:
             return False
             
-        # VÃ©rifier si assez de sorts disponibles (si capacitÃ© magique)
+        # Vérifier les utilisations restantes (MANQUANT)
+        if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+            if self.uses_remaining_combat <= 0:
+                return False
+        
+        # Vérifier le coût en sorts
         if hasattr(self, 'spell_cost') and self.spell_cost > 0:
             return caster.current_spells >= self.spell_cost
             
