@@ -170,8 +170,9 @@ class CombatEngine:
         
         # Comptage des survivants (héros + pets)
         heroes_alive = len([h for h in heroes if h.is_alive()])
-        pets_alive = len([p for p in active_pets if p.is_alive()])
-        total_alive = heroes_alive + pets_alive
+        #pet_alive n'est pas utile
+        #pets_alive = len([p for p in active_pets if p.is_alive()])
+        total_alive = heroes_alive
         
         # Log récapitulatif sorts avec gestion CENTRALISÉE
         heroes_with_spells = [h for h in heroes if self.spell_manager.get_spells_used(h) > 0]

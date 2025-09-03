@@ -1,15 +1,13 @@
 # ability_manager.py
 """
 Gestionnaire principal des effets de capacités
-VERSION MISE À JOUR - Support des capacités individuelles + système modulaire existant
+VERSION NETTOYÉE - Système de capacités individuelles uniquement
 """
 
 from typing import List, Dict, Any
 from .persistent_effects import PersistentEffectsSystem
-from .generic_effects import GenericEffectsHandler
-from .hero_specific import HeroSpecificEffects
 
-# NOUVEAU - Import du système de capacités individuelles
+# Import du système de capacités individuelles
 try:
     from .individual_abilities import ABILITY_REGISTRY, get_ability
     INDIVIDUAL_ABILITIES_AVAILABLE = True
@@ -21,39 +19,34 @@ except ImportError as e:
 class AbilityEffectsManager:
     """
     Orchestrateur principal pour tous les effets de capacités
-    NOUVEAU: Support des capacités individuelles + délégation aux modules spécialisés existants
+    VERSION NETTOYÉE: Support des capacités individuelles + effets persistants
     """
     
     def __init__(self, spell_manager):
         self.spell_manager = spell_manager
         
-        # Modules spécialisés existants (PRÉSERVÉS)
+        # Système d'effets persistants (conservé)
         self.persistent_system = PersistentEffectsSystem()
-        self.generic_handler = GenericEffectsHandler(spell_manager)
-        self.hero_specific = HeroSpecificEffects(spell_manager)
         
-        # NOUVEAU - Statistiques pour le suivi de migration
+        # Statistiques pour le suivi de migration
         self.individual_abilities_used = 0
         self.legacy_abilities_used = 0
-    
-# CORRECTION ability_manager.py - Ligne ~30-60
-# Remplacer la méthode apply_ability_effects()
 
     def apply_ability_effects(self, hero, ability, log: List[str], context: Dict[str, Any] = None) -> bool:
+        """Point d'entrée principal pour l'application des effets de capacités"""
         
-        # NOUVEAU - Étape 1: Vérifier si une capacité individuelle existe
+        # Étape 1: Vérifier si une capacité individuelle existe
         if INDIVIDUAL_ABILITIES_AVAILABLE and hasattr(ability, 'ability_number'):
             individual_result = self._try_individual_ability(hero, ability, log, context)
             if individual_result is not None:
                 return individual_result
         
-        # DÉSACTIVÉ - Ancien système
-        # return self._apply_legacy_system(hero, ability, log)
+        # Ancien système désactivé
         return False
         
     def _try_individual_ability(self, hero, ability, log: List[str], context: Dict[str, Any] = None):
         """
-        NOUVEAU - Tente d'exécuter une capacité individuelle
+        Tente d'exécuter une capacité individuelle
         
         Returns:
             bool si capacité individuelle exécutée, None si pas trouvée
@@ -89,94 +82,31 @@ class AbilityEffectsManager:
             
         except Exception as e:
             log.append(f"❌ Erreur capacité individuelle {hero.code}-{ability.ability_number}: {str(e)}")
-            # En cas d'erreur, continuer avec l'ancien système (pas de crash)
+            # En cas d'erreur, pas de crash
         
         return None  # Pas de capacité individuelle trouvée
     
-    def _apply_legacy_system(self, hero, ability, log: List[str]) -> bool:
-        """
-        Applique l'ancien système modulaire (PRÉSERVÉ INTÉGRALEMENT)
-        GenericEffects + HeroSpecific + PersistentEffects
-        """
-        effects_applied = False
-        
-        # 1. Vérifier si c'est une capacité spécifique à un héros
-        if self._is_hero_specific_ability(hero, ability):
-            if self.hero_specific.apply_specific_ability(hero, ability, log):
-                effects_applied = True
-        
-        # 2. Appliquer les effets génériques
-        if self.generic_handler.apply_generic_effects(hero, ability, log):
-            effects_applied = True
-        
-        # 3. Gérer les effets persistants
-        if self._activates_persistent_effect(ability):
-            self.persistent_system.activate_persistent_effect(hero, ability, log)
-            effects_applied = True
-        
-        if effects_applied:
-            self.legacy_abilities_used += 1
-        
-        return effects_applied
-    
-    def _is_hero_specific_ability(self, hero, ability) -> bool:
-        """
-        Détermine si une capacité nécessite un traitement spécifique
-        PRÉSERVÉ - Liste des capacités avec traitement spécial
-        """
-        # Capacités nécessitant un traitement héros-spécifique
-        hero_specifics = [
-            ('P-1', 'forme d\'ours'),      # Elneha transformation ours
-            ('P-1', 'forme de loup'),     # Elneha transformation loup  
-            ('P-1', 'métamorphose'),      # Autres transformations Elneha
-            ('P-4', 'marquer'),           # Kraor marquage
-            ('P-6', 'rage de berserker'), # Stephe rage
-            ('P-7', 'furtivité'),         # Lame furtivité
-            ('P-8', 'technique')          # Raishi techniques
-        ]
-        
-        description_lower = ability.description.lower()
-        return any(hero.code == code and specific in description_lower 
-                  for code, specific in hero_specifics)
-    
-    def _activates_persistent_effect(self, ability) -> bool:
-        """
-        Détermine si une capacité active un effet persistant
-        PRÉSERVÉ - Détection des effets persistants
-        """
-        description = ability.description.lower()
-        name = ability.name.lower()
-        
-        # Mots-clés indiquant un effet persistant
-        persistent_keywords = [
-            'par tour', 'tant que', 'jusqu\'à ', 'à chaque tour',
-            'de façon cumulative', 'reste actif', 'armure du mage',
-            'rage de berserker', 'rage insatiable', 'témérité'
-        ]
-        
-        return any(keyword in description or keyword in name for keyword in persistent_keywords)
-    
     def apply_turn_start_effects(self, hero, log: List[str]):
-        """Applique les effets de début de tour (effets persistants) - PRÉSERVÉ"""
+        """Applique les effets de début de tour (effets persistants)"""
         self.persistent_system.apply_turn_start_effects(hero, log)
     
     def apply_turn_end_effects(self, hero, log: List[str]):
-        """Applique les effets de fin de tour - PRÉSERVÉ"""
+        """Applique les effets de fin de tour"""
         self.persistent_system.apply_turn_end_effects(hero, log)
     
     def remove_expired_effects(self, hero, log: List[str]):
-        """Supprime les effets expirés - PRÉSERVÉ"""
+        """Supprime les effets expirés"""
         self.persistent_system.remove_expired_effects(hero, log)
     
     def get_effect_preview(self, ability) -> str:
         """
         Génère un aperçu des effets d'une capacité pour l'interface
-        NOUVEAU: Priorise les aperçus des capacités individuelles
+        VERSION NETTOYÉE: Capacités individuelles + effets persistants uniquement
         """
         if not ability or not hasattr(ability, 'description'):
             return "Effet inconnu"
         
-        # NOUVEAU - Essayer d'abord les capacités individuelles
+        # Prioriser les aperçus des capacités individuelles
         if INDIVIDUAL_ABILITIES_AVAILABLE and hasattr(ability, 'ability_number'):
             try:
                 # Déterminer le code héros depuis le contexte ou un attribut
@@ -186,30 +116,14 @@ class AbilityEffectsManager:
                     if individual_ability:
                         return individual_ability.get_preview()
             except Exception:
-                pass  # Fallback sur l'ancien système
+                pass  # Fallback sur effets persistants
         
-        # Fallback sur l'ancien système (PRÉSERVÉ)
-        preview_parts = []
-        
-        # Effets génériques
-        generic_preview = self.generic_handler.get_generic_preview(ability)
-        if generic_preview:
-            preview_parts.append(generic_preview)
-        
-        # Effets spécifiques
-        specific_preview = self.hero_specific.get_specific_preview(ability)
-        if specific_preview:
-            preview_parts.append(specific_preview)
-        
-        # Effets persistants
+        # Fallback sur effets persistants uniquement
         persistent_preview = self.persistent_system.get_persistent_preview(ability)
-        if persistent_preview:
-            preview_parts.append(persistent_preview)
-        
-        return " | ".join(preview_parts) if preview_parts else "Effet spécial"
+        return persistent_preview if persistent_preview else "Effet spécial"
     
     def get_active_effects_summary(self, hero) -> Dict[str, Any]:
-        """Retourne un résumé des effets actifs sur un héros - PRÉSERVÉ"""
+        """Retourne un résumé des effets actifs sur un héros"""
         return {
             'persistent_effects': self.persistent_system.get_active_effects(hero),
             'temporary_buffs': getattr(hero, 'temporary_buffs', {}),
@@ -218,7 +132,7 @@ class AbilityEffectsManager:
     
     def get_migration_stats(self) -> Dict[str, Any]:
         """
-        NOUVEAU - Retourne les statistiques de migration vers les capacités individuelles
+        Retourne les statistiques de migration vers les capacités individuelles
         """
         total_used = self.individual_abilities_used + self.legacy_abilities_used
         

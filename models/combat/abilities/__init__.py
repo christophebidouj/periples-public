@@ -5,16 +5,12 @@ Architecture modulaire pour le moteur de combat Périples
 
 from .ability_manager import AbilityEffectsManager
 from .persistent_effects import PersistentEffectsSystem
-from .generic_effects import GenericEffectsHandler
-from .hero_specific import HeroSpecificEffects
 from .character_integration import CharacterAbilitiesIntegration
 
 # Point d'entrée principal
 __all__ = [
     'AbilityEffectsManager',
-    'PersistentEffectsSystem', 
-    'GenericEffectsHandler',
-    'HeroSpecificEffects',
+    'PersistentEffectsSystem',
     'CharacterAbilitiesIntegration'
 ]
 

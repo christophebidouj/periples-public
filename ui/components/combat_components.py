@@ -263,7 +263,7 @@ def display_combat_log(log_lines: List[str]):
 
 def display_combat_summary(result: Dict[str, Any]):
     """
-    Affiche un résumé final du combat - Version simplifiée sans boutons
+    Affiche un résumé final du combat - Version corrigée
     
     Args:
         result: Dictionnaire des résultats de combat
@@ -278,8 +278,8 @@ def display_combat_summary(result: Dict[str, Any]):
         <div style="font-family: monospace; font-weight: bold;">
             ⏱️ Durée: {result.get('rounds', 'N/A')} rounds<br>
             🏆 Vainqueur: {result.get('winner', 'Indéterminé').title()}<br>
-            ⚔️ Survivants héros: {result.get('heroes_remaining', 0)}<br>
-            👹 Survivants ennemis: {result.get('enemies_remaining', 0)}
+            ⚔️ Survivants héros: {result.get('heroes_alive', 0)}<br>
+            👹 Survivants ennemis: {result.get('enemies_alive', 0)}
         </div>
     </div>
     """
