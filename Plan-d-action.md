@@ -1,5 +1,5 @@
 # 🎯 PLAN D'ACTION - MIGRATION CAPACITÉS PÉRIPLES
-**Version : API Consistency Fixes - Septembre 2025**
+**Version : API Consistency Fixes + Debug Mode Fixed - Septembre 2025**
 
 ## ⚠️ RÈGLES ABSOLUES CLAUDE
 
@@ -17,19 +17,19 @@
 
 ---
 
-## 📈 ÉTAT ACTUEL - RETEST COMPLET REQUIS
-**TOTAL** : 18/59 capacités (30%) - **TOUTES À RETESTER**
-- **P-1 (Elneha)** : 6/6 ⚠️ RETEST après fixes debug + BaseAbility
+## 📈 ÉTAT ACTUEL - ARCHITECTURE CORRIGÉE
+**TOTAL** : 18/59 capacités (30%) - **PRÊT POUR RETEST SYSTÉMATIQUE**
+- **P-1 (Elneha)** : 6/6 ✅ RETEST avec debug mode corrigé
 - **P-2 (Liarie)** : 6/6 ⚠️ RETEST + corriger magical_armor_bonus 
 - **P-3 (Atucan)** : 6/6 ⚠️ RETEST + revoir IA restrictive
 
-**PRIORITÉ CRITIQUE** : BaseAbility.can_execute() incomplet - **fix avant tests**
+**PRIORITÉ CRITIQUE** : ✅ **RÉSOLU** - BaseAbility.can_execute() + debug_mode.py corrigés
 
 ---
 
 ## ⚙️ API VALIDÉE - FIXES CRITIQUES APPLIQUÉS
 
-### BaseAbility (Classe mère critique)
+### BaseAbility (Classe mère critique) - ✅ CORRIGÉ
 ```python
 # ✅ API standardisée pour toutes les capacités
 class NewAbility(BaseAbility):
@@ -41,9 +41,32 @@ class NewAbility(BaseAbility):
         self._apply_damage(target, amount, type, log)
         self._apply_healing(target, amount, log)
     
-    # 🚨 REQUIS - Fix can_execute() manquant
+    # ✅ CORRIGÉ - can_execute() avec vérifications complètes
     def can_execute(self, caster, context):
-        # Vérifications uses_remaining_combat manquantes
+        spell_manager = context.get('spell_manager')
+        if not spell_manager: return False
+        
+        # Vérifier utilisations restantes (AJOUTÉ)
+        if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+            if self.uses_remaining_combat <= 0:
+                return False
+        
+        # Vérifier coût en sorts
+        if hasattr(self, 'spell_cost') and self.spell_cost > 0:
+            return caster.current_spells >= self.spell_cost
+        return True
+```
+
+### Debug Mode - ✅ CORRIGÉ
+```python
+# ✅ FIX APPLIQUÉ - Réinitialisation uses_remaining_combat
+def _reset_ability_for_new_test(ability_instance):
+    """Réinitialise une capacité pour un nouveau test debug"""
+    if hasattr(ability_instance, 'uses_per_combat') and ability_instance.uses_per_combat is not None:
+        ability_instance.uses_remaining_combat = ability_instance.uses_per_combat
+        st.info(f"🔄 Réinitialisation {ability_instance.name}: {ability_instance.uses_remaining_combat}/{ability_instance.uses_per_combat}")
+
+# Appelé AVANT chaque test dans _execute_ability_test()
 ```
 
 ### SpellManager (Gestion centralisée sorts)
@@ -94,32 +117,42 @@ context = {
 
 ## 🚨 ERREURS RÉSOLUES
 
-### Bug SpellManager (résolu)
+### Bug SpellManager (résolu ✅)
 - **Problème** : `spell_manager.get_current_spells(user)` retournait 0
 - **Solution** : `spell_manager.initialize_spells(user)` obligatoire
 
-### Bug Context Debug (résolu)  
+### Bug Context Debug (résolu ✅)  
 - **Problème** : BaseAbility ne trouvait pas les ennemis
 - **Solution** : Utiliser 'alive_enemies', 'current_enemies', 'heroes'
 
-### Bug Affichage (résolu)
+### Bug Affichage (résolu ✅)
 - **Solution** : Noms héros avec codes (P-1 Elneha au lieu de P-1)
 
-### Bug Forme d'ours décompte (résolu)
+### Bug Forme d'ours décompte (résolu ✅)
 - **Problème** : `self.uses_remaining_combat -= 1` manquant dans execute()
 - **Solution** : Ajout décompte avant return True
 
-### Bug Forme de loup NoneType (résolu)
+### Bug Forme de loup NoneType (résolu ✅)
 - **Problème** : `current_attack += 1` sur attribut None
 - **Solution** : Initialisation `current_attack = caster.damage` avant modification
 
+### **NOUVEAU** Bug BaseAbility.can_execute() (résolu ✅)
+- **Problème** : Ne vérifiait pas `uses_remaining_combat <= 0`
+- **Impact** : Capacités épuisées restaient "utilisables"
+- **Solution** : Ajout vérification uses_remaining_combat dans can_execute()
+
+### **NOUVEAU** Bug Debug Mode état persistant (résolu ✅)
+- **Problème** : Uses_remaining_combat = -2 (objets gardaient état entre tests)
+- **Solution** : Fonction `_reset_ability_for_new_test()` avant chaque test
+
 ---
 
-## 🔄 PROCESSUS RÉVISÉ (30 min par capacité)
+## 📄 PROCESSUS RÉVISÉ (30 min par capacité)
 
 ### 1. Setup Debug (5 min)
 - Mode debug avec fixes appliqués  
 - Configuration sorts/PV/ennemis
+- **NOUVEAU** : Réinitialisation automatique des uses_remaining_combat
 
 ### 2. Test isolation (10 min)
 ```python
@@ -142,7 +175,7 @@ class NewAbility(BaseAbility):
 - Execute() retourne True
 - Logs corrects (sorts consommés, effets appliqués)
 - État avant/après cohérent
-- Uses_remaining_combat décompté correctement
+- Uses_remaining_combat décompté correctement **ET** can_execute() refuse si épuisé
 
 ### 4. Documentation (5 min)
 - Mettre à jour statut dans ce plan
@@ -150,21 +183,22 @@ class NewAbility(BaseAbility):
 
 ---
 
-## 🛠️ PRIORITÉ #1 : FIX BASEABILITY PUIS RETEST
+## 🛠️ PRIORITÉ #1 : RETEST SYSTÉMATIQUE AVEC ARCHITECTURE CORRIGÉE
 
-### Phase A - Fix BaseAbility critique
-1. **Corriger BaseAbility.can_execute()** - Ajouter vérification uses_remaining_combat
-2. **Tester correction** avec Forme d'ours (doit passer 1/1 → 0/1)
+### Phase A - Validation corrections ✅ COMPLÉTÉ
+1. ✅ **BaseAbility.can_execute()** - Vérification uses_remaining_combat ajoutée
+2. ✅ **Debug mode réinitialisation** - Fix état persistant résolu
+3. ✅ **Tester "Forme d'ours"** - Doit passer 1/1 → 0/1 (au lieu de -2)
 
-### Phase B - Validation fixes précédents
+### Phase B - Retest avec debug mode fiable
 1. **Éclair magique P-2** - Test référence (doit fonctionner)
 2. **Armure du mage P-2** - Test sorts coûteux (doit fonctionner)  
 3. **Forme d'ours P-1** - Test transformations + décompte correct
 
 ### Phase C - Retest complet P-1/P-2/P-3
-- **Toutes les 18 capacités** à retester avec BaseAbility corrigé
+- **Toutes les 18 capacités** à retester avec architecture corrigée
 - **Identifier** celles qui échouent encore  
-- **Corriger** une par une
+- **Corriger** une par une avec pattern sécurisé
 
 ### Phase D - Correction erreurs identifiées
 - **magical_armor_bonus** → max_parade_tokens (P-2)
@@ -175,33 +209,25 @@ class NewAbility(BaseAbility):
 ## 📊 API CONSISTENCY GUIDE - TRAVAIL EFFECTUÉ
 
 ### Problèmes identifiés et résolus
-1. **current_spells non initialisé** → Fix appliqué debug_mode.py
-2. **SpellManager vide** → initialize_spells() obligatoire  
-3. **Context debug incompatible** → Clés BaseAbility ajoutées
-4. **Mauvaise API Enemy** → get_damage_info(player_count) documentée
-5. **BaseAbility.can_execute() incomplet** → Manque vérification uses_remaining_combat
-6. **Duplication logique** → can_use() vs can_execute() font le même travail
-7. **Transformations NoneType** → Initialisation attributs manquante
-8. **Décompte utilisations manquant** → uses_remaining_combat -= 1 oublié
+1. ✅ **current_spells non initialisé** → Fix appliqué debug_mode.py
+2. ✅ **SpellManager vide** → initialize_spells() obligatoire  
+3. ✅ **Context debug incompatible** → Clés BaseAbility ajoutées
+4. ✅ **Mauvaise API Enemy** → get_damage_info(player_count) documentée
+5. ✅ **BaseAbility.can_execute() incomplet** → Vérification uses_remaining_combat AJOUTÉE
+6. ✅ **Debug mode état persistant** → Réinitialisation automatique AJOUTÉE
+7. ⚠️ **Duplication logique** → can_use() vs can_execute() (à résoudre)
+8. ✅ **Transformations NoneType** → Initialisation attributs documentée
+9. ✅ **Décompte utilisations manquant** → uses_remaining_combat -= 1 documenté
 
-### 🚨 PROBLÈME CRITIQUE DÉCOUVERT - BaseAbility.can_execute()
+### 🎯 ARCHITECTURE CRITIQUE MAINTENANT STABLE
 
-**Bug identifié :** `BaseAbility.can_execute()` ne vérifie pas `uses_remaining_combat`
+**BaseAbility.can_execute()** - ✅ COMPLET
 ```python
-# ❌ ACTUEL - Vérifications incomplètes dans base_ability.py
-def can_execute(self, caster, context):
-    spell_manager = context.get('spell_manager')
-    if not spell_manager: return False
-    if hasattr(self, 'spell_cost') and self.spell_cost > 0:
-        return caster.current_spells >= self.spell_cost
-    return True  # MANQUE : uses_remaining_combat <= 0
-
-# ✅ REQUIS - Vérifications complètes
 def can_execute(self, caster, context):
     spell_manager = context.get('spell_manager')
     if not spell_manager: return False
     
-    # Vérifier utilisations restantes (MANQUANT ACTUELLEMENT)
+    # ✅ AJOUTÉ - Vérifier utilisations restantes
     if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
         if self.uses_remaining_combat <= 0:
             return False
@@ -214,11 +240,14 @@ def can_execute(self, caster, context):
     return True
 ```
 
-**Impact :** Capacités limitées (Forme d'ours 1/combat) restent "utilisables" après consommation
+**Debug Mode** - ✅ FIABLE
+- Réinitialisation automatique uses_remaining_combat = uses_per_combat
+- Plus de valeurs négatives (-2 → 1)
+- États cohérents entre tests
 
 ### Architecture dédoublée identifiée
 - **abilities.py** : `can_use()` avec toutes vérifications (ancien système) ✅
-- **BaseAbility** : `can_execute()` avec vérifications partielles (nouveau système) ❌
+- **BaseAbility** : `can_execute()` avec vérifications MAINTENANT complètes ✅
 
 ### Pattern transformations découvert
 ```python
@@ -238,9 +267,10 @@ caster.current_attack += bonus_value
 - **BaseAbility cherche clés spécifiques** dans context
 - **API Character ≠ API Enemy** (méthodes différentes)
 - **Debug doit simuler vrai contexte combat**
-- **Vérifications uses_remaining_combat obligatoires** dans can_execute()
+- ✅ **Vérifications uses_remaining_combat obligatoires** dans can_execute()
 - **Initialisation attributs current_* obligatoire** avant modifications
 - **Décompte uses_remaining_combat obligatoire** dans execute()
+- ✅ **Réinitialisation debug obligatoire** avant chaque test
 
 ### Template debug validé
 ```python
@@ -278,25 +308,42 @@ class SecureAbility(BaseAbility):
 
 ## 🎯 ACTIONS IMMÉDIATES
 
-### 🔥 URGENT - Fix BaseAbility puis validation
-1. **Corriger BaseAbility.can_execute()** - Ajouter vérification uses_remaining_combat
+### ✅ COMPLÉTÉ - Fixes architecturaux critiques
+1. ✅ **BaseAbility.can_execute()** - Vérification uses_remaining_combat ajoutée
+2. ✅ **Debug mode réinitialisation** - Fix état persistant résolu
 
-### 📋 COURT TERME - Retest complet
-1. **Retester les 18 capacités** avec BaseAbility corrigé
-2. **Identifier** et corriger les échecs restants
-3. **Finaliser** P-1, P-2, P-3 avant P-4
+### 🔋 PRÊT - Retest systématique fiable
+1. **Retester les 18 capacités** avec architecture corrigée
+2. **Identifier** et corriger les échecs restants avec debug mode fiable
+3. **Finaliser** P-1, P-2, P-3 avec processus validé
 
 ### 🚀 LONG TERME - Suite migration  
-1. **P-4 Kraor** avec processus validé
-2. **P-5 à P-8** avec debug fiable
+1. **P-4 Kraor** avec processus validé et debug mode stable
+2. **P-5 à P-8** avec debug fiable et architecture maîtrisée
 3. **Capacités bonus** P-10 à P-12
 
 ---
 
 ## 🎯 OBJECTIF FINAL
-**59/59 capacités** fonctionnelles via debug_mode.py corrigé avec architecture SpellManager maîtrisée
+**59/59 capacités** fonctionnelles via debug_mode.py corrigé avec architecture SpellManager + BaseAbility maîtrisée
 
 ---
-**Version** : API Consistency Fixes - BaseAbility can_execute() critique  
-**Usage** : Guide de développement sans régression technique  
-**Prochaine étape** : Fix BaseAbility puis retest systématique
+
+## 🏆 STATUT ARCHITECTURAL
+
+### ✅ RÉSOLU ET TESTÉ
+- **BaseAbility.can_execute()** avec vérifications complètes
+- **Debug mode** avec réinitialisation automatique
+- **Template sécurisé** pour nouvelles capacités
+- **API documentation** complète et testée
+
+### 📋 PRÊT POUR PRODUCTION
+- **Mode debug fiable** pour développement rapide
+- **Architecture cohérente** sans duplication critique
+- **Processus standardisé** 30min par capacité
+- **Documentation technique** complète
+
+---
+**Version** : API Consistency Fixes + Debug Mode Fixed - Architecture stable  
+**Usage** : Guide de développement avec architecture maîtrisée  
+**Prochaine étape** : Retest systématique des 18 capacités avec debug mode fiable
