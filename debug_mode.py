@@ -2,6 +2,7 @@
 """
 Mode debug intégré pour tester les capacités individuellement
 À ajouter dans l'application Streamlit principale
+VERSION CORRIGÉE - Fix réinitialisation uses_remaining_combat
 """
 
 import streamlit as st
@@ -112,6 +113,20 @@ def _get_available_heroes_data() -> Dict[str, List[Dict]]:
         st.error(f"Erreur récupération héros: {e}")
         return {}
 
+def _reset_ability_for_new_test(ability_instance):
+    """Réinitialise une capacité pour un nouveau test debug"""
+    if not ability_instance:
+        return
+    
+    # Réinitialiser les utilisations restantes
+    if hasattr(ability_instance, 'uses_per_combat') and ability_instance.uses_per_combat is not None:
+        ability_instance.uses_remaining_combat = ability_instance.uses_per_combat
+        st.info(f"🔄 Réinitialisation {ability_instance.name}: {ability_instance.uses_remaining_combat}/{ability_instance.uses_per_combat}")
+    
+    # Réinitialiser autres états si nécessaire
+    if hasattr(ability_instance, 'combat_used'):
+        ability_instance.combat_used = False
+
 def _test_selected_ability(hero_code: str, ability_data: Dict):
     """Teste la capacité sélectionnée"""
     st.subheader(f"🧪 Test: {ability_data['name']}")
@@ -189,6 +204,9 @@ def _execute_ability_test(ability_instance, hero_code: str,
     st.subheader("🔍 Exécution du Test")
     
     try:
+        # 🚨 FIX CRITIQUE - Réinitialiser la capacité AVANT le test
+        _reset_ability_for_new_test(ability_instance)
+        
         # Créer contexte de test
         user, allies, enemies, combat_state = _create_test_context(
             hero_code, user_max_health, user_current_health, user_spells, user_precision,

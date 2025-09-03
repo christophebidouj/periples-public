@@ -1,7 +1,7 @@
 # combat_actions.py
 """
 Gestionnaire des actions de combat (attaques, capacités, potions)
-VERSION CORRIGÉE - Fix IA logique + optimisation
+VERSION CORRIGÉE - Fix IA logique + optimisation + transformations intelligentes
 """
 
 import random
@@ -313,8 +313,8 @@ class CombatActions:
     
     def try_ability_with_summon(self, hero, enemies: list, log: list, active_pets: list) -> bool:
         """
-        IA capacités intelligente + gestion invocations
-        CORRIGÉ: Logique tactique sans usage aveugle de capacités
+        IA capacités intelligente + gestion invocations + transformations Elneha
+        CORRIGÉ: Logique tactique avec buffing prioritaire
         """
         self._current_alive_enemies = [e for e in enemies if e.is_alive()]
         self._current_heroes = [hero]
@@ -348,6 +348,40 @@ class CombatActions:
             return False
         
         # LOGIQUE IA CORRIGÉE
+        
+        # PRIORITÉ ABSOLUE : Transformations Elneha (buffs permanents)
+        if hasattr(hero, 'current_form') and hero.current_form == 'human':  # Pas encore transformé
+            transform_abilities = [a for a in usable_abilities 
+                                  if 'forme' in a.name.lower() and 
+                                  hasattr(a, 'uses_remaining_combat') and a.uses_remaining_combat > 0]
+            if transform_abilities:
+                # ANALYSE TACTIQUE DE LA SITUATION
+                health_percent = (hero.current_health / hero.get_total_health()) * 100
+                current_parade = getattr(hero, 'current_parade_tokens', 0)
+                max_parade = getattr(hero, 'max_parade_tokens', 0)
+                
+                # Évaluer la menace ennemie
+                total_enemy_damage = sum(getattr(e, 'get_damage_info', lambda x: {'damage': 5})(2).get('damage', 5) 
+                                       for e in self._current_alive_enemies[:3])  # Max 3 premiers ennemis
+                
+                # DÉCISION TACTIQUE INTELLIGENTE
+                bear_form = next((a for a in transform_abilities if 'ours' in a.name.lower()), None)
+                wolf_form = next((a for a in transform_abilities if 'loup' in a.name.lower()), None)
+                
+                # Priorité OURS si :
+                # - PV < 70% (besoin défense) 
+                # - Parade épuisée (current_parade == 0)
+                # - Ennemis font beaucoup de dégâts (> 15 total)
+                should_go_bear = (health_percent < 70 or 
+                                 current_parade == 0 or 
+                                 total_enemy_damage > 15)
+                
+                if bear_form and should_go_bear:
+                    return self.use_ability(hero, bear_form, log)
+                elif wolf_form:  # Sinon forme loup pour DPS
+                    return self.use_ability(hero, wolf_form, log)
+                elif bear_form:  # Fallback sur ours si loup indisponible
+                    return self.use_ability(hero, bear_form, log)
         
         # 1. Soin d'alliés SI il y a des alliés blessés
         allies_need_healing = any(ally.current_health < ally.get_total_health() 

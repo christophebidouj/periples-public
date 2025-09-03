@@ -21,6 +21,7 @@ from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waitin
 from ui.components import *
 from ui.components.hero_components import preload_hero_builds_for_all_difficulties
 from debug_mode import create_debug_tab
+from hero_builds_data import get_abilities_for_level
 
 # Import capacités et potions
 try:
@@ -124,18 +125,25 @@ def get_hero_build_from_equipment(hero_code: str, heroes_list: List, equipment_l
     equipment_items = [eq for eq in equipment_list if eq.code in build_config.get('equipment', [])]
     hero_equipped.equip_items(equipment_items, build_config.get('name', 'Build Standard'))
     
-    # 🔧 CORRECTION: TOUTES les capacités pour builds par défaut
+    # 🔧 CORRECTION: Respecter le niveau de capacités du build
     try:
         hero_abilities = loader.get_hero_abilities(hero_code)
         if hero_abilities:
-            # IGNORER abilities_level - donner TOUTES les capacités
-            all_ability_numbers = [a.ability_number for a in hero_abilities]
+            # Récupérer le niveau de capacités depuis le build
+            abilities_level = build_config.get('abilities_level', 1)
             
-            if hasattr(hero_equipped, 'add_abilities'):
-                hero_equipped.add_abilities(hero_abilities)  # TOUTES les capacités
-                hero_equipped.unlocked_abilities = all_ability_numbers.copy()
+            # Utiliser la fonction qui respecte le niveau du build
+            allowed_abilities = get_abilities_for_level(hero_code, abilities_level)
+            
+            # Filtrer seulement les capacités autorisées par le niveau
+            selected_abilities = [a for a in hero_abilities if a.ability_number in allowed_abilities]
+            
+            if hasattr(hero_equipped, 'add_abilities') and selected_abilities:
+                hero_equipped.add_abilities(selected_abilities)  # Capacités filtrées selon le niveau
+                hero_equipped.unlocked_abilities = allowed_abilities.copy()
                 for ability in hero_equipped.abilities:
-                    ability.is_unlocked = True  # TOUTES débloquées
+                    if ability.ability_number in allowed_abilities:
+                        ability.is_unlocked = True
     except Exception:
         pass
     
@@ -156,7 +164,7 @@ def get_hero_build_from_equipment(hero_code: str, heroes_list: List, equipment_l
         'stats': hero_equipped.get_stats_summary(),
         'abilities_info': {
             'has_custom_abilities': False,
-            'abilities_level': 'TOUTES'  # Indiquer que toutes sont disponibles
+            'abilities_level': build_config.get('abilities_level', 1)  # Niveau réel du build
         }
     }
 
