@@ -50,9 +50,7 @@ class ElnehaFormeOurs(BaseAbility):
             # Initialiser les attributs si absents ou None
             if not hasattr(caster, 'current_attack') or caster.current_attack is None:
                 caster.current_attack = caster.damage
-            if not hasattr(caster, 'current_defense') or caster.current_defense is None:
-                caster.current_defense = getattr(caster, 'defense', 0)
-            
+                        
             # Bonus ours: +2 ATT, +1 DEF
             caster.current_attack += 2
             if not hasattr(caster, 'max_parade_tokens'):
@@ -64,7 +62,7 @@ class ElnehaFormeOurs(BaseAbility):
             caster.current_parade_tokens += 1
 
             log.append(f"🐻 {caster.name} se transforme en ours !")
-            log.append(f"   +2 Attaque, +1 Défense, +1 Jeton parade")
+            log.append(f"   +2 Attaque, +1 Jeton parade")
             
             self.uses_remaining_combat -= 1
             return True
