@@ -199,7 +199,7 @@ def _execute_ability_test(ability_instance, hero_code: str,
                          user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
                          ally_count: int, ally_max_health: int, ally_current_health: int,
                          enemy_count: int, enemy_health: int):
-    """Exécute le test de la capacité"""
+    """Exécute le test de la capacité EN UTILISANT LA MÊME API QUE L'APP PRINCIPALE"""
     
     st.subheader("🔍 Exécution du Test")
     
@@ -213,11 +213,12 @@ def _execute_ability_test(ability_instance, hero_code: str,
             ally_count, ally_max_health, ally_current_health, enemy_count, enemy_health
         )
         
-        # Déterminer cibles selon type de capacité
-        targets = _determine_targets(ability_instance, user, allies, enemies)
+        # 🎯 CORRECTION MAJEURE : Utiliser la MÊME API que l'app principale
+        # Au lieu de : ability_instance.execute(user, targets, context, execution_log)
+        # Utiliser : ability_effects_manager.apply_ability_effects() comme dans combat_actions.py
         
-        # Préparer context selon base_ability.py
         from models.combat.spell_manager import SpellManager
+        from models.combat.abilities import AbilityEffectsManager
         
         spell_manager = SpellManager()
         spell_manager.initialize_spells(user)
@@ -226,37 +227,59 @@ def _execute_ability_test(ability_instance, hero_code: str,
         
         # Log pour execute()
         execution_log = []
+        
+        # 🔧 CRÉER LE MÊME CONTEXTE que combat_actions.py
         context = {
+            'alive_enemies': enemies,      # Même clé que l'app principale
+            'current_enemies': enemies,    # Même clé que l'app principale
+            'enemies': enemies,           # Même clé que l'app principale
+            'heroes': [user] + allies,    # Même clé que l'app principale
+            'current_heroes': [user] + allies,  # Même clé que l'app principale
             'spell_manager': spell_manager,
-            'heroes': combat_state.get('allies', []),
-            'current_heroes': combat_state.get('allies', []),
-            'alive_enemies': combat_state.get('enemies', []),
-            'current_enemies': combat_state.get('enemies', []),
             'log': execution_log,
-            'player_count': 2
+            'player_count': len([user] + allies)
         }
+        
+        # ✅ UTILISER LA MÊME API QUE L'APP PRINCIPALE
+        ability_effects_manager = AbilityEffectsManager(spell_manager)
+        ability_effects_manager._current_alive_enemies = enemies
+        ability_effects_manager._current_heroes = [user] + allies
         
         # ✅ FIX - Capturer l'état AVANT l'exécution
         with st.expander("📋 Phase 1: État AVANT", expanded=True):
             st.write("**Contexte:**")
             st.write(f"- Sorts disponibles: {getattr(user, 'current_spells', user.spells)}/{ability_instance.spell_cost}")
             st.write(f"- PV utilisateur: {user.current_health}/{user.health}")
-            st.write(f"- Nombre cibles: {len(targets)}")
             st.write(f"- SpellManager initialisé: User sorts = {spell_manager.get_current_spells(user)}")
+            
+            # Debug context
+            st.write("**Context Debug:**")
+            st.write(f"- Heroes: {len(context['heroes'])}")
+            st.write(f"- Enemies: {len(context['alive_enemies'])}")
             
             st.write("**État AVANT exécution:**")
             _display_entities_state_enhanced(user, allies, enemies, spell_manager)
         
-        # Phase 2: Exécution 
+        # Phase 2: Exécution AVEC LA VRAIE API
         with st.expander("⚡ Phase 2: Exécution", expanded=True):
             try:
-                # Appel selon signature base_ability.py: execute(caster, targets, context, log)
-                result = ability_instance.execute(user, targets, context, execution_log)
-                
-                if result:
-                    st.success("✅ Execute() retourné True")
+                # 🎯 UTILISER EXACTEMENT LA MÊME API QUE combat_actions.py:use_ability()
+                # Vérification des prérequis (comme dans l'app)
+                can_use, reason = spell_manager.can_use_magical_ability(user, ability_instance)
+                if not can_use:
+                    st.error(f"❌ Ne peut pas utiliser {ability_instance.name}: {reason}")
+                    result = False
                 else:
-                    st.warning("⚠️ Execute() retourné False")
+                    # Appel IDENTIQUE à l'app principale
+                    result = ability_effects_manager.apply_ability_effects(
+                        user, ability_instance, execution_log, context
+                    )
+                    
+                    if result:
+                        st.success("✅ apply_ability_effects() retourné True")
+                        user.action_taken_this_turn = True  # Comme dans l'app
+                    else:
+                        st.warning("⚠️ apply_ability_effects() retourné False")
                 
                 # Afficher logs d'exécution
                 if execution_log:
@@ -265,7 +288,7 @@ def _execute_ability_test(ability_instance, hero_code: str,
                         st.write(f"• {log_entry}")
                 
             except Exception as e:
-                st.error(f"❌ Erreur execute(): {e}")
+                st.error(f"❌ Erreur apply_ability_effects(): {e}")
                 result = False
         
         # Phase 3: Résultats APRÈS

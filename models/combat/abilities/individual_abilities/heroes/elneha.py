@@ -90,17 +90,38 @@ class ElnehaSoinMineur(BaseAbility):
         self.healing_amount = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Soigne un personnage de 4 PV"""
+        """Soigne un personnage de 4 PV avec sélection intelligente de la cible"""
         try:
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            target = targets[0] if targets else caster
+            # 🧠 INTELLIGENCE DE CIBLAGE - Même logique qu'Atucan
+            all_allies = self._get_all_allies(caster, context)
+            all_candidates = list(all_allies) + [caster]  # Inclure le caster
+            
+            # Filtrer les candidats blessés (PV actuels < PV max)
+            injured_candidates = [
+                c for c in all_candidates 
+                if c.is_alive() and c.current_health < c.get_total_health()
+            ]
+            
+            if not injured_candidates:
+                log.append(f"⚠️ {caster.name} : Aucune cible nécessitant des soins")
+                return False
+            
+            # Sélectionner le plus blessé (PV actuels les plus bas)
+            target = min(injured_candidates, key=lambda h: h.current_health)
+            
             healed = self._apply_healing(target, self.healing_amount, log)
             
-            log.append(f"🌿 {caster.name} lance {self.name} sur {target.name}")
-            log.append(f"   +{healed} PV restaurés")
+            # Log avec détails
+            if target == caster:
+                log.append(f"🌿 {caster.name} se soigne avec {self.name}")
+            else:
+                log.append(f"🌿 {caster.name} lance {self.name} sur {target.name}")
+            
+            log.append(f"   +{healed} PV restaurés ({target.current_health-healed} → {target.current_health})")
             
             return True
             
@@ -109,8 +130,7 @@ class ElnehaSoinMineur(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"🌿 {self.name}: Soigne {self.healing_amount} PV (Coût: {self.spell_cost} sort)"
-
+        return f"🌿 {self.name}: Soigne {self.healing_amount} PV (cible la plus blessée) (Coût: {self.spell_cost} sort)"
 
 @register_ability
 class ElnehaFormeLoup(BaseAbility):

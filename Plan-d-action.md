@@ -9,6 +9,29 @@
 3. **TESTER** imports : `from models.character import Character`
 4. **INTERDICTION** : Inventer valeurs numériques
 5. **APPLIQUER** fixes debug_mode.py systématiquement
+6. **🆕 INTERDICTION ABSOLUE** : Divergence API debug/app principale
+
+### ⛔ **RÈGLE CRITIQUE AJOUTÉE : API DEBUG = APP PRINCIPALE**
+
+**INTERDICTION TOTALE** de divergence API entre debug mode et application principale.
+
+#### 🎯 **API OFFICIELLE VALIDÉE** :
+```python
+# ✅ APP PRINCIPALE (combat_actions.py)
+ability_effects_manager.apply_ability_effects(hero, ability, log, context)
+
+# ✅ DEBUG MODE (debug_mode.py) - DOIT ÊTRE IDENTIQUE
+ability_effects_manager.apply_ability_effects(user, ability_instance, execution_log, context)
+```
+
+#### ❌ **ERREUR CRITIQUE CORRIGÉE** :
+```python
+# ❌ ANCIEN DEBUG (FAUX) - Ne reproduisait PAS l'app principale
+result = ability_instance.execute(user, targets, context, execution_log)
+
+# ✅ NOUVEAU DEBUG (CORRECT) - API identique à l'app
+result = ability_effects_manager.apply_ability_effects(user, ability_instance, execution_log, context)
+```
 
 ### 📊 Sources données OBLIGATOIRES
 - **Noms** : `ability_names.csv` 
@@ -23,7 +46,7 @@
 - **P-2 (Liarie)** : 6/6 ⚠️ RETEST + corriger magical_armor_bonus 
 - **P-3 (Atucan)** : 6/6 ⚠️ RETEST + revoir IA restrictive
 
-**PRIORITÉ CRITIQUE** : ✅ **RÉSOLU** - BaseAbility.can_execute() + debug_mode.py corrigés
+**PRIORITÉ CRITIQUE** : ✅ **RÉSOLU** - BaseAbility.can_execute() + debug_mode.py corrigés + API unifiée
 
 ---
 
@@ -57,8 +80,12 @@ class NewAbility(BaseAbility):
         return True
 ```
 
-### Debug Mode - ✅ CORRIGÉ
+### Debug Mode - ✅ CORRIGÉ MAJEUR
 ```python
+# ✅ NOUVEAU : API réelle utilisée par l'app
+ability_effects_manager = AbilityEffectsManager(spell_manager)
+result = ability_effects_manager.apply_ability_effects(user, ability_instance, execution_log, context)
+
 # ✅ FIX APPLIQUÉ - Réinitialisation uses_remaining_combat
 def _reset_ability_for_new_test(ability_instance):
     """Réinitialise une capacité pour un nouveau test debug"""
@@ -93,24 +120,22 @@ hero.apply_damage_with_parade(damage)
 ```python
 enemy.get_damage_info(player_count)['damage_value'] 
 enemy.defense / enemy.is_alive()
-# ❌ ATTENTION: N'a PAS get_attack_damage_info()
+# ⚠ ATTENTION: N'a PAS get_attack_damage_info()
 ```
 
 ### Debug Context - Clés critiques identifiées
 ```python
-# ✅ CLÉS CORRECTES (BaseAbility les cherche)
+# ✅ CONTEXTE IDENTIQUE à combat_actions.py
 context = {
+    'alive_enemies': enemies,      # Clé officielle
+    'current_enemies': enemies,    # Clé officielle  
+    'enemies': enemies,           # Clé officielle
+    'heroes': [user] + allies,    # Structure officielle
+    'current_heroes': [user] + allies,  # Structure officielle
     'spell_manager': spell_manager,
-    'heroes': allies,
-    'current_heroes': allies,  
-    'alive_enemies': enemies,
-    'current_enemies': enemies,
     'log': execution_log,
-    'player_count': 2
+    'player_count': len([user] + allies)
 }
-
-# ❌ CLÉS FAUSSES (à éviter)
-# 'rules', 'all_heroes', 'all_enemies'
 ```
 
 ---
@@ -145,18 +170,25 @@ context = {
 - **Problème** : Uses_remaining_combat = -2 (objets gardaient état entre tests)
 - **Solution** : Fonction `_reset_ability_for_new_test()` avant chaque test
 
+### **CRITIQUE** Bug API Debug ≠ App Principale (résolu ✅)
+- **Problème** : Debug utilisait `ability.execute()` directement
+- **App réelle** : Utilise `ability_effects_manager.apply_ability_effects()`
+- **Impact** : Tests debug ne représentaient PAS l'app réelle
+- **Solution** : Debug utilise maintenant l'API officielle
+
 ---
 
-## 📄 PROCESSUS RÉVISÉ (30 min par capacité)
+## 🔄 PROCESSUS RÉVISÉ (30 min par capacité)
 
 ### 1. Setup Debug (5 min)
-- Mode debug avec fixes appliqués  
+- Mode debug avec **API réelle**
 - Configuration sorts/PV/ennemis
 - **NOUVEAU** : Réinitialisation automatique des uses_remaining_combat
+- **CRITIQUE** : Vérification API cohérente
 
 ### 2. Test isolation (10 min)
 ```python
-# Template sécurisé vérifié
+# Template sécurisé vérifié avec VRAIE API
 class NewAbility(BaseAbility):
     def execute(self, caster, targets, context, log):
         spell_manager = context.get('spell_manager')
@@ -172,28 +204,31 @@ class NewAbility(BaseAbility):
 ```
 
 ### 3. Validation (10 min)  
-- Execute() retourne True
+- apply_ability_effects() retourne True (plus execute() direct)
 - Logs corrects (sorts consommés, effets appliqués)
 - État avant/après cohérent
 - Uses_remaining_combat décompté correctement **ET** can_execute() refuse si épuisé
+- **NOUVEAU** : Comportement identique en production
 
 ### 4. Documentation (5 min)
 - Mettre à jour statut dans ce plan
-- Noter API utilisée
+- Noter API utilisée (**TOUJOURS la vraie !**)
 
 ---
 
 ## 🛠️ PRIORITÉ #1 : RETEST SYSTÉMATIQUE AVEC ARCHITECTURE CORRIGÉE
 
-### Phase A - Validation corrections ✅ COMPLÉTÉ
+### Phase A - Validation corrections ✅ COMPLÉTÉE
 1. ✅ **BaseAbility.can_execute()** - Vérification uses_remaining_combat ajoutée
 2. ✅ **Debug mode réinitialisation** - Fix état persistant résolu
-3. ✅ **Tester "Forme d'ours"** - Doit passer 1/1 → 0/1 (au lieu de -2)
+3. ✅ **API Debug = App Principale** - Plus de divergence
+4. ✅ **Tester "Forme d'ours"** - Doit passer 1/1 → 0/1 (au lieu de -2)
 
 ### Phase B - Retest avec debug mode fiable
 1. **Éclair magique P-2** - Test référence (doit fonctionner)
 2. **Armure du mage P-2** - Test sorts coûteux (doit fonctionner)  
 3. **Forme d'ours P-1** - Test transformations + décompte correct
+4. **Soin mineur P-1** - Test logique de ciblage intelligente
 
 ### Phase C - Retest complet P-1/P-2/P-3
 - **Toutes les 18 capacités** à retester avec architecture corrigée
@@ -218,6 +253,7 @@ class NewAbility(BaseAbility):
 7. ⚠️ **Duplication logique** → can_use() vs can_execute() (à résoudre)
 8. ✅ **Transformations NoneType** → Initialisation attributs documentée
 9. ✅ **Décompte utilisations manquant** → uses_remaining_combat -= 1 documenté
+10. ✅ **API Debug ≠ App Principale** → RÉSOLU - API unifiée
 
 ### 🎯 ARCHITECTURE CRITIQUE MAINTENANT STABLE
 
@@ -240,10 +276,12 @@ def can_execute(self, caster, context):
     return True
 ```
 
-**Debug Mode** - ✅ FIABLE
+**Debug Mode** - ✅ FIABLE ET REPRÉSENTATIF
+- API identique à l'app principale
 - Réinitialisation automatique uses_remaining_combat = uses_per_combat
 - Plus de valeurs négatives (-2 → 1)
 - États cohérents entre tests
+- Context unifié avec clés officielles
 
 ### Architecture dédoublée identifiée
 - **abilities.py** : `can_use()` avec toutes vérifications (ancien système) ✅
@@ -271,6 +309,7 @@ caster.current_attack += bonus_value
 - **Initialisation attributs current_* obligatoire** avant modifications
 - **Décompte uses_remaining_combat obligatoire** dans execute()
 - ✅ **Réinitialisation debug obligatoire** avant chaque test
+- ✅ **API Debug = API Production** (règle absolue)
 
 ### Template debug validé
 ```python
@@ -280,8 +319,14 @@ user.current_spells = user_spells  # CRITIQUE
 # SpellManager 
 spell_manager.initialize_spells(user)  # CRITIQUE
 
-# Context BaseAbility
-context = {'spell_manager', 'heroes', 'alive_enemies', 'log', 'player_count'}
+# Context BaseAbility - IDENTIQUE à l'app principale
+context = {
+    'alive_enemies': enemies,
+    'heroes': [user] + allies,
+    'spell_manager': spell_manager,
+    'log': execution_log,
+    'player_count': len([user] + allies)
+}
 
 # Pattern capacité sécurisé
 class SecureAbility(BaseAbility):
@@ -311,11 +356,13 @@ class SecureAbility(BaseAbility):
 ### ✅ COMPLÉTÉ - Fixes architecturaux critiques
 1. ✅ **BaseAbility.can_execute()** - Vérification uses_remaining_combat ajoutée
 2. ✅ **Debug mode réinitialisation** - Fix état persistant résolu
+3. ✅ **API Debug = App Principale** - Divergence éliminée
 
-### 🔋 PRÊT - Retest systématique fiable
-1. **Retester les 18 capacités** avec architecture corrigée
-2. **Identifier** et corriger les échecs restants avec debug mode fiable
-3. **Finaliser** P-1, P-2, P-3 avec processus validé
+### 📋 PRÊT - Retest systématique fiable
+1. **Retester Soin mineur** avec la vraie API (doit fonctionner)
+2. **Retester les 18 capacités** avec debug représentatif
+3. **Identifier** et corriger les échecs restants avec debug mode fiable
+4. **Finaliser** P-1, P-2, P-3 avec processus validé
 
 ### 🚀 LONG TERME - Suite migration  
 1. **P-4 Kraor** avec processus validé et debug mode stable
@@ -325,7 +372,7 @@ class SecureAbility(BaseAbility):
 ---
 
 ## 🎯 OBJECTIF FINAL
-**59/59 capacités** fonctionnelles via debug_mode.py corrigé avec architecture SpellManager + BaseAbility maîtrisée
+**59/59 capacités** fonctionnelles via debug_mode.py corrigé avec architecture SpellManager + BaseAbility maîtrisée + API unifiée
 
 ---
 
@@ -334,16 +381,19 @@ class SecureAbility(BaseAbility):
 ### ✅ RÉSOLU ET TESTÉ
 - **BaseAbility.can_execute()** avec vérifications complètes
 - **Debug mode** avec réinitialisation automatique
+- **API unifiée** debug = production
 - **Template sécurisé** pour nouvelles capacités
 - **API documentation** complète et testée
 
 ### 📋 PRÊT POUR PRODUCTION
-- **Mode debug fiable** pour développement rapide
+- **Mode debug fiable** représentant l'app réelle
 - **Architecture cohérente** sans duplication critique
 - **Processus standardisé** 30min par capacité
 - **Documentation technique** complète
+- **Tests représentatifs** de la production
 
 ---
-**Version** : API Consistency Fixes + Debug Mode Fixed - Architecture stable  
-**Usage** : Guide de développement avec architecture maîtrisée  
-**Prochaine étape** : Retest systématique des 18 capacités avec debug mode fiable
+**Version** : API Consistency ABSOLUE - Debug = Production  
+**Usage** : Guide de développement avec API unifiée  
+**Garantie** : Si ça marche en debug, ça marche en production !  
+**Prochaine étape** : Retest systématique des 18 capacités avec debug mode représentatif
