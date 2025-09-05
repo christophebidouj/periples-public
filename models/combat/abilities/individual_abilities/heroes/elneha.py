@@ -11,7 +11,7 @@ P-1-2: Soin mineur ✅ (Coût: 1 sort)
 P-1-3: Forme de loup ✅ (Coût: 1 sort)
 P-1-4: Soin multiple ✅ (Coût: 2 sorts)
 P-1-5: Onde tonnante ✅ (Coût: 1 sort)
-P-1-6: Résurrection ✅ (Coût: 2 sorts)
+P-1-6: Résurrection ✅ (Coût: 2 sorts) - CORRIGÉE
 """
 
 from typing import List, Dict, Any
@@ -68,7 +68,7 @@ class ElnehaFormeOurs(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"❌ Erreur transformation ours: {str(e)}")
+            log.append(f"⌚ Erreur transformation ours: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -96,7 +96,7 @@ class ElnehaSoinMineur(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # 🧠 INTELLIGENCE DE CIBLAGE - Même logique qu'Atucan
+            # Intelligence de ciblage - Même logique qu'Atucan
             all_allies = self._get_all_allies(caster, context)
             all_candidates = list(all_allies) + [caster]  # Inclure le caster
             
@@ -126,7 +126,7 @@ class ElnehaSoinMineur(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"❌ Erreur soin mineur: {str(e)}")
+            log.append(f"⌚ Erreur soin mineur: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -173,7 +173,7 @@ class ElnehaFormeLoup(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"❌ Erreur transformation loup: {str(e)}")
+            log.append(f"⌚ Erreur transformation loup: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -218,7 +218,7 @@ class ElnehaSoinMultiple(BaseAbility):
             return True
                 
         except Exception as e:
-            log.append(f"❌ Erreur soin multiple: {str(e)}")
+            log.append(f"⌚ Erreur soin multiple: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -227,7 +227,7 @@ class ElnehaSoinMultiple(BaseAbility):
 
 @register_ability
 class ElnehaOndeTonnante(BaseAbility):
-    """P-1-5: Onde tonnante - 4 dégâts magiques à tous + perte d'action"""
+    """P-1-5: Onde tonnante - 4 dégâts magiques à tous + perte d'action (1/combat)"""
     
     hero_code = "P-1"
     ability_number = 5
@@ -238,10 +238,19 @@ class ElnehaOndeTonnante(BaseAbility):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
         self.damage_amount = 4
+        # Limitation par combat (selon Sorts.xlsx)
+        self.uses_per_combat = 1
+        self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Attaque sonique contre tous les ennemis"""
+        """Attaque sonique contre tous les ennemis - limitée 1/combat"""
         try:
+            # Vérifier utilisations restantes
+            if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+                if self.uses_remaining_combat <= 0:
+                    log.append(f"⚠️ {self.name} déjà utilisé ce combat")
+                    return False
+            
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
@@ -270,14 +279,18 @@ class ElnehaOndeTonnante(BaseAbility):
             if stunned_enemies:
                 log.append(f"   Étourdis: {', '.join(stunned_enemies)}")
             
+            # Décompter les utilisations
+            if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+                self.uses_remaining_combat -= 1
+            
             return True
             
         except Exception as e:
-            log.append(f"❌ Erreur onde tonnante: {str(e)}")
+            log.append(f"⌚ Erreur onde tonnante: {str(e)}")
             return False
 
     def get_preview(self) -> str:
-        return f"⚡ {self.name}: {self.damage_amount} dégâts magiques à tous + stun (Coût: {self.spell_cost} sort)"
+        return f"⚡ {self.name}: {self.damage_amount} dégâts magiques à tous + stun (Coût: {self.spell_cost} sort, 1/combat)"
 
 
 @register_ability
@@ -293,6 +306,29 @@ class ElnehaResurrection(BaseAbility):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 2
     
+    def _get_all_allies_including_unconscious(self, caster, context: Dict[str, Any]) -> List:
+        """
+        Version spéciale pour Résurrection : récupère TOUS les alliés (vivants ET inconscients)
+        contrairement à _get_all_allies() qui filtre avec _is_alive()
+        """
+        allies = []
+        
+        # Rechercher dans le contexte (même logique que BaseAbility mais SANS filtrage _is_alive)
+        if hasattr(context, 'heroes') and context.heroes:
+            for hero in context.heroes:
+                if hero != caster:  # ✅ Exclure le caster, inclure TOUS les autres
+                    allies.append(hero)
+        elif 'heroes' in context:
+            for hero in context['heroes']:
+                if hero != caster:  # ✅ Exclure le caster, inclure TOUS les autres
+                    allies.append(hero)
+        elif hasattr(context, 'party') and context.party:
+            for member in context.party:
+                if member != caster:  # ✅ Exclure le caster, inclure TOUS les autres
+                    allies.append(member)
+        
+        return allies
+    
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Ressuscite un personnage inconscient avec PV complets"""
         try:
@@ -300,20 +336,27 @@ class ElnehaResurrection(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            if not targets:
-                log.append(f"❌ {self.name} nécessite une cible inconsciente")
+            # 🔧 CORRECTION MAJEURE : Utiliser la méthode spéciale qui inclut les inconscients
+            all_allies = self._get_all_allies_including_unconscious(caster, context)
+            unconscious_allies = [ally for ally in all_allies if ally.current_health <= 0]
+            
+            if not unconscious_allies:
+                log.append(f"⌚ {self.name} nécessite une cible inconsciente")
                 return False
             
-            target = targets[0]
+            # Prendre le premier allié inconscient trouvé
+            target = unconscious_allies[0]
             
+            # Double vérification de sécurité
             if target.current_health > 0:
-                log.append(f"❌ {target.name} n'est pas inconscient")
+                log.append(f"⌚ {target.name} n'est pas inconscient")
                 return False
             
             # Résurrection complète
             max_health = target.health
             healed = self._apply_healing(target, max_health, log)
             
+            # Permettre au personnage ressuscité d'agir immédiatement
             if hasattr(target, 'can_act_this_turn'):
                 target.can_act_this_turn = True
             
@@ -324,12 +367,11 @@ class ElnehaResurrection(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"❌ Erreur résurrection: {str(e)}")
+            log.append(f"⌚ Erreur résurrection: {str(e)}")
             return False
 
     def get_preview(self) -> str:
         return f"✨ {self.name}: Ressuscite un inconscient à PV max (Coût: {self.spell_cost} sorts)"
-
 
 # ========================================
 # FONCTIONS UTILITAIRES ET STATISTIQUES
