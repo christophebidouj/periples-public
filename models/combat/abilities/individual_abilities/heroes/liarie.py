@@ -25,46 +25,97 @@ from ..ability_registry import register_ability
 
 @register_ability
 class LiarieEclairMagique(BaseAbility):
-    """P-2-1: Eclair magique - 4 dégâts magiques sans riposte"""
+    """P-2-1: Éclair magique - 4 dégâts magiques répartis intelligemment"""
     
     hero_code = "P-2"
     ability_number = 1
-    name = "Eclair magique"
-    description = "Inflige 4 dégâts magiques à un ennemi, sans qu'il puisse riposter."
+    name = "Éclair magique"
+    description = "Inflige 4 dégâts magiques répartis au choix entre les ennemis."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
-        self.damage_amount = 4
+        self.total_damage = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Lance un éclair magique contre un ennemi"""
+        """Lance un éclair magique avec répartition intelligente des dégâts"""
         try:
             # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # FIX: Utiliser _get_all_enemies() au lieu de targets pour éviter l'auto-ciblage
+            # Récupérer tous les ennemis vivants
             enemies = self._get_all_enemies(caster, context)
             
             if not enemies:
                 log.append(f"⚡ {caster.name} lance un éclair magique mais il n'y a aucun ennemi !")
                 return True
             
-            target = enemies[0]  # Premier ennemi vivant
+            # Version simple : répartition équitable d'abord
+            remaining_damage = self.total_damage
+            targets_hit = []
             
-            # Infliger dégâts magiques (sans riposte possible)
-            damage_dealt = self._apply_damage(target, self.damage_amount, "magical", log)
+            # Trier ennemis par PV croissants pour prioriser les éliminations
+            enemies_sorted = []
+            for i, enemy in enumerate(enemies):
+                enemies_sorted.append((enemy.current_health, i, enemy))
+            enemies_sorted.sort()  # Tri par (PV, index) évite comparaison d'objets
             
-            log.append(f"⚡ {caster.name} lance un éclair magique sur {target.name} !")
-            log.append(f"   (Sans possibilité de riposte)")
+            # Appliquer dégâts
+            for health, _, enemy in enemies_sorted:
+                if remaining_damage <= 0:
+                    break
+                    
+                damage_to_apply = min(health, remaining_damage)
+                damage_dealt = self._apply_damage(enemy, damage_to_apply, "magical", log)
+                remaining_damage -= damage_to_apply
+                targets_hit.append(f"{enemy.name} ({damage_to_apply})")
+            
+            # Log descriptif
+            log.append(f"⚡ {caster.name} lance un éclair magique réparti !")
+            log.append(f"   Cibles: {', '.join(targets_hit)}")
+            log.append(f"   (Sans riposte)")
             
             return True
             
         except Exception as e:
             log.append(f"❌ Erreur éclair magique: {str(e)}")
             return False
+    
+    def _calculate_smart_distribution(self, enemies: List, total_damage: int) -> Dict:
+        """
+        Calcule la répartition optimale des dégâts pour maximiser les éliminations
+        
+        Stratégie:
+        1. Prioriser l'élimination d'ennemis (finir ceux à faible PV)
+        2. Répartir le reste efficacement
+        3. Éviter le gaspillage (pas plus de PV restants)
+        """
+        distribution = {enemy: 0 for enemy in enemies}
+        remaining_damage = total_damage
+        
+        # Trier ennemis par PV croissants (finir les plus faibles d'abord)
+        sorted_enemies = sorted(enemies, key=lambda e: e.current_health)
+        
+        # Phase 1: Éliminer les ennemis qu'on peut finir
+        for enemy in sorted_enemies:
+            if remaining_damage <= 0:
+                break
+                
+            health = enemy.current_health
+            
+            # Si on peut éliminer cet ennemi avec les dégâts restants
+            if health <= remaining_damage:
+                distribution[enemy] = health
+                remaining_damage -= health
+            else:
+                # Sinon, infliger le maximum possible à cet ennemi
+                distribution[enemy] = remaining_damage
+                remaining_damage = 0
+                break
+        
+        return distribution
     
     def can_execute(self, caster, context: Dict[str, Any]) -> bool:
         """Vérifie si l'éclair magique peut être lancé"""
@@ -74,8 +125,8 @@ class LiarieEclairMagique(BaseAbility):
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"⚡ {self.name}: {self.damage_amount} dégâts magiques sans riposte (Coût: {self.spell_cost} sort)"
-
+        return f"⚡ {self.name}: {self.total_damage} dégâts magiques répartis intelligemment (Coût: {self.spell_cost} sort)"
+    
 
 @register_ability
 class LiarieArmureDuMage(BaseAbility):
@@ -235,8 +286,8 @@ class LiarieBouleDeFeu(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 3
-        self.damage_amount = 3
+        self.spell_cost = 2
+        self.damage_amount = 6
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Lance une boule de feu explosive contre tous les ennemis"""
@@ -293,7 +344,7 @@ class LiarieVolDeVie(BaseAbility):
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 2
-        self.damage_amount = 3
+        self.damage_amount = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Draine la vie d'un ennemi pour se soigner"""
@@ -350,8 +401,8 @@ class LiariePluieDeMetéores(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 4  # Sort ultime très coûteux
-        self.damage_amount = 6
+        self.spell_cost = 2
+        self.damage_amount = 10
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Invoque une pluie de météores dévastatrice"""

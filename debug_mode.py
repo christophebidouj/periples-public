@@ -8,7 +8,7 @@ def create_debug_tab():
     st.markdown("Interface de test direct des capacités sans dépendre de l'IA")
     
     if not _test_imports():
-        st.error("⌚ Imports critiques défaillants - Impossible d'utiliser le mode debug")
+        st.error("⚠️ Imports critiques défaillants - Impossible d'utiliser le mode debug")
         return
     
     _create_debug_interface()
@@ -76,8 +76,6 @@ def _create_debug_interface():
         st.error(f"💥 Erreur interface debug: {e}")
         st.code(traceback.format_exc())
 
-# Correction pour _test_selected_ability() dans debug_mode.py
-
 def _test_selected_ability(hero_code: str, ability_data: Dict):
     """Teste la capacité sélectionnée"""
     st.subheader(f"🧪 Test: {ability_data['name']}")
@@ -107,7 +105,7 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
                 else:
                     st.write("**Utilisations:** Illimitée")
             else:
-                st.error("⚠ Impossible de créer l'instance")
+                st.error("⚠️ Impossible de créer l'instance")
                 return
         
         except Exception as e:
@@ -131,17 +129,17 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
         ally_count = st.number_input("Nombre", 0, 3, 1, key="ally_count")
         ally_max_health = st.number_input("PV max alliés", 1, 30, 10, key="ally_max_health")
         
-        # 🔧 FIX CRITIQUE : Permettre 0 PV pour tester Résurrection
+        # FIX CRITIQUE : Permettre 0 PV pour tester Résurrection
         ally_current_health = st.number_input(
             "PV actuels alliés", 
-            min_value=0,  # ✅ CHANGÉ : 1 → 0 pour permettre alliés inconscients
+            min_value=0,  # CHANGÉ : 1 → 0 pour permettre alliés inconscients
             max_value=ally_max_health, 
             value=ally_max_health, 
             key="ally_current_health",
             help="⚠️ 0 PV = Inconscient (pour tester Résurrection)"
         )
         
-        # 🎯 Ajout statut visuel
+        # Ajout statut visuel
         if ally_current_health == 0:
             st.warning("💀 **Alliés INCONSCIENTS** - Parfait pour tester Résurrection !")
         elif ally_current_health < ally_max_health:
@@ -152,9 +150,29 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
     with col3:
         st.write("**Ennemis**")
         enemy_count = st.number_input("Nombre", 0, 5, 2, key="enemy_count")
-        enemy_health = st.number_input("PV ennemis", 1, 50, 20, key="enemy_health")
+        
+        # Configuration PV individuels si plusieurs ennemis
+        enemy_health_values = []
+        if enemy_count > 1:
+            st.write("*PV individuels :*")
+            for i in range(enemy_count):
+                health = st.number_input(
+                    f"Ennemi {i+1} PV", 
+                    min_value=1, 
+                    max_value=50, 
+                    value=3,  # Valeur par défaut pour tests répartition
+                    key=f"enemy_{i}_health"
+                )
+                enemy_health_values.append(health)
+        else:
+            # Un seul ennemi : champ global
+            if enemy_count > 0:
+                enemy_health = st.number_input("PV ennemis", 1, 50, 20, key="enemy_health")
+                enemy_health_values = [enemy_health]
+            else:
+                enemy_health_values = []
     
-    # 🎯 NOUVEAU : Suggestion de configuration selon la capacité
+    # Suggestion de configuration selon la capacité
     if ability_instance and ability_instance.name.lower() == "résurrection":
         st.info("💡 **Suggestion pour Résurrection:** Configurez les alliés avec 0 PV actuels !")
     
@@ -164,13 +182,13 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
             ability_instance, hero_code,
             user_max_health, user_current_health, user_spells, user_precision,
             ally_count, ally_max_health, ally_current_health,
-            enemy_count, enemy_health
+            enemy_count, enemy_health_values  # Passer la liste au lieu d'une valeur
         )
 
 def _execute_ability_test(ability_instance, hero_code: str, 
                          user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
                          ally_count: int, ally_max_health: int, ally_current_health: int,
-                         enemy_count: int, enemy_health: int):
+                         enemy_count: int, enemy_health_values: List[int]):  # Liste au lieu d'int
     st.subheader("🔍 Exécution du Test")
     
     try:
@@ -178,7 +196,7 @@ def _execute_ability_test(ability_instance, hero_code: str,
         
         user, allies, enemies, combat_state = _create_test_context(
             hero_code, user_max_health, user_current_health, user_spells, user_precision,
-            ally_count, ally_max_health, ally_current_health, enemy_count, enemy_health
+            ally_count, ally_max_health, ally_current_health, enemy_count, enemy_health_values
         )
         
         from models.combat.spell_manager import SpellManager
@@ -223,7 +241,7 @@ def _execute_ability_test(ability_instance, hero_code: str,
             try:
                 can_use, reason = spell_manager.can_use_magical_ability(user, ability_instance)
                 if not can_use:
-                    st.error(f"⌚ Ne peut pas utiliser {ability_instance.name}: {reason}")
+                    st.error(f"⚠️ Ne peut pas utiliser {ability_instance.name}: {reason}")
                     result = False
                 else:
                     result = ability_effects_manager.apply_ability_effects(
@@ -242,7 +260,7 @@ def _execute_ability_test(ability_instance, hero_code: str,
                         st.write(f"• {log_entry}")
                 
             except Exception as e:
-                st.error(f"⌚ Erreur apply_ability_effects(): {e}")
+                st.error(f"⚠️ Erreur apply_ability_effects(): {e}")
                 result = False
         
         with st.expander("🎯 Phase 3: État APRÈS", expanded=True):
@@ -343,7 +361,8 @@ def _display_entities_state_enhanced(user, allies, enemies, spell_manager=None):
             st.write(f"  DEF: {getattr(enemy, 'defense', 0)}")
 
 def _create_test_context(hero_code: str, user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
-                        ally_count: int, ally_max_health: int, ally_current_health: int, enemy_count: int, enemy_health: int):
+                        ally_count: int, ally_max_health: int, ally_current_health: int, 
+                        enemy_count: int, enemy_health_values: List[int]):  # Liste au lieu d'int
     from models.character import Character, Enemy
     
     user = Character(
@@ -373,14 +392,17 @@ def _create_test_context(hero_code: str, user_max_health: int, user_current_heal
     
     enemies = []
     for i in range(enemy_count):
+        # Utiliser la valeur PV individuelle
+        individual_health = enemy_health_values[i] if i < len(enemy_health_values) else 20
+        
         enemy = Enemy(
             code=f"TEST-{i+1}",
             name=f"Enemy{i+1}", 
             defense=2,
             stats_by_players={
-                2: {'damage': 3, 'health': enemy_health, 'defense': 1},
-                3: {'damage': 3, 'health': enemy_health, 'defense': 1}, 
-                4: {'damage': 3, 'health': enemy_health, 'defense': 1}
+                2: {'damage': 3, 'health': individual_health, 'defense': 1},  # PV individuel
+                3: {'damage': 3, 'health': individual_health, 'defense': 1}, 
+                4: {'damage': 3, 'health': individual_health, 'defense': 1}
             },
             is_magical=False,
             has_magical_damage=False

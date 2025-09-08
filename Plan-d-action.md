@@ -1,5 +1,5 @@
 # 🎯 PLAN D'ACTION - MIGRATION CAPACITÉS PÉRIPLES
-**Version : API Consistency ABSOLUE + Résurrection Fix - Septembre 2025**
+**Version : API Consistency ABSOLUE + Résurrection Fix + Validation 3 Niveaux - Septembre 2025**
 
 ## ⚠️ RÈGLES ABSOLUES CLAUDE
 
@@ -41,10 +41,46 @@ result = ability_effects_manager.apply_ability_effects(user, ability_instance, e
 ---
 
 ## 📈 ÉTAT ACTUEL - ARCHITECTURE CORRIGÉE
+
+### 🎯 **SYSTÈME DE VALIDATION À 3 NIVEAUX**
+
+#### **Niveau 1 : Non testé** ❌
+- Capacité pas implémentée ou pas testée
+- Statut inconnu, potentiellement non fonctionnelle
+
+#### **Niveau 2 : Debug validé** ⚠️ 
+- ✅ Testé et fonctionnel dans l'onglet Debug
+- ✅ Utilise les API de l'app principale Streamlit
+- ✅ Comportement représentatif de la production
+- ❓ **Non validé en combat réel** (IA peut ne pas utiliser la capacité)
+
+#### **Niveau 3 : Production validée** ✅
+- ✅ Testé et validé dans l'onglet Debug  
+- ✅ **Confirmé fonctionnel en combat réel** dans l'app principale
+- ✅ Validation complète utilisateur final
+
+### 📊 **ÉTAT DES CAPACITÉS PAR NIVEAU**
+
 **TOTAL** : 18/59 capacités (30%) - **PRÊT POUR RETEST SYSTÉMATIQUE**
-- **P-1 (Elneha)** : 6/6 ✅ **RÉSURRECTION CORRIGÉE** + debug mode représentatif
-- **P-2 (Liarie)** : 6/6 ⚠️ RETEST + corriger magical_armor_bonus 
-- **P-3 (Atucan)** : 6/6 ⚠️ RETEST + revoir IA restrictive
+
+#### **P-1 (Elneha) - 6/6 capacités** ✅ **TOUTES NIVEAU 2 VALIDÉES**
+- **P-1-1 Forme d'ours** : ✅ **Niveau 2** (Debug validé - transformations + décompte correct)
+- **P-1-2 Soin mineur** : ✅ **Niveau 2** (Debug validé - ciblage intelligent fonctionnel)  
+- **P-1-3 Forme de loup** : ✅ **Niveau 2** (Debug validé - transformations + fix NoneType)
+- **P-1-4 Soin multiple** : ✅ **Niveau 2** (Debug validé - soins AoE tous alliés)
+- **P-1-5 Onde tonnante** : ✅ **Niveau 2** (Debug validé - AoE dégâts + stun + limitation 1/combat)
+- **P-1-6 Résurrection** : ✅ **Niveau 2** (Debug validé - méthode spécialisée alliés inconscients)
+
+#### **P-2 (Liarie) - 6/6 capacités** 
+- **Toutes** : ⚠️ **Niveau 2** (RETEST debug + corriger magical_armor_bonus)
+
+#### **P-3 (Atucan) - 6/6 capacités**
+- **Toutes** : ⚠️ **Niveau 2** (RETEST debug + revoir IA restrictive)
+
+### 🎯 **CAPACITÉS PAR NIVEAU - ÉTAT DÉTAILLÉ**
+- **Niveau 3** : 0/59 (Aucune validée en production) 
+- **Niveau 2** : 6/59 ✅ **P-1 ELNEHA COMPLÈTE** (toutes capacités debug validées)
+- **Niveau 1** : 53/59 (P-2 + P-3 à revalider + P-4 à P-12 + capacités bonus)
 
 **PRIORITÉ CRITIQUE** : ✅ **RÉSOLU** - BaseAbility.can_execute() + debug_mode.py corrigés + API unifiée + **Résurrection fonctionnelle**
 
@@ -225,15 +261,20 @@ context = {
 
 ---
 
-## 📄 PROCESSUS RÉVISÉ (30 min par capacité)
+## 📄 PROCESSUS RÉVISÉ - VALIDATION À 3 NIVEAUX
 
-### 1. Setup Debug (5 min)
+### **🎯 Objectif : Niveau 2 minimum (Debug validé) pour toutes les capacités**
+*Le Niveau 3 (Production) est optimal mais difficile à tester systématiquement à cause de l'IA*
+
+### 1. **Niveau 1 → Niveau 2** : Validation Debug (25 min)
+
+#### Setup Debug (5 min)
 - Mode debug avec **API réelle**
 - Configuration sorts/PV/ennemis (0 PV autorisé pour alliés)
 - **NOUVEAU** : Réinitialisation automatique des uses_remaining_combat
 - **CRITIQUE** : Vérification API cohérente
 
-### 2. Test isolation (10 min)
+#### Test isolation (15 min)
 ```python
 # Template sécurisé vérifié avec VRAIE API
 class NewAbility(BaseAbility):
@@ -256,21 +297,38 @@ class ResurrectionAbility(BaseAbility):
         # Récupère TOUS les alliés (vivants ET inconscients) sans filtre _is_alive()
 ```
 
-### 3. Validation (10 min)  
-- apply_ability_effects() retourne True (plus execute() direct)
-- Logs corrects (sorts consommés, effets appliqués)
-- État avant/après cohérent
-- Uses_remaining_combat décompté correctement **ET** can_execute() refuse si épuisé
-- **NOUVEAU** : Comportement identique en production
-- **RÉSURRECTION** : Teste avec allié 0 PV → ressuscité à PV max
+#### Validation Debug (5 min)
+- ✅ `apply_ability_effects()` retourne `True` 
+- ✅ Logs corrects (sorts consommés, effets appliqués)
+- ✅ État avant/après cohérent
+- ✅ `uses_remaining_combat` décompté correctement 
+- ✅ `can_execute()` refuse si épuisé
+- ✅ **Comportement identique app principale**
 
-### 4. Documentation (5 min)
-- Mettre à jour statut dans ce plan
-- Noter API utilisée (**TOUJOURS la vraie !**)
+### 2. **Niveau 2 → Niveau 3** : Validation Production (Optionnel - 10 min)
+
+#### Test combat réel (si possible)
+- Lancer combat avec héros possédant la capacité
+- **Défi** : L'IA peut ne pas utiliser la capacité à tester
+- **Solutions partielles** :
+  - Configuration favorable (héros blessé pour soins, etc.)
+  - Multiple tentatives
+  - Observer si l'IA propose la capacité
+
+#### Validation Production
+- ✅ Capacité apparaît dans l'interface combat
+- ✅ Utilisable par l'IA si conditions réunies  
+- ✅ Effets visibles dans les logs de combat
+- ✅ Aucun crash ou erreur
+
+### 3. Documentation et tracking (5 min)
+- Mettre à jour statut dans ce plan (Niveau 1/2/3)
+- Noter API utilisée et cas spéciaux découverts
+- Documenter problèmes résiduels si Niveau 2 non atteint
 
 ---
 
-## 🛠️ PRIORITÉ #1 : RETEST SYSTÉMATIQUE AVEC ARCHITECTURE CORRIGÉE
+## 🛠️ PRIORITÉ #1 : RETEST SYSTÉMATIQUE AVEC VALIDATION À 3 NIVEAUX
 
 ### Phase A - Validation corrections ✅ COMPLÉTÉE
 1. ✅ **BaseAbility.can_execute()** - Vérification uses_remaining_combat ajoutée
@@ -278,22 +336,39 @@ class ResurrectionAbility(BaseAbility):
 3. ✅ **API Debug = App Principale** - Plus de divergence
 4. ✅ **Résurrection d'Elneha** - Fix _get_all_allies() avec méthode spécialisée
 5. ✅ **Interface debug** - Permet alliés inconscients (0 PV)
+6. ✅ **P-1 Elneha COMPLÈTE** - 6/6 capacités Niveau 2 validées
 
-### Phase B - Retest avec debug mode fiable
-1. **Résurrection P-1** - ✅ **FONCTIONNELLE** avec allié inconscient
-2. **Éclair magique P-2** - Test référence (doit fonctionner)
-3. **Armure du mage P-2** - Test sorts coûteux (doit fonctionner)  
-4. **Forme d'ours P-1** - Test transformations + décompte correct
-5. **Soin mineur P-1** - Test logique de ciblage intelligente
+### Phase B - Montée Niveau 1 → Niveau 2 (Debug validé)
 
-### Phase C - Retest complet P-1/P-2/P-3
-- **Toutes les 18 capacités** à retester avec architecture corrigée
-- **Identifier** celles qui échouent encore  
-- **Corriger** une par une avec pattern sécurisé
+#### **Priorité immédiate : P-2 Liarie + P-3 Atucan**
+*P-1 Elneha ✅ COMPLÈTE (6/6 Niveau 2)*
 
-### Phase D - Correction erreurs identifiées
-- **magical_armor_bonus** → max_parade_tokens (P-2)
-- **IA Atucan** trop restrictive (P-3)
+**P-2 Liarie - 6 capacités à revalider Niveau 2**
+- **Correction critique** : magical_armor_bonus → max_parade_tokens 
+- **Test référence** : Éclair magique (doit fonctionner)
+
+**P-3 Atucan - 6 capacités à revalider Niveau 2**  
+- **Correction** : Revoir IA restrictive
+- **Test ciblage** : Validation logique intelligente
+
+### Phase C - Validation opportuniste Niveau 2 → Niveau 3
+
+#### **Stratégies pour contourner l'IA :**
+1. **Configuration favorable** : Héros blessé → IA utilise soins
+2. **Ennemis faibles** : IA utilise attaques magiques
+3. **Multiple tentatives** : Plusieurs combats pour observer usage
+4. **Capacités passives** : Transformations activées en début de combat
+
+#### **Capacités prioritaires Niveau 3 :**
+- **Résurrection** : Configuration alliés inconscients
+- **Soins** : Configuration alliés blessés
+- **Transformations** : Observables visuellement
+- **Attaques magiques** : Configuration ennemis multiples
+
+### Phase D - Documentation et maintenance
+- **Tracker statut** dans ce plan d'action
+- **Patterns spéciaux** documentés (résurrection, transformations)
+- **Guide troubleshooting** pour futurs développeurs
 
 ---
 
@@ -438,12 +513,13 @@ class SecureAbility(BaseAbility):
 3. ✅ **API Debug = App Principale** - Divergence éliminée
 4. ✅ **Résurrection d'Elneha** - Méthode spécialisée pour alliés inconscients
 5. ✅ **Interface debug** - Permet configuration alliés 0 PV
+6. ✅ **P-1 Elneha COMPLÈTE** - 6/6 capacités Niveau 2 validées
 
 ### 📋 PRÊT - Retest systématique fiable
-1. **Retester Soin mineur** avec la vraie API (doit fonctionner)
-2. **Retester les 18 capacités** avec debug représentatif
+1. **P-2 Liarie** - 6 capacités à revalider Niveau 2 (magical_armor_bonus fix)
+2. **P-3 Atucan** - 6 capacités à revalider Niveau 2 (IA restrictive)
 3. **Identifier** et corriger les échecs restants avec debug mode fiable
-4. **Finaliser** P-1, P-2, P-3 avec processus validé
+4. **Finaliser** P-2, P-3 avec processus validé
 
 ### 🚀 LONG TERME - Suite migration  
 1. **P-4 Kraor** avec processus validé et debug mode stable
@@ -453,28 +529,39 @@ class SecureAbility(BaseAbility):
 ---
 
 ## 🎯 OBJECTIF FINAL
-**59/59 capacités** fonctionnelles via debug_mode.py corrigé avec architecture SpellManager + BaseAbility maîtrisée + API unifiée + **patterns spécialisés documentés**
+**59/59 capacités** au **Niveau 2 minimum** (Debug validé) via debug_mode.py représentatif avec architecture SpellManager + BaseAbility maîtrisée + API unifiée + patterns spécialisés documentés
+
+**Objectif optimal** : Maximum de capacités au **Niveau 3** (Production validée) selon faisabilité IA
 
 ---
 
-## 🏆 STATUT ARCHITECTURAL
+## 🏆 STATUT ARCHITECTURAL - VALIDATION À 3 NIVEAUX
 
 ### ✅ RÉSOLU ET TESTÉ
 - **BaseAbility.can_execute()** avec vérifications complètes
-- **Debug mode** avec réinitialisation automatique
-- **API unifiée** debug = production
+- **Debug mode** avec réinitialisation automatique  
+- **API unifiée** debug = production → **Niveau 2 fiable**
 - **Template sécurisé** pour nouvelles capacités
 - **API documentation** complète et testée
 - ✅ **Résurrection fonctionnelle** avec pattern spécialisé
 - ✅ **Interface debug** permet tests complets (alliés inconscients)
+- ✅ **P-1 Elneha COMPLÈTE** - 6/6 capacités Niveau 2
 
-### 📋 PRÊT POUR PRODUCTION
-- **Mode debug fiable** représentant l'app réelle à 100%
+### 📋 PRÊT POUR PRODUCTION - SYSTÈME DE VALIDATION
+- **Mode debug fiable** représentant l'app réelle à 100% → **Niveau 2 garanti**
 - **Architecture cohérente** sans duplication critique
-- **Processus standardisé** 30min par capacité
+- **Processus standardisé** Niveau 1→2 (25min) + Niveau 2→3 (10min optionnel)
 - **Documentation technique** complète avec cas spéciaux
 - **Tests représentatifs** de la production
 - **Patterns spécialisés** pour capacités complexes (résurrection, etc.)
+- **Système tracking** progression par niveaux
+
+### 🆕 MÉTHODOLOGIE VALIDATION DOCUMENTÉE
+- **Niveau 1** : Non testé ❌
+- **Niveau 2** : Debug validé ⚠️ (objectif minimum - 100% représentatif)
+- **Niveau 3** : Production validée ✅ (objectif optimal - selon faisabilité IA)
+- **Stratégies contournement IA** pour validation Niveau 3
+- **Priorités par type** de capacité (soins, transformations, attaques)
 
 ### 🆕 PATTERNS SPÉCIALISÉS DOCUMENTÉS
 - **Résurrection** : Méthode alternative pour alliés inconscients
@@ -483,7 +570,7 @@ class SecureAbility(BaseAbility):
 - **Debug interface** : Configuration complète (0 PV autorisé)
 
 ---
-**Version** : API Consistency ABSOLUE + Résurrection Fix  
-**Usage** : Guide de développement avec API unifiée + patterns spécialisés  
-**Garantie** : Si ça marche en debug, ça marche en production !  
-**Prochaine étape** : Retest systématique des 18 capacités avec debug mode 100% représentatif
+**Version** : API Consistency ABSOLUE + Résurrection Fix + Validation 3 Niveaux  
+**Usage** : Guide de développement avec API unifiée + patterns spécialisés + système validation  
+**Garantie** : Si ça marche en debug Niveau 2, ça marche en production !  
+**Prochaine étape** : Validation P-2 Liarie et P-3 Atucan au Niveau 2 avec debug mode 100% représentatif
