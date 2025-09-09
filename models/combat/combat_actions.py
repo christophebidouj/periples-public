@@ -352,8 +352,10 @@ class CombatActions:
         # PRIORITÉ ABSOLUE : Transformations Elneha (buffs permanents)
         if hasattr(hero, 'current_form') and hero.current_form == 'human':  # Pas encore transformé
             transform_abilities = [a for a in usable_abilities 
-                                  if 'forme' in a.name.lower() and 
-                                  hasattr(a, 'uses_remaining_combat') and a.uses_remaining_combat > 0]
+                      if 'forme' in a.name.lower() and 
+                      hasattr(a, 'uses_remaining_combat') and 
+                      a.uses_remaining_combat is not None and 
+                      a.uses_remaining_combat > 0]
             if transform_abilities:
                 # ANALYSE TACTIQUE DE LA SITUATION
                 health_percent = (hero.current_health / hero.get_total_health()) * 100
