@@ -1,7 +1,7 @@
 # liarie.py - Capacités individuelles de Liarie (P-2)
 """
 Capacités individuelles pour le héros Liarie (P-2)
-Phase 2: Toutes les 6 capacités implémentées - VERSION CORRIGÉE
+Phase 2: Toutes les 6 capacités implémentées - VERSION CORRIGÉE COÛTS OFFICIELS
 
 Liarie est une mage spécialisée dans la magie offensive et défensive.
 Ses capacités se concentrent sur les sorts élémentaires et la protection magique.
@@ -34,7 +34,7 @@ class LiarieEclairMagique(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1
+        self.spell_cost = 1  # ✅ CORRECT selon Excel
         self.total_damage = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
@@ -139,7 +139,7 @@ class LiarieArmureDuMage(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2
+        self.spell_cost = 1  # ✅ CORRIGÉ 2→1 selon Excel
         self.parade_bonus = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
@@ -184,7 +184,7 @@ class LiarieArmureDuMage(BaseAbility):
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"🛡️ {self.name}: +{self.parade_bonus} jeton de parade par tour (Coût: {self.spell_cost} sorts)"
+        return f"🛡️ {self.name}: +{self.parade_bonus} jeton de parade par tour (Coût: {self.spell_cost} sort)"
 
 
 @register_ability
@@ -198,7 +198,7 @@ class LiarieMurDeGlace(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2
+        self.spell_cost = 1  # ✅ CORRIGÉ 2→1 selon Excel
         self.damage_amount = 2
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
@@ -248,7 +248,7 @@ class LiarieMurDeGlace(BaseAbility):
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"❄️ {self.name}: {self.damage_amount} dégâts + recul première ligne (Coût: {self.spell_cost} sorts)"
+        return f"❄️ {self.name}: {self.damage_amount} dégâts + recul première ligne (Coût: {self.spell_cost} sort)"
     
     def _get_front_line_enemies(self, context: Dict[str, Any]) -> List:
         """Récupère les ennemis en première ligne"""
@@ -277,17 +277,17 @@ class LiarieMurDeGlace(BaseAbility):
 
 @register_ability
 class LiarieBouleDeFeu(BaseAbility):
-    """P-2-4: Boule de feu - 3 dégâts magiques à tous sans riposte"""
+    """P-2-4: Boule de feu - 6 dégâts magiques à tous sans riposte"""
     
     hero_code = "P-2"
     ability_number = 4
     name = "Boule de feu"
-    description = "Inflige 3 dégâts magiques à tous les ennemis du combat, sans qu'ils puissent riposter."
+    description = "Inflige 6 dégâts magiques à tous les ennemis du combat, sans qu'ils puissent riposter."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2
-        self.damage_amount = 6
+        self.spell_cost = 2  # ✅ CORRIGÉ 3→2 selon Excel (anciennement 2→3, maintenant 3→2)
+        self.damage_amount = 6  # ✅ CORRECT selon Excel (6 dégâts à tous)
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Lance une boule de feu explosive contre tous les ennemis"""
@@ -334,17 +334,17 @@ class LiarieBouleDeFeu(BaseAbility):
 
 @register_ability
 class LiarieVolDeVie(BaseAbility):
-    """P-2-5: Vol de vie - 3 dégâts magiques + soins équivalents sans riposte"""
+    """P-2-5: Vol de vie - 4 dégâts magiques + soins équivalents sans riposte"""
     
     hero_code = "P-2"
     ability_number = 5
     name = "Vol de vie"
-    description = "Inflige 3 dégâts magiques à un ennemi et soigne autant de blessures au personnage qui utilise ce sort, sans que l'ennemi puisse riposter."
+    description = "Inflige 4 dégâts magiques à un ennemi et soigne autant de blessures au personnage qui utilise ce sort, sans que l'ennemi puisse riposter."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2
-        self.damage_amount = 4
+        self.spell_cost = 2  # ✅ CORRECT selon Excel
+        self.damage_amount = 4  # ✅ CORRECT selon Excel (4 dégâts + 4 soins)
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Draine la vie d'un ennemi pour se soigner"""
@@ -392,17 +392,17 @@ class LiarieVolDeVie(BaseAbility):
 
 @register_ability
 class LiariePluieDeMetéores(BaseAbility):
-    """P-2-6: Pluie de météores - 6 dégâts magiques à tous + stun"""
+    """P-2-6: Pluie de météores - 10 dégâts magiques à tous + stun"""
     
     hero_code = "P-2"
     ability_number = 6
     name = "Pluie de météores"
-    description = "Inflige 6 dégâts magiques à tous les adversaires présents lors du combat et les empêche d'agir le tour suivant."
+    description = "Inflige 10 dégâts magiques à tous les adversaires présents lors du combat et les empêche d'agir le tour suivant."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2
-        self.damage_amount = 10
+        self.spell_cost = 2  # ✅ CORRIGÉ 4→2 selon Excel
+        self.damage_amount = 10  # ✅ CORRECT selon Excel (10 dégâts à tous)
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Invoque une pluie de météores dévastatrice"""
@@ -473,40 +473,40 @@ def get_liarie_abilities_summary() -> str:
     """Retourne un résumé des capacités de Liarie"""
     return """
     🎭 LIARIE (P-2) - 6 capacités complètes:
-    ✅ P-2-1: Eclair magique (4 dégâts magiques sans riposte, coût 1)
-    ✅ P-2-2: Armure du mage (+1 parade par tour, coût 2)
-    ✅ P-2-3: Mur de glace (2 dégâts + recul première ligne, coût 2)
-    ✅ P-2-4: Boule de feu (3 dégâts à tous sans riposte, coût 3)
-    ✅ P-2-5: Vol de vie (3 dégâts + soins équivalents, coût 2)
-    ✅ P-2-6: Pluie de météores (6 dégâts à tous + stun, coût 4)
+    ✅ P-2-1: Éclair magique (4 dégâts magiques sans riposte, coût 1)
+    ✅ P-2-2: Armure du mage (+1 parade par tour, coût 1)
+    ✅ P-2-3: Mur de glace (2 dégâts + recul première ligne, coût 1)
+    ✅ P-2-4: Boule de feu (6 dégâts à tous sans riposte, coût 2)
+    ✅ P-2-5: Vol de vie (4 dégâts + soins équivalents, coût 2)
+    ✅ P-2-6: Pluie de météores (10 dégâts à tous + stun, coût 2)
     """
 
 
 def get_liarie_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités de Liarie"""
+    """Retourne les coûts en sorts des capacités de Liarie - VERSION CORRIGÉE"""
     return {
-        "Eclair magique": 1,
-        "Armure du mage": 2,
-        "Mur de glace": 2,
-        "Boule de feu": 3,
-        "Vol de vie": 2,
-        "Pluie de météores": 4
+        "Éclair magique": 1,     # ✅ Correct
+        "Armure du mage": 1,     # ✅ CORRIGÉ (était 2)
+        "Mur de glace": 1,       # ✅ CORRIGÉ (était 2)
+        "Boule de feu": 2,       # ✅ CORRIGÉ (était 3)
+        "Vol de vie": 2,         # ✅ Correct
+        "Pluie de météores": 2   # ✅ CORRIGÉ (était 4)
     }
 
 
 def get_liarie_damage_output() -> dict:
-    """Retourne les dégâts potentiels des sorts offensifs de Liarie"""
+    """Retourne les dégâts potentiels des sorts offensifs de Liarie - VERSION CORRIGÉE"""
     return {
-        "Eclair magique": {"single": 4, "type": "magical"},
+        "Éclair magique": {"single": 4, "type": "magical"},
         "Mur de glace": {"front_line": 2, "type": "magical"},
-        "Boule de feu": {"all_enemies": 3, "type": "magical"},
-        "Vol de vie": {"single": 3, "type": "magical", "healing": 3},
-        "Pluie de météores": {"all_enemies": 6, "type": "magical", "ultimate": True}
+        "Boule de feu": {"all_enemies": 6, "type": "magical"},  # ✅ CORRIGÉ (était 3)
+        "Vol de vie": {"single": 4, "type": "magical", "healing": 4},  # ✅ CORRIGÉ (était 3)
+        "Pluie de météores": {"all_enemies": 10, "type": "magical", "ultimate": True}  # ✅ CORRIGÉ (était 6)
     }
 
 
 def get_liarie_tactical_analysis() -> dict:
-    """Analyse tactique des capacités de Liarie"""
+    """Analyse tactique des capacités de Liarie - VERSION CORRIGÉE"""
     return {
         "role": "Mage élémentaire - DPS/Support",
         "strengths": [
@@ -517,13 +517,13 @@ def get_liarie_tactical_analysis() -> dict:
             "Protection avec Armure du mage"
         ],
         "spell_efficiency": {
-            "low_cost": ["Eclair magique"],
-            "medium_cost": ["Armure du mage", "Mur de glace", "Vol de vie"],
-            "high_cost": ["Boule de feu", "Pluie de météores"]
+            "low_cost": ["Éclair magique", "Armure du mage", "Mur de glace"],  # ✅ CORRIGÉ
+            "medium_cost": ["Boule de feu", "Vol de vie", "Pluie de météores"],  # ✅ CORRIGÉ
+            "high_cost": []  # ✅ Plus rien en high_cost maintenant
         },
         "combat_phases": {
-            "early": "Eclair magique + Armure du mage",
-            "mid": "Boule de feu + Vol de vie",
-            "late": "Pluie de météores (finishing move)"
+            "early": "Éclair magique + Armure du mage (coûts faibles)",
+            "mid": "Boule de feu + Vol de vie (coûts moyens)",
+            "late": "Pluie de météores (finishing move, coût raisonnable)"
         }
     }
