@@ -203,7 +203,17 @@ def _execute_ability_test(ability_instance, hero_code: str,
         from models.combat.abilities import AbilityEffectsManager
         
         spell_manager = SpellManager()
-        spell_manager.initialize_spells(user)
+        user.current_spells = user_spells      # Override debug: force à la valeur configurée
+        spell_manager.initialize_spells(user)  # Initialise avec données officielles
+        
+        # 🔧 NOUVEAU: Forcer les sorts dans SpellManager ET sur le Character pour le debug
+        combatant_id = spell_manager.get_combatant_id(user)
+        spell_manager.combatant_spells[combatant_id] = user_spells
+        # CORRECTION CRITIQUE: Synchroniser aussi le Character
+        user.current_spells = user_spells
+        user.__dict__['current_spells'] = user_spells  # Force directement dans le dict Pydantic
+        st.info(f"🔧 DEBUG FORCE: Sorts forcés à {user_spells} dans SpellManager ET Character")
+
         for ally in allies:
             spell_manager.initialize_spells(ally)
         
@@ -279,6 +289,13 @@ def _execute_ability_test(ability_instance, hero_code: str,
                     st.warning("⚠️ Utilisation non décomptée - vérifier l'implémentation")
             else:
                 st.write(f"- **{ability_instance.name}:** Utilisations illimitées")
+            
+            # 🆕 NOUVEAU: Afficher les temporary_buffs après exécution
+            if hasattr(user, 'temporary_buffs') and user.temporary_buffs:
+                st.write("**Buffs temporaires actifs:**")
+                for buff_name, buff_value in user.temporary_buffs.items():
+                    if buff_value:  # Seulement afficher les buffs actifs
+                        st.write(f"- **{buff_name}:** {buff_value}")
             
             if combat_state.get("logs"):
                 st.write("**Logs générés:**")

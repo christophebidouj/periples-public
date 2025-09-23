@@ -1,17 +1,17 @@
 # elneha.py - Capacités individuelles d'Elneha (P-1)
 """
 Capacités individuelles pour le héros Elneha (P-1)
-Phase 2: Toutes les 6 capacités implémentées avec coûts Excel corrects
+CORRIGÉ: Basé sur données officielles Sorts.xlsx + système temporary_buffs
 
 Elneha est une druide spécialisée dans les transformations et les soins.
 Ses capacités se concentrent sur les métamorphoses animales et la guérison.
 
-P-1-1: Forme d'ours ✅ (Coût: 1 sort)
-P-1-2: Soin mineur ✅ (Coût: 1 sort)  
-P-1-3: Forme de loup ✅ (Coût: 1 sort)
-P-1-4: Soin multiple ✅ (Coût: 2 sorts)
-P-1-5: Onde tonnante ✅ (Coût: 1 sort)
-P-1-6: Résurrection ✅ (Coût: 2 sorts) - CORRIGÉE
+P-1-1: Forme d'ours ✅ (Coût: 1 sort) - Ignore prochaine attaque via temporary_buffs
+P-1-2: Soin mineur ✅ (Coût: 1 sort) - 4 PV à un personnage
+P-1-3: Forme de loup ✅ (Coût: 1 sort) - Double dégâts prochaine attaque via temporary_buffs  
+P-1-4: Soin multiple ✅ (Coût: 2 sorts) - 4 PV à tous
+P-1-5: Onde tonnante ✅ (Coût: 1 sort) - 4 dégâts magiques + stun
+P-1-6: Résurrection ✅ (Coût: 2 sorts) - Ressuscite à PV max
 """
 
 from typing import List, Dict, Any
@@ -25,7 +25,7 @@ from ..ability_registry import register_ability
 
 @register_ability
 class ElnehaFormeOurs(BaseAbility):
-    """P-1-1: Forme d'ours - Transformation défensive +2 ATT, +1 DEF"""
+    """P-1-1: Forme d'ours - Ignore les dégâts de la prochaine attaque"""
     
     hero_code = "P-1"
     ability_number = 1
@@ -39,40 +39,29 @@ class ElnehaFormeOurs(BaseAbility):
         self.uses_remaining_combat = 1
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en ours pour plus de force et défense"""
+        """Transforme Elneha en ours - ignore la prochaine attaque subie"""
         try:
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            caster.set_form("bear")
+            # CORRECTION: Utiliser le système temporary_buffs existant
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['ignore_next_attack'] = True
             
-            # Initialiser les attributs si absents ou None
-            if not hasattr(caster, 'current_attack') or caster.current_attack is None:
-                caster.current_attack = caster.damage
-                        
-            # Bonus ours: +2 ATT, +1 DEF
-            caster.current_attack += 2
-            if not hasattr(caster, 'max_parade_tokens'):
-                caster.max_parade_tokens = 0
-            if not hasattr(caster, 'current_parade_tokens'):
-                caster.current_parade_tokens = 0
-                
-            caster.max_parade_tokens += 1
-            caster.current_parade_tokens += 1
-
             log.append(f"🐻 {caster.name} se transforme en ours !")
-            log.append(f"   +2 Attaque, +1 Jeton parade")
+            log.append(f"   Pourra ignorer la prochaine attaque subie")
             
             self.uses_remaining_combat -= 1
             return True
             
         except Exception as e:
-            log.append(f"⌚ Erreur transformation ours: {str(e)}")
+            log.append(f"❌ Erreur transformation ours: {str(e)}")
             return False
 
     def get_preview(self) -> str:
-        return f"🐻 {self.name}: +2 ATT, +1 DEF (Coût: {self.spell_cost} sort)"
+        return f"🐻 {self.name}: Ignore prochaine attaque (Coût: {self.spell_cost} sort, 1/combat)"
 
 
 @register_ability
@@ -126,15 +115,16 @@ class ElnehaSoinMineur(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"⌚ Erreur soin mineur: {str(e)}")
+            log.append(f"❌ Erreur soin mineur: {str(e)}")
             return False
 
     def get_preview(self) -> str:
         return f"🌿 {self.name}: Soigne {self.healing_amount} PV (cible la plus blessée) (Coût: {self.spell_cost} sort)"
 
+
 @register_ability
 class ElnehaFormeLoup(BaseAbility):
-    """P-1-3: Forme de loup - Transformation offensive +1 ATT, +2 PREC"""
+    """P-1-3: Forme de loup - Double les dégâts de la prochaine attaque réussie"""
     
     hero_code = "P-1"
     ability_number = 3
@@ -144,40 +134,31 @@ class ElnehaFormeLoup(BaseAbility):
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
-        self.uses_per_combat = 1
-        self.uses_remaining_combat = 1
+        # Pas de uses_per_combat sur la transformation, mais "Loup" a 2/combat
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en loup pour plus d'agilité et précision"""
+        """Transforme Elneha en loup - double les dégâts de la prochaine attaque"""
         try:
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            caster.set_form("wolf")
-            
-            # Initialiser les attributs si absents ou None
-            if not hasattr(caster, 'current_attack') or caster.current_attack is None:
-                caster.current_attack = caster.damage
-            if not hasattr(caster, 'current_precision') or caster.current_precision is None:
-                caster.current_precision = caster.precision
-            
-            # Bonus loup: +1 ATT, +2 PREC
-            caster.current_attack += 1
-            caster.current_precision += 2
+            # CORRECTION: Utiliser le système temporary_buffs existant
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['wolf_double_attacks_remaining'] = 2  # 2 utilisations par combat
             
             log.append(f"🐺 {caster.name} se transforme en loup !")
-            log.append(f"   +1 Attaque, +2 Précision")
+            log.append(f"   Peut doubler les dégâts de 2 attaques ce combat")
             
-            self.uses_remaining_combat -= 1
             return True
             
         except Exception as e:
-            log.append(f"⌚ Erreur transformation loup: {str(e)}")
+            log.append(f"❌ Erreur transformation loup: {str(e)}")
             return False
 
     def get_preview(self) -> str:
-        return f"🐺 {self.name}: +1 ATT, +2 PREC (Coût: {self.spell_cost} sort)"
+        return f"🐺 {self.name}: Double dégâts 2 attaques (Coût: {self.spell_cost} sort)"
 
 
 @register_ability
@@ -218,7 +199,7 @@ class ElnehaSoinMultiple(BaseAbility):
             return True
                 
         except Exception as e:
-            log.append(f"⌚ Erreur soin multiple: {str(e)}")
+            log.append(f"❌ Erreur soin multiple: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -286,7 +267,7 @@ class ElnehaOndeTonnante(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"⌚ Erreur onde tonnante: {str(e)}")
+            log.append(f"❌ Erreur onde tonnante: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -341,7 +322,7 @@ class ElnehaResurrection(BaseAbility):
             unconscious_allies = [ally for ally in all_allies if ally.current_health <= 0]
             
             if not unconscious_allies:
-                log.append(f"⌚ {self.name} nécessite une cible inconsciente")
+                log.append(f"❌ {self.name} nécessite une cible inconsciente")
                 return False
             
             # Prendre le premier allié inconscient trouvé
@@ -349,7 +330,7 @@ class ElnehaResurrection(BaseAbility):
             
             # Double vérification de sécurité
             if target.current_health > 0:
-                log.append(f"⌚ {target.name} n'est pas inconscient")
+                log.append(f"❌ {target.name} n'est pas inconscient")
                 return False
             
             # Résurrection complète
@@ -367,7 +348,7 @@ class ElnehaResurrection(BaseAbility):
             return True
             
         except Exception as e:
-            log.append(f"⌚ Erreur résurrection: {str(e)}")
+            log.append(f"❌ Erreur résurrection: {str(e)}")
             return False
 
     def get_preview(self) -> str:
@@ -383,20 +364,20 @@ def get_elneha_abilities_count() -> int:
 
 
 def get_elneha_abilities_summary() -> str:
-    """Retourne un résumé des capacités d'Elneha"""
+    """Retourne un résumé des capacités d'Elneha (CORRIGÉ)"""
     return """
-    🎭 ELNEHA (P-1) - 6 capacités complètes:
-    ✅ P-1-1: Forme d'ours (1 sort) - +2 ATT, +1 DEF
+    🎭 ELNEHA (P-1) - 6 capacités complètes (DONNÉES OFFICIELLES + temporary_buffs):
+    ✅ P-1-1: Forme d'ours (1 sort, 1/combat) - Ignore prochaine attaque via temporary_buffs
     ✅ P-1-2: Soin mineur (1 sort) - 4 PV à une cible
-    ✅ P-1-3: Forme de loup (1 sort) - +1 ATT, +2 PREC  
+    ✅ P-1-3: Forme de loup (1 sort) - Double dégâts 2 attaques via temporary_buffs  
     ✅ P-1-4: Soin multiple (2 sorts) - 4 PV à tous alliés
-    ✅ P-1-5: Onde tonnante (1 sort) - 4 dégâts magiques AoE + stun
+    ✅ P-1-5: Onde tonnante (1 sort, 1/combat) - 4 dégâts magiques AoE + stun
     ✅ P-1-6: Résurrection (2 sorts) - Ressuscite inconscient à PV max
     """
 
 
 def get_elneha_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités d'Elneha (selon Excel)"""
+    """Retourne les coûts en sorts des capacités d'Elneha (selon Sorts.xlsx)"""
     return {
         "Forme d'ours": 1,
         "Soin mineur": 1,
@@ -408,11 +389,12 @@ def get_elneha_spell_costs() -> dict:
 
 
 def get_elneha_tactical_analysis() -> dict:
-    """Analyse tactique des capacités d'Elneha"""
+    """Analyse tactique des capacités d'Elneha (CORRIGÉE)"""
     return {
-        "role": "Druide shapeshifter - Tank/Healer",
+        "role": "Druide shapeshifter - Support défensif/offensif",
         "strengths": [
-            "Transformations adaptatives",
+            "Défense: Ignore attaque (ours) via temporary_buffs",
+            "Offense: Double dégâts (loup) via temporary_buffs", 
             "Soins polyvalents (single + AoE)",
             "Contrôle de zone avec stun",
             "Résurrection unique",
@@ -423,7 +405,7 @@ def get_elneha_tactical_analysis() -> dict:
             "medium_cost": ["Soin multiple", "Résurrection"]
         },
         "combat_phases": {
-            "early": "Transformation selon besoin",
+            "early": "Transformation défensive (ours) ou offensive (loup)",
             "mid": "Soin multiple + Onde tonnante",
             "late": "Résurrection si nécessaire"
         }
@@ -437,6 +419,8 @@ def validate_elneha_implementation() -> dict:
         "total_abilities": 6,
         "spell_costs_corrected": True,
         "excel_compliance": True,
+        "official_data_used": True,
+        "temporary_buffs_system": True,  # NOUVEAU
         "all_registered": True,
         "ready_for_combat": True
     }

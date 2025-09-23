@@ -696,12 +696,21 @@ class Character(BaseModel):
         return base_magical
     
     def get_total_spells(self) -> int:
-        """Gère le bonus O-4 Lyre phoenix (+4 sorts)"""
-        base_spells = self.spells + self.get_equipment_bonus('spells')
-        
-        # O-4 Lyre phoenix : +4 sorts déjà dans equipment.csv (O-4 a Spells: 4)
-        # Pas besoin de bonus supplémentaire ici
-        return base_spells
+            """
+            CORRIGÉ: Gère le bonus O-4 Lyre phoenix (+4 sorts) ET respecte current_spells des builds
+            Priorité aux sorts calculés par Forge/builds par défaut/debug
+            """
+            # CORRECTION CRITIQUE: Respecter current_spells si configuré par un build
+            if hasattr(self, 'current_spells') and self.current_spells is not None:
+                # Utiliser les sorts calculés avec équipements (Forge, builds par défaut, debug)
+                return self.current_spells
+            
+            # Fallback: Calcul automatique (sorts de base + équipements)
+            base_spells = self.spells + self.get_equipment_bonus('spells')
+            
+            # O-4 Lyre phoenix : +4 sorts déjà dans equipment.csv (O-4 a Spells: 4)
+            # Pas besoin de bonus supplémentaire ici
+            return base_spells
     
     def get_total_health(self) -> int:
         return self.health + self.get_equipment_bonus('health')
