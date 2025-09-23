@@ -171,24 +171,169 @@ def _test_selected_ability(hero_code: str, ability_data: Dict):
                 enemy_health_values = [enemy_health]
             else:
                 enemy_health_values = []
-    
+
     # Suggestion de configuration selon la capacité
     if ability_instance and ability_instance.name.lower() == "résurrection":
         st.info("💡 **Suggestion pour Résurrection:** Configurez les alliés avec 0 PV actuels !")
     
-    # Bouton de test
+    # Bouton de test principal
     if st.button("🧪 TESTER CAPACITÉ", type="primary"):
         _execute_ability_test(
             ability_instance, hero_code,
             user_max_health, user_current_health, user_spells, user_precision,
             ally_count, ally_max_health, ally_current_health,
-            enemy_count, enemy_health_values  # Passer la liste au lieu d'une valeur
+            enemy_count, enemy_health_values
         )
+
+def _test_transformation(hero_code: str, form_type: str, user_max_health: int, user_current_health: int,
+                        user_spells: int, user_precision: int, enemy_count: int, enemy_health_values: List[int]):
+    """Teste les mécaniques de transformation"""
+    st.subheader(f"🔍 Test Transformation: {form_type.title()}")
+    
+    try:
+        from models.character import Character, Enemy
+        
+        # Créer utilisateur
+        user = Character(
+            code=hero_code,
+            name="TestUser",
+            health=user_max_health,
+            damage=4,  # Dégâts de base
+            precision=user_precision,
+            spells=user_spells,
+            defense=1
+        )
+        user.current_health = user_current_health
+        user.current_spells = user_spells
+        
+        # Créer ennemi cible pour test
+        if enemy_count > 0:
+            enemy_health = enemy_health_values[0] if enemy_health_values else 20
+            enemy = Enemy(
+                code="TEST-TARGET",
+                name="TestTarget",
+                defense=3,  # Défense notable pour voir l'effet loup
+                stats_by_players={
+                    2: {'damage': 3, 'health': enemy_health, 'defense': 3}
+                },
+                is_magical=False,
+                has_magical_damage=False
+            )
+            enemy.initialize_for_combat(2)
+        else:
+            st.warning("⚠️ Créez au moins 1 ennemi pour tester les attaques")
+            return
+        
+        # Appliquer transformation
+        _apply_transformation(user, form_type)
+        
+        with st.expander("📊 Comparaison Avant/Après Transformation", expanded=True):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.write("**État Normal**")
+                st.write(f"Attaque: 4 (base)")
+                st.write(f"Forme: 👤 Humaine")
+                st.write(f"Défense: Standard")
+                
+            with col2:
+                st.write(f"**État {form_type.title()}**")
+                current_form = getattr(user, 'current_form', 'humaine')
+                form_display = user.get_form_display() if hasattr(user, 'get_form_display') else current_form
+                
+                st.write(f"Attaque: 4 (base)")
+                st.write(f"Forme: {form_display}")
+                
+                if form_type == "ours":
+                    st.write(f"**Effet:** Ignore prochaine attaque subie")
+                elif form_type == "loup":
+                    st.write(f"**Effet:** Double dégâts prochaine attaque")
+            
+            with col3:
+                st.write("**Avantage**")
+                if form_type == "ours":
+                    st.write(f"🛡️ **Défensif**")
+                    st.write(f"Évite 1 attaque complètement")
+                elif form_type == "loup":
+                    st.write(f"⚔️ **Offensif**") 
+                    st.write(f"4 → 8 dégâts (1 attaque)")
+        
+        # Affichage des buffs temporaires
+        if hasattr(user, 'temporary_buffs') and user.temporary_buffs:
+            st.write("**🔮 Buffs Temporaires Actifs:**")
+            for buff_name, buff_value in user.temporary_buffs.items():
+                if buff_value:
+                    st.write(f"• **{buff_name}:** {buff_value}")
+        
+        # Simulation d'effet
+        if st.button(f"📋 Voir Effet {form_type.title()}", key=f"effect_{form_type}"):
+            _simulate_attack(user, enemy, form_type)
+        
+        st.success(f"🎉 Test {form_type.title()} terminé")
+    
+    except Exception as e:
+        st.error(f"💥 Erreur test transformation: {e}")
+        st.code(traceback.format_exc())
+
+def _apply_transformation(user, form_type: str):
+    """Applique la transformation au personnage selon les vraies mécaniques"""
+    # Initialiser temporary_buffs si nécessaire
+    if not hasattr(user, 'temporary_buffs'):
+        user.temporary_buffs = {}
+    
+    # Initialiser current_form si nécessaire
+    if not hasattr(user, 'current_form'):
+        user.current_form = 'humaine'
+    
+    if form_type == "ours":
+        # Vraie mécanique : ignore la prochaine attaque subie
+        user.temporary_buffs['ignore_next_attack'] = True
+        user.current_form = 'ours'
+        st.info(f"🐻 Transformation Ours: Ignore la prochaine attaque subie")
+    
+    elif form_type == "loup":
+        # Vraie mécanique : double les dégâts de la prochaine attaque
+        user.temporary_buffs['double_damage_next_attack'] = 2
+        user.current_form = 'loup'  
+        st.info(f"🐺 Transformation Loup: Double dégâts de la prochaine attaque")
+
+def _simulate_attack(user, enemy, form_type: str):
+    """Simule les effets des transformations selon les vraies mécaniques"""
+    st.write("**⚔️ Simulation transformation:**")
+    
+    if form_type == "ours":
+        # Forme ours: ignore attaque subie (défensif)
+        st.write(f"• 🐻 **Forme d'Ours activée**")
+        st.write(f"• 🛡️ **Effet:** Ignore la prochaine attaque subie")
+        st.write(f"• ⚠️ **Usage:** Défensif - active avant de subir une attaque")
+        
+        if hasattr(user, 'temporary_buffs') and user.temporary_buffs.get('ignore_next_attack'):
+            st.success("✅ Buff 'ignore_next_attack' actif dans temporary_buffs")
+        else:
+            st.warning("⚠️ Buff non détecté")
+    
+    elif form_type == "loup":
+        # Forme loup: double dégâts prochaine attaque (offensif)
+        base_damage = getattr(user, 'damage', 4)
+        doubled_damage = base_damage * 2
+        
+        st.write(f"• 🐺 **Forme de Loup activée**")
+        st.write(f"• ⚔️ **Effet:** Prochaine attaque {base_damage} → {doubled_damage} dégâts")
+        st.write(f"• ⚠️ **Usage:** Offensif - active avant d'attaquer")
+        
+        if hasattr(user, 'temporary_buffs') and user.temporary_buffs.get('double_damage_next_attack'):
+            st.success("✅ Buff 'double_damage_next_attack' actif dans temporary_buffs")
+        else:
+            st.warning("⚠️ Buff non détecté")
+        
+        # Simulation calcul dégâts doublés
+        final_damage = max(0, doubled_damage - enemy.defense)
+        st.write(f"• 📊 **Calcul:** {doubled_damage} (loup x2) - {enemy.defense} DEF = {final_damage} dégâts")
 
 def _execute_ability_test(ability_instance, hero_code: str, 
                          user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
                          ally_count: int, ally_max_health: int, ally_current_health: int,
-                         enemy_count: int, enemy_health_values: List[int]):  # Liste au lieu d'int
+                         enemy_count: int, enemy_health_values: List[int]):
     st.subheader("🔍 Exécution du Test")
     
     try:
@@ -203,15 +348,15 @@ def _execute_ability_test(ability_instance, hero_code: str,
         from models.combat.abilities import AbilityEffectsManager
         
         spell_manager = SpellManager()
-        user.current_spells = user_spells      # Override debug: force à la valeur configurée
-        spell_manager.initialize_spells(user)  # Initialise avec données officielles
+        user.current_spells = user_spells
+        spell_manager.initialize_spells(user)
         
         # 🔧 NOUVEAU: Forcer les sorts dans SpellManager ET sur le Character pour le debug
         combatant_id = spell_manager.get_combatant_id(user)
         spell_manager.combatant_spells[combatant_id] = user_spells
         # CORRECTION CRITIQUE: Synchroniser aussi le Character
         user.current_spells = user_spells
-        user.__dict__['current_spells'] = user_spells  # Force directement dans le dict Pydantic
+        user.__dict__['current_spells'] = user_spells
         st.info(f"🔧 DEBUG FORCE: Sorts forcés à {user_spells} dans SpellManager ET Character")
 
         for ally in allies:
@@ -294,8 +439,38 @@ def _execute_ability_test(ability_instance, hero_code: str,
             if hasattr(user, 'temporary_buffs') and user.temporary_buffs:
                 st.write("**Buffs temporaires actifs:**")
                 for buff_name, buff_value in user.temporary_buffs.items():
-                    if buff_value:  # Seulement afficher les buffs actifs
+                    if buff_value:
                         st.write(f"- **{buff_name}:** {buff_value}")
+            
+            # 🆕 AUTO-SIMULATION EFFETS TRANSFORMATIONS P-1
+            if hero_code == "P-1" and hasattr(user, 'temporary_buffs') and user.temporary_buffs:
+                if user.temporary_buffs.get('ignore_next_attack'):
+                    st.write("**🐻 Simulation défense Forme d'Ours:**")
+                    if enemies:
+                        try:
+                            # API officielle Enemy
+                            enemy_damage = enemies[0].get_damage_info(2)['damage_value']
+                        except (AttributeError, KeyError):
+                            # Fallback debug
+                            enemy_damage = getattr(enemies[0], 'damage', 3)
+                        
+                        st.write(f"• Ennemi attaquerait : {enemy_damage} dégâts")
+                        st.write(f"• 🛡️ **Forme d'Ours :** Attaque ignorée !")
+                        st.write(f"• Résultat : {user.current_health}/{user.get_total_health()} PV (inchangé)")
+                    else:
+                        st.write("• 🛡️ **Forme d'Ours active** : Ignore la prochaine attaque subie")
+                
+                if user.temporary_buffs.get('double_damage_next_attack'):
+                    st.write("**🐺 Simulation attaque Forme de Loup:**")
+                    if enemies:
+                        base_damage = getattr(user, 'damage', 4)
+                        doubled_damage = base_damage * 2
+                        final_damage = max(0, doubled_damage - enemies[0].defense)
+                        st.write(f"• Attaque normale : {base_damage} dégâts")
+                        st.write(f"• 🐺 **Forme de Loup :** {base_damage} x2 = {doubled_damage} dégâts")
+                        st.write(f"• Calcul final : {doubled_damage} - {enemies[0].defense} DEF = {final_damage} dégâts")
+                    else:
+                        st.write("• 🐺 **Forme de Loup active** : Double les dégâts de la prochaine attaque")
             
             if combat_state.get("logs"):
                 st.write("**Logs générés:**")
@@ -307,6 +482,52 @@ def _execute_ability_test(ability_instance, hero_code: str,
     except Exception as e:
         st.error(f"💥 Erreur critique durant test: {e}")
         st.code(traceback.format_exc())
+
+def _simulate_bear_defense(user, enemy):
+    """Teste l'effet défensif de la forme d'ours"""
+    if not enemy:
+        st.warning("⚠️ Aucun ennemi disponible pour simuler l'attaque")
+        return
+    
+    st.write("**🐻 Simulation défense Forme d'Ours:**")
+    
+    # Calcul attaque normale de l'ennemi
+    enemy_damage = enemy.get_damage_info(2)['damage_value']
+    
+    st.write(f"• Ennemi attaque : {enemy_damage} dégâts")
+    st.write(f"• 🛡️ **Forme d'Ours :** Attaque ignorée !")
+    st.write(f"• Résultat : {user.current_health}/{user.get_total_health()} PV (inchangé)")
+    
+    # Simulation consommation du buff
+    if hasattr(user, 'temporary_buffs') and user.temporary_buffs.get('ignore_next_attack'):
+        user.temporary_buffs['ignore_next_attack'] = False
+        st.info("ℹ️ Buff 'ignore_next_attack' consommé (en combat réel)")
+
+def _simulate_wolf_attack(user, enemy):
+    """Teste l'effet offensif de la forme de loup"""
+    if not enemy:
+        st.warning("⚠️ Aucun ennemi disponible pour attaquer")
+        return
+    
+    st.write("**🐺 Simulation attaque Forme de Loup:**")
+    
+    base_damage = getattr(user, 'damage', 4)
+    doubled_damage = base_damage * 2
+    final_damage = max(0, doubled_damage - enemy.defense)
+    original_enemy_health = enemy.current_health
+    
+    st.write(f"• Attaque normale : {base_damage} dégâts")
+    st.write(f"• 🐺 **Forme de Loup :** {base_damage} x2 = {doubled_damage} dégâts")
+    st.write(f"• Calcul final : {doubled_damage} - {enemy.defense} DEF = {final_damage} dégâts")
+    
+    # Appliquer les dégâts
+    enemy.current_health = max(0, enemy.current_health - final_damage)
+    st.write(f"• Ennemi : {original_enemy_health} → {enemy.current_health} PV")
+    
+    # Simulation consommation du buff
+    if hasattr(user, 'temporary_buffs') and user.temporary_buffs.get('double_damage_next_attack'):
+        user.temporary_buffs['double_damage_next_attack'] = False
+        st.info("ℹ️ Buff 'double_damage_next_attack' consommé (en combat réel)")
 
 def _display_entities_state_enhanced(user, allies, enemies, spell_manager=None):
     col1, col2, col3 = st.columns(3)
@@ -379,7 +600,7 @@ def _display_entities_state_enhanced(user, allies, enemies, spell_manager=None):
 
 def _create_test_context(hero_code: str, user_max_health: int, user_current_health: int, user_spells: int, user_precision: int,
                         ally_count: int, ally_max_health: int, ally_current_health: int, 
-                        enemy_count: int, enemy_health_values: List[int]):  # Liste au lieu d'int
+                        enemy_count: int, enemy_health_values: List[int]):
     from models.character import Character, Enemy
     
     user = Character(
@@ -417,7 +638,7 @@ def _create_test_context(hero_code: str, user_max_health: int, user_current_heal
             name=f"Enemy{i+1}", 
             defense=2,
             stats_by_players={
-                2: {'damage': 3, 'health': individual_health, 'defense': 1},  # PV individuel
+                2: {'damage': 3, 'health': individual_health, 'defense': 1},
                 3: {'damage': 3, 'health': individual_health, 'defense': 1}, 
                 4: {'damage': 3, 'health': individual_health, 'defense': 1}
             },

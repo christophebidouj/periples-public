@@ -1,14 +1,14 @@
 # liarie.py - Capacités individuelles de Liarie (P-2)
 """
 Capacités individuelles pour le héros Liarie (P-2)
-Phase 2: Toutes les 6 capacités implémentées - VERSION CORRIGÉE COÛTS OFFICIELS
+Phase 2: Toutes les 6 capacités implémentées - VERSION CORRIGÉE SORTS.XLSX
 
 Liarie est une mage spécialisée dans la magie offensive et défensive.
 Ses capacités se concentrent sur les sorts élémentaires et la protection magique.
 
-P-2-1: Eclair magique ✅
-P-2-2: Armure du mage ✅
-P-2-3: Mur de glace ✅
+P-2-1: Éclair magique ✅
+P-2-2: Armure du mage ✅ CORRIGÉ
+P-2-3: Mur de glace ✅ CORRIGÉ MAJEUR
 P-2-4: Boule de feu ✅
 P-2-5: Vol de vie ✅
 P-2-6: Pluie de météores ✅
@@ -34,7 +34,7 @@ class LiarieEclairMagique(BaseAbility):
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # ✅ CORRECT selon Excel
+        self.spell_cost = 1  # ✅ CORRECT selon Sorts.xlsx
         self.total_damage = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
@@ -126,49 +126,51 @@ class LiarieEclairMagique(BaseAbility):
     def get_preview(self) -> str:
         """Aperçu des effets"""
         return f"⚡ {self.name}: {self.total_damage} dégâts magiques répartis intelligemment (Coût: {self.spell_cost} sort)"
-    
+
 
 @register_ability
 class LiarieArmureDuMage(BaseAbility):
-    """P-2-2: Armure du mage - Jeton de parade supplémentaire par tour"""
+    """P-2-2: Armure du mage - Bouclier de parade permanent - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
     ability_number = 2
     name = "Armure du mage"
-    description = "Gagne un jeton de parade supplémentaire par tour."
+    description = "Créer un bouclier de 2 de parade pendant toute la durée du combat."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # ✅ CORRIGÉ 2→1 selon Excel
-        self.parade_bonus = 1
+        self.spell_cost = 1  # ✅ Correct selon Sorts.xlsx
+        self.parade_bonus = 2  # ✅ CORRIGÉ selon Sorts.xlsx (bouclier de 2)
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active l'armure magique du mage"""
+        """Active l'armure magique permanente"""
         try:
             # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # FIX: Utiliser attribut existant au lieu de magical_armor_bonus
-            # Option A: Augmenter directement max_parade_tokens
-            if hasattr(caster, 'max_parade_tokens'):
-                caster.max_parade_tokens += self.parade_bonus
-            else:
-                # Fallback: créer l'attribut si absent
-                caster.max_parade_tokens = self.parade_bonus
+            # Vérifier si déjà actif pour éviter cumul (NON CUMULABLE)
+            if hasattr(caster, 'temporary_buffs') and caster.temporary_buffs.get('armure_mage_active'):
+                log.append(f"🛡️ {caster.name} a déjà une armure magique active !")
+                return False
             
-            # Option B: Utiliser système buff temporaire existant  
+            # Marquer l'armure comme active pour éviter cumul
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
-            caster.temporary_buffs['armure_mage'] = self.parade_bonus
+            caster.temporary_buffs['armure_mage_active'] = True
+            
+            # MÉCANIQUE SIMPLE: Augmenter max_parade_tokens de 2
+            if not hasattr(caster, 'max_parade_tokens'):
+                caster.max_parade_tokens = 0
+            
+            caster.max_parade_tokens += self.parade_bonus  # +2 permanent
             
             # Recharger jetons parade immédiatement avec nouveau maximum
-            if hasattr(caster, 'current_parade_tokens'):
-                caster.current_parade_tokens = caster.max_parade_tokens
+            caster.current_parade_tokens = caster.max_parade_tokens
             
-            log.append(f"🛡️ {caster.name} s'entoure d'une armure magique !")
-            log.append(f"   +{self.parade_bonus} jeton de parade maximum")
+            log.append(f"🛡️ {caster.name} s'entoure d'une armure magique permanente !")
+            log.append(f"   +{self.parade_bonus} jetons de parade maximum (durée du combat)")
             
             return True
             
@@ -180,59 +182,70 @@ class LiarieArmureDuMage(BaseAbility):
         """Vérifie si l'armure du mage peut être activée"""
         if caster.code != "P-2":
             return False
+        
+        # Vérifier si déjà actif
+        if hasattr(caster, 'temporary_buffs') and caster.temporary_buffs.get('armure_mage_active'):
+            return False
+            
         return caster.current_spells >= self.spell_cost
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"🛡️ {self.name}: +{self.parade_bonus} jeton de parade par tour (Coût: {self.spell_cost} sort)"
+        return f"🛡️ {self.name}: +{self.parade_bonus} jetons de parade permanent (Coût: {self.spell_cost} sort)"
 
 
 @register_ability
 class LiarieMurDeGlace(BaseAbility):
-    """P-2-3: Mur de glace - 2 dégâts magiques + recul en première ligne"""
+    """P-2-3: Mur de glace - Gèle les ennemis (effet stun) - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
     ability_number = 3
     name = "Mur de glace"
-    description = "Inflige 2 dégâts magiques aux adversaires situés dans le groupe de tête, et les fait reculer d'un rang."
+    description = "Gêles les ennemis, leur faisant perdre leur action pendant 1 tour."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 1  # ✅ CORRIGÉ 2→1 selon Excel
-        self.damage_amount = 2
+        self.spell_cost = 1  # ✅ Correct selon Sorts.xlsx
+        self.uses_per_combat = 2  # ✅ LIMITATION AJOUTÉE selon Sorts.xlsx
+        self.uses_remaining_combat = 2  # Initialisé au maximum
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Crée un mur de glace qui repousse les ennemis en première ligne"""
+        """Lance un mur de glace qui gèle les ennemis"""
         try:
             # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Récupérer les ennemis en première ligne
-            front_line_enemies = self._get_front_line_enemies(context)
+            # Vérifier les utilisations restantes
+            if self.uses_remaining_combat <= 0:
+                log.append(f"❄️ {caster.name} ne peut plus utiliser {self.name} (épuisé: {self.uses_per_combat}/combat)")
+                return False
             
-            if not front_line_enemies:
-                log.append(f"❄️ {caster.name} crée un mur de glace mais aucun ennemi n'est en première ligne !")
+            # Récupérer tous les ennemis vivants
+            enemies = self._get_all_enemies(caster, context)
+            
+            if not enemies:
+                log.append(f"❄️ {caster.name} invoque un mur de glace mais il n'y a aucun ennemi !")
+                self.uses_remaining_combat -= 1
                 return True
             
-            results = []
-            pushed_back = []
+            # Appliquer l'effet de gel (stun) à tous les ennemis
+            frozen_count = 0
+            for enemy in enemies:
+                # Ajouter l'effet stun pour le prochain tour
+                if not hasattr(enemy, 'status_effects'):
+                    enemy.status_effects = {}
+                enemy.status_effects['stunned'] = 1
+                frozen_count += 1
             
-            for enemy in front_line_enemies:
-                # Infliger dégâts de glace
-                damage_dealt = self._apply_damage(enemy, self.damage_amount, "magical", log)
-                results.append(f"{enemy.name}: {damage_dealt} dégâts")
-                
-                # Effet de recul
-                if self._push_back_enemy(enemy, context):
-                    pushed_back.append(enemy.name)
+            log.append(f"❄️ {caster.name} invoque un {self.name} !")
+            log.append(f"   🧊 {frozen_count} ennemi(s) gelé(s) - perdront leur prochaine action")
             
-            log.append(f"❄️ {caster.name} dresse un mur de glace !")
-            if results:
-                log.append(f"   Dégâts: " + ", ".join(results))
-            if pushed_back:
-                log.append(f"   Repoussés: {', '.join(pushed_back)}")
+            # Décompter l'utilisation
+            self.uses_remaining_combat -= 1
+            remaining = self.uses_remaining_combat
+            log.append(f"   📊 Utilisations restantes: {remaining}/{self.uses_per_combat}")
             
             return True
             
@@ -241,53 +254,39 @@ class LiarieMurDeGlace(BaseAbility):
             return False
     
     def can_execute(self, caster, context: Dict[str, Any]) -> bool:
-        """Vérifie si le mur de glace peut être créé"""
+        """Vérifie si le mur de glace peut être invoqué"""
         if caster.code != "P-2":
             return False
+        
+        # Vérifier les utilisations restantes  
+        if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+            if self.uses_remaining_combat <= 0:
+                return False
+        
+        # Vérifier le coût en sorts
         return caster.current_spells >= self.spell_cost
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"❄️ {self.name}: {self.damage_amount} dégâts + recul première ligne (Coût: {self.spell_cost} sort)"
-    
-    def _get_front_line_enemies(self, context: Dict[str, Any]) -> List:
-        """Récupère les ennemis en première ligne"""
-        all_enemies = self._get_all_enemies(None, context)
-        
-        # Logique simplifiée: les 2 premiers ennemis sont en première ligne
-        return all_enemies[:2] if len(all_enemies) >= 2 else all_enemies
-    
-    def _push_back_enemy(self, enemy, context: Dict[str, Any]) -> bool:
-        """Repousse un ennemi d'un rang vers l'arrière"""
-        # Marquer l'ennemi comme repoussé
-        if hasattr(enemy, 'position'):
-            enemy.position += 1
-            return True
-        elif hasattr(enemy, 'is_pushed_back'):
-            enemy.is_pushed_back = True
-            return True
-        
-        # Stocker l'effet dans le contexte
-        if 'pushed_enemies' not in context:
-            context['pushed_enemies'] = set()
-        context['pushed_enemies'].add(id(enemy))
-        
-        return True
+        remaining = getattr(self, 'uses_remaining_combat', self.uses_per_combat)
+        return f"❄️ {self.name}: Gèle tous les ennemis (stun 1 tour) - {remaining}/{self.uses_per_combat} utilisations (Coût: {self.spell_cost} sort)"
 
 
 @register_ability
 class LiarieBouleDeFeu(BaseAbility):
-    """P-2-4: Boule de feu - 6 dégâts magiques à tous sans riposte"""
+    """P-2-4: Boule de feu - 6 dégâts magiques à tous sans riposte - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
     ability_number = 4
     name = "Boule de feu"
-    description = "Inflige 6 dégâts magiques à tous les ennemis du combat, sans qu'ils puissent riposter."
+    description = "Inflige 6 dégâts magiques à tous les adversaires."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2  # ✅ CORRIGÉ 3→2 selon Excel (anciennement 2→3, maintenant 3→2)
-        self.damage_amount = 6  # ✅ CORRECT selon Excel (6 dégâts à tous)
+        self.spell_cost = 2  # ✅ Correct selon Sorts.xlsx
+        self.damage_amount = 6  # ✅ Correct selon Sorts.xlsx
+        self.uses_per_combat = 1  # ✅ LIMITATION AJOUTÉE selon Sorts.xlsx
+        self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Lance une boule de feu explosive contre tous les ennemis"""
@@ -297,11 +296,17 @@ class LiarieBouleDeFeu(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
+            # Vérifier les utilisations restantes
+            if self.uses_remaining_combat <= 0:
+                log.append(f"🔥 {caster.name} ne peut plus utiliser {self.name} (épuisé: {self.uses_per_combat}/combat)")
+                return False
+            
             # Récupérer tous les ennemis
             all_enemies = self._get_all_enemies(caster, context)
             
             if not all_enemies:
                 log.append(f"🔥 {caster.name} lance une boule de feu mais il n'y a aucun ennemi !")
+                self.uses_remaining_combat -= 1
                 return True
             
             results = []
@@ -315,6 +320,11 @@ class LiarieBouleDeFeu(BaseAbility):
             log.append(f"   Dégâts: " + ", ".join(results))
             log.append(f"   (Sans possibilité de riposte)")
             
+            # Décompter l'utilisation
+            self.uses_remaining_combat -= 1
+            remaining = self.uses_remaining_combat
+            log.append(f"   📊 Utilisations restantes: {remaining}/{self.uses_per_combat}")
+            
             return True
             
         except Exception as e:
@@ -325,11 +335,18 @@ class LiarieBouleDeFeu(BaseAbility):
         """Vérifie si la boule de feu peut être lancée"""
         if caster.code != "P-2":
             return False
+        
+        # Vérifier les utilisations restantes
+        if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+            if self.uses_remaining_combat <= 0:
+                return False
+        
         return caster.current_spells >= self.spell_cost
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"🔥 {self.name}: {self.damage_amount} dégâts magiques à tous sans riposte (Coût: {self.spell_cost} sorts)"
+        remaining = getattr(self, 'uses_remaining_combat', self.uses_per_combat)
+        return f"🔥 {self.name}: {self.damage_amount} dégâts magiques à tous - {remaining}/{self.uses_per_combat} utilisations (Coût: {self.spell_cost} sorts)"
 
 
 @register_ability
@@ -339,12 +356,12 @@ class LiarieVolDeVie(BaseAbility):
     hero_code = "P-2"
     ability_number = 5
     name = "Vol de vie"
-    description = "Inflige 4 dégâts magiques à un ennemi et soigne autant de blessures au personnage qui utilise ce sort, sans que l'ennemi puisse riposter."
+    description = "Inflige 4 dégâts magiques à 1 ennemi, et soigne Liarie de 4 blessures."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2  # ✅ CORRECT selon Excel
-        self.damage_amount = 4  # ✅ CORRECT selon Excel (4 dégâts + 4 soins)
+        self.spell_cost = 2  # ✅ Correct selon Sorts.xlsx
+        self.damage_amount = 4  # ✅ Correct selon Sorts.xlsx
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Draine la vie d'un ennemi pour se soigner"""
@@ -354,7 +371,7 @@ class LiarieVolDeVie(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # FIX: Utiliser _get_all_enemies() au lieu de targets
+            # Récupérer les ennemis
             enemies = self._get_all_enemies(caster, context)
             
             if not enemies:
@@ -392,17 +409,19 @@ class LiarieVolDeVie(BaseAbility):
 
 @register_ability
 class LiariePluieDeMetéores(BaseAbility):
-    """P-2-6: Pluie de météores - 10 dégâts magiques à tous + stun"""
+    """P-2-6: Pluie de météores - 10 dégâts magiques à tous + stun - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
     ability_number = 6
     name = "Pluie de météores"
-    description = "Inflige 10 dégâts magiques à tous les adversaires présents lors du combat et les empêche d'agir le tour suivant."
+    description = "Inflige 10 dégâts magiques à tous les adversaires."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 2  # ✅ CORRIGÉ 4→2 selon Excel
-        self.damage_amount = 10  # ✅ CORRECT selon Excel (10 dégâts à tous)
+        self.spell_cost = 2  # ✅ Correct selon Sorts.xlsx  
+        self.damage_amount = 10  # ✅ Correct selon Sorts.xlsx
+        self.uses_per_combat = 1  # ✅ LIMITATION AJOUTÉE selon Sorts.xlsx
+        self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Invoque une pluie de météores dévastatrice"""
@@ -412,36 +431,33 @@ class LiariePluieDeMetéores(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
+            # Vérifier les utilisations restantes
+            if self.uses_remaining_combat <= 0:
+                log.append(f"☄️ {caster.name} ne peut plus utiliser {self.name} (épuisé: {self.uses_per_combat}/combat)")
+                return False
+            
             # Récupérer tous les ennemis
             all_enemies = self._get_all_enemies(caster, context)
             
             if not all_enemies:
                 log.append(f"☄️ {caster.name} invoque une pluie de météores mais il n'y a aucun ennemi !")
+                self.uses_remaining_combat -= 1
                 return True
             
             results = []
-            stunned_enemies = []
             
             for enemy in all_enemies:
                 # Infliger dégâts magiques massifs
                 damage_dealt = self._apply_damage(enemy, self.damage_amount, "magical", log)
                 results.append(f"{enemy.name}: {damage_dealt} dégâts")
-                
-                # Effet d'étourdissement pour le tour suivant
-                if hasattr(enemy, 'is_stunned'):
-                    enemy.is_stunned = True
-                    stunned_enemies.append(enemy.name)
-                else:
-                    # Stocker l'effet de stun dans le contexte
-                    if 'stunned_entities' not in context:
-                        context['stunned_entities'] = set()
-                    context['stunned_entities'].add(id(enemy))
-                    stunned_enemies.append(enemy.name)
             
             log.append(f"☄️ {caster.name} invoque une pluie de météores dévastatrice !")
             log.append(f"   Dégâts: " + ", ".join(results))
-            if stunned_enemies:
-                log.append(f"   Tous étourdis pour le prochain tour !")
+            
+            # Décompter l'utilisation
+            self.uses_remaining_combat -= 1
+            remaining = self.uses_remaining_combat
+            log.append(f"   📊 Utilisations restantes: {remaining}/{self.uses_per_combat}")
             
             return True
             
@@ -453,11 +469,18 @@ class LiariePluieDeMetéores(BaseAbility):
         """Vérifie si la pluie de météores peut être invoquée"""
         if caster.code != "P-2":
             return False
+        
+        # Vérifier les utilisations restantes
+        if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+            if self.uses_remaining_combat <= 0:
+                return False
+        
         return caster.current_spells >= self.spell_cost
     
     def get_preview(self) -> str:
         """Aperçu des effets"""
-        return f"☄️ {self.name}: {self.damage_amount} dégâts magiques à tous + stun (Coût: {self.spell_cost} sorts)"
+        remaining = getattr(self, 'uses_remaining_combat', self.uses_per_combat)
+        return f"☄️ {self.name}: {self.damage_amount} dégâts magiques à tous - {remaining}/{self.uses_per_combat} utilisations (Coût: {self.spell_cost} sorts)"
 
 
 # ========================================
@@ -470,60 +493,64 @@ def get_liarie_abilities_count() -> int:
 
 
 def get_liarie_abilities_summary() -> str:
-    """Retourne un résumé des capacités de Liarie"""
+    """Retourne un résumé des capacités de Liarie - VERSION CORRIGÉE"""
     return """
-    🎭 LIARIE (P-2) - 6 capacités complètes:
-    ✅ P-2-1: Éclair magique (4 dégâts magiques sans riposte, coût 1)
-    ✅ P-2-2: Armure du mage (+1 parade par tour, coût 1)
-    ✅ P-2-3: Mur de glace (2 dégâts + recul première ligne, coût 1)
-    ✅ P-2-4: Boule de feu (6 dégâts à tous sans riposte, coût 2)
+    🎭 LIARIE (P-2) - 6 capacités corrigées selon Sorts.xlsx:
+    ✅ P-2-1: Éclair magique (4 dégâts magiques répartis, coût 1)
+    ✅ P-2-2: Armure du mage (+2 parade permanent, coût 1)
+    ✅ P-2-3: Mur de glace (gel/stun tous ennemis, coût 1, 2/combat)
+    ✅ P-2-4: Boule de feu (6 dégâts à tous, coût 2, 1/combat)
     ✅ P-2-5: Vol de vie (4 dégâts + soins équivalents, coût 2)
-    ✅ P-2-6: Pluie de météores (10 dégâts à tous + stun, coût 2)
+    ✅ P-2-6: Pluie de météores (10 dégâts à tous, coût 2, 1/combat)
     """
 
 
 def get_liarie_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités de Liarie - VERSION CORRIGÉE"""
+    """Retourne les coûts en sorts des capacités de Liarie selon Sorts.xlsx"""
     return {
         "Éclair magique": 1,     # ✅ Correct
-        "Armure du mage": 1,     # ✅ CORRIGÉ (était 2)
-        "Mur de glace": 1,       # ✅ CORRIGÉ (était 2)
-        "Boule de feu": 2,       # ✅ CORRIGÉ (était 3)
+        "Armure du mage": 1,     # ✅ Correct
+        "Mur de glace": 1,       # ✅ Correct
+        "Boule de feu": 2,       # ✅ Correct
         "Vol de vie": 2,         # ✅ Correct
-        "Pluie de météores": 2   # ✅ CORRIGÉ (était 4)
+        "Pluie de météores": 2   # ✅ Correct
     }
 
 
 def get_liarie_damage_output() -> dict:
-    """Retourne les dégâts potentiels des sorts offensifs de Liarie - VERSION CORRIGÉE"""
+    """Retourne les dégâts potentiels des sorts offensifs selon Sorts.xlsx"""
     return {
-        "Éclair magique": {"single": 4, "type": "magical"},
-        "Mur de glace": {"front_line": 2, "type": "magical"},
-        "Boule de feu": {"all_enemies": 6, "type": "magical"},  # ✅ CORRIGÉ (était 3)
-        "Vol de vie": {"single": 4, "type": "magical", "healing": 4},  # ✅ CORRIGÉ (était 3)
-        "Pluie de météores": {"all_enemies": 10, "type": "magical", "ultimate": True}  # ✅ CORRIGÉ (était 6)
+        "Éclair magique": {"distributed": 4, "type": "magical"},
+        "Mur de glace": {"all_enemies": "stun", "type": "magical", "limitation": "2/combat"},
+        "Boule de feu": {"all_enemies": 6, "type": "magical", "limitation": "1/combat"},
+        "Vol de vie": {"single": 4, "type": "magical", "healing": 4},
+        "Pluie de météores": {"all_enemies": 10, "type": "magical", "limitation": "1/combat"}
     }
 
 
 def get_liarie_tactical_analysis() -> dict:
-    """Analyse tactique des capacités de Liarie - VERSION CORRIGÉE"""
+    """Analyse tactique des capacités de Liarie selon données officielles"""
     return {
-        "role": "Mage élémentaire - DPS/Support",
+        "role": "Mage élémentaire - DPS/Support/Control",
         "strengths": [
-            "Excellents dégâts magiques",
-            "Capacités sans riposte", 
-            "Contrôle de zone (stun, recul)",
+            "Dégâts magiques excellents (sans riposte)",
+            "Contrôle de zone (stun avec Mur de glace)", 
             "Auto-sustain avec Vol de vie",
-            "Protection avec Armure du mage"
+            "Protection permanente avec Armure du mage",
+            "Ultimates puissants avec limitations"
         ],
         "spell_efficiency": {
-            "low_cost": ["Éclair magique", "Armure du mage", "Mur de glace"],  # ✅ CORRIGÉ
-            "medium_cost": ["Boule de feu", "Vol de vie", "Pluie de météores"],  # ✅ CORRIGÉ
-            "high_cost": []  # ✅ Plus rien en high_cost maintenant
+            "low_cost_versatile": ["Éclair magique", "Armure du mage", "Mur de glace"],
+            "medium_cost_power": ["Boule de feu", "Vol de vie", "Pluie de météores"]
         },
-        "combat_phases": {
-            "early": "Éclair magique + Armure du mage (coûts faibles)",
-            "mid": "Boule de feu + Vol de vie (coûts moyens)",
-            "late": "Pluie de météores (finishing move, coût raisonnable)"
+        "combat_strategy": {
+            "early": "Armure du mage + Mur de glace (contrôle)",
+            "mid": "Éclair magique + Vol de vie (damage/heal)",
+            "late": "Boule de feu / Pluie de météores (finisher)"
+        },
+        "limitations": {
+            "Mur de glace": "2/combat",
+            "Boule de feu": "1/combat", 
+            "Pluie de météores": "1/combat"
         }
     }

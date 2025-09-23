@@ -39,13 +39,18 @@ class CombatActions:
         damage_value += attack_modifiers['damage_bonus']
         damage_value += self._get_mark_bonus_for_target(hero, target)
         
-        # 🐺 NOUVELLE MÉCANIQUE: FORME DE LOUP - DOUBLE DÉGÂTS via temporary_buffs
-        wolf_form_used = False
+        # 🐺 CORRIGÉ: FORME DE LOUP - Système hybride compatible app principale
+        elneha_wolf_used = False
         if (hasattr(hero, 'temporary_buffs') and 
-            hero.temporary_buffs.get('wolf_double_attacks_remaining', 0) > 0):
-            damage_value *= 2
-            hero.temporary_buffs['wolf_double_attacks_remaining'] -= 1
-            wolf_form_used = True
+            attack_modifiers['damage_multiplier'] > 1.0 and
+            hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0):
+            # Double dégâts déjà appliqué par check_attack_modifiers
+            hero.temporary_buffs['elneha_wolf_remaining'] -= 1
+            elneha_wolf_used = True
+            
+            # Réactiver pour prochaine attaque si compteur > 0
+            if hero.temporary_buffs['elneha_wolf_remaining'] > 0:
+                hero.temporary_buffs['double_next_attack'] = True
         
         combatant_name = getattr(hero, 'display_name', hero.name)
         
@@ -58,14 +63,14 @@ class CombatActions:
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
             
             log_parts = [f"{damage_type_emoji} CRITIQUE ! {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
-            self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, wolf_form_used)
+            self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
             log.append(' '.join(log_parts))
             
             self._add_conversion_logs(log, attack_info)
             
             # 🐺 Log forme de loup si utilisée
-            if wolf_form_used:
-                remaining = hero.temporary_buffs.get('wolf_double_attacks_remaining', 0)
+            if elneha_wolf_used:
+                remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                 log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
             
             if damage_result['blocked_by_parade'] > 0:
@@ -83,7 +88,7 @@ class CombatActions:
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
             log.append(f"{damage_type_emoji} ÉCHEC ! {combatant_name}[{total_attack}] attaque {target.name}")
             # 🐺 Forme de loup gaspillée en cas d'échec critique
-            if wolf_form_used:
+            if elneha_wolf_used:
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
             self._handle_critical_failure(hero, target, log)
         
@@ -96,14 +101,14 @@ class CombatActions:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 
                 log_parts = [f"{damage_type_emoji} {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
-                self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, wolf_form_used)
+                self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
                 log.append(' '.join(log_parts))
                 
                 self._add_conversion_logs(log, attack_info)
                 
                 # 🐺 Log forme de loup si utilisée
-                if wolf_form_used:
-                    remaining = hero.temporary_buffs.get('wolf_double_attacks_remaining', 0)
+                if elneha_wolf_used:
+                    remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                     log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
                 
                 if damage_result['blocked_by_parade'] > 0:
@@ -119,7 +124,7 @@ class CombatActions:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 log.append(f"{damage_type_emoji} {combatant_name}[{total_attack}] vs DEF[{target.defense}] → Échec")
                 # 🐺 Forme de loup gaspillée en cas d'échec
-                if wolf_form_used:
+                if elneha_wolf_used:
                     log.append(f"  🐺 Forme de loup gaspillée par l'échec...")
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
         
@@ -161,7 +166,7 @@ class CombatActions:
         except Exception as e:
             log.append(f"    ⚠️ Erreur riposte échec critique: {str(e)}")
 
-    def _add_modifier_logs(self, log_parts: list, attack_modifiers: dict, mark_bonus: int, damage_value: int, base_damage: int, wolf_form_used: bool = False):
+    def _add_modifier_logs(self, log_parts: list, attack_modifiers: dict, mark_bonus: int, damage_value: int, base_damage: int, elneha_wolf_used: bool = False):
         """Ajoute les logs des modificateurs d'attaque - MODIFIÉ pour inclure forme de loup"""
         modifiers = []
         
@@ -172,7 +177,7 @@ class CombatActions:
         if mark_bonus > 0:
             modifiers.append(f"+{mark_bonus}marquage")
         # 🐺 NOUVEAU: Indicateur forme de loup dans les modificateurs
-        if wolf_form_used:
+        if elneha_wolf_used:
             modifiers.append("🐺x2loup")
         
         if modifiers:
@@ -266,7 +271,7 @@ class CombatActions:
         
         if total_attack >= target.defense:
             damage_result = target.apply_damage_with_parade(damage_value)
-            damage_type_emoji = "✨" if damage_type == "magical" else "🾾"
+            damage_type_emoji = "✨" if damage_type == "magical" else "🐾"
             
             log.append(f"{damage_type_emoji} {pet_name}[{total_attack}] → {target.name}({damage_result['health_damage']})")
             
@@ -276,7 +281,7 @@ class CombatActions:
             if not target.is_alive():
                 log.append(f"    💀 {target.name} vaincu !")
         else:
-            damage_type_emoji = "✨" if damage_type == "magical" else "🾾"
+            damage_type_emoji = "✨" if damage_type == "magical" else "🐾"
             log.append(f"{damage_type_emoji} {pet_name}[{total_attack}] vs DEF[{target.defense}] → Échec")
 
     def smart_pet_ability_usage(self, pet, log: list) -> bool:
@@ -473,14 +478,14 @@ class CombatActions:
         if (hasattr(target, 'temporary_buffs') and 
             target.temporary_buffs.get('ignore_next_attack', False)):
             target.temporary_buffs['ignore_next_attack'] = False
-            log.append(f"💹 {enemy_name} attaque {target_name}")
+            log.append(f"👹 {enemy_name} attaque {target_name}")
             log.append(f"  🐻 {target_name} ignore l'attaque grâce à sa forme d'ours !")
             return
         
         # Attaque normale
         damage_result = target.apply_damage_with_parade(damage)
         
-        log.append(f"💹 {enemy_name} attaque {target_name}: {damage} dégâts")
+        log.append(f"👹 {enemy_name} attaque {target_name}: {damage} dégâts")
         
         if damage_result['blocked_by_parade'] > 0:
             log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")

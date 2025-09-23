@@ -124,7 +124,7 @@ class ElnehaSoinMineur(BaseAbility):
 
 @register_ability
 class ElnehaFormeLoup(BaseAbility):
-    """P-1-3: Forme de loup - Double les dégâts de la prochaine attaque réussie"""
+    """P-1-3: Forme de loup - Double les dégâts 2 fois selon Sorts.xlsx"""
     
     hero_code = "P-1"
     ability_number = 3
@@ -134,19 +134,21 @@ class ElnehaFormeLoup(BaseAbility):
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
-        # Pas de uses_per_combat sur la transformation, mais "Loup" a 2/combat
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en loup - double les dégâts de la prochaine attaque"""
+        """Transforme Elneha en loup - active 2 utilisations de double dégâts"""
         try:
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # CORRECTION: Utiliser le système temporary_buffs existant
+            # CORRECTION: Utiliser double_next_attack avec compteur personnalisé
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
-            caster.temporary_buffs['wolf_double_attacks_remaining'] = 2  # 2 utilisations par combat
+            
+            # Système hybride : utiliser l'API principale avec compteur Elneha
+            caster.temporary_buffs['double_next_attack'] = True
+            caster.temporary_buffs['elneha_wolf_remaining'] = 2  # Compteur interne
             
             log.append(f"🐺 {caster.name} se transforme en loup !")
             log.append(f"   Peut doubler les dégâts de 2 attaques ce combat")
