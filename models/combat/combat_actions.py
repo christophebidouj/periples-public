@@ -2,6 +2,7 @@
 """
 Gestionnaire des actions de combat (attaques, capacités, potions)
 VERSION CORRIGÉE - Fix IA logique + optimisation + transformations intelligentes + SUPPORT FORMES ELNEHA via temporary_buffs
+CORRECTION KRAOR: Utilise marks/status_effects existants au lieu de is_marked/marked_by
 """
 
 import random
@@ -131,14 +132,25 @@ class CombatActions:
         hero.action_taken_this_turn = True
 
     def _get_mark_bonus_for_target(self, hero, target) -> int:
-        """Calcule le bonus de dégâts contre une cible marquée (Kraor)"""
+        """
+        Calcule le bonus de dégâts contre une cible marquée (Kraor)
+        CORRIGÉ: Utilise status_effects/marks existants au lieu de is_marked/marked_by
+        """
+        # Seulement pour Kraor
         if hero.code != "P-4":
             return 0
         
-        if hasattr(target, 'is_marked') and target.is_marked:
-            return 2
-        elif hasattr(target, 'marked_by') and hero.code in target.marked_by:
-            return 2
+        # Vérifier dans status_effects (écrit par kraor.py)
+        if hasattr(target, 'status_effects') and target.status_effects:
+            if 'kraor_marked' in target.status_effects:
+                mark_info = target.status_effects['kraor_marked']
+                return mark_info.get('bonus_damage', 2)
+        
+        # Fallback: vérifier dans marks
+        if hasattr(target, 'marks') and target.marks:
+            if 'kraor_hunter_mark' in target.marks:
+                mark_info = target.marks['kraor_hunter_mark']
+                return mark_info.get('bonus_damage', 2)
         
         return 0
 

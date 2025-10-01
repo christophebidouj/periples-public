@@ -87,7 +87,7 @@ Responsabilités :
 APIs importantes :
 - hero_attack() - attaques de base
 - use_ability() - système capacités
-- apply_potion() - soins potion
+- try_health_potion() - soins potion IA
 ```
 
 #### **models/combat/spell_manager.py** - Gestion des sorts

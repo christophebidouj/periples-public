@@ -57,19 +57,24 @@ class KraorPiege(BaseAbility):
             # Prioriser ennemi avec plus de PV (marquage plus rentable)
             target = max(enemies, key=lambda e: e.current_health)
             
-            # 3. Appliquer marque avec champs EXISTANTS Enemy (confirmés dans character.py)
-            # Enemy possède déjà: status_effects, debuffs, marks comme champs Pydantic
-            
-            # Utiliser le champ marks existant (le plus approprié pour le marquage)
+            # 3. Appliquer marque avec champs EXISTANTS Enemy
+            if not hasattr(target, 'marks'):
+                target.marks = {}
+            if not hasattr(target, 'status_effects'):
+                target.status_effects = {}
+
+            # Utiliser marks (le champ approprié pour le marquage)
             target.marks['kraor_hunter_mark'] = {
                 'bonus_damage': self.mark_bonus,
                 'source': caster.code,
                 'target_marked': True
             }
-            
-            # Aussi ajouter flag pour compatibilité avec _get_mark_bonus_for_target()
-            # Utiliser status_effects existant au lieu de setattr
-            target.status_effects['marked_for_bonus'] = True
+
+            # Aussi ajouter dans status_effects pour compatibilité double
+            target.status_effects['kraor_marked'] = {
+                'bonus_damage': self.mark_bonus,
+                'source': caster.code
+            }
             
             # 4. Décompter utilisation
             self.uses_remaining_combat -= 1
