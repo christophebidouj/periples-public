@@ -22,6 +22,7 @@ from ui.components import *
 from ui.components.hero_components import preload_hero_builds_for_all_difficulties
 from debug_mode import create_debug_tab
 from hero_builds_data import get_abilities_for_level
+from ui.components.sandbox_interface_v2 import main_sandbox_v2
 
 # Import capacités et potions
 try:
@@ -711,7 +712,7 @@ def main():
         st.stop()
     
     # Onglets
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène", "🔧 Debug", "ℹ️ À Propos"])
+    tab1, tab2, tab3, tab4, tab5, tab6,tab7 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène","🎮 Sandbox V2", "🔧 Debug", "ℹ️ À Propos"])
     
     with tab1: 
         tab_selection(data)
@@ -722,8 +723,10 @@ def main():
     with tab4: 
         ui.components.sandbox_interface.main_sandbox_tab()
     with tab5:
+        main_sandbox_v2()
+    with tab6:
         create_debug_tab()    
-    with tab6: 
+    with tab7: 
         display_about()
 
 if __name__ == "__main__":
