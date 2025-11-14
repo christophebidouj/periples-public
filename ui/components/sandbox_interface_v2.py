@@ -14,6 +14,7 @@ from models.combat.combat_engine import CombatEngine
 from models.combat.turn_manager import TurnManager
 from models.combat.combat_actions import CombatActions
 from models.combat.spell_manager import SpellManager
+from models.combat.initiative_manager import InitiativeManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
 
@@ -480,31 +481,21 @@ def generate_initiative():
     - Chaque combattant lance un dé à 20 faces
     - Ordre de jeu décroissant par initiative
     - En cas d'égalité : héros a priorité sur ennemi
+
+    REFACTORISÉ : Utilise InitiativeManager (logique métier séparée de l'UI)
     """
-    # Générer initiative pour tous les combattants
-    for combatant in st.session_state.sandbox_v2_combatants:
-        roll = random.randint(1, 20)
-        combatant['initiative'] = roll
+    # LOGIQUE MÉTIER : Déléguer la génération et le tri au InitiativeManager
+    InitiativeManager.roll_initiative(st.session_state.sandbox_v2_combatants)
 
-    # Trier par initiative décroissante
-    # En cas d'égalité, héros avant ennemi (faction='hero' < 'enemy' alphabétiquement)
-    st.session_state.sandbox_v2_combatants.sort(
-        key=lambda x: (x['initiative'], 0 if x['faction'] == 'hero' else 1),
-        reverse=True
-    )
-
-    # Log l'ordre d'initiative
-    st.session_state.sandbox_v2_log.append("=== ORDRE D'INITIATIVE ===")
-    for i, c in enumerate(st.session_state.sandbox_v2_combatants, 1):
-        name = c['character'].name
-        init = c['initiative']
-        faction_icon = "🦸" if c['faction'] == 'hero' else "👹"
-        st.session_state.sandbox_v2_log.append(f"{i}. {faction_icon} {name} : {init}")
+    # LOGIQUE UI : Générer les logs et les ajouter au session_state
+    log_lines = InitiativeManager.get_initiative_order_log(st.session_state.sandbox_v2_combatants)
+    st.session_state.sandbox_v2_log.extend(log_lines)
 
     # Indiquer le début du combat
     st.session_state.sandbox_v2_log.append("")
     st.session_state.sandbox_v2_log.append("=== ROUND 1 ===")
 
+    # LOGIQUE UI : Sauvegarder l'état du jeu (système Undo/Redo)
     save_game_state("Initiative générée")
 
 # === AFFICHAGE STYLÉ ===
