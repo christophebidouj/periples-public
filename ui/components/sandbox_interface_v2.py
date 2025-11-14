@@ -132,7 +132,9 @@ def init_sandbox_state():
         'sandbox_v2_turn_manager': None,
         'sandbox_v2_adapter': None,
         'sandbox_v2_game_history': [],
-        'sandbox_v2_history_index': -1
+        'sandbox_v2_history_index': -1,
+        'sandbox_v2_action_state': None,  # Pour gérer le ciblage
+        'sandbox_v2_current_actor': None  # Personnage qui agit
     }
 
     for key, value in defaults.items():
@@ -346,87 +348,123 @@ class SandboxTurnManagerAdapter:
         if not target.is_alive():
             log.append(f"💀 {target.name} est inconscient !")
 
-# === CONFIGURATION COMBAT (LOGIQUE INCHANGÉE) ===
+# === CONFIGURATION COMBAT - RÉUTILISE LOGIQUE EXISTANTE ===
 
 def configure_combat():
-    """Configure combat - Logique inchangée"""
-    hero_codes = st.session_state.get('selected_heroes', [])
-    enemy_codes = st.session_state.get('selected_enemies', [])
+    """
+    Configure combat - RÉUTILISE la logique de l'Arène pour charger correctement
+    les héros avec leurs builds customisés et les ennemis
+    """
+    try:
+        loader = DataLoader()
 
-    if not hero_codes or not enemy_codes:
+        heroes_codes = st.session_state.get('selected_heroes', [])
+        enemies_codes = st.session_state.get('selected_enemies', [])
+
+        if not heroes_codes or not enemies_codes:
+            return False
+
+        # Charger données
+        heroes_data = loader.load_heroes()
+        enemies_data = loader.load_enemies()
+        equipment_data = loader.load_equipment()
+
+        combatants = []
+        player_count = len(heroes_codes)
+
+        # === PRÉPARATION HÉROS avec builds customisés (LOGIQUE ARÈNE) ===
+        current_builds = st.session_state.get('custom_builds', {})
+        for hero_code in heroes_codes:
+            hero = next((h for h in heroes_data if h.code == hero_code), None)
+            if not hero:
+                continue
+
+            # Application build custom si existant
+            if hero_code in current_builds:
+                build = current_builds[hero_code]
+                equipment_codes = build.get('equipment', [])
+                equipment_list = [eq for eq in equipment_data if eq.code in equipment_codes]
+                hero.equip_items(equipment_list, build.get('name', 'Build Custom'))
+
+                # Potions
+                potions = build.get('potions', {})
+                if potions and hasattr(hero, 'set_potions_from_selection'):
+                    hero.set_potions_from_selection(potions.get('small', 0), potions.get('large', 0))
+
+                # Capacités
+                abilities = build.get('abilities', [])
+                if abilities and hasattr(hero, 'abilities'):
+                    hero_abilities = loader.get_hero_abilities(hero_code)
+                    if hero_abilities:
+                        hero.add_abilities(hero_abilities)
+                        for num in abilities:
+                            hero.unlock_ability(num)
+
+            # Initialisation combat
+            hero.reset_health()
+            if hasattr(hero, 'start_new_combat'):
+                hero.start_new_combat()
+
+            combatants.append({
+                'character': hero,
+                'faction': 'hero',
+                'initiative': 0,
+                'id': f"hero_{hero_code}"
+            })
+
+        # === PRÉPARATION ENNEMIS (LOGIQUE ARÈNE) ===
+        for enemy_code in enemies_codes:
+            enemy = next((e for e in enemies_data if e.code == enemy_code), None)
+            if enemy:
+                enemy.initialize_for_combat(player_count)
+                combatants.append({
+                    'character': enemy,
+                    'faction': 'enemy',
+                    'initiative': 0,
+                    'id': f"enemy_{enemy_code}"
+                })
+
+        st.session_state.sandbox_v2_combatants = combatants
+
+        # Synchroniser les listes
+        hero_combatants = [c for c in combatants if c['faction'] == 'hero']
+        enemy_combatants = [c for c in combatants if c['faction'] == 'enemy']
+        st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
+        st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
+
+        # Architecture existante
+        rules = GameRules(
+            ranged_attacks=True,
+            magical_damage=True,
+            criticals=True,
+            abilities_enabled=True
+        )
+
+        spell_manager = SpellManager()
+        combat_actions = CombatActions(spell_manager, rules)
+        turn_manager = TurnManager(spell_manager, combat_actions)
+
+        # Adapter
+        st.session_state.sandbox_v2_turn_manager = turn_manager
+        st.session_state.sandbox_v2_adapter = SandboxTurnManagerAdapter(
+            turn_manager,
+            combat_actions
+        )
+
+        # Initialiser sorts héros
+        for hero_data in hero_combatants:
+            spell_manager.initialize_spells(hero_data['character'])
+
+        st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
+
+        # Sauvegarder l'état initial
+        save_game_state("Début du combat")
+
+        return True
+
+    except Exception as e:
+        st.error(f"❌ Erreur configuration: {e}")
         return False
-
-    # Charger les objets
-    loader = DataLoader()
-    all_heroes = loader.load_heroes()
-    all_enemies = loader.load_enemies()
-
-    # Filtrer sélection
-    heroes = [h for h in all_heroes if h.code in hero_codes]
-    enemies = [e for e in all_enemies if e.code in enemy_codes]
-
-    if not heroes or not enemies:
-        st.error("❌ Erreur chargement héros/ennemis")
-        return False
-
-    # Initialiser les ennemis
-    player_count = len(heroes)
-    for enemy in enemies:
-        enemy.initialize_for_combat(player_count)
-
-    # Copies pour combat
-    st.session_state.sandbox_v2_heroes = deepcopy(heroes)
-    st.session_state.sandbox_v2_enemies = deepcopy(enemies)
-
-    # Préparer les combattants pour l'initiative
-    combatants = []
-    for hero in st.session_state.sandbox_v2_heroes:
-        combatants.append({
-            'character': hero,
-            'faction': 'hero',
-            'initiative': 0,
-            'id': f"hero_{hero.code}"
-        })
-
-    for enemy in st.session_state.sandbox_v2_enemies:
-        combatants.append({
-            'character': enemy,
-            'faction': 'enemy',
-            'initiative': 0,
-            'id': f"enemy_{enemy.code}"
-        })
-
-    st.session_state.sandbox_v2_combatants = combatants
-
-    # Architecture existante
-    rules = GameRules(
-        ranged_attacks=True,
-        magical_damage=True,
-        criticals=True,
-        abilities_enabled=True
-    )
-
-    spell_manager = SpellManager()
-    combat_actions = CombatActions(spell_manager, rules)
-    turn_manager = TurnManager(spell_manager, combat_actions)
-
-    # Adapter
-    st.session_state.sandbox_v2_turn_manager = turn_manager
-    st.session_state.sandbox_v2_adapter = SandboxTurnManagerAdapter(
-        turn_manager,
-        combat_actions
-    )
-
-    # Initialiser sorts héros
-    for hero in st.session_state.sandbox_v2_heroes:
-        spell_manager.initialize_spells(hero)
-
-    st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
-
-    # Sauvegarder l'état initial
-    save_game_state("Début du combat")
-
-    return True
 
 # === GÉNÉRATION INITIATIVE ===
 
@@ -585,40 +623,52 @@ def display_enemy_interface(combatant: Dict):
     # Actions ennemi
     st.markdown("### ⚔️ Actions")
 
-    col1, col2 = st.columns(2)
+    # Vérifier si on est en mode sélection de cible pour l'ennemi
+    if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_ENEMY':
+        # Afficher interface de ciblage
+        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+        heroes_list = [c['character'] for c in hero_combatants]
 
-    with col1:
-        if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
-            # Récupérer les héros depuis les combattants
-            hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-            heroes_list = [c['character'] for c in hero_combatants]
+        adapter = st.session_state.sandbox_v2_adapter
+        target = adapter.enemy_turn_manual(
+            char,
+            heroes_list,
+            player_count,
+            st.session_state.sandbox_v2_log
+        )
 
-            # Sélection de cible
-            adapter = st.session_state.sandbox_v2_adapter
-            target = adapter.enemy_turn_manual(
+        if target:
+            adapter.execute_enemy_attack(
                 char,
-                heroes_list,
+                target,
                 player_count,
                 st.session_state.sandbox_v2_log
             )
-
-            if target:
-                adapter.execute_enemy_attack(
-                    char,
-                    target,
-                    player_count,
-                    st.session_state.sandbox_v2_log
-                )
-                save_game_state(f"{char.name} attaque {target.name}")
-                next_turn()
-                st.rerun()
-
-    with col2:
-        if st.button("⏭️ Passer le Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
-            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
-            save_game_state(f"{char.name} passe son tour")
+            st.session_state.sandbox_v2_action_state = None
+            save_game_state(f"{char.name} attaque {target.name}")
             next_turn()
             st.rerun()
+
+        # Bouton annuler
+        if st.button("❌ Annuler", key=f"cancel_enemy_targeting_{combatant['id']}"):
+            st.session_state.sandbox_v2_action_state = None
+            st.rerun()
+    else:
+        # Afficher boutons d'action normaux
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ENEMY'
+                st.session_state.sandbox_v2_current_actor = char
+                st.rerun()
+
+        with col2:
+            if st.button("⏭️ Passer le Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
+                st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
+                save_game_state(f"{char.name} passe son tour")
+                next_turn()
+                st.rerun()
 
 def display_abilities_grid(char: Character, combatant_id: str):
     """Grille capacités style Arène"""
@@ -677,15 +727,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
     """Colonne actions + potions style Arène"""
     st.markdown("### ⚡ Actions de Base")
 
-    # Attaque
-    if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
-        # Récupérer les ennemis depuis les combattants pour avoir l'état à jour
+    # Vérifier si on est en mode sélection de cible
+    if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_HERO':
+        # Afficher interface de ciblage
         enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
         enemies_list = [c['character'] for c in enemy_combatants]
         hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
         heroes_list = [c['character'] for c in hero_combatants]
 
-        # Sélection de cible
         target = ManualTargeting.select_enemy_for_hero_attack(
             char,
             enemies_list,
@@ -696,16 +745,29 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             player_count = len([h for h in heroes_list if h.is_alive()])
             adapter = st.session_state.sandbox_v2_adapter
             adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+            st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")
             next_turn()
             st.rerun()
 
-    # Passer
-    if st.button("⏭️ Passer le Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
-        st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
-        save_game_state(f"{char.name} passe son tour")
-        next_turn()
-        st.rerun()
+        # Bouton annuler
+        if st.button("❌ Annuler", key=f"cancel_targeting_{combatant_id}"):
+            st.session_state.sandbox_v2_action_state = None
+            st.rerun()
+    else:
+        # Afficher boutons d'action normaux
+        # Attaque
+        if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
+            st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
+            st.session_state.sandbox_v2_current_actor = char
+            st.rerun()
+
+        # Passer
+        if st.button("⏭️ Passer le Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
+            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
+            save_game_state(f"{char.name} passe son tour")
+            next_turn()
+            st.rerun()
 
     # Potions
     st.markdown("### 🧪 Potions")
