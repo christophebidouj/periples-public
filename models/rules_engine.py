@@ -55,23 +55,22 @@ class GameRules(BaseModel):
     def get_difficulty_modifier(self) -> float:
         """Retourne un modificateur de difficulté basé sur les règles actives"""
         modifier = 1.0
-        
+
         # Les critiques rendent le combat plus imprévisible
         if self.criticals:
             modifier += 0.1
-            
-        # L'initiative aléatoire peut avantager les ennemis
-        if self.initiative:
-            modifier += 0.05
-            
+
+        # L'initiative affecte la difficulté de manière qualitative (ordre aléatoire)
+        # mais pas via un modificateur numérique selon les règles officielles
+
         # Les attaques à distance avantagent généralement les héros
         if self.ranged_attacks:
             modifier -= 0.05
-            
+
         # Le système de capacités peut faciliter les combats
         if self.abilities_enabled:
             modifier -= 0.1
-            
+
         return max(0.8, min(1.3, modifier))  # Limité entre 0.8 et 1.3
     
     def get_max_rounds_display(self) -> str:
