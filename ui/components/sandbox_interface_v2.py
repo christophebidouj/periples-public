@@ -134,7 +134,8 @@ def init_sandbox_state():
         'sandbox_v2_game_history': [],
         'sandbox_v2_history_index': -1,
         'sandbox_v2_action_state': None,  # Pour gérer le ciblage
-        'sandbox_v2_current_actor': None  # Personnage qui agit
+        'sandbox_v2_current_actor': None,  # Personnage qui agit
+        'sandbox_v2_last_selection': None  # Mémoriser la dernière sélection
     }
 
     for key, value in defaults.items():
@@ -361,13 +362,6 @@ def configure_combat():
         heroes_codes = st.session_state.get('selected_heroes', [])
         enemies_codes = st.session_state.get('selected_enemies', [])
 
-        # DIAGNOSTIC: Afficher ce qui est récupéré
-        st.write("🔍 DEBUG CHARGEMENT:")
-        st.write(f"  - Héros codes: {heroes_codes}")
-        st.write(f"  - Ennemis codes: {enemies_codes}")
-        st.write(f"  - Nombre héros: {len(heroes_codes)}")
-        st.write(f"  - Nombre ennemis: {len(enemies_codes)}")
-
         if not heroes_codes or not enemies_codes:
             return False
 
@@ -423,15 +417,9 @@ def configure_combat():
             })
 
         # === PRÉPARATION ENNEMIS (LOGIQUE ARÈNE) ===
-        st.write(f"🔍 DEBUG: Début chargement ennemis, {len(enemies_codes)} codes à traiter")
-        enemy_load_count = 0
-
         for idx, enemy_code in enumerate(enemies_codes):
-            st.write(f"🔍 DEBUG: Itération {idx} - Code ennemi: {enemy_code}")
             enemy_template = next((e for e in enemies_data if e.code == enemy_code), None)
-
             if enemy_template:
-                st.write(f"✅ DEBUG: Template trouvé pour {enemy_code}: {enemy_template.name}")
                 # DEEPCOPY pour avoir une instance unique par ennemi
                 enemy = deepcopy(enemy_template)
                 enemy.initialize_for_combat(player_count)
@@ -441,10 +429,6 @@ def configure_combat():
                     'initiative': 0,
                     'id': f"enemy_{enemy_code}_{idx}"  # ID unique avec index
                 })
-                enemy_load_count += 1
-                st.write(f"✅ DEBUG: Ennemi {enemy.name} ajouté (total: {enemy_load_count})")
-            else:
-                st.write(f"❌ DEBUG: Template NON trouvé pour {enemy_code}")
 
         st.session_state.sandbox_v2_combatants = combatants
 
@@ -453,13 +437,6 @@ def configure_combat():
         enemy_combatants = [c for c in combatants if c['faction'] == 'enemy']
         st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
-
-        # DIAGNOSTIC FINAL
-        st.write("🔍 DEBUG FINAL:")
-        st.write(f"  - Total combatants créés: {len(combatants)}")
-        st.write(f"  - Héros: {len(hero_combatants)}")
-        st.write(f"  - Ennemis: {len(enemy_combatants)}")
-        st.write(f"  - Ennemis chargés: {enemy_load_count}")
 
         # Architecture existante
         rules = GameRules(
@@ -916,6 +893,24 @@ def main_sandbox_v2():
         st.info("📋 Allez dans l'onglet **Sélection** pour choisir 2+ héros et 1+ ennemi")
         return
 
+    # DÉTECTION CHANGEMENT DE SÉLECTION
+    current_selection = {
+        'heroes': tuple(st.session_state.get('selected_heroes', [])),
+        'enemies': tuple(st.session_state.get('selected_enemies', []))
+    }
+
+    # Si la sélection a changé depuis la dernière configuration, revenir à CONFIG
+    if st.session_state.sandbox_v2_last_selection is not None:
+        if st.session_state.sandbox_v2_last_selection != current_selection:
+            st.info("🔄 Sélection modifiée - Rechargement des équipes...")
+            st.session_state.sandbox_v2_phase = 'CONFIG'
+            st.session_state.sandbox_v2_game_history = []
+            st.session_state.sandbox_v2_history_index = -1
+            st.session_state.sandbox_v2_combatants = []
+
+    # Mémoriser la sélection actuelle
+    st.session_state.sandbox_v2_last_selection = current_selection
+
     # Phase actuelle
     phase = st.session_state.sandbox_v2_phase
 
@@ -940,31 +935,24 @@ def main_sandbox_v2():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.write(f"**Héros :** {len(st.session_state.sandbox_v2_combatants)} combattants au total")
             hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+            st.markdown(f"**🦸 Héros ({len(hero_combatants)})**")
             for h in hero_combatants:
                 st.write(f"- {h['character'].name}")
 
         with col2:
             enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-            st.write(f"**Ennemis :** {len(enemy_combatants)} ennemis")
+            st.markdown(f"**👹 Ennemis ({len(enemy_combatants)})**")
             for e in enemy_combatants:
                 st.write(f"- {e['character'].name}")
 
-        # Boutons d'action
-        col_init, col_reload = st.columns([2, 1])
+        # Bouton génération initiative
+        if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
+            generate_initiative()
+            st.session_state.sandbox_v2_phase = 'COMBAT'
+            st.session_state.sandbox_v2_current_turn_index = 0
+            st.rerun()
 
-        with col_init:
-            if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
-                generate_initiative()
-                st.session_state.sandbox_v2_phase = 'COMBAT'
-                st.session_state.sandbox_v2_current_turn_index = 0
-                st.rerun()
-
-        with col_reload:
-            if st.button("🔄 Recharger Équipes", use_container_width=True):
-                st.session_state.sandbox_v2_phase = 'CONFIG'
-                st.rerun()
         return
 
     # === PHASE COMBAT ===
