@@ -1,13 +1,11 @@
 """
-Sandbox Interface V2 FINAL - Version Complète et Vérifiée
-CORRECTIONS APPLIQUÉES :
-1. Import correct de DataLoader depuis utils
-2. Initialisation des ennemis avec initialize_for_combat()
-3. Correction accès stats ennemis (defense pas parade)
-4. Affichage correct de tous les ennemis
+Sandbox Interface V2 - Style Arène
+Interface avec ciblage manuel, initiative et système Undo/Redo
+RÉUTILISE l'architecture existante : TurnManager + CombatActions
 """
 
 import streamlit as st
+import random
 from typing import List, Dict, Optional
 from copy import deepcopy
 
@@ -19,11 +17,176 @@ from models.combat.spell_manager import SpellManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
 
-# === INTERFACE CIBLAGE MANUEL ===
+# === CSS STYLE ARÈNE ===
+
+def apply_sandbox_v2_theme():
+    """Applique le thème visuel de l'Arène"""
+    st.markdown("""
+    <style>
+    /* === THÈME ARÈNE === */
+    .prototype-container {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        border: 2px solid #7f8c8d;
+        border-radius: 15px;
+        padding: 15px;
+        margin: 10px 0;
+        color: white;
+    }
+
+    .hero-header {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .enemy-header {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .stats-badges {
+        display: flex;
+        gap: 10px;
+    }
+
+    .stat-badge {
+        background: rgba(0,0,0,0.3);
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-align: center;
+        min-width: 50px;
+    }
+
+    .stat-badge.health { background: #e74c3c; }
+    .stat-badge.attack { background: #f39c12; }
+    .stat-badge.defense { background: #3498db; }
+    .stat-badge.magic { background: #9b59b6; }
+
+    /* === GUIDANCE BANNER === */
+    .guidance-compact {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .guidance-combat { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+    .guidance-initiative { background: linear-gradient(135deg, #f1c40f, #f39c12); }
+    .guidance-config { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+    /* === CIBLAGE STYLE ARÈNE === */
+    .target-card {
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        border: 2px solid #7f8c8d;
+        border-radius: 10px;
+        padding: 12px;
+        margin: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+    }
+
+    .target-card:hover {
+        border-color: #3498db;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+
+    .target-info {
+        flex-grow: 1;
+    }
+
+    .target-stats {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# === INITIALISATION AVEC HISTORIQUE ===
+
+def init_sandbox_state():
+    """Initialise état Sandbox avec historique"""
+    defaults = {
+        'sandbox_v2_initialized': False,
+        'sandbox_v2_heroes': [],
+        'sandbox_v2_enemies': [],
+        'sandbox_v2_phase': 'CONFIG',
+        'sandbox_v2_combatants': [],
+        'sandbox_v2_current_turn_index': 0,
+        'sandbox_v2_round_number': 1,
+        'sandbox_v2_log': [],
+        'sandbox_v2_turn_manager': None,
+        'sandbox_v2_adapter': None,
+        'sandbox_v2_game_history': [],
+        'sandbox_v2_history_index': -1
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+def save_game_state(description: str = "Action"):
+    """Sauvegarde l'état pour Undo/Redo"""
+    state = {
+        'heroes': deepcopy(st.session_state.sandbox_v2_heroes),
+        'enemies': deepcopy(st.session_state.sandbox_v2_enemies),
+        'combatants': deepcopy(st.session_state.sandbox_v2_combatants),
+        'turn_index': st.session_state.sandbox_v2_current_turn_index,
+        'round_number': st.session_state.sandbox_v2_round_number,
+        'log': st.session_state.sandbox_v2_log.copy(),
+        'description': description
+    }
+
+    # Supprimer les états futurs si on est en train de refaire l'historique
+    st.session_state.sandbox_v2_game_history = st.session_state.sandbox_v2_game_history[:st.session_state.sandbox_v2_history_index + 1]
+    st.session_state.sandbox_v2_game_history.append(state)
+    st.session_state.sandbox_v2_history_index += 1
+
+def restore_previous_state():
+    """Annuler - Restaure l'état précédent"""
+    if st.session_state.sandbox_v2_history_index > 0:
+        st.session_state.sandbox_v2_history_index -= 1
+        state = st.session_state.sandbox_v2_game_history[st.session_state.sandbox_v2_history_index]
+
+        st.session_state.sandbox_v2_heroes = deepcopy(state['heroes'])
+        st.session_state.sandbox_v2_enemies = deepcopy(state['enemies'])
+        st.session_state.sandbox_v2_combatants = deepcopy(state['combatants'])
+        st.session_state.sandbox_v2_current_turn_index = state['turn_index']
+        st.session_state.sandbox_v2_round_number = state['round_number']
+        st.session_state.sandbox_v2_log = state['log'].copy()
+
+def restore_next_state():
+    """Refaire - Restaure l'état suivant"""
+    if st.session_state.sandbox_v2_history_index < len(st.session_state.sandbox_v2_game_history) - 1:
+        st.session_state.sandbox_v2_history_index += 1
+        state = st.session_state.sandbox_v2_game_history[st.session_state.sandbox_v2_history_index]
+
+        st.session_state.sandbox_v2_heroes = deepcopy(state['heroes'])
+        st.session_state.sandbox_v2_enemies = deepcopy(state['enemies'])
+        st.session_state.sandbox_v2_combatants = deepcopy(state['combatants'])
+        st.session_state.sandbox_v2_current_turn_index = state['turn_index']
+        st.session_state.sandbox_v2_round_number = state['round_number']
+        st.session_state.sandbox_v2_log = state['log'].copy()
+
+# === INTERFACE CIBLAGE MANUEL STYLÉE ===
 
 class ManualTargeting:
-    """Interface UI pour ciblage manuel - Remplace l'IA tactique"""
-    
+    """Interface UI pour ciblage manuel - Style Arène"""
+
     @staticmethod
     def select_enemy_for_hero_attack(
         hero: Character,
@@ -31,73 +194,75 @@ class ManualTargeting:
         heroes: List[Character]
     ) -> Optional[Enemy]:
         """
-        UI : Joueur choisit quel ennemi le héros attaque
+        UI : Joueur choisit quel ennemi le héros attaque - Style Arène
         """
         alive_enemies = [e for e in enemies if e.is_alive()]
-        
+
         if not alive_enemies:
             st.warning("❌ Aucun ennemi disponible !")
             return None
-        
-        st.markdown(f"### 🎯 {hero.name} attaque - Choisir la cible :")
-        
+
+        st.markdown(f"""
+        <div class="guidance-compact guidance-combat">
+            🎯 {hero.name} attaque - Sélectionnez la cible
+        </div>
+        """, unsafe_allow_html=True)
+
         player_count = len([h for h in heroes if h.is_alive()])
-        
+
         for enemy in alive_enemies:
             col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-            
+
             with col1:
-                st.write(f"**{enemy.name}**")
+                st.markdown(f"**{enemy.name}**")
             with col2:
-                # CORRECTION : Utiliser current_health qui est maintenant initialisé
                 st.write(f"❤️ {enemy.current_health}/{enemy.max_health}")
             with col3:
-                # CORRECTION : Utiliser current_parade_tokens au lieu de stats['parade']
                 st.write(f"🛡️ {enemy.current_parade_tokens}")
             with col4:
-                if st.button("🎯", key=f"target_enemy_{enemy.name}_{id(enemy)}"):
+                if st.button("🎯 Cibler", key=f"target_enemy_{enemy.name}_{id(enemy)}", type="primary", use_container_width=True):
                     return enemy
-        
+
         return None
-    
+
     @staticmethod
     def select_hero_for_enemy_attack(
         enemy: Enemy,
         heroes: List[Character]
     ) -> Optional[Character]:
         """
-        UI : Joueur choisit quel héros l'ennemi attaque
+        UI : Joueur choisit quel héros l'ennemi attaque - Style Arène
         """
         alive_heroes = [h for h in heroes if h.is_alive()]
-        
+
         if not alive_heroes:
             st.error("❌ Aucun héros vivant !")
             return None
-        
-        # Header ennemi attaque
+
+        # Header style Arène
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); 
-                    padding: 15px; border-radius: 10px; margin-bottom: 15px; color: white;">
-            <h3 style="margin: 0;">🔴 {enemy.name} attaque !</h3>
-            <p style="margin: 5px 0 0 0;">Choisissez quel héros sera ciblé</p>
+        <div class="enemy-header">
+            <div>
+                <h3 style="margin: 0; color: white;">🔴 {enemy.name} attaque !</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Choisissez la cible</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        
+
         # Stats ennemi
         player_count = len(alive_heroes)
         stats = enemy.get_stats_for_players(player_count)
-        st.write(f"**💥 Dégâts :** {stats['damage']}")
-        
+        st.write(f"**💥 Dégâts de l'attaque :** {stats['damage']}")
+
         st.markdown("---")
-        st.markdown("### 🎯 Sélectionner la cible :")
-        
-        # Liste héros
+
+        # Liste héros avec cartes stylées
         for hero in alive_heroes:
             parade = hero.get_total_parade()
             damage_after_parade = max(0, stats['damage'] - parade)
-            
+
             col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
-            
+
             with col1:
                 st.write(f"**{hero.name}**")
             with col2:
@@ -110,20 +275,20 @@ class ManualTargeting:
                 else:
                     st.write("✅ Bloqué")
             with col5:
-                if st.button("🎯", key=f"enemy_target_{hero.name}_{id(hero)}"):
+                if st.button("🎯 Cibler", key=f"enemy_target_{hero.name}_{id(hero)}", type="primary", use_container_width=True):
                     return hero
-        
+
         return None
 
 # === ADAPTER TURNMANAGER POUR CIBLAGE MANUEL ===
 
 class SandboxTurnManagerAdapter:
-    """Adapter qui RÉUTILISE TurnManager existant"""
-    
+    """Adapter qui RÉUTILISE TurnManager existant avec ciblage manuel"""
+
     def __init__(self, turn_manager: TurnManager, combat_actions: CombatActions):
         self.turn_manager = turn_manager
         self.combat_actions = combat_actions
-    
+
     def hero_turn_manual(
         self,
         hero: Character,
@@ -132,133 +297,94 @@ class SandboxTurnManagerAdapter:
         player_count: int,
         log: List[str]
     ) -> bool:
-        """Tour héros avec ciblage manuel"""
-        # Début tour héros
+        """Tour héros avec ciblage manuel - Retourne True si action effectuée"""
         hero.start_hero_turn()
-        
-        # Afficher actions disponibles
-        st.markdown(f"### 🎯 {hero.name} - Tour")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        action_taken = False
-        
-        # Capacité
-        with col1:
-            if st.button("🔮 Capacité", key=f"hero_ability_{id(hero)}"):
-                st.info("Sélection capacité à implémenter")
-        
-        # Attaque avec ciblage manuel
-        with col2:
-            if st.button("⚔️ Attaquer", key=f"hero_attack_{id(hero)}"):
-                target = ManualTargeting.select_enemy_for_hero_attack(hero, enemies, heroes)
-                if target:
-                    self.combat_actions.hero_attack(hero, [target], player_count, log)
-                    action_taken = True
-        
-        # Potion
-        with col3:
-            if st.button("🧪 Potion", key=f"hero_potion_{id(hero)}"):
-                self.combat_actions.try_health_potion(hero, log)
-                action_taken = True
-        
-        return action_taken
-    
+        return False  # L'action sera gérée par les boutons de l'interface
+
     def enemy_turn_manual(
         self,
         enemy: Enemy,
         heroes: List[Character],
         player_count: int,
         log: List[str]
-    ) -> bool:
-        """Tour ennemi avec ciblage manuel"""
-        # Début tour ennemi
+    ) -> Optional[Character]:
+        """Tour ennemi avec ciblage manuel - Retourne la cible sélectionnée"""
         enemy.start_enemy_turn()
-        
-        # UI : Joueur choisit héros cible
         target = ManualTargeting.select_hero_for_enemy_attack(enemy, heroes)
-        
-        if target:
-            enemy_stats = enemy.get_stats_for_players(player_count)
-            damage = enemy_stats['damage']
-            
-            damage_result = target.apply_damage_with_parade(damage)
-            
-            # Log
-            log.append(f"⚔️ {enemy.name} attaque {target.name} : {damage} dégâts")
-            if damage_result['blocked_by_parade'] > 0:
-                log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
-            
-            if not target.is_alive():
-                log.append(f"💀 {target.name} est inconscient !")
-            
-            return True
-        
-        return False
+        return target
 
-# === INTERFACE PRINCIPALE SANDBOX V2 ===
+    def execute_enemy_attack(
+        self,
+        enemy: Enemy,
+        target: Character,
+        player_count: int,
+        log: List[str]
+    ):
+        """Exécute l'attaque de l'ennemi sur la cible"""
+        enemy_stats = enemy.get_stats_for_players(player_count)
+        damage = enemy_stats['damage']
 
-def init_sandbox_state():
-    """Initialise état Sandbox"""
-    if 'sandbox_v2_initialized' not in st.session_state:
-        st.session_state.sandbox_v2_initialized = True
-        st.session_state.sandbox_v2_heroes = []
-        st.session_state.sandbox_v2_enemies = []
-        st.session_state.sandbox_v2_phase = 'CONFIG'
-        st.session_state.sandbox_v2_current_hero_index = 0
-        st.session_state.sandbox_v2_current_enemy_index = 0
-        st.session_state.sandbox_v2_log = []
-        st.session_state.sandbox_v2_turn_manager = None
-        st.session_state.sandbox_v2_adapter = None
+        damage_result = target.apply_damage_with_parade(damage)
+
+        log.append(f"⚔️ {enemy.name} attaque {target.name} : {damage} dégâts")
+        if damage_result['blocked_by_parade'] > 0:
+            log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
+
+        if not target.is_alive():
+            log.append(f"💀 {target.name} est inconscient !")
+
+# === CONFIGURATION COMBAT (LOGIQUE INCHANGÉE) ===
 
 def configure_combat():
-    """Configure combat - VERSION FINALE CORRIGÉE"""
-    # Initialiser logs debug
-    if 'debug_logs' not in st.session_state:
-        st.session_state.debug_logs = []
-    st.session_state.debug_logs.clear()
-    
-    # Récupérer les CODES
+    """Configure combat - Logique inchangée"""
     hero_codes = st.session_state.get('selected_heroes', [])
     enemy_codes = st.session_state.get('selected_enemies', [])
-    
-    st.session_state.debug_logs.append(f"📥 Hero codes: {hero_codes}")
-    st.session_state.debug_logs.append(f"📥 Enemy codes: {enemy_codes}")
-    
+
     if not hero_codes or not enemy_codes:
         return False
-    
-    # Charger les OBJETS depuis les codes
+
+    # Charger les objets
     loader = DataLoader()
     all_heroes = loader.load_heroes()
     all_enemies = loader.load_enemies()
-    
-    st.session_state.debug_logs.append(f"📂 All enemies loaded: {len(all_enemies)} - {[e.code + ':' + e.name for e in all_enemies]}")
-    
+
     # Filtrer sélection
     heroes = [h for h in all_heroes if h.code in hero_codes]
     enemies = [e for e in all_enemies if e.code in enemy_codes]
-    
-    st.session_state.debug_logs.append(f"✅ Filtered heroes: {len(heroes)} - {[h.name for h in heroes]}")
-    st.session_state.debug_logs.append(f"✅ Filtered enemies: {len(enemies)} - {[e.name for e in enemies]}")
-    
+
     if not heroes or not enemies:
         st.error("❌ Erreur chargement héros/ennemis")
         return False
-    
-    # CRITIQUE : Initialiser les ennemis AVANT deepcopy
+
+    # Initialiser les ennemis
     player_count = len(heroes)
     for enemy in enemies:
         enemy.initialize_for_combat(player_count)
-        st.session_state.debug_logs.append(f"⚙️ Initialized {enemy.name}: HP={enemy.current_health}/{enemy.max_health}")
-    
+
     # Copies pour combat
     st.session_state.sandbox_v2_heroes = deepcopy(heroes)
     st.session_state.sandbox_v2_enemies = deepcopy(enemies)
-    
-    st.session_state.debug_logs.append(f"📦 After deepcopy: {len(st.session_state.sandbox_v2_enemies)} enemies in session_state")
-    st.session_state.debug_logs.append(f"📦 Names: {[e.name for e in st.session_state.sandbox_v2_enemies]}")
-    
+
+    # Préparer les combattants pour l'initiative
+    combatants = []
+    for hero in st.session_state.sandbox_v2_heroes:
+        combatants.append({
+            'character': hero,
+            'faction': 'hero',
+            'initiative': 0,
+            'id': f"hero_{hero.code}"
+        })
+
+    for enemy in st.session_state.sandbox_v2_enemies:
+        combatants.append({
+            'character': enemy,
+            'faction': 'enemy',
+            'initiative': 0,
+            'id': f"enemy_{enemy.code}"
+        })
+
+    st.session_state.sandbox_v2_combatants = combatants
+
     # Architecture existante
     rules = GameRules(
         ranged_attacks=True,
@@ -266,192 +392,496 @@ def configure_combat():
         criticals=True,
         abilities_enabled=True
     )
-    
+
     spell_manager = SpellManager()
     combat_actions = CombatActions(spell_manager, rules)
     turn_manager = TurnManager(spell_manager, combat_actions)
-    
-    # Adapter avec ciblage manuel
+
+    # Adapter
     st.session_state.sandbox_v2_turn_manager = turn_manager
     st.session_state.sandbox_v2_adapter = SandboxTurnManagerAdapter(
         turn_manager,
         combat_actions
     )
-    
+
     # Initialiser sorts héros
     for hero in st.session_state.sandbox_v2_heroes:
         spell_manager.initialize_spells(hero)
-    
+
     st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
-    
+
+    # Sauvegarder l'état initial
+    save_game_state("Début du combat")
+
     return True
 
-def display_combat_status():
-    """Affiche état combat - CORRECTION affichage ennemis"""
+# === GÉNÉRATION INITIATIVE ===
+
+def generate_initiative():
+    """Génère l'ordre d'initiative"""
+    for combatant in st.session_state.sandbox_v2_combatants:
+        roll = random.randint(1, 20)
+        combatant['initiative'] = roll
+
+    # Tri par initiative décroissante
+    st.session_state.sandbox_v2_combatants.sort(key=lambda x: x['initiative'], reverse=True)
+
+    # Log
+    st.session_state.sandbox_v2_log.append("=== ORDRE D'INITIATIVE ===")
+    for i, c in enumerate(st.session_state.sandbox_v2_combatants):
+        name = c['character'].name
+        init = c['initiative']
+        faction = "🦸 Héros" if c['faction'] == 'hero' else "👹 Ennemi"
+        st.session_state.sandbox_v2_log.append(f"{i+1}. {name} ({faction}): {init}")
+
+    save_game_state("Initiative générée")
+
+# === AFFICHAGE STYLÉ ===
+
+def display_guidance_banner():
+    """Bannière de guidance selon la phase"""
+    phase = st.session_state.sandbox_v2_phase
+
+    if phase == 'CONFIG':
+        st.markdown("""
+        <div class="guidance-compact guidance-config">
+            🔧 Configuration - Chargement des équipes
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif phase == 'INITIATIVE':
+        st.markdown("""
+        <div class="guidance-compact guidance-initiative">
+            🎲 Initiative - Cliquez pour générer l'ordre des tours
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif phase == 'COMBAT':
+        current = get_current_combatant()
+        if current:
+            name = current['character'].name
+            faction = "Héros" if current['faction'] == 'hero' else "Ennemi"
+            st.markdown(f"""
+            <div class="guidance-compact guidance-combat">
+                ⚔️ {name} ({faction}) - C'est votre tour !
+            </div>
+            """, unsafe_allow_html=True)
+
+def get_current_combatant() -> Optional[Dict]:
+    """Retourne le combattant actuel"""
+    if (st.session_state.sandbox_v2_combatants and
+        0 <= st.session_state.sandbox_v2_current_turn_index < len(st.session_state.sandbox_v2_combatants)):
+        return st.session_state.sandbox_v2_combatants[st.session_state.sandbox_v2_current_turn_index]
+    return None
+
+def next_turn():
+    """Passe au tour suivant"""
+    if not st.session_state.sandbox_v2_combatants:
+        return
+
+    st.session_state.sandbox_v2_current_turn_index += 1
+
+    # Si on a fait le tour de tous les combattants
+    if st.session_state.sandbox_v2_current_turn_index >= len(st.session_state.sandbox_v2_combatants):
+        st.session_state.sandbox_v2_current_turn_index = 0
+        st.session_state.sandbox_v2_round_number += 1
+        st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+
+def display_hero_interface(combatant: Dict):
+    """Interface héros - Style Arène avec layout 2 colonnes"""
+    char = combatant['character']
+
+    # Header héros style Arène
+    current_hp = char.current_health
+    max_hp = char.get_total_health()
+    attack = char.get_total_damage()
+    defense = char.get_total_parade()
+    magic = char.get_total_spells()
+
+    st.markdown(f"""
+    <div class="hero-header">
+        <div>
+            <h3 style="margin: 0; color: white;">🦸 {char.name}</h3>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">C'est votre tour - Choisissez une action</p>
+        </div>
+        <div class="stats-badges">
+            <div class="stat-badge health">
+                <div style="font-size: 0.8rem;">❤️ PV</div>
+                <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+            </div>
+            <div class="stat-badge attack">
+                <div style="font-size: 0.8rem;">⚔️ ATT</div>
+                <div style="font-weight: bold;">{attack}</div>
+            </div>
+            <div class="stat-badge defense">
+                <div style="font-size: 0.8rem;">🛡️ DEF</div>
+                <div style="font-weight: bold;">{defense}</div>
+            </div>
+            <div class="stat-badge magic">
+                <div style="font-size: 0.8rem;">✨ MAG</div>
+                <div style="font-weight: bold;">{magic}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Layout 2 colonnes
+    col_abilities, col_actions = st.columns([2, 1])
+
+    with col_abilities:
+        display_abilities_grid(char, combatant['id'])
+
+    with col_actions:
+        display_actions_and_potions(char, combatant['id'])
+
+def display_enemy_interface(combatant: Dict):
+    """Interface ennemi - Style Arène"""
+    char = combatant['character']
+
+    # Stats ennemis
+    current_hp = char.current_health
+    max_hp = char.max_health
+    player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
+    stats = char.get_stats_for_players(player_count)
+    attack = stats['damage']
+    defense = stats.get('defense', char.defense)
+
+    st.markdown(f"""
+    <div class="enemy-header">
+        <div>
+            <h3 style="margin: 0; color: white;">👹 {char.name}</h3>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">Tour de l'ennemi - Vous le contrôlez</p>
+        </div>
+        <div class="stats-badges">
+            <div class="stat-badge health">
+                <div style="font-size: 0.8rem;">❤️ PV</div>
+                <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+            </div>
+            <div class="stat-badge attack">
+                <div style="font-size: 0.8rem;">⚔️ ATT</div>
+                <div style="font-weight: bold;">{attack}</div>
+            </div>
+            <div class="stat-badge defense">
+                <div style="font-size: 0.8rem;">🛡️ DEF</div>
+                <div style="font-weight: bold;">{defense}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Actions ennemi
+    st.markdown("### ⚔️ Actions")
+
     col1, col2 = st.columns(2)
-    
+
+    with col1:
+        if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
+            # Sélection de cible
+            adapter = st.session_state.sandbox_v2_adapter
+            target = adapter.enemy_turn_manual(
+                char,
+                st.session_state.sandbox_v2_heroes,
+                player_count,
+                st.session_state.sandbox_v2_log
+            )
+
+            if target:
+                adapter.execute_enemy_attack(
+                    char,
+                    target,
+                    player_count,
+                    st.session_state.sandbox_v2_log
+                )
+                save_game_state(f"{char.name} attaque {target.name}")
+                next_turn()
+                st.rerun()
+
+    with col2:
+        if st.button("⏭️ Passer le Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
+            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
+            save_game_state(f"{char.name} passe son tour")
+            next_turn()
+            st.rerun()
+
+def display_abilities_grid(char: Character, combatant_id: str):
+    """Grille capacités style Arène"""
+    if not hasattr(char, 'abilities') or not char.abilities:
+        st.markdown("### 🔮 Capacités Spéciales")
+        st.info("Aucune capacité disponible")
+        return
+
+    st.markdown("### 🔮 Capacités Spéciales")
+
+    # Grille 3x2
+    for row in range(2):
+        cols = st.columns(3)
+        for col_idx in range(3):
+            ability_index = row * 3 + col_idx
+
+            with cols[col_idx]:
+                if ability_index < len(char.abilities):
+                    ability = char.abilities[ability_index]
+                    display_ability_card(char, ability, combatant_id, ability_index)
+                else:
+                    st.markdown("""
+                    <div style="background: #555; border: 2px dashed #777; border-radius: 10px;
+                                padding: 15px; text-align: center; color: #999; min-height: 80px;
+                                display: flex; align-items: center; justify-content: center;">
+                        <strong>Vide</strong>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+def display_ability_card(char: Character, ability, combatant_id: str, ability_index: int):
+    """Carte capacité cliquable style Arène"""
+    can_use = ability.ability_number in getattr(char, 'unlocked_abilities', [])
+    current_spells = getattr(char, 'current_spells', char.get_total_spells())
+    has_spells = ability.spell_cost <= current_spells
+
+    is_available = can_use and has_spells
+
+    type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
+    short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
+
+    button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
+
+    if st.button(
+        f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨",
+        key=button_key,
+        type="primary" if is_available else "secondary",
+        disabled=not is_available,
+        use_container_width=True
+    ):
+        if is_available:
+            use_ability_action(char, ability)
+
+def display_actions_and_potions(char: Character, combatant_id: str):
+    """Colonne actions + potions style Arène"""
+    st.markdown("### ⚡ Actions de Base")
+
+    # Attaque
+    if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
+        # Sélection de cible
+        target = ManualTargeting.select_enemy_for_hero_attack(
+            char,
+            st.session_state.sandbox_v2_enemies,
+            st.session_state.sandbox_v2_heroes
+        )
+
+        if target:
+            player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
+            adapter = st.session_state.sandbox_v2_adapter
+            adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+            save_game_state(f"{char.name} attaque {target.name}")
+            next_turn()
+            st.rerun()
+
+    # Passer
+    if st.button("⏭️ Passer le Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
+        st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
+        save_game_state(f"{char.name} passe son tour")
+        next_turn()
+        st.rerun()
+
+    # Potions
+    st.markdown("### 🧪 Potions")
+
+    if hasattr(char, 'health_potions') and char.health_potions:
+        potions_summary = char.get_potions_summary()
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            small_count = potions_summary['small_count']
+            if small_count > 0:
+                if st.button(f"🩸 Soin\n{small_count}", key=f"sandbox_potion_small_{combatant_id}", use_container_width=True):
+                    use_potion_action(char)
+            else:
+                st.button(f"🩸 Soin\n0", disabled=True, use_container_width=True)
+
+        with col2:
+            large_count = potions_summary['large_count']
+            if large_count > 0:
+                if st.button(f"❤️‍🩹 Vitesse\n{large_count}", key=f"sandbox_potion_large_{combatant_id}", use_container_width=True):
+                    use_potion_action(char)
+            else:
+                st.button(f"❤️‍🩹 Vitesse\n0", disabled=True, use_container_width=True)
+    else:
+        st.info("Aucune potion")
+
+# === ACTIONS DE COMBAT ===
+
+def use_ability_action(char: Character, ability):
+    """Utilise une capacité"""
+    if hasattr(char, 'use_ability'):
+        action = char.use_ability(ability)
+        if action.success:
+            st.session_state.sandbox_v2_log.append(f"🔮 {char.name} utilise {ability.name}")
+            save_game_state(f"{char.name} utilise {ability.name}")
+            next_turn()
+            st.success(f"✅ {ability.name} utilisée !")
+            st.rerun()
+        else:
+            st.error(f"❌ Impossible d'utiliser {ability.name}")
+
+def use_potion_action(char: Character):
+    """Utilise une potion"""
+    if hasattr(char, 'use_health_potion'):
+        result = char.use_health_potion()
+        if result['success']:
+            st.session_state.sandbox_v2_log.append(f"🧪 {char.name} boit une potion: {result['message']}")
+            save_game_state(f"{char.name} utilise potion")
+            st.success(f"✅ {result['message']}")
+        else:
+            st.error(f"❌ {result['message']}")
+
+# === AFFICHAGE STATUS COMBAT ===
+
+def display_combat_status():
+    """Affiche l'état du combat"""
+    col1, col2 = st.columns(2)
+
     with col1:
         st.markdown("### 🦸 Héros")
         for hero in st.session_state.sandbox_v2_heroes:
             status = "✅" if hero.is_alive() else "💀"
             st.write(f"{status} {hero.name} - HP: {hero.current_health}/{hero.get_total_health()}")
-    
+
     with col2:
         st.markdown("### 👹 Ennemis")
-        st.caption(f"📊 {len(st.session_state.sandbox_v2_enemies)} ennemi(s) chargé(s)")
-        
-        st.error(f"🔍 LOOP START - About to loop through {len(st.session_state.sandbox_v2_enemies)} enemies")
-        
-        # CORRECTION : Afficher TOUS les ennemis sans filtrage
-        for idx, enemy in enumerate(st.session_state.sandbox_v2_enemies):
-            st.error(f"🔍 LOOP ITERATION {idx+1} - Processing {enemy.name}")
-            
-            try:
-                status = "✅" if enemy.is_alive() else "💀"
-                st.write(f"{status} {enemy.name} - HP: {enemy.current_health}/{enemy.max_health}")
-                st.success(f"✅ Successfully displayed {enemy.name}")
-            except Exception as e:
-                st.error(f"❌ ERROR displaying {enemy.name}: {e}")
-        
-        st.error(f"🔍 LOOP END - Finished looping")
+        for enemy in st.session_state.sandbox_v2_enemies:
+            status = "✅" if enemy.is_alive() else "💀"
+            st.write(f"{status} {enemy.name} - HP: {enemy.current_health}/{enemy.max_health}")
+
+def display_initiative_order():
+    """Affiche l'ordre d'initiative"""
+    st.markdown("### 🎲 Ordre d'Initiative")
+
+    for i, c in enumerate(st.session_state.sandbox_v2_combatants):
+        name = c['character'].name
+        init = c['initiative']
+        faction_icon = "🦸" if c['faction'] == 'hero' else "👹"
+
+        # Highlight le combattant actuel
+        if i == st.session_state.sandbox_v2_current_turn_index:
+            st.markdown(f"**➡️ {i+1}. {faction_icon} {name} : {init} ⬅️**")
+        else:
+            st.write(f"{i+1}. {faction_icon} {name} : {init}")
+
+# === INTERFACE PRINCIPALE ===
 
 def main_sandbox_v2():
-    """Interface principale Sandbox V2 FINAL"""
-    st.title("🎮 Sandbox V2 - Architecture Réutilisée")
-    st.caption("✅ Utilise TurnManager + CombatActions existants | Ajoute ciblage manuel")
-    
-    # DEBUG IMMÉDIAT - Afficher selected_enemies
-    st.error(f"🔍 IMMEDIATE DEBUG - selected_enemies = {st.session_state.get('selected_enemies', 'NOT FOUND')}")
-    st.error(f"🔍 IMMEDIATE DEBUG - selected_heroes = {st.session_state.get('selected_heroes', 'NOT FOUND')}")
-    
-    # BOUTON RESET POUR FORCER RECONFIGURATION
-    if st.button("🔄 RESET ET RECHARGER LES ÉQUIPES"):
-        if 'sandbox_v2_phase' in st.session_state:
-            st.session_state.sandbox_v2_phase = 'CONFIG'
-        st.rerun()
-    
-    # AFFICHER LOGS DEBUG PERSISTANTS
-    if 'debug_logs' in st.session_state and st.session_state.debug_logs:
-        with st.expander("🔍 DEBUG LOGS (Configuration)", expanded=True):
-            for log in st.session_state.debug_logs:
-                st.text(log)
-    
+    """Interface principale Sandbox V2 - Style Arène"""
+    apply_sandbox_v2_theme()
+
+    st.title("🎮 Sandbox V2")
+    st.caption("✅ Ciblage manuel | Initiative | Système Undo/Redo")
+
     init_sandbox_state()
-    
-    # Vérifier configuration
+
+    # Vérification configuration
     if not st.session_state.get('selected_heroes') or not st.session_state.get('selected_enemies'):
-        st.warning("⚙️ Configurer équipes dans onglet Sélection d'abord")
+        st.markdown("""
+        <div class="guidance-compact guidance-config">
+            ⚙️ Configuration requise - Allez dans "Sélection" pour choisir vos équipes
+        </div>
+        """, unsafe_allow_html=True)
+        st.info("📋 Allez dans l'onglet **Sélection** pour choisir 2+ héros et 1+ ennemi")
         return
-    
-    # Configuration initiale
-    if st.session_state.sandbox_v2_phase == 'CONFIG':
-        if configure_combat():
-            st.session_state.sandbox_v2_phase = 'PLAYER_TURN'
-            st.rerun()
-        return
-    
-    # Afficher status
-    display_combat_status()
-    
-    st.markdown("---")
-    
+
     # Phase actuelle
     phase = st.session_state.sandbox_v2_phase
-    adapter = st.session_state.sandbox_v2_adapter
-    
-    if phase == 'PLAYER_TURN':
-        st.markdown("## 🦸 TOUR DES JOUEURS")
-        
-        alive_heroes = [h for h in st.session_state.sandbox_v2_heroes if h.is_alive()]
-        if not alive_heroes:
-            st.error("💀 Tous les héros sont inconscients !")
-            st.session_state.sandbox_v2_phase = 'END'
+
+    # Bannière de guidance
+    display_guidance_banner()
+
+    # === PHASE CONFIG ===
+    if phase == 'CONFIG':
+        if configure_combat():
+            st.session_state.sandbox_v2_phase = 'INITIATIVE'
             st.rerun()
-            return
-        
-        # Sélection héros actif
-        current_index = st.session_state.sandbox_v2_current_hero_index
-        if current_index >= len(alive_heroes):
-            current_index = 0
-            st.session_state.sandbox_v2_current_hero_index = 0
-        
-        current_hero = alive_heroes[current_index]
-        st.markdown(f"### 🎯 Héros actif : {current_hero.name}")
-        
-        # Actions héros
-        adapter.hero_turn_manual(
-            current_hero,
-            st.session_state.sandbox_v2_enemies,
-            st.session_state.sandbox_v2_heroes,
-            len(alive_heroes),
-            st.session_state.sandbox_v2_log
-        )
-        
-        # Contrôles
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("➡️ Héros Suivant"):
-                st.session_state.sandbox_v2_current_hero_index += 1
-                if st.session_state.sandbox_v2_current_hero_index >= len(alive_heroes):
-                    st.session_state.sandbox_v2_current_hero_index = 0
-                st.rerun()
-        
-        with col2:
-            if st.button("🔴 Tour Ennemis"):
-                st.session_state.sandbox_v2_phase = 'ENEMY_TURN'
-                st.session_state.sandbox_v2_current_enemy_index = 0
-                st.rerun()
-    
-    elif phase == 'ENEMY_TURN':
-        st.markdown("## 👹 TOUR DES ENNEMIS")
-        
-        alive_enemies = [e for e in st.session_state.sandbox_v2_enemies if e.is_alive()]
-        if not alive_enemies:
-            st.success("🎉 Tous les ennemis sont vaincus !")
-            st.session_state.sandbox_v2_phase = 'END'
-            st.rerun()
-            return
-        
-        current_index = st.session_state.sandbox_v2_current_enemy_index
-        if current_index >= len(alive_enemies):
-            st.success("✅ Tous les ennemis ont attaqué !")
-            if st.button("➡️ Nouveau Tour Joueurs"):
-                st.session_state.sandbox_v2_phase = 'PLAYER_TURN'
-                st.session_state.sandbox_v2_current_enemy_index = 0
-                st.rerun()
-            return
-        
-        current_enemy = alive_enemies[current_index]
-        
-        # Tour ennemi
-        action_done = adapter.enemy_turn_manual(
-            current_enemy,
-            st.session_state.sandbox_v2_heroes,
-            len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()]),
-            st.session_state.sandbox_v2_log
-        )
-        
-        if action_done:
-            st.session_state.sandbox_v2_current_enemy_index += 1
-            st.rerun()
-    
-    elif phase == 'END':
-        all_enemies_dead = all(not e.is_alive() for e in st.session_state.sandbox_v2_enemies)
-        
-        if all_enemies_dead:
-            st.success("🎉 VICTOIRE !")
         else:
-            st.error("💀 DÉFAITE")
-        
-        if st.button("🔄 Nouveau Combat"):
-            st.session_state.sandbox_v2_phase = 'CONFIG'
+            st.error("❌ Erreur de configuration")
+        return
+
+    # === PHASE INITIATIVE ===
+    elif phase == 'INITIATIVE':
+        st.info("🎲 Cliquez pour générer l'ordre d'initiative et commencer le combat")
+
+        if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
+            generate_initiative()
+            st.session_state.sandbox_v2_phase = 'COMBAT'
+            st.session_state.sandbox_v2_current_turn_index = 0
             st.rerun()
-    
-    # Journal de combat
+        return
+
+    # === PHASE COMBAT ===
+    elif phase == 'COMBAT':
+        # Afficher ordre initiative
+        with st.expander("🎲 Ordre d'Initiative", expanded=False):
+            display_initiative_order()
+
+        # Status combat
+        display_combat_status()
+
+        st.markdown("---")
+
+        # Vérifier victoire/défaite
+        alive_heroes = [h for h in st.session_state.sandbox_v2_heroes if h.is_alive()]
+        alive_enemies = [e for e in st.session_state.sandbox_v2_enemies if e.is_alive()]
+
+        if not alive_heroes:
+            st.error("💀 DÉFAITE - Tous les héros sont tombés !")
+            if st.button("🔄 Recommencer", type="primary"):
+                st.session_state.sandbox_v2_phase = 'CONFIG'
+                st.rerun()
+            return
+
+        if not alive_enemies:
+            st.success("🎉 VICTOIRE - Tous les ennemis sont vaincus !")
+            if st.button("🔄 Nouveau Combat", type="primary"):
+                st.session_state.sandbox_v2_phase = 'CONFIG'
+                st.rerun()
+            return
+
+        # Tour actuel
+        current = get_current_combatant()
+        if current:
+            if current['faction'] == 'hero':
+                display_hero_interface(current)
+            else:
+                display_enemy_interface(current)
+
+    # === JOURNAL DE COMBAT ===
     if st.session_state.sandbox_v2_log:
-        with st.expander("📜 Journal de Combat"):
+        with st.expander("📜 Journal de Combat", expanded=False):
             for line in st.session_state.sandbox_v2_log[-20:]:
                 st.text(line)
+
+    # === CONTRÔLES UNDO/REDO ===
+    if st.session_state.sandbox_v2_game_history and phase == 'COMBAT':
+        st.markdown("---")
+        st.markdown("### 🕒 Historique")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            can_undo = st.session_state.sandbox_v2_history_index > 0
+            if st.button("⏪ Annuler", disabled=not can_undo, use_container_width=True):
+                restore_previous_state()
+                st.rerun()
+
+        with col2:
+            can_redo = st.session_state.sandbox_v2_history_index < len(st.session_state.sandbox_v2_game_history) - 1
+            if st.button("⏩ Refaire", disabled=not can_redo, use_container_width=True):
+                restore_next_state()
+                st.rerun()
+
+        with col3:
+            if st.button("🔄 Reset Combat", use_container_width=True):
+                st.session_state.sandbox_v2_phase = 'CONFIG'
+                st.session_state.sandbox_v2_game_history = []
+                st.session_state.sandbox_v2_history_index = -1
+                st.rerun()
 
 if __name__ == "__main__":
     main_sandbox_v2()
