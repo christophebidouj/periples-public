@@ -475,21 +475,49 @@ def configure_combat():
 # === GÉNÉRATION INITIATIVE ===
 
 def generate_initiative():
-    """Génère l'ordre d'initiative"""
-    for combatant in st.session_state.sandbox_v2_combatants:
+    """
+    Génère l'ordre d'initiative CONFORME AUX RÈGLES:
+    - Phase 1: TOUS les héros (ordre par initiative)
+    - Phase 2: TOUS les ennemis (ordre par initiative)
+    """
+    # Séparer héros et ennemis
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+    # Générer initiative pour chaque groupe
+    for combatant in hero_combatants:
         roll = random.randint(1, 20)
         combatant['initiative'] = roll
 
-    # Tri par initiative décroissante
-    st.session_state.sandbox_v2_combatants.sort(key=lambda x: x['initiative'], reverse=True)
+    for combatant in enemy_combatants:
+        roll = random.randint(1, 20)
+        combatant['initiative'] = roll
+
+    # Trier chaque groupe par initiative décroissante
+    hero_combatants.sort(key=lambda x: x['initiative'], reverse=True)
+    enemy_combatants.sort(key=lambda x: x['initiative'], reverse=True)
+
+    # RÈGLE: Les héros jouent TOUJOURS en premier, puis les ennemis
+    st.session_state.sandbox_v2_combatants = hero_combatants + enemy_combatants
 
     # Log
     st.session_state.sandbox_v2_log.append("=== ORDRE D'INITIATIVE ===")
-    for i, c in enumerate(st.session_state.sandbox_v2_combatants):
+    st.session_state.sandbox_v2_log.append("🛡️ Phase des Héros:")
+    for i, c in enumerate(hero_combatants):
         name = c['character'].name
         init = c['initiative']
-        faction = "🦸 Héros" if c['faction'] == 'hero' else "👹 Ennemi"
-        st.session_state.sandbox_v2_log.append(f"{i+1}. {name} ({faction}): {init}")
+        st.session_state.sandbox_v2_log.append(f"  {i+1}. {name}: {init}")
+
+    st.session_state.sandbox_v2_log.append("👹 Phase des Ennemis:")
+    for i, c in enumerate(enemy_combatants):
+        name = c['character'].name
+        init = c['initiative']
+        st.session_state.sandbox_v2_log.append(f"  {i+1}. {name}: {init}")
+
+    # Indiquer le début du combat
+    st.session_state.sandbox_v2_log.append("")
+    st.session_state.sandbox_v2_log.append("=== ROUND 1 ===")
+    st.session_state.sandbox_v2_log.append("--- Phase des Héros ---")
 
     save_game_state("Initiative générée")
 
@@ -532,9 +560,17 @@ def get_current_combatant() -> Optional[Dict]:
     return None
 
 def next_turn():
-    """Passe au tour suivant"""
+    """Passe au tour suivant avec gestion des phases héros/ennemis"""
     if not st.session_state.sandbox_v2_combatants:
         return
+
+    # Détecter le passage de la phase héros à la phase ennemis
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    current_index = st.session_state.sandbox_v2_current_turn_index
+
+    # Si on était sur le dernier héros, log le début de la phase ennemis
+    if current_index == len(hero_combatants) - 1:
+        st.session_state.sandbox_v2_log.append("--- Phase des Ennemis ---")
 
     st.session_state.sandbox_v2_current_turn_index += 1
 
@@ -543,6 +579,7 @@ def next_turn():
         st.session_state.sandbox_v2_current_turn_index = 0
         st.session_state.sandbox_v2_round_number += 1
         st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+        st.session_state.sandbox_v2_log.append("--- Phase des Héros ---")
 
 def display_hero_interface(combatant: Dict):
     """Interface héros - Style Arène avec layout 2 colonnes"""
@@ -858,19 +895,39 @@ def display_combat_status():
             st.warning("Aucun ennemi trouvé")
 
 def display_initiative_order():
-    """Affiche l'ordre d'initiative"""
+    """Affiche l'ordre d'initiative avec séparation phases héros/ennemis"""
     st.markdown("### 🎲 Ordre d'Initiative")
 
+    # Séparer pour affichage
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+    # Phase Héros
+    st.markdown("**🛡️ Phase des Héros:**")
     for i, c in enumerate(st.session_state.sandbox_v2_combatants):
+        if c['faction'] != 'hero':
+            break
         name = c['character'].name
         init = c['initiative']
-        faction_icon = "🦸" if c['faction'] == 'hero' else "👹"
 
         # Highlight le combattant actuel
         if i == st.session_state.sandbox_v2_current_turn_index:
-            st.markdown(f"**➡️ {i+1}. {faction_icon} {name} : {init} ⬅️**")
+            st.markdown(f"**➡️ {i+1}. {name} : {init} ⬅️**")
         else:
-            st.write(f"{i+1}. {faction_icon} {name} : {init}")
+            st.write(f"{i+1}. {name} : {init}")
+
+    # Phase Ennemis
+    st.markdown("**👹 Phase des Ennemis:**")
+    hero_count = len(hero_combatants)
+    for i, c in enumerate(st.session_state.sandbox_v2_combatants[hero_count:], start=hero_count):
+        name = c['character'].name
+        init = c['initiative']
+
+        # Highlight le combattant actuel
+        if i == st.session_state.sandbox_v2_current_turn_index:
+            st.markdown(f"**➡️ {i+1}. {name} : {init} ⬅️**")
+        else:
+            st.write(f"{i+1}. {name} : {init}")
 
 # === INTERFACE PRINCIPALE ===
 
