@@ -141,9 +141,14 @@ def init_sandbox_state():
 
 def save_game_state(description: str = "Action"):
     """Sauvegarde l'état pour Undo/Redo"""
+    # Synchroniser les listes de héros/ennemis depuis les combattants avant de sauvegarder
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+    st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
+    st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
+
     state = {
-        'heroes': deepcopy(st.session_state.sandbox_v2_heroes),
-        'enemies': deepcopy(st.session_state.sandbox_v2_enemies),
         'combatants': deepcopy(st.session_state.sandbox_v2_combatants),
         'turn_index': st.session_state.sandbox_v2_current_turn_index,
         'round_number': st.session_state.sandbox_v2_round_number,
@@ -162,12 +167,16 @@ def restore_previous_state():
         st.session_state.sandbox_v2_history_index -= 1
         state = st.session_state.sandbox_v2_game_history[st.session_state.sandbox_v2_history_index]
 
-        st.session_state.sandbox_v2_heroes = deepcopy(state['heroes'])
-        st.session_state.sandbox_v2_enemies = deepcopy(state['enemies'])
         st.session_state.sandbox_v2_combatants = deepcopy(state['combatants'])
         st.session_state.sandbox_v2_current_turn_index = state['turn_index']
         st.session_state.sandbox_v2_round_number = state['round_number']
         st.session_state.sandbox_v2_log = state['log'].copy()
+
+        # Synchroniser héros/ennemis depuis les combattants
+        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+        st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
+        st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
 def restore_next_state():
     """Refaire - Restaure l'état suivant"""
@@ -175,12 +184,16 @@ def restore_next_state():
         st.session_state.sandbox_v2_history_index += 1
         state = st.session_state.sandbox_v2_game_history[st.session_state.sandbox_v2_history_index]
 
-        st.session_state.sandbox_v2_heroes = deepcopy(state['heroes'])
-        st.session_state.sandbox_v2_enemies = deepcopy(state['enemies'])
         st.session_state.sandbox_v2_combatants = deepcopy(state['combatants'])
         st.session_state.sandbox_v2_current_turn_index = state['turn_index']
         st.session_state.sandbox_v2_round_number = state['round_number']
         st.session_state.sandbox_v2_log = state['log'].copy()
+
+        # Synchroniser héros/ennemis depuis les combattants
+        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+        st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
+        st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
 # === INTERFACE CIBLAGE MANUEL STYLÉE ===
 
@@ -576,11 +589,15 @@ def display_enemy_interface(combatant: Dict):
 
     with col1:
         if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
+            # Récupérer les héros depuis les combattants
+            hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+            heroes_list = [c['character'] for c in hero_combatants]
+
             # Sélection de cible
             adapter = st.session_state.sandbox_v2_adapter
             target = adapter.enemy_turn_manual(
                 char,
-                st.session_state.sandbox_v2_heroes,
+                heroes_list,
                 player_count,
                 st.session_state.sandbox_v2_log
             )
@@ -634,7 +651,9 @@ def display_abilities_grid(char: Character, combatant_id: str):
 def display_ability_card(char: Character, ability, combatant_id: str, ability_index: int):
     """Carte capacité cliquable style Arène"""
     can_use = ability.ability_number in getattr(char, 'unlocked_abilities', [])
-    current_spells = getattr(char, 'current_spells', char.get_total_spells())
+    current_spells = getattr(char, 'current_spells', None)
+    if current_spells is None:
+        current_spells = char.get_total_spells() if hasattr(char, 'get_total_spells') else 0
     has_spells = ability.spell_cost <= current_spells
 
     is_available = can_use and has_spells
@@ -660,15 +679,21 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
     # Attaque
     if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
+        # Récupérer les ennemis depuis les combattants pour avoir l'état à jour
+        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+        enemies_list = [c['character'] for c in enemy_combatants]
+        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+        heroes_list = [c['character'] for c in hero_combatants]
+
         # Sélection de cible
         target = ManualTargeting.select_enemy_for_hero_attack(
             char,
-            st.session_state.sandbox_v2_enemies,
-            st.session_state.sandbox_v2_heroes
+            enemies_list,
+            heroes_list
         )
 
         if target:
-            player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
+            player_count = len([h for h in heroes_list if h.is_alive()])
             adapter = st.session_state.sandbox_v2_adapter
             adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
             save_game_state(f"{char.name} attaque {target.name}")
@@ -737,20 +762,32 @@ def use_potion_action(char: Character):
 # === AFFICHAGE STATUS COMBAT ===
 
 def display_combat_status():
-    """Affiche l'état du combat"""
+    """Affiche l'état du combat - Récupère depuis combatants pour cohérence"""
     col1, col2 = st.columns(2)
+
+    # Récupérer héros et ennemis depuis combattants (source de vérité unique)
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
 
     with col1:
         st.markdown("### 🦸 Héros")
-        for hero in st.session_state.sandbox_v2_heroes:
-            status = "✅" if hero.is_alive() else "💀"
-            st.write(f"{status} {hero.name} - HP: {hero.current_health}/{hero.get_total_health()}")
+        if hero_combatants:
+            for hero_data in hero_combatants:
+                hero = hero_data['character']
+                status = "✅" if hero.is_alive() else "💀"
+                st.write(f"{status} {hero.name} - HP: {hero.current_health}/{hero.get_total_health()}")
+        else:
+            st.warning("Aucun héros trouvé")
 
     with col2:
         st.markdown("### 👹 Ennemis")
-        for enemy in st.session_state.sandbox_v2_enemies:
-            status = "✅" if enemy.is_alive() else "💀"
-            st.write(f"{status} {enemy.name} - HP: {enemy.current_health}/{enemy.max_health}")
+        if enemy_combatants:
+            for enemy_data in enemy_combatants:
+                enemy = enemy_data['character']
+                status = "✅" if enemy.is_alive() else "💀"
+                st.write(f"{status} {enemy.name} - HP: {enemy.current_health}/{enemy.max_health}")
+        else:
+            st.warning("Aucun ennemi trouvé")
 
 def display_initiative_order():
     """Affiche l'ordre d'initiative"""
@@ -825,9 +862,12 @@ def main_sandbox_v2():
 
         st.markdown("---")
 
-        # Vérifier victoire/défaite
-        alive_heroes = [h for h in st.session_state.sandbox_v2_heroes if h.is_alive()]
-        alive_enemies = [e for e in st.session_state.sandbox_v2_enemies if e.is_alive()]
+        # Vérifier victoire/défaite - Depuis combattants
+        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+        alive_heroes = [c['character'] for c in hero_combatants if c['character'].is_alive()]
+        alive_enemies = [c['character'] for c in enemy_combatants if c['character'].is_alive()]
 
         if not alive_heroes:
             st.error("💀 DÉFAITE - Tous les héros sont tombés !")
