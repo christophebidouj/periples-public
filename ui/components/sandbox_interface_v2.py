@@ -375,9 +375,12 @@ def configure_combat():
         # === PRÉPARATION HÉROS avec builds customisés (LOGIQUE ARÈNE) ===
         current_builds = st.session_state.get('custom_builds', {})
         for hero_code in heroes_codes:
-            hero = next((h for h in heroes_data if h.code == hero_code), None)
-            if not hero:
+            hero_template = next((h for h in heroes_data if h.code == hero_code), None)
+            if not hero_template:
                 continue
+
+            # DEEPCOPY pour avoir une instance unique par héros
+            hero = deepcopy(hero_template)
 
             # Application build custom si existant
             if hero_code in current_builds:
@@ -413,15 +416,17 @@ def configure_combat():
             })
 
         # === PRÉPARATION ENNEMIS (LOGIQUE ARÈNE) ===
-        for enemy_code in enemies_codes:
-            enemy = next((e for e in enemies_data if e.code == enemy_code), None)
-            if enemy:
+        for idx, enemy_code in enumerate(enemies_codes):
+            enemy_template = next((e for e in enemies_data if e.code == enemy_code), None)
+            if enemy_template:
+                # DEEPCOPY pour avoir une instance unique par ennemi
+                enemy = deepcopy(enemy_template)
                 enemy.initialize_for_combat(player_count)
                 combatants.append({
                     'character': enemy,
                     'faction': 'enemy',
                     'initiative': 0,
-                    'id': f"enemy_{enemy_code}"
+                    'id': f"enemy_{enemy_code}_{idx}"  # ID unique avec index
                 })
 
         st.session_state.sandbox_v2_combatants = combatants
