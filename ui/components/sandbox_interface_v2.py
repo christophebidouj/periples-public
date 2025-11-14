@@ -431,14 +431,9 @@ def configure_combat():
 
         st.session_state.sandbox_v2_combatants = combatants
 
-        # DEBUG : Afficher combien de combattants on a
+        # Synchroniser les listes
         hero_combatants = [c for c in combatants if c['faction'] == 'hero']
         enemy_combatants = [c for c in combatants if c['faction'] == 'enemy']
-
-        st.info(f"🔍 DEBUG Configuration : {len(hero_combatants)} héros, {len(enemy_combatants)} ennemis chargés")
-        st.info(f"🔍 Codes ennemis sélectionnés : {enemies_codes}")
-        st.info(f"🔍 Ennemis créés : {[c['id'] for c in enemy_combatants]}")
-
         st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
@@ -841,10 +836,6 @@ def display_combat_status():
     hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
     enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
 
-    # DEBUG
-    st.info(f"🔍 DEBUG Affichage : {len(st.session_state.sandbox_v2_combatants)} combattants totaux")
-    st.info(f"🔍 Dont {len(enemy_combatants)} ennemis")
-
     with col1:
         st.markdown("### 🦸 Héros")
         if hero_combatants:
@@ -858,11 +849,10 @@ def display_combat_status():
     with col2:
         st.markdown("### 👹 Ennemis")
         if enemy_combatants:
-            st.caption(f"DEBUG: Affichage de {len(enemy_combatants)} ennemi(s)")
-            for idx, enemy_data in enumerate(enemy_combatants):
+            for enemy_data in enemy_combatants:
                 enemy = enemy_data['character']
                 status = "✅" if enemy.is_alive() else "💀"
-                st.write(f"{idx+1}. {status} {enemy.name} (ID: {enemy_data['id']}) - HP: {enemy.current_health}/{enemy.max_health}")
+                st.write(f"{status} {enemy.name} - HP: {enemy.current_health}/{enemy.max_health}")
         else:
             st.warning("Aucun ennemi trouvé")
 
