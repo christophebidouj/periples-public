@@ -1,7 +1,6 @@
 # Ignorer les builds et exécutables
 dist/
 build/
-data/
 data/*
 !data/*.png
 !data/*.jpg
