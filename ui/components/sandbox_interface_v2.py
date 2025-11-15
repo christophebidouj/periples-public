@@ -17,6 +17,7 @@ from models.combat.spell_manager import SpellManager
 from models.combat.initiative_manager import InitiativeManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
+from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon
 
 # === CSS STYLE ARÈNE ===
 
@@ -889,21 +890,126 @@ def use_potion_action(char: Character):
 
 # === AFFICHAGE STATUS COMBAT ===
 
+def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
+    """
+    Affiche une carte héros pour le combat avec image et stats en temps réel
+    RÉUTILISE les APIs existantes (images, stats Character)
+
+    Args:
+        hero: Personnage héros
+        is_current_turn: True si c'est le tour de ce héros
+    """
+    # Récupérer image (RÉUTILISE API ui_elements.py)
+    image_path = get_hero_image_path(hero.name)
+    background_style = ""
+    if image_path:
+        img_base64 = load_hero_image_base64(image_path)
+        if img_base64:
+            background_style = f"background-image: url('data:image/jpeg;base64,{img_base64}');"
+
+    # Récupérer stats en temps réel (RÉUTILISE APIs Character)
+    current_hp = hero.current_health
+    max_hp = hero.get_total_health()
+    attack = hero.get_total_damage()
+    defense = hero.get_total_parade()
+    magic = hero.get_total_spells()
+    precision = hero.get_total_precision() if hasattr(hero, 'get_total_precision') else hero.precision
+    is_alive = hero.is_alive()
+
+    # Icône héros (RÉUTILISE API ui_elements.py)
+    hero_icon = get_hero_icon(hero.name)
+
+    # Détermination des couleurs selon l'état
+    if is_current_turn:
+        border_color = "#FFD700"  # Doré pour tour actuel
+        border_width = "3px"
+        box_shadow = "0 4px 20px rgba(255, 215, 0, 0.6)"
+    elif not is_alive:
+        border_color = "#666"  # Gris pour mort
+        border_width = "2px"
+        box_shadow = "none"
+    else:
+        border_color = "#27ae60"  # Vert pour vivant en attente
+        border_width = "2px"
+        box_shadow = "0 2px 8px rgba(39, 174, 96, 0.3)"
+
+    # Opacité si mort
+    opacity = "0.5" if not is_alive else "1.0"
+
+    # Fallback background si pas d'image
+    if not background_style:
+        background_style = f"background: linear-gradient(135deg, {border_color}33, {border_color}11);"
+
+    # Construction HTML de la carte
+    card_html = f"""
+    <div style="
+        border: {border_width} solid {border_color};
+        border-radius: 12px;
+        padding: 12px;
+        margin: 8px 0;
+        {background_style}
+        background-size: cover;
+        background-position: center;
+        background-blend-mode: overlay;
+        background-color: rgba(0, 0, 0, 0.6);
+        box-shadow: {box_shadow};
+        opacity: {opacity};
+        transition: all 0.3s ease;
+    ">
+        <!-- Nom du héros avec icône -->
+        <div style="
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        ">
+            {hero_icon} {hero.name}
+            {"<span style='color: #FFD700;'>⚡ C'EST SON TOUR</span>" if is_current_turn else ""}
+            {"<span style='color: #ff4444;'>💀 INCONSCIENT</span>" if not is_alive else ""}
+        </div>
+
+        <!-- Stats en temps réel -->
+        <div style="
+            display: flex;
+            gap: 15px;
+            font-family: monospace;
+            font-size: 1rem;
+            color: #f0f0f0;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        ">
+            <span>❤️ {current_hp}/{max_hp}</span>
+            <span>⚔️ {attack}</span>
+            <span>🛡️ {defense}</span>
+            <span>✨ {magic}</span>
+        </div>
+    </div>
+    """
+
+    st.markdown(card_html, unsafe_allow_html=True)
+
 def display_combat_status():
-    """Affiche l'état du combat - Récupère depuis combatants pour cohérence"""
+    """Affiche l'état du combat avec cartes stylées - Récupère depuis combatants pour cohérence"""
     col1, col2 = st.columns(2)
 
     # Récupérer héros et ennemis depuis combattants (source de vérité unique)
     hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
     enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
 
+    # Déterminer quel combattant a le tour actuel
+    current_combatant = get_current_combatant()
+    current_character_id = current_combatant['id'] if current_combatant else None
+
     with col1:
         st.markdown("### 🦸 Héros")
         if hero_combatants:
             for hero_data in hero_combatants:
                 hero = hero_data['character']
-                status = "✅" if hero.is_alive() else "💀"
-                st.write(f"{status} {hero.name} - HP: {hero.current_health}/{hero.get_total_health()}")
+                # Vérifier si c'est son tour
+                is_current = (hero_data['id'] == current_character_id)
+                # Afficher carte stylée (RÉUTILISE nouvelle fonction)
+                display_hero_combat_card(hero, is_current_turn=is_current)
         else:
             st.warning("Aucun héros trouvé")
 
@@ -912,8 +1018,33 @@ def display_combat_status():
         if enemy_combatants:
             for enemy_data in enemy_combatants:
                 enemy = enemy_data['character']
+                # Déterminer si c'est son tour
+                is_current = (enemy_data['id'] == current_character_id)
                 status = "✅" if enemy.is_alive() else "💀"
-                st.write(f"{status} {enemy.name} - HP: {enemy.current_health}/{enemy.max_health}")
+                turn_indicator = "⚡ C'EST SON TOUR" if is_current else ""
+
+                # Style adapté pour ennemis (plus simple que héros)
+                border_color = "#FFD700" if is_current else ("#e74c3c" if enemy.is_alive() else "#666")
+                border_width = "3px" if is_current else "2px"
+                opacity = "0.5" if not enemy.is_alive() else "1.0"
+
+                st.markdown(f"""
+                <div style="
+                    border: {border_width} solid {border_color};
+                    border-radius: 10px;
+                    padding: 10px;
+                    margin: 8px 0;
+                    background: rgba(231, 76, 60, 0.1);
+                    opacity: {opacity};
+                ">
+                    <div style="font-weight: bold; color: white; margin-bottom: 5px;">
+                        {status} {enemy.name} {turn_indicator}
+                    </div>
+                    <div style="font-family: monospace; color: #f0f0f0;">
+                        ❤️ {enemy.current_health}/{enemy.max_health}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.warning("Aucun ennemi trouvé")
 
