@@ -1022,9 +1022,9 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
 
 def display_combat_status():
     """
-    Affiche l'état du combat avec cartes stylées alignées horizontalement
-    - Ligne 1 : Héros en cartes horizontales
-    - Ligne 2 : Ennemis en cartes horizontales
+    Affiche l'état du combat avec cartes stylées en deux colonnes côte à côte
+    - Colonne Gauche : Héros alignés horizontalement
+    - Colonne Droite : Ennemis alignés horizontalement
     RÉUTILISE display_hero_combat_card() et display_enemy_combat_card()
     """
     # Récupérer héros et ennemis depuis combattants (source de vérité unique)
@@ -1035,35 +1035,40 @@ def display_combat_status():
     current_combatant = get_current_combatant()
     current_character_id = current_combatant['id'] if current_combatant else None
 
-    # === LIGNE 1 : HÉROS ===
-    st.markdown("### 🦸 Héros")
-    if hero_combatants:
-        # Créer colonnes pour aligner horizontalement (une colonne par héros)
-        hero_cols = st.columns(len(hero_combatants))
-        for idx, hero_data in enumerate(hero_combatants):
-            with hero_cols[idx]:
-                hero = hero_data['character']
-                # Vérifier si c'est son tour
-                is_current = (hero_data['id'] == current_character_id)
-                # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
-                display_hero_combat_card(hero, is_current_turn=is_current)
-    else:
-        st.warning("Aucun héros trouvé")
+    # === DEUX COLONNES CÔTE À CÔTE (Option 1) ===
+    main_col1, main_col2 = st.columns(2)
 
-    # === LIGNE 2 : ENNEMIS ===
-    st.markdown("### 👹 Ennemis")
-    if enemy_combatants:
-        # Créer colonnes pour aligner horizontalement (une colonne par ennemi)
-        enemy_cols = st.columns(len(enemy_combatants))
-        for idx, enemy_data in enumerate(enemy_combatants):
-            with enemy_cols[idx]:
-                enemy = enemy_data['character']
-                # Vérifier si c'est son tour
-                is_current = (enemy_data['id'] == current_character_id)
-                # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
-                display_enemy_combat_card(enemy, is_current_turn=is_current)
-    else:
-        st.warning("Aucun ennemi trouvé")
+    # === COLONNE GAUCHE : HÉROS ===
+    with main_col1:
+        st.markdown("### 🦸 Héros")
+        if hero_combatants:
+            # Créer sous-colonnes pour aligner héros horizontalement
+            hero_cols = st.columns(len(hero_combatants))
+            for idx, hero_data in enumerate(hero_combatants):
+                with hero_cols[idx]:
+                    hero = hero_data['character']
+                    # Vérifier si c'est son tour
+                    is_current = (hero_data['id'] == current_character_id)
+                    # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
+                    display_hero_combat_card(hero, is_current_turn=is_current)
+        else:
+            st.warning("Aucun héros trouvé")
+
+    # === COLONNE DROITE : ENNEMIS ===
+    with main_col2:
+        st.markdown("### 👹 Ennemis")
+        if enemy_combatants:
+            # Créer sous-colonnes pour aligner ennemis horizontalement
+            enemy_cols = st.columns(len(enemy_combatants))
+            for idx, enemy_data in enumerate(enemy_combatants):
+                with enemy_cols[idx]:
+                    enemy = enemy_data['character']
+                    # Vérifier si c'est son tour
+                    is_current = (enemy_data['id'] == current_character_id)
+                    # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
+                    display_enemy_combat_card(enemy, is_current_turn=is_current)
+        else:
+            st.warning("Aucun ennemi trouvé")
 
 def display_initiative_order():
     """Affiche l'ordre d'initiative (ordre décroissant, mélangé héros/ennemis)"""
@@ -1137,22 +1142,6 @@ def main_sandbox_v2():
     # === PHASE INITIATIVE ===
     elif phase == 'INITIATIVE':
         st.info("🎲 Cliquez pour générer l'ordre d'initiative et commencer le combat")
-
-        # Afficher aperçu des équipes
-        st.markdown("### 📋 Équipes Chargées")
-        col1, col2 = st.columns(2)
-
-        with col1:
-            hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-            st.markdown(f"**🦸 Héros ({len(hero_combatants)})**")
-            for h in hero_combatants:
-                st.write(f"- {h['character'].name}")
-
-        with col2:
-            enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-            st.markdown(f"**👹 Ennemis ({len(enemy_combatants)})**")
-            for e in enemy_combatants:
-                st.write(f"- {e['character'].name}")
 
         # Bouton génération initiative
         if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
