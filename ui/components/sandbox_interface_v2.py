@@ -537,17 +537,32 @@ def get_current_combatant() -> Optional[Dict]:
     return None
 
 def next_turn():
-    """Passe au tour suivant"""
+    """Passe au tour suivant EN SAUTANT les combattants morts (utilise is_alive())"""
     if not st.session_state.sandbox_v2_combatants:
         return
 
-    st.session_state.sandbox_v2_current_turn_index += 1
+    max_iterations = len(st.session_state.sandbox_v2_combatants) + 1
+    iterations = 0
 
-    # Si on a fait le tour de tous les combattants → nouveau round
-    if st.session_state.sandbox_v2_current_turn_index >= len(st.session_state.sandbox_v2_combatants):
-        st.session_state.sandbox_v2_current_turn_index = 0
-        st.session_state.sandbox_v2_round_number += 1
-        st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+    while iterations < max_iterations:
+        st.session_state.sandbox_v2_current_turn_index += 1
+
+        # Si on a fait le tour de tous les combattants → nouveau round
+        if st.session_state.sandbox_v2_current_turn_index >= len(st.session_state.sandbox_v2_combatants):
+            st.session_state.sandbox_v2_current_turn_index = 0
+            st.session_state.sandbox_v2_round_number += 1
+            st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+
+        # Vérifier si le combattant actuel est vivant (API Character.is_alive())
+        current = get_current_combatant()
+        if current and current['character'].is_alive():
+            return  # Combattant vivant trouvé !
+
+        # Combattant mort, continuer la recherche
+        iterations += 1
+
+    # Sécurité : tous les combattants d'une faction sont morts (fin de combat gérée ailleurs)
+    return
 
 def display_hero_interface(combatant: Dict):
     """Interface héros - Style Arène avec layout 2 colonnes"""
@@ -995,6 +1010,14 @@ def main_sandbox_v2():
         # Tour actuel
         current = get_current_combatant()
         if current:
+            # VÉRIFICATION : Sauter si mort (sécurité - normalement géré par next_turn())
+            if not current['character'].is_alive():
+                st.session_state.sandbox_v2_log.append(f"⏭️ {current['character'].name} est inconscient, passage au tour suivant")
+                next_turn()
+                st.rerun()
+                return
+
+            # Afficher interface seulement si vivant
             if current['faction'] == 'hero':
                 display_hero_interface(current)
             else:
