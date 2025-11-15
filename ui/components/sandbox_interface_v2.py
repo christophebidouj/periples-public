@@ -950,10 +950,71 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
 
     st.markdown(card_html, unsafe_allow_html=True)
 
-def display_combat_status():
-    """Affiche l'état du combat avec cartes stylées - Récupère depuis combatants pour cohérence"""
-    col1, col2 = st.columns(2)
+def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
+    """
+    Affiche une carte ennemi pour le combat avec format "carte à collectionner"
+    RÉUTILISE get_hero_card_style() de ui.styling (même format 260x370px que héros)
 
+    Args:
+        enemy: Personnage ennemi
+        is_current_turn: True si c'est le tour de cet ennemi
+    """
+    # Récupérer stats en temps réel (RÉUTILISE APIs Enemy)
+    current_hp = enemy.current_health
+    max_hp = enemy.max_health
+    damage = enemy.damage
+    defense = enemy.defense
+    is_alive = enemy.is_alive()
+
+    # Détermination border color selon l'état
+    if is_current_turn:
+        border_color = "#FFD700"  # Doré pour tour actuel
+    elif not is_alive:
+        border_color = "#666"  # Gris pour mort
+    else:
+        border_color = "#e74c3c"  # Rouge pour vivant en attente
+
+    # Charger image monstres.jpg (même pour tous les ennemis)
+    import base64
+    monster_image_path = "/home/user/periples/data/images/monstres.jpg"
+    background_style = ""
+    try:
+        with open(monster_image_path, "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode()
+            background_style = f"background-image: url('data:image/jpeg;base64,{img_base64}');"
+    except:
+        # Fallback: gradient rouge si image non disponible
+        background_style = "background: linear-gradient(135deg, #8b0000, #4a0000);"
+
+    # Préparer stats_content (adapté pour ennemis)
+    magic_indicator = " ✨" if enemy.is_magical else ""
+    stats_content = f"""
+    <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
+        ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🛡️ {defense}{magic_indicator}
+    </div>"""
+
+    # Préparer build_content (remplacé par status pour le combat)
+    if is_current_turn:
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
+    elif not is_alive:
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 MORT</div>'
+    else:
+        build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #ff6666;">✓ En attente</div>'
+
+    # RÉUTILISE le style existant (même format que cartes héros)
+    card_html = get_hero_card_style(enemy.name, border_color, background_style)
+    card_html = card_html.replace("{stats_content}", stats_content)
+    card_html = card_html.replace("{build_content}", build_content)
+
+    st.markdown(card_html, unsafe_allow_html=True)
+
+def display_combat_status():
+    """
+    Affiche l'état du combat avec cartes stylées alignées horizontalement
+    - Ligne 1 : Héros en cartes horizontales
+    - Ligne 2 : Ennemis en cartes horizontales
+    RÉUTILISE display_hero_combat_card() et display_enemy_combat_card()
+    """
     # Récupérer héros et ennemis depuis combattants (source de vérité unique)
     hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
     enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
@@ -962,52 +1023,35 @@ def display_combat_status():
     current_combatant = get_current_combatant()
     current_character_id = current_combatant['id'] if current_combatant else None
 
-    with col1:
-        st.markdown("### 🦸 Héros")
-        if hero_combatants:
-            for hero_data in hero_combatants:
+    # === LIGNE 1 : HÉROS ===
+    st.markdown("### 🦸 Héros")
+    if hero_combatants:
+        # Créer colonnes pour aligner horizontalement (une colonne par héros)
+        hero_cols = st.columns(len(hero_combatants))
+        for idx, hero_data in enumerate(hero_combatants):
+            with hero_cols[idx]:
                 hero = hero_data['character']
                 # Vérifier si c'est son tour
                 is_current = (hero_data['id'] == current_character_id)
-                # Afficher carte stylée (RÉUTILISE nouvelle fonction)
+                # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
                 display_hero_combat_card(hero, is_current_turn=is_current)
-        else:
-            st.warning("Aucun héros trouvé")
+    else:
+        st.warning("Aucun héros trouvé")
 
-    with col2:
-        st.markdown("### 👹 Ennemis")
-        if enemy_combatants:
-            for enemy_data in enemy_combatants:
+    # === LIGNE 2 : ENNEMIS ===
+    st.markdown("### 👹 Ennemis")
+    if enemy_combatants:
+        # Créer colonnes pour aligner horizontalement (une colonne par ennemi)
+        enemy_cols = st.columns(len(enemy_combatants))
+        for idx, enemy_data in enumerate(enemy_combatants):
+            with enemy_cols[idx]:
                 enemy = enemy_data['character']
-                # Déterminer si c'est son tour
+                # Vérifier si c'est son tour
                 is_current = (enemy_data['id'] == current_character_id)
-                status = "✅" if enemy.is_alive() else "💀"
-                turn_indicator = "⚡ C'EST SON TOUR" if is_current else ""
-
-                # Style adapté pour ennemis (plus simple que héros)
-                border_color = "#FFD700" if is_current else ("#e74c3c" if enemy.is_alive() else "#666")
-                border_width = "3px" if is_current else "2px"
-                opacity = "0.5" if not enemy.is_alive() else "1.0"
-
-                st.markdown(f"""
-                <div style="
-                    border: {border_width} solid {border_color};
-                    border-radius: 10px;
-                    padding: 10px;
-                    margin: 8px 0;
-                    background: rgba(231, 76, 60, 0.1);
-                    opacity: {opacity};
-                ">
-                    <div style="font-weight: bold; color: white; margin-bottom: 5px;">
-                        {status} {enemy.name} {turn_indicator}
-                    </div>
-                    <div style="font-family: monospace; color: #f0f0f0;">
-                        ❤️ {enemy.current_health}/{enemy.max_health}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.warning("Aucun ennemi trouvé")
+                # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
+                display_enemy_combat_card(enemy, is_current_turn=is_current)
+    else:
+        st.warning("Aucun ennemi trouvé")
 
 def display_initiative_order():
     """Affiche l'ordre d'initiative (ordre décroissant, mélangé héros/ennemis)"""
