@@ -21,6 +21,7 @@ from ui.components.ui_elements import get_hero_image_path, load_hero_image_base6
 from ui.styling import get_hero_card_style
 
 # === CSS STYLE ARÈNE ===
+# ===tour par tour guidé ===
 
 def apply_sandbox_v2_theme():
     """Applique le thème visuel de l'Arène"""
