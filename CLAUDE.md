@@ -24,7 +24,8 @@ streamlit run app.py
 1. Search for existing implementations using `project_knowledge_search`
 2. Read `documentation architecture périples.md` for API reference
 3. Check `Regle absolue verification architecture.md` for architectural rules
-4. Verify the functionality doesn't already exist
+4. **Verify compliance with official game rules in `Livre de règles V3.0.pdf`** - All features must follow the official Périples V3.0 rules, NO invented mechanics
+5. Verify the functionality doesn't already exist
 
 **Key principle:** REUSE existing architecture through wrappers/adapters, NEVER duplicate logic.
 
