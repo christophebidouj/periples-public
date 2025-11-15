@@ -259,13 +259,10 @@ class ManualTargeting:
             st.error("❌ Aucun héros vivant !")
             return None
 
-        # Header style Arène
+        # Header compact (même style que héros)
         st.markdown(f"""
-        <div class="enemy-header">
-            <div>
-                <h3 style="margin: 0; color: white;">🔴 {enemy.name} attaque !</h3>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">Choisissez la cible</p>
-            </div>
+        <div class="guidance-compact guidance-combat">
+            🎯 {enemy.name} attaque - Sélectionnez la cible
         </div>
         """, unsafe_allow_html=True)
 
