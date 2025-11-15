@@ -26,6 +26,7 @@ streamlit run app.py
 3. Check `Regle absolue verification architecture.md` for architectural rules
 4. **Verify compliance with official game rules in `Livre de règles V3.0.pdf`** - All features must follow the official Périples V3.0 rules, NO invented mechanics
 5. Verify the functionality doesn't already exist
+6. **Explain your plan and ask for user validation** - Before coding, describe what you intend to do and wait for user approval to ensure the request is correctly understood
 
 **Key principle:** REUSE existing architecture through wrappers/adapters, NEVER duplicate logic.
 
