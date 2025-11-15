@@ -936,20 +936,11 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
 
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
-        build_content = """
-        <div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">
-            ⚡ C'EST SON TOUR
-        </div>"""
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
     elif not is_alive:
-        build_content = """
-        <div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">
-            💀 INCONSCIENT
-        </div>"""
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 INCONSCIENT</div>'
     else:
-        build_content = """
-        <div style="font-size: 0.9rem; font-style: italic; color: #90EE90;">
-            ✓ Prêt
-        </div>"""
+        build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #90EE90;">✓ Prêt</div>'
 
     # RÉUTILISE le style existant (même format que premier onglet)
     card_html = get_hero_card_style(hero.name, border_color, background_style)
