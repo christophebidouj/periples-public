@@ -940,52 +940,23 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     if not background_style:
         background_style = f"background: linear-gradient(135deg, {border_color}33, {border_color}11);"
 
-    # Construction HTML de la carte
-    card_html = f"""
-    <div style="
-        border: {border_width} solid {border_color};
-        border-radius: 12px;
-        padding: 12px;
-        margin: 8px 0;
-        {background_style}
-        background-size: cover;
-        background-position: center;
-        background-blend-mode: overlay;
-        background-color: rgba(0, 0, 0, 0.6);
-        box-shadow: {box_shadow};
-        opacity: {opacity};
-        transition: all 0.3s ease;
-    ">
-        <!-- Nom du héros avec icône -->
-        <div style="
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 8px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        ">
-            {hero_icon} {hero.name}
-            {"<span style='color: #FFD700;'>⚡ C'EST SON TOUR</span>" if is_current_turn else ""}
-            {"<span style='color: #ff4444;'>💀 INCONSCIENT</span>" if not is_alive else ""}
-        </div>
+    # Indicateurs de statut
+    status_text = ""
+    if is_current_turn:
+        status_text = "<span style='color: #FFD700; margin-left: 10px;'>⚡ TOUR</span>"
+    elif not is_alive:
+        status_text = "<span style='color: #ff4444; margin-left: 10px;'>💀 KO</span>"
 
-        <!-- Stats en temps réel -->
-        <div style="
-            display: flex;
-            gap: 15px;
-            font-family: monospace;
-            font-size: 1rem;
-            color: #f0f0f0;
-            font-weight: bold;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-        ">
-            <span>❤️ {current_hp}/{max_hp}</span>
-            <span>⚔️ {attack}</span>
-            <span>🛡️ {defense}</span>
-            <span>✨ {magic}</span>
-        </div>
+    # Construction HTML de la carte (COMPACT)
+    card_html = f"""<div style="border: {border_width} solid {border_color}; border-radius: 8px; padding: 8px; margin: 5px 0; {background_style} background-size: cover; background-position: center; background-blend-mode: overlay; background-color: rgba(0, 0, 0, 0.7); box-shadow: {box_shadow}; opacity: {opacity};">
+    <div style="font-size: 1rem; font-weight: bold; color: white; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);">{hero_icon} {hero.name}{status_text}</div>
+    <div style="display: flex; gap: 12px; font-family: monospace; font-size: 0.9rem; color: #f0f0f0; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.9);">
+        <span>❤️ {current_hp}/{max_hp}</span>
+        <span>⚔️ {attack}</span>
+        <span>🛡️ {defense}</span>
+        <span>✨ {magic}</span>
     </div>
-    """
+</div>"""
 
     st.markdown(card_html, unsafe_allow_html=True)
 
