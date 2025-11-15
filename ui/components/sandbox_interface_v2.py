@@ -980,15 +980,21 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     else:
         border_color = "#e74c3c"  # Rouge pour vivant en attente
 
-    # Charger image monstres.jpg (même pour tous les ennemis)
+    # Charger image monstres.jpg (RÉUTILISE même approche que héros avec chemin relatif portable)
     import base64
-    monster_image_path = "/home/user/periples/data/images/monstres.jpg"
+    import os
+    monster_image_path = "data/images/monstres.jpg"
     background_style = ""
-    try:
-        with open(monster_image_path, "rb") as img_file:
-            img_base64 = base64.b64encode(img_file.read()).decode()
-            background_style = f"background-image: url('data:image/jpeg;base64,{img_base64}');"
-    except:
+
+    if os.path.exists(monster_image_path):
+        try:
+            with open(monster_image_path, "rb") as img_file:
+                img_base64 = base64.b64encode(img_file.read()).decode()
+                background_style = f"background-image: url('data:image/jpeg;base64,{img_base64}');"
+        except Exception as e:
+            # Fallback: gradient rouge si erreur de lecture
+            background_style = "background: linear-gradient(135deg, #8b0000, #4a0000);"
+    else:
         # Fallback: gradient rouge si image non disponible
         background_style = "background: linear-gradient(135deg, #8b0000, #4a0000);"
 
