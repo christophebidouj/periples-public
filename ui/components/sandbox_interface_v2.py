@@ -959,10 +959,16 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         enemy: Personnage ennemi
         is_current_turn: True si c'est le tour de cet ennemi
     """
+    # Calculer player_count depuis héros vivants (RÉUTILISE pattern existant)
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    heroes = [c['character'] for c in hero_combatants]
+    player_count = len([h for h in heroes if h.is_alive()])
+
     # Récupérer stats en temps réel (RÉUTILISE APIs Enemy)
     current_hp = enemy.current_health
     max_hp = enemy.max_health
-    damage = enemy.damage
+    stats = enemy.get_stats_for_players(player_count)
+    damage = stats['damage']
     defense = enemy.defense
     is_alive = enemy.is_alive()
 
