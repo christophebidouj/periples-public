@@ -2,5 +2,9 @@
 dist/
 build/
 data/
+data/*
+!data/*.png
+!data/*.jpg
+!data/*.jpeg
 *.exe
 *.pkg
