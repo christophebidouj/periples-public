@@ -384,8 +384,9 @@ def configure_combat():
             # DEEPCOPY pour avoir une instance unique par héros
             hero = deepcopy(hero_template)
 
-            # Application build custom si existant
+            # Application build custom si existant, SINON build par défaut selon difficulté
             if hero_code in current_builds:
+                # BUILD CUSTOM (Forge)
                 build = current_builds[hero_code]
                 equipment_codes = build.get('equipment', [])
                 equipment_list = [eq for eq in equipment_data if eq.code in equipment_codes]
@@ -404,6 +405,45 @@ def configure_combat():
                         hero.add_abilities(hero_abilities)
                         for num in abilities:
                             hero.unlock_ability(num)
+            else:
+                # BUILD PAR DÉFAUT selon difficulté choisie (RÉUTILISE API existante)
+                from hero_builds_data import get_hero_detailed_build
+
+                # Récupérer difficulté choisie dans l'onglet Sélection
+                hero_difficulties = st.session_state.get('hero_difficulties', {})
+                difficulty_full = hero_difficulties.get(hero_code, "🔵 Normal")
+
+                # Extraction du nom sans emoji (même logique que app.py)
+                if "Facile" in difficulty_full:
+                    difficulty = "Facile"
+                elif "Difficile" in difficulty_full:
+                    difficulty = "Difficile"
+                else:
+                    difficulty = "Normal"
+
+                # Charger build détaillé depuis hero_builds_data.py
+                build_config = get_hero_detailed_build(hero_code, difficulty)
+
+                if build_config:
+                    # Équipements
+                    equipment_codes = build_config.get('equipment', [])
+                    equipment_list = [eq for eq in equipment_data if eq.code in equipment_codes]
+                    hero.equip_items(equipment_list, build_config.get('name', f'Build {difficulty}'))
+
+                    # Potions
+                    potions = build_config.get('potions', {})
+                    if potions and hasattr(hero, 'set_potions_from_selection'):
+                        hero.set_potions_from_selection(potions.get('small', 0), potions.get('large', 0))
+
+                    # Capacités (abilities_level = nombre de capacités à débloquer)
+                    abilities_level = build_config.get('abilities_level', 0)
+                    if abilities_level > 0 and hasattr(hero, 'abilities'):
+                        hero_abilities = loader.get_hero_abilities(hero_code)
+                        if hero_abilities:
+                            hero.add_abilities(hero_abilities)
+                            # Débloquer capacités 1 à abilities_level
+                            for num in range(1, min(abilities_level + 1, 7)):  # Max 6 capacités
+                                hero.unlock_ability(num)
 
             # Initialisation combat
             hero.reset_health()
