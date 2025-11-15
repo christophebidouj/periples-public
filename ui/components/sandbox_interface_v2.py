@@ -18,6 +18,7 @@ from models.combat.initiative_manager import InitiativeManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
 from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon
+from ui.styling import get_hero_card_style
 
 # === CSS STYLE ARÈNE ===
 
@@ -892,13 +893,29 @@ def use_potion_action(char: Character):
 
 def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     """
-    Affiche une carte héros pour le combat avec image et stats en temps réel
-    RÉUTILISE les APIs existantes (images, stats Character)
+    Affiche une carte héros pour le combat avec format "carte à collectionner"
+    RÉUTILISE get_hero_card_style() de ui.styling (même format que premier onglet)
 
     Args:
         hero: Personnage héros
         is_current_turn: True si c'est le tour de ce héros
     """
+    # Récupérer stats en temps réel (RÉUTILISE APIs Character)
+    current_hp = hero.current_health
+    max_hp = hero.get_total_health()
+    attack = hero.get_total_damage()
+    defense = hero.get_total_parade()
+    magic = hero.get_total_spells()
+    is_alive = hero.is_alive()
+
+    # Détermination border color selon l'état
+    if is_current_turn:
+        border_color = "#FFD700"  # Doré pour tour actuel
+    elif not is_alive:
+        border_color = "#666"  # Gris pour mort
+    else:
+        border_color = "#27ae60"  # Vert pour vivant en attente
+
     # Récupérer image (RÉUTILISE API ui_elements.py)
     image_path = get_hero_image_path(hero.name)
     background_style = ""
@@ -907,56 +924,37 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         if img_base64:
             background_style = f"background-image: url('data:image/jpeg;base64,{img_base64}');"
 
-    # Récupérer stats en temps réel (RÉUTILISE APIs Character)
-    current_hp = hero.current_health
-    max_hp = hero.get_total_health()
-    attack = hero.get_total_damage()
-    defense = hero.get_total_parade()
-    magic = hero.get_total_spells()
-    precision = hero.get_total_precision() if hasattr(hero, 'get_total_precision') else hero.precision
-    is_alive = hero.is_alive()
-
-    # Icône héros (RÉUTILISE API ui_elements.py)
-    hero_icon = get_hero_icon(hero.name)
-
-    # Détermination des couleurs selon l'état
-    if is_current_turn:
-        border_color = "#FFD700"  # Doré pour tour actuel
-        border_width = "3px"
-        box_shadow = "0 4px 20px rgba(255, 215, 0, 0.6)"
-    elif not is_alive:
-        border_color = "#666"  # Gris pour mort
-        border_width = "2px"
-        box_shadow = "none"
-    else:
-        border_color = "#27ae60"  # Vert pour vivant en attente
-        border_width = "2px"
-        box_shadow = "0 2px 8px rgba(39, 174, 96, 0.3)"
-
-    # Opacité si mort
-    opacity = "0.5" if not is_alive else "1.0"
-
     # Fallback background si pas d'image
     if not background_style:
         background_style = f"background: linear-gradient(135deg, {border_color}33, {border_color}11);"
 
-    # Indicateurs de statut
-    status_text = ""
-    if is_current_turn:
-        status_text = "<span style='color: #FFD700; margin-left: 10px;'>⚡ TOUR</span>"
-    elif not is_alive:
-        status_text = "<span style='color: #ff4444; margin-left: 10px;'>💀 KO</span>"
+    # Préparer stats_content (même format que premier onglet)
+    stats_content = f"""
+    <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
+        ❤️ {current_hp}/{max_hp} • ⚔️ {attack} • 🛡️ {defense} • ✨ {magic}
+    </div>"""
 
-    # Construction HTML de la carte (COMPACT)
-    card_html = f"""<div style="border: {border_width} solid {border_color}; border-radius: 8px; padding: 8px; margin: 5px 0; {background_style} background-size: cover; background-position: center; background-blend-mode: overlay; background-color: rgba(0, 0, 0, 0.7); box-shadow: {box_shadow}; opacity: {opacity};">
-    <div style="font-size: 1rem; font-weight: bold; color: white; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);">{hero_icon} {hero.name}{status_text}</div>
-    <div style="display: flex; gap: 12px; font-family: monospace; font-size: 0.9rem; color: #f0f0f0; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.9);">
-        <span>❤️ {current_hp}/{max_hp}</span>
-        <span>⚔️ {attack}</span>
-        <span>🛡️ {defense}</span>
-        <span>✨ {magic}</span>
-    </div>
-</div>"""
+    # Préparer build_content (remplacé par status pour le combat)
+    if is_current_turn:
+        build_content = """
+        <div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">
+            ⚡ C'EST SON TOUR
+        </div>"""
+    elif not is_alive:
+        build_content = """
+        <div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">
+            💀 INCONSCIENT
+        </div>"""
+    else:
+        build_content = """
+        <div style="font-size: 0.9rem; font-style: italic; color: #90EE90;">
+            ✓ Prêt
+        </div>"""
+
+    # RÉUTILISE le style existant (même format que premier onglet)
+    card_html = get_hero_card_style(hero.name, border_color, background_style)
+    card_html = card_html.replace("{stats_content}", stats_content)
+    card_html = card_html.replace("{build_content}", build_content)
 
     st.markdown(card_html, unsafe_allow_html=True)
 
