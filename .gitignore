@@ -1,6 +1,7 @@
 # Ignorer les builds et exécutables
 dist/
 build/
+#ignorer les fichiers data mais laisser les images
 data/*
 !data/images/
 data/images/*
@@ -9,3 +10,9 @@ data/images/*
 !data/images/*.jpeg
 *.exe
 *.pkg
+#ignorer les fichiers temporaires et les fichiers compilés
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
