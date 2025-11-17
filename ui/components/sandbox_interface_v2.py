@@ -479,6 +479,12 @@ def configure_combat():
         st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
+        # RÉCUPÉRATION DU PARAMÈTRE INITIATIVE depuis l'onglet Sélection
+        simulation_config = st.session_state.get('simulation_config', {})
+        rules_config = simulation_config.get('rules', {})
+        initiative_enabled = rules_config.get('initiative', True)  # Par défaut: activé
+        st.session_state.sandbox_v2_initiative_enabled = initiative_enabled
+
         # Architecture existante
         rules = GameRules(
             ranged_attacks=True,
@@ -538,6 +544,38 @@ def generate_initiative():
     # LOGIQUE UI : Sauvegarder l'état du jeu (système Undo/Redo)
     save_game_state("Initiative générée")
 
+def organize_teams_without_initiative():
+    """
+    Organise les combattants par équipe (héros puis ennemis) sans jets d'initiative
+    Utilisé quand la checkbox "Initiative" est décochée dans l'onglet Sélection
+
+    RÈGLE : Pas de jets de dés, ordre manuel choisi par l'utilisateur
+    - Héros d'abord (ordre de sélection)
+    - Ennemis ensuite (ordre de sélection)
+    - Pas de tri par initiative (initiative = 0 pour tous)
+    """
+    # Séparer héros et ennemis
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+    # Pas d'initiative, on laisse à 0 pour tous
+    for combatant in hero_combatants + enemy_combatants:
+        combatant['initiative'] = 0
+
+    # Réorganiser : héros d'abord, puis ennemis
+    st.session_state.sandbox_v2_combatants = hero_combatants + enemy_combatants
+
+    # Log de début de combat (pas d'ordre d'initiative)
+    st.session_state.sandbox_v2_log.append("")
+    st.session_state.sandbox_v2_log.append("=== MODE MANUEL - Sélectionnez qui joue ===")
+    st.session_state.sandbox_v2_log.append("=== ROUND 1 ===")
+
+    # Pas de tour actuel défini au départ (l'utilisateur choisit)
+    st.session_state.sandbox_v2_current_turn_index = -1
+
+    # Sauvegarder l'état initial
+    save_game_state("Début combat manuel")
+
 # === AFFICHAGE STYLÉ ===
 
 def display_guidance_banner():
@@ -577,10 +615,25 @@ def get_current_combatant() -> Optional[Dict]:
     return None
 
 def next_turn():
-    """Passe au tour suivant EN SAUTANT les combattants morts (utilise is_alive())"""
+    """
+    Passe au tour suivant EN SAUTANT les combattants morts (utilise is_alive())
+
+    Comportement selon le mode :
+    - MODE INITIATIVE : Passe automatiquement au combattant suivant dans l'ordre
+    - MODE MANUEL : Réinitialise à -1 pour attendre une nouvelle sélection manuelle
+    """
     if not st.session_state.sandbox_v2_combatants:
         return
 
+    # Vérifier le mode
+    initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled', True)
+
+    if not initiative_enabled:
+        # MODE MANUEL : Retour à "aucun tour actuel" après une action
+        st.session_state.sandbox_v2_current_turn_index = -1
+        return
+
+    # MODE INITIATIVE : Passage automatique au tour suivant
     max_iterations = len(st.session_state.sandbox_v2_combatants) + 1
     iterations = 0
 
@@ -1067,6 +1120,100 @@ def display_combat_status():
         else:
             st.warning("Aucun ennemi trouvé")
 
+def display_combat_status_team_mode():
+    """
+    Affiche l'état du combat par ÉQUIPE (sans initiative)
+    - Ligne 1 : Tous les héros alignés horizontalement
+    - Ligne 2 : Tous les ennemis alignés horizontalement
+    - Boutons "▶️ À son tour" pour sélection manuelle
+    RÉUTILISE display_hero_combat_card() et display_enemy_combat_card()
+    """
+    # Séparer héros et ennemis depuis combattants
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+    # Déterminer quel combattant a le tour actuel (si défini)
+    current_combatant = get_current_combatant()
+    current_character_id = current_combatant['id'] if current_combatant else None
+
+    # === LIGNE 1 : HÉROS ===
+    st.markdown("### 🦸 Héros")
+    if hero_combatants:
+        # Créer colonnes pour aligner héros horizontalement
+        hero_cols = st.columns(len(hero_combatants))
+        for idx, hero_data in enumerate(hero_combatants):
+            with hero_cols[idx]:
+                hero = hero_data['character']
+                is_current = (hero_data['id'] == current_character_id)
+
+                # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
+                display_hero_combat_card(hero, is_current_turn=is_current)
+
+                # Bouton "À son tour" si vivant et pas déjà en cours
+                if hero.is_alive() and not is_current:
+                    if st.button(
+                        "▶️ À son tour",
+                        key=f"select_hero_{hero_data['id']}",
+                        use_container_width=True,
+                        type="primary"
+                    ):
+                        select_combatant_manually(hero_data['id'])
+    else:
+        st.warning("Aucun héros trouvé")
+
+    # === LIGNE 2 : ENNEMIS ===
+    st.markdown("### 👹 Ennemis")
+    if enemy_combatants:
+        # Créer colonnes pour aligner ennemis horizontalement
+        enemy_cols = st.columns(len(enemy_combatants))
+        for idx, enemy_data in enumerate(enemy_combatants):
+            with enemy_cols[idx]:
+                enemy = enemy_data['character']
+                is_current = (enemy_data['id'] == current_character_id)
+
+                # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
+                display_enemy_combat_card(enemy, is_current_turn=is_current)
+
+                # Bouton "À son tour" si vivant et pas déjà en cours
+                if enemy.is_alive() and not is_current:
+                    if st.button(
+                        "▶️ À son tour",
+                        key=f"select_enemy_{enemy_data['id']}",
+                        use_container_width=True,
+                        type="primary"
+                    ):
+                        select_combatant_manually(enemy_data['id'])
+    else:
+        st.warning("Aucun ennemi trouvé")
+
+def select_combatant_manually(combatant_id: str):
+    """
+    Sélectionne manuellement un combattant pour son tour
+    Utilisé en mode sans initiative
+    """
+    # Trouver l'index du combattant sélectionné
+    for idx, combatant in enumerate(st.session_state.sandbox_v2_combatants):
+        if combatant['id'] == combatant_id:
+            st.session_state.sandbox_v2_current_turn_index = idx
+
+            # Initialiser le tour du combattant (jetons de parade)
+            char = combatant['character']
+            if combatant['faction'] == 'hero':
+                char.start_hero_turn()
+            else:
+                char.start_enemy_turn()
+
+            # Log
+            name = char.name
+            faction = "🦸" if combatant['faction'] == 'hero' else "👹"
+            st.session_state.sandbox_v2_log.append(f"{faction} {name} commence son tour")
+
+            # Sauvegarder l'état
+            save_game_state(f"{name} sélectionné")
+
+            st.rerun()
+            break
+
 def display_initiative_order():
     """Affiche l'ordre d'initiative (ordre décroissant, mélangé héros/ennemis)"""
     st.markdown("### 🎲 Ordre d'Initiative")
@@ -1138,25 +1285,47 @@ def main_sandbox_v2():
 
     # === PHASE INITIATIVE ===
     elif phase == 'INITIATIVE':
-        st.info("🎲 Cliquez pour générer l'ordre d'initiative et commencer le combat")
+        # Vérifier si l'initiative est activée
+        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled', True)
 
-        # Bouton génération initiative
-        if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
-            generate_initiative()
-            st.session_state.sandbox_v2_phase = 'COMBAT'
-            st.session_state.sandbox_v2_current_turn_index = 0
-            st.rerun()
+        if initiative_enabled:
+            # MODE INITIATIVE ACTIVÉE : Jets de dés D20
+            st.info("🎲 Cliquez pour générer l'ordre d'initiative et commencer le combat")
+
+            # Bouton génération initiative
+            if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
+                generate_initiative()
+                st.session_state.sandbox_v2_phase = 'COMBAT'
+                st.session_state.sandbox_v2_current_turn_index = 0
+                st.rerun()
+        else:
+            # MODE MANUEL : Pas d'initiative, organisation par équipe
+            st.info("🎮 Mode manuel activé - Vous choisirez l'ordre de jeu")
+            st.write("Les combattants sont organisés par équipe : héros puis ennemis.")
+
+            # Bouton pour commencer le combat en mode manuel
+            if st.button("▶️ Commencer le Combat (Mode Manuel)", type="primary", use_container_width=True):
+                organize_teams_without_initiative()
+                st.session_state.sandbox_v2_phase = 'COMBAT'
+                st.rerun()
 
         return
 
     # === PHASE COMBAT ===
     elif phase == 'COMBAT':
-        # Afficher ordre initiative
-        with st.expander("🎲 Ordre d'Initiative", expanded=False):
-            display_initiative_order()
+        # Déterminer le mode d'affichage
+        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled', True)
 
-        # Status combat
-        display_combat_status()
+        if initiative_enabled:
+            # MODE INITIATIVE : Afficher ordre d'initiative et cartes dans l'ordre des jets
+            with st.expander("🎲 Ordre d'Initiative", expanded=False):
+                display_initiative_order()
+
+            # Status combat avec ordre d'initiative
+            display_combat_status()
+        else:
+            # MODE MANUEL : Afficher cartes par équipe avec boutons de sélection
+            display_combat_status_team_mode()
 
         st.markdown("---")
 
@@ -1196,6 +1365,10 @@ def main_sandbox_v2():
                 display_hero_interface(current)
             else:
                 display_enemy_interface(current)
+        else:
+            # Aucun tour actuel : En mode manuel, inviter l'utilisateur à sélectionner
+            if not initiative_enabled:
+                st.info("🎮 Sélectionnez un combattant pour jouer son tour (cliquez sur '▶️ À son tour')")
 
     # === JOURNAL DE COMBAT ===
     if st.session_state.sandbox_v2_log:
