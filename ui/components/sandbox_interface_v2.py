@@ -872,9 +872,13 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             player_count = len([h for h in heroes_list if h.is_alive()])
             adapter = st.session_state.sandbox_v2_adapter
             adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+
+            # Marquer qu'une attaque a été effectuée (empêche d'attaquer à nouveau)
+            char.can_attack_this_turn = False
+
             st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")
-            next_turn()
+            # NE PAS appeler next_turn() - le héros peut encore agir (boire potion, etc.)
             st.rerun()
 
         # Bouton annuler
@@ -883,11 +887,16 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             st.rerun()
     else:
         # Afficher boutons d'action normaux
-        # Attaque
-        if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
-            st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
-            st.session_state.sandbox_v2_current_actor = char
-            st.rerun()
+        # Attaque (désactivé si déjà attaqué ce tour)
+        can_attack = char.can_attack_this_turn if hasattr(char, 'can_attack_this_turn') else True
+
+        if can_attack:
+            if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
+                st.session_state.sandbox_v2_current_actor = char
+                st.rerun()
+        else:
+            st.button("⚔️ Attaquer (déjà fait)", key=f"sandbox_attack_{combatant_id}", disabled=True, use_container_width=True)
 
         # Passer
         if st.button("⏭️ Passer le Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
@@ -1030,13 +1039,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 # === ACTIONS DE COMBAT ===
 
 def use_ability_action(char: Character, ability):
-    """Utilise une capacité"""
+    """Utilise une capacité - NE termine PAS le tour automatiquement"""
     if hasattr(char, 'use_ability'):
         action = char.use_ability(ability)
         if action.success:
             st.session_state.sandbox_v2_log.append(f"🔮 {char.name} utilise {ability.name}")
             save_game_state(f"{char.name} utilise {ability.name}")
-            next_turn()
+            # NE PAS appeler next_turn() - le héros peut encore agir (boire potion, etc.)
+            # Note: ability.prevents_attack a déjà mis can_attack_this_turn = False si nécessaire
             st.success(f"✅ {ability.name} utilisée !")
             st.rerun()
         else:
