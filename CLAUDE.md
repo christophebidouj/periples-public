@@ -352,17 +352,35 @@ result = hero.use_specific_potion(PotionType.LARGE, target=other_hero)
 # target parameter allows giving potions to allies
 ```
 
-**Sandbox V2 Potion Actions:**
+**Turn Management - Multiple Actions Per Turn:**
 
-1. **Boire soi-même (Drink self):**
+In Sandbox V2, heroes can perform **multiple actions in a single turn**. The player controls when to end the turn.
+
+**Actions that DO NOT end the turn:**
+1. **⚔️ Attaquer (Attack):**
+   - Does NOT end the turn
+   - Marks `can_attack_this_turn = False` to prevent multiple attacks
+   - Button becomes "⚔️ Attaquer (déjà fait)" and is disabled after use
+   - Hero can still use abilities or drink potions after attacking
+
+2. **🔮 Utiliser une capacité (Use ability):**
+   - Does NOT end the turn
+   - Abilities with `prevents_attack = True` will set `can_attack_this_turn = False`
+   - Hero can still drink potions after using ability
+
+3. **🩸/❤️‍🩹 Boire une potion (Drink potion self):**
    - Buttons: "🩸 Petite" and "❤️‍🩹 Grande"
-   - Does NOT end the hero's turn
+   - Does NOT end the turn
    - Marks `potion_used_this_turn = True`
-   - Hero can still attack or use abilities after drinking
+   - Hero can attack or use abilities after drinking
 
-2. **Faire Boire une Potion (Give to ally):**
-   - Button: "🤝 Faire Boire une Potion"
-   - **Exclusive action:** Ends the turn immediately after use
+**Actions that END the turn:**
+1. **⏭️ Passer le Tour (Skip turn):**
+   - Explicitly ends the turn
+   - Player chooses when they're done
+
+2. **🤝 Faire Boire une Potion (Give potion to ally):**
+   - **Exclusive action:** Ends the turn immediately
    - **Cannot be used if any action was already taken this turn**
    - Workflow:
      1. Click "Faire Boire" button
@@ -370,12 +388,23 @@ result = hero.use_specific_potion(PotionType.LARGE, target=other_hero)
      3. Select target ally
      4. Turn ends automatically
 
-**Action Exclusivity Rules:**
+**Strategic Combinations:**
+
+Heroes can combine actions in a single turn:
+- ⚔️ Attack an enemy → 🩸 Drink a potion (heal after taking retaliation damage)
+- 🩸 Drink a potion → ⚔️ Attack an enemy (heal before engaging)
+- 🔮 Use ability → 🩸 Drink a potion
+- 🩸 Drink multiple potions (as long as they have them)
+
+**Action Restrictions:**
 
 The "Faire Boire" button is disabled if:
 - `char.action_taken_this_turn == True` (hero used an ability that prevents attack)
 - `char.potion_used_this_turn == True` (hero already drank a potion)
 - `char.can_attack_this_turn == False` (hero already attacked)
+
+The "Attaquer" button is disabled if:
+- `char.can_attack_this_turn == False` (hero already attacked this turn)
 
 **UI Implementation (ui/components/sandbox_interface_v2.py):**
 
@@ -385,22 +414,37 @@ from models.character import Character, Enemy, PotionType
 
 # Action functions
 def use_small_potion_action(char: Character):
-    """Drink small potion - does not end turn"""
+    """Drink small potion - does NOT end turn"""
     result = char.use_specific_potion(PotionType.SMALL)
-    # Log and display result
+    save_game_state(...)
+    st.rerun()  # Refresh interface, turn stays active
 
 def use_large_potion_action(char: Character):
-    """Drink large potion - does not end turn"""
+    """Drink large potion - does NOT end turn"""
     result = char.use_specific_potion(PotionType.LARGE)
-    # Log and display result
+    save_game_state(...)
+    st.rerun()  # Refresh interface, turn stays active
 
 def give_potion_to_ally_action(giver: Character, target: Character, potion_type: PotionType):
     """Give potion to ally - ENDS TURN"""
     result = giver.use_specific_potion(potion_type, target=target)
     next_turn()  # Exclusive action - turn ends
+    st.rerun()
+
+def use_ability_action(char: Character, ability):
+    """Use ability - does NOT end turn"""
+    action = char.use_ability(ability)
+    save_game_state(...)
+    st.rerun()  # Refresh interface, turn stays active
+
+# Attack action
+adapter.combat_actions.hero_attack(char, [target], player_count, log)
+char.can_attack_this_turn = False  # Prevent multiple attacks
+save_game_state(...)
+st.rerun()  # Refresh interface, turn stays active
 ```
 
-**Location:** Potion buttons are displayed in the hero action panel (lines 895-1024 in `sandbox_interface_v2.py`)
+**Location:** Potion buttons are displayed in the hero action panel (lines 908-1032 in `sandbox_interface_v2.py`)
 
 ## Git Workflow
 
