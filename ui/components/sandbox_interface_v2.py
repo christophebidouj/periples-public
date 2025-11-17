@@ -610,6 +610,29 @@ def display_guidance_banner():
                 ⚔️ {name} ({faction}) - C'est votre tour !
             </div>
             """, unsafe_allow_html=True)
+        else:
+            # Pas de tour actuel : afficher la dernière action sur fond bleu
+            if st.session_state.sandbox_v2_log:
+                # Chercher la dernière ligne significative (pas vide, pas un séparateur)
+                last_action = None
+                for line in reversed(st.session_state.sandbox_v2_log):
+                    if line.strip() and not line.startswith("===") and not line.startswith("---"):
+                        last_action = line
+                        break
+
+                if last_action:
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(25, 118, 210, 0.1));
+                               border-left: 5px solid #2196f3;
+                               border-radius: 8px;
+                               padding: 12px 16px;
+                               text-align: center;
+                               font-weight: bold;
+                               color: #1565c0;
+                               box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);'>
+                        📋 Dernière action : {last_action}
+                    </div>
+                    """, unsafe_allow_html=True)
 
 def get_current_combatant() -> Optional[Dict]:
     """Retourne le combattant actuel"""
@@ -1405,8 +1428,76 @@ def main_sandbox_v2():
     # === JOURNAL DE COMBAT ===
     if st.session_state.sandbox_v2_log and phase == 'COMBAT':
         with st.expander("📜 Journal de Combat", expanded=False):
-            for line in st.session_state.sandbox_v2_log[-20:]:
-                st.text(line)
+            log_to_display = st.session_state.sandbox_v2_log[-20:]
+            for line in log_to_display:
+                # Formatage coloré selon le type de ligne
+                if "=== ROUND" in line:
+                    round_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(139, 69, 19, 0.12), rgba(160, 82, 45, 0.08));
+                               border: 2px solid #8b4513;
+                               border-radius: 10px;
+                               padding: 12px;
+                               margin: 15px 0;
+                               text-align: center;
+                               font-weight: bold;
+                               font-size: 16px;
+                               color: #8b4513;
+                               font-family: "Cinzel", serif;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(round_styled, unsafe_allow_html=True)
+                elif "🦸" in line and "commence son tour" in line:
+                    hero_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(34, 139, 34, 0.12), rgba(0, 100, 0, 0.08));
+                               border-left: 4px solid #228b22;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #006400;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(hero_styled, unsafe_allow_html=True)
+                elif "👹" in line and "commence son tour" in line:
+                    enemy_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(220, 20, 60, 0.12), rgba(139, 0, 0, 0.08));
+                               border-left: 4px solid #dc143c;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #8b0000;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(enemy_styled, unsafe_allow_html=True)
+                elif "💀" in line or "mort" in line.lower() or "inconscient" in line.lower():
+                    death_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(128, 128, 128, 0.12), rgba(64, 64, 64, 0.08));
+                               border-left: 4px solid #808080;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #404040;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(death_styled, unsafe_allow_html=True)
+                elif "🎯" in line or "attaque" in line.lower():
+                    attack_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(255, 69, 0, 0.12), rgba(255, 140, 0, 0.08));
+                               border-left: 4px solid #ff4500;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #cc3700;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(attack_styled, unsafe_allow_html=True)
+                else:
+                    # Ligne normale
+                    st.markdown(f"<div style='padding: 4px 0; color: #e0e0e0;'>{line}</div>", unsafe_allow_html=True)
 
     # === BOUTON NOUVEAU ROUND (MODE MANUEL) ===
     if phase == 'COMBAT' and not initiative_enabled:
