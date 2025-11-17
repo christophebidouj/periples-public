@@ -433,16 +433,29 @@ def tab_selection(data):
     if 'initiative_setting' not in st.session_state:
         st.session_state.initiative_setting = True
 
+    # Initialiser la valeur de critiques si elle n'existe pas
+    if 'criticals_setting' not in st.session_state:
+        st.session_state.criticals_setting = True
+
     # Callback pour sauvegarder immédiatement la valeur de l'initiative
     def on_initiative_change():
         st.session_state.initiative_setting = st.session_state.combat_initiative
+
+    # Callback pour sauvegarder immédiatement la valeur des critiques
+    def on_criticals_change():
+        st.session_state.criticals_setting = st.session_state.combat_criticals
 
     col1, col2 = st.columns(2)
     with col1:
         rules = {
             'ranged_attacks': True,
             'magical_damage': True,
-            'criticals': st.checkbox("🎯 Critiques", value=True, key='combat_criticals'),
+            'criticals': st.checkbox(
+                "🎯 Critiques",
+                value=st.session_state.criticals_setting,
+                key='combat_criticals',
+                on_change=on_criticals_change
+            ),
             'initiative': st.checkbox(
                 "🎲 Initiative",
                 value=st.session_state.initiative_setting,

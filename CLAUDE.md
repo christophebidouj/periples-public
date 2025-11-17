@@ -254,6 +254,82 @@ turn_manager.heroes_turn(heroes, enemies, player_count, log, active_pets)
 turn_manager.enemies_turn(enemies, heroes, player_count, log, active_pets)
 ```
 
+## Configuration Parameters (Initiative & Critiques)
+
+The application uses **global configuration parameters** synchronized between the Selection tab (Onglet 1) and all combat interfaces (including Sandbox V2).
+
+### Initiative Setting
+
+**Checkbox location:** `app.py:459-464` (Onglet Sélection)
+**Storage:** `st.session_state.initiative_setting` (Boolean)
+**Default value:** `True`
+
+**How it works:**
+1. User toggles "🎲 Initiative" checkbox in Selection tab
+2. Callback `on_initiative_change()` saves value to `initiative_setting`
+3. Sandbox V2 reads this value to determine display mode:
+   - `True` → Initiative mode with D20 rolls
+   - `False` → Manual mode with turn selection buttons
+
+**Where it's used:**
+- `sandbox_interface_v2.py:1504` - Choose between initiative/manual mode
+- `sandbox_interface_v2.py:1532` - Display appropriate combat status
+
+### Criticals Setting
+
+**Checkbox location:** `app.py:453-458` (Onglet Sélection)
+**Storage:** `st.session_state.criticals_setting` (Boolean)
+**Default value:** `True`
+
+**How it works:**
+1. User toggles "🎯 Critiques" checkbox in Selection tab
+2. Callback `on_criticals_change()` saves value to `criticals_setting`
+3. Sandbox V2 reads this value when creating `GameRules`:
+   - `True` → Critical hits (Nat 20 = 2x damage) and critical failures (Nat 1) are active
+   - `False` → Critical mechanics are completely disabled
+
+**Where it's used:**
+- `sandbox_interface_v2.py:491` - Read setting from session_state
+- `sandbox_interface_v2.py:497` - Pass to `GameRules(criticals=...)`
+- `sandbox_interface_v2.py:1456` - Display "🎯 Critiques ON/OFF" badge in UI
+- `models/combat/combat_actions.py:59` - Check `if self.rules.criticals and attack_roll == 20`
+- `models/combat/combat_actions.py:87` - Check `if self.rules.criticals and attack_roll == 1`
+
+**Important:** The critical mechanics are controlled by the `GameRules.criticals` parameter. When `False`, the code paths for critical hits and failures are never executed, ensuring the mechanic is truly disabled.
+
+### Pattern for Adding New Global Settings
+
+To add a new global setting that syncs between Selection tab and combat interfaces:
+
+1. **Initialize in app.py** (before checkboxes):
+   ```python
+   if 'my_setting' not in st.session_state:
+       st.session_state.my_setting = True  # default value
+   ```
+
+2. **Create callback in app.py**:
+   ```python
+   def on_my_setting_change():
+       st.session_state.my_setting = st.session_state.combat_my_setting
+   ```
+
+3. **Add checkbox in app.py**:
+   ```python
+   st.checkbox(
+       "⚙️ My Setting",
+       value=st.session_state.my_setting,
+       key='combat_my_setting',
+       on_change=on_my_setting_change
+   )
+   ```
+
+4. **Read in Sandbox V2** (`configure_combat()` or `main_sandbox_v2()`):
+   ```python
+   my_setting_enabled = st.session_state.get('my_setting', True)
+   ```
+
+5. **Use in business logic** (pass to GameRules or use directly)
+
 ## Git Workflow
 
 **Branch naming:** All development branches must start with `claude/` and end with the session ID.

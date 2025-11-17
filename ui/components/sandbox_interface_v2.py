@@ -485,12 +485,16 @@ def configure_combat():
 
         # NOTE: On ne stocke plus sandbox_v2_initiative_enabled pour éviter les désynchronisations
         # On lit toujours directement depuis initiative_setting
+        # Idem pour criticals_setting (source unique de vérité)
+
+        # Lire le paramètre critiques depuis session_state
+        criticals_enabled = st.session_state.get('criticals_setting', True)
 
         # Architecture existante
         rules = GameRules(
             ranged_attacks=True,
             magical_damage=True,
-            criticals=True,
+            criticals=criticals_enabled,  # Lecture dynamique depuis checkbox Onglet 1
             abilities_enabled=True
         )
 
@@ -1427,12 +1431,15 @@ def main_sandbox_v2():
 
     st.title("🎮 Sandbox V2")
 
-    # Indicateur de mode
+    # Indicateurs de mode
     initiative_mode = st.session_state.get('initiative_setting', True)
+    criticals_mode = st.session_state.get('criticals_setting', True)
+    criticals_badge = "🎯 Critiques ON" if criticals_mode else "🎯 Critiques OFF"
+
     if initiative_mode:
-        st.caption("✅ Ciblage manuel | 🎲 Initiative D20 | Système Undo/Redo")
+        st.caption(f"✅ Ciblage manuel | 🎲 Initiative D20 | {criticals_badge} | Système Undo/Redo")
     else:
-        st.caption("✅ Ciblage manuel | 🎮 Ordre Manuel | Système Undo/Redo")
+        st.caption(f"✅ Ciblage manuel | 🎮 Ordre Manuel | {criticals_badge} | Système Undo/Redo")
 
     init_sandbox_state()
 
