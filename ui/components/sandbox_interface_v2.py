@@ -1054,24 +1054,26 @@ def use_potion_action(char: Character):
             st.error(f"❌ {result['message']}")
 
 def use_small_potion_action(char: Character):
-    """Utilise une petite potion (4 PV)"""
+    """Utilise une petite potion (4 PV) - NE termine PAS le tour"""
     if hasattr(char, 'use_specific_potion'):
         result = char.use_specific_potion(PotionType.SMALL)
         if result['success']:
             st.session_state.sandbox_v2_log.append(f"🩸 {char.name} boit une Petite Potion : +{result['healing_done']} PV")
             save_game_state(f"{char.name} utilise Petite Potion")
-            st.success(f"✅ {result['message']}")
+            # NE PAS appeler next_turn() - le héros peut encore agir
+            st.rerun()  # Rafraîchir l'interface pour montrer les changements
         else:
             st.error(f"❌ {result['message']}")
 
 def use_large_potion_action(char: Character):
-    """Utilise une grande potion (100% PV)"""
+    """Utilise une grande potion (100% PV) - NE termine PAS le tour"""
     if hasattr(char, 'use_specific_potion'):
         result = char.use_specific_potion(PotionType.LARGE)
         if result['success']:
             st.session_state.sandbox_v2_log.append(f"❤️‍🩹 {char.name} boit une Grande Potion : +{result['healing_done']} PV")
             save_game_state(f"{char.name} utilise Grande Potion")
-            st.success(f"✅ {result['message']}")
+            # NE PAS appeler next_turn() - le héros peut encore agir
+            st.rerun()  # Rafraîchir l'interface pour montrer les changements
         else:
             st.error(f"❌ {result['message']}")
 
