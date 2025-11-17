@@ -610,29 +610,6 @@ def display_guidance_banner():
                 ⚔️ {name} ({faction}) - C'est votre tour !
             </div>
             """, unsafe_allow_html=True)
-        else:
-            # Pas de tour actuel : afficher la dernière action sur fond bleu
-            if st.session_state.sandbox_v2_log:
-                # Chercher la dernière ligne significative (pas vide, pas un séparateur)
-                last_action = None
-                for line in reversed(st.session_state.sandbox_v2_log):
-                    if line.strip() and not line.startswith("===") and not line.startswith("---"):
-                        last_action = line
-                        break
-
-                if last_action:
-                    st.markdown(f"""
-                    <div style='background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(25, 118, 210, 0.1));
-                               border-left: 5px solid #2196f3;
-                               border-radius: 8px;
-                               padding: 12px 16px;
-                               text-align: center;
-                               font-weight: bold;
-                               color: #1565c0;
-                               box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);'>
-                        📋 Dernière action : {last_action}
-                    </div>
-                    """, unsafe_allow_html=True)
 
 def get_current_combatant() -> Optional[Dict]:
     """Retourne le combattant actuel"""
@@ -1097,6 +1074,189 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
 
     st.markdown(card_html, unsafe_allow_html=True)
 
+def display_recent_actions():
+    """
+    Affiche une zone de notification avec les dernières actions du combat
+    Zone toujours visible pour donner un retour immédiat à l'utilisateur
+
+    N'affiche rien si seules des lignes d'initialisation (initiative, début de combat)
+    sont présentes. Affiche uniquement quand des ACTIONS réelles ont eu lieu.
+    """
+    if not st.session_state.sandbox_v2_log:
+        return
+
+    def is_initialization_line(line: str) -> bool:
+        """Détecte si une ligne est de l'initialisation (initiative, séparateurs)"""
+        line = line.strip()
+        if not line:
+            return True
+        # Séparateurs de rounds et sections
+        if line.startswith("==="):
+            return True
+        # Lignes d'ordre d'initiative : "N. 🦸/👹 Nom : chiffre"
+        import re
+        if re.match(r'^\d+\.\s*[🦸👹]\s+.+\s*:\s*\d+$', line):
+            return True
+        return False
+
+    # Récupérer les 3 dernières lignes d'ACTION (pas d'initialisation)
+    action_lines = []
+    for line in reversed(st.session_state.sandbox_v2_log):
+        # Filtrer les lignes d'initialisation
+        if not is_initialization_line(line):
+            action_lines.append(line)
+        # Arrêter après 3 lignes d'action
+        if len(action_lines) >= 3:
+            break
+
+    # Si aucune action réelle, ne rien afficher
+    if not action_lines:
+        return
+
+    # Inverser pour afficher dans l'ordre chronologique
+    action_lines = list(reversed(action_lines))
+
+    # Construire le HTML stylé pour la zone de notification
+    lines_html = ""
+    for line in action_lines:
+        lines_html += f"<div style='padding: 4px 0; font-family: monospace; font-size: 0.95rem;'>{line}</div>"
+
+    notification_html = f"""
+    <div style="
+        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 100%);
+        border-left: 5px solid #4a9eff;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 10px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">
+        <div style="
+            font-weight: bold;
+            color: #4a9eff;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+        ">
+            📢 Dernières actions
+        </div>
+        <div style="color: #e0e0e0;">
+            {lines_html}
+        </div>
+    </div>
+    """
+
+    st.markdown(notification_html, unsafe_allow_html=True)
+
+def display_combat_log_colored():
+    """
+    Affiche le journal de combat avec formatage coloré et scrollable
+    - Container scrollable avec hauteur fixe
+    - Couleurs par type d'action pour meilleure lisibilité
+    - Style terminal/arène cohérent avec le thème
+    """
+    if not st.session_state.sandbox_v2_log:
+        st.info("Aucune action de combat pour le moment")
+        return
+
+    def colorize_line(line: str) -> str:
+        """Applique couleur selon le type de ligne"""
+        line_stripped = line.strip()
+
+        # Liste des 8 héros de Périples
+        HERO_NAMES = ["Atucan", "Liarie", "Kraor", "Elneha", "Vahid", "Vega", "Ayana", "Myla"]
+
+        # Ligne vide
+        if not line_stripped:
+            return '<div style="height: 5px;"></div>'
+
+        # Séparateurs de rounds (=== ROUND X ===)
+        if line_stripped.startswith("==="):
+            return f'<div style="color: #f1c40f; font-weight: bold; margin: 10px 0 5px 0; font-size: 1.05rem;">{line_stripped}</div>'
+
+        # Lignes d'initiative (numéro au début avec icônes)
+        if line_stripped and line_stripped[0].isdigit() and ("🦸" in line_stripped or "👹" in line_stripped):
+            return f'<div style="color: #f1c40f; padding-left: 10px;">{line_stripped}</div>'
+
+        # PRIORITÉ HAUTE : Lignes indentées (détails d'action) - AVANT les emojis d'attaque
+        if line.startswith("  ") or line.startswith("    "):
+            return f'<div style="color: #17a2b8; padding-left: 20px; font-size: 0.95rem;">{line_stripped}</div>'
+
+        # Capacités magiques (violet) - Priorité haute car contient souvent noms
+        if "🔮" in line_stripped:
+            return f'<div style="color: #9b59b6;">{line_stripped}</div>'
+
+        # Potions (bleu) - Priorité haute
+        if "🧪" in line_stripped:
+            return f'<div style="color: #3498db;">{line_stripped}</div>'
+
+        # Passer tour (orange) - Priorité haute
+        if "⏭️" in line_stripped:
+            return f'<div style="color: #f39c12;">{line_stripped}</div>'
+
+        # Dégâts bloqués par parade (cyan, indenté)
+        if "🛡️" in line_stripped:
+            return f'<div style="color: #17a2b8; padding-left: 20px; font-size: 0.95rem;">{line_stripped}</div>'
+
+        # Mort/KO (gris)
+        if "💀" in line_stripped:
+            return f'<div style="color: #95a5a6; font-weight: bold;">{line_stripped}</div>'
+
+        # Attaques : Détecter si c'est un héros ou un ennemi qui attaque
+        if "⚔️" in line_stripped or "✨" in line_stripped or "💥" in line_stripped or "🐾" in line_stripped:
+            text_after_emoji = line_stripped.split(' ', 1)[1] if ' ' in line_stripped else line_stripped
+
+            text_cleaned = text_after_emoji
+            for prefix in ["CRITIQUE ! ", "ÉCHEC ! ", "CRITIQUE! ", "ÉCHEC! "]:
+                if text_cleaned.startswith(prefix):
+                    text_cleaned = text_cleaned[len(prefix):]
+                    break
+
+            if " attaque " in text_cleaned:
+                before_attaque = text_cleaned.split(" attaque ")[0].strip()
+                attacker_name = before_attaque.split("[")[0].strip() if "[" in before_attaque else before_attaque
+            elif "[" in text_cleaned and "→" in text_cleaned:
+                attacker_name = text_cleaned.split("[")[0].strip()
+            elif "→" in text_cleaned:
+                attacker_name = text_cleaned.split("→")[0].strip()
+            else:
+                attacker_name = text_cleaned.split()[0] if text_cleaned else ""
+
+            is_hero_action = any(hero_name in attacker_name for hero_name in HERO_NAMES)
+
+            if is_hero_action:
+                return f'<div style="color: #27ae60;">{line_stripped}</div>'  # Vert pour héros
+            else:
+                return f'<div style="color: #e74c3c;">{line_stripped}</div>'  # Rouge pour ennemis
+
+        # Ligne par défaut (blanc/gris clair)
+        return f'<div style="color: #e0e0e0;">{line_stripped}</div>'
+
+    # Construction du HTML colorisé
+    log_html = ""
+    for line in st.session_state.sandbox_v2_log:
+        log_html += colorize_line(line)
+
+    # Container scrollable avec style Arène
+    scrollable_log = f"""
+    <div style="
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 2px solid #0f3460;
+        border-radius: 10px;
+        padding: 15px 20px;
+        height: 400px;
+        overflow-y: scroll;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    ">
+        {log_html}
+    </div>
+    """
+
+    st.markdown(scrollable_log, unsafe_allow_html=True)
+
 def display_combat_status():
     """
     Affiche l'état du combat avec cartes stylées en deux colonnes côte à côte
@@ -1425,79 +1585,13 @@ def main_sandbox_v2():
             if not initiative_enabled:
                 st.info("🎮 Sélectionnez un combattant pour jouer son tour (cliquez sur '▶️ À son tour')")
 
-    # === JOURNAL DE COMBAT ===
+    # === DERNIÈRES ACTIONS (toujours visible) ===
+    display_recent_actions()
+
+    # === JOURNAL DE COMBAT (historique complet) ===
     if st.session_state.sandbox_v2_log and phase == 'COMBAT':
-        with st.expander("📜 Journal de Combat", expanded=False):
-            log_to_display = st.session_state.sandbox_v2_log[-20:]
-            for line in log_to_display:
-                # Formatage coloré selon le type de ligne
-                if "=== ROUND" in line:
-                    round_styled = f"""
-                    <div style='background: linear-gradient(135deg, rgba(139, 69, 19, 0.12), rgba(160, 82, 45, 0.08));
-                               border: 2px solid #8b4513;
-                               border-radius: 10px;
-                               padding: 12px;
-                               margin: 15px 0;
-                               text-align: center;
-                               font-weight: bold;
-                               font-size: 16px;
-                               color: #8b4513;
-                               font-family: "Cinzel", serif;'>
-                        {line}
-                    </div>
-                    """
-                    st.markdown(round_styled, unsafe_allow_html=True)
-                elif "🦸" in line and "commence son tour" in line:
-                    hero_styled = f"""
-                    <div style='background: linear-gradient(135deg, rgba(34, 139, 34, 0.12), rgba(0, 100, 0, 0.08));
-                               border-left: 4px solid #228b22;
-                               border-radius: 6px;
-                               padding: 8px 12px;
-                               margin: 4px 0;
-                               color: #006400;'>
-                        {line}
-                    </div>
-                    """
-                    st.markdown(hero_styled, unsafe_allow_html=True)
-                elif "👹" in line and "commence son tour" in line:
-                    enemy_styled = f"""
-                    <div style='background: linear-gradient(135deg, rgba(220, 20, 60, 0.12), rgba(139, 0, 0, 0.08));
-                               border-left: 4px solid #dc143c;
-                               border-radius: 6px;
-                               padding: 8px 12px;
-                               margin: 4px 0;
-                               color: #8b0000;'>
-                        {line}
-                    </div>
-                    """
-                    st.markdown(enemy_styled, unsafe_allow_html=True)
-                elif "💀" in line or "mort" in line.lower() or "inconscient" in line.lower():
-                    death_styled = f"""
-                    <div style='background: linear-gradient(135deg, rgba(128, 128, 128, 0.12), rgba(64, 64, 64, 0.08));
-                               border-left: 4px solid #808080;
-                               border-radius: 6px;
-                               padding: 8px 12px;
-                               margin: 4px 0;
-                               color: #404040;'>
-                        {line}
-                    </div>
-                    """
-                    st.markdown(death_styled, unsafe_allow_html=True)
-                elif "🎯" in line or "attaque" in line.lower():
-                    attack_styled = f"""
-                    <div style='background: linear-gradient(135deg, rgba(255, 69, 0, 0.12), rgba(255, 140, 0, 0.08));
-                               border-left: 4px solid #ff4500;
-                               border-radius: 6px;
-                               padding: 8px 12px;
-                               margin: 4px 0;
-                               color: #cc3700;'>
-                        {line}
-                    </div>
-                    """
-                    st.markdown(attack_styled, unsafe_allow_html=True)
-                else:
-                    # Ligne normale
-                    st.markdown(f"<div style='padding: 4px 0; color: #e0e0e0;'>{line}</div>", unsafe_allow_html=True)
+        with st.expander("📜 Journal de Combat (Historique complet)", expanded=False):
+            display_combat_log_colored()
 
     # === BOUTON NOUVEAU ROUND (MODE MANUEL) ===
     if phase == 'COMBAT' and not initiative_enabled:
