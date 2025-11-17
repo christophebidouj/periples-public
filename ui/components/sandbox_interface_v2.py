@@ -18,6 +18,7 @@ from models.combat.initiative_manager import InitiativeManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
 from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon
+from ui.components.combat_components import display_combat_log
 from ui.styling import get_hero_card_style
 
 # === CSS STYLE ARÈNE ===
@@ -610,6 +611,23 @@ def display_guidance_banner():
                 ⚔️ {name} ({faction}) - C'est votre tour !
             </div>
             """, unsafe_allow_html=True)
+        else:
+            # Mode manuel : Afficher la dernière ligne du log si disponible
+            initiative_enabled = st.session_state.get('initiative_setting', True)
+            if not initiative_enabled and st.session_state.sandbox_v2_log:
+                # Chercher la dernière ligne significative (pas vide, pas un séparateur)
+                last_action = None
+                for line in reversed(st.session_state.sandbox_v2_log):
+                    if line.strip() and not line.startswith("===") and not line.startswith("---"):
+                        last_action = line
+                        break
+
+                if last_action:
+                    st.markdown(f"""
+                    <div class="guidance-compact guidance-combat">
+                        📋 Dernière action : {last_action}
+                    </div>
+                    """, unsafe_allow_html=True)
 
 def get_current_combatant() -> Optional[Dict]:
     """Retourne le combattant actuel"""
@@ -1161,15 +1179,37 @@ def display_combat_status_team_mode():
                     # Désactiver si déjà joué
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
+                    button_color = "#6c757d" if has_played else "#0d6efd"
+                    cursor_style = "not-allowed" if has_played else "pointer"
+                    opacity = "0.65" if has_played else "1"
 
-                    if st.button(
-                        button_label,
-                        key=f"select_hero_{hero_data['id']}",
-                        use_container_width=True,
-                        type="secondary" if has_played else "primary",
-                        disabled=button_disabled
-                    ):
-                        select_combatant_manually(hero_data['id'])
+                    # Bouton HTML personnalisé avec largeur fixe 260px
+                    button_html = f"""
+                    <div style="width: 260px; margin: 10px auto 0 auto;">
+                        <button
+                            onclick="document.getElementById('hero_btn_{hero_data['id']}').click()"
+                            style="width: 100%;
+                                   padding: 10px;
+                                   background-color: {button_color};
+                                   color: white;
+                                   border: none;
+                                   border-radius: 5px;
+                                   font-size: 14px;
+                                   font-weight: bold;
+                                   cursor: {cursor_style};
+                                   opacity: {opacity};
+                                   transition: all 0.2s;"
+                            {'disabled' if button_disabled else ''}>
+                            {button_label}
+                        </button>
+                    </div>
+                    """
+                    st.markdown(button_html, unsafe_allow_html=True)
+
+                    # Bouton Streamlit caché pour le callback
+                    if not button_disabled:
+                        if st.button("_", key=f"hero_btn_{hero_data['id']}", label_visibility="collapsed"):
+                            select_combatant_manually(hero_data['id'])
     else:
         st.warning("Aucun héros trouvé")
 
@@ -1194,15 +1234,37 @@ def display_combat_status_team_mode():
                     # Désactiver si déjà joué
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
+                    button_color = "#6c757d" if has_played else "#0d6efd"
+                    cursor_style = "not-allowed" if has_played else "pointer"
+                    opacity = "0.65" if has_played else "1"
 
-                    if st.button(
-                        button_label,
-                        key=f"select_enemy_{enemy_data['id']}",
-                        use_container_width=True,
-                        type="secondary" if has_played else "primary",
-                        disabled=button_disabled
-                    ):
-                        select_combatant_manually(enemy_data['id'])
+                    # Bouton HTML personnalisé avec largeur fixe 260px
+                    button_html = f"""
+                    <div style="width: 260px; margin: 10px auto 0 auto;">
+                        <button
+                            onclick="document.getElementById('enemy_btn_{enemy_data['id']}').click()"
+                            style="width: 100%;
+                                   padding: 10px;
+                                   background-color: {button_color};
+                                   color: white;
+                                   border: none;
+                                   border-radius: 5px;
+                                   font-size: 14px;
+                                   font-weight: bold;
+                                   cursor: {cursor_style};
+                                   opacity: {opacity};
+                                   transition: all 0.2s;"
+                            {'disabled' if button_disabled else ''}>
+                            {button_label}
+                        </button>
+                    </div>
+                    """
+                    st.markdown(button_html, unsafe_allow_html=True)
+
+                    # Bouton Streamlit caché pour le callback
+                    if not button_disabled:
+                        if st.button("_", key=f"enemy_btn_{enemy_data['id']}", label_visibility="collapsed"):
+                            select_combatant_manually(enemy_data['id'])
     else:
         st.warning("Aucun ennemi trouvé")
 
@@ -1401,10 +1463,79 @@ def main_sandbox_v2():
                 st.info("🎮 Sélectionnez un combattant pour jouer son tour (cliquez sur '▶️ À son tour')")
 
     # === JOURNAL DE COMBAT ===
-    if st.session_state.sandbox_v2_log:
+    if st.session_state.sandbox_v2_log and phase == 'COMBAT':
         with st.expander("📜 Journal de Combat", expanded=False):
-            for line in st.session_state.sandbox_v2_log[-20:]:
-                st.text(line)
+            # Utiliser display_combat_log pour le formatage coloré (même système que les autres interfaces)
+            log_to_display = st.session_state.sandbox_v2_log[-20:]
+            for line in log_to_display:
+                # Réutiliser la logique de formatage de display_combat_log
+                if "=== ROUND" in line:
+                    round_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(139, 69, 19, 0.12), rgba(160, 82, 45, 0.08));
+                               border: 2px solid #8b4513;
+                               border-radius: 10px;
+                               padding: 12px;
+                               margin: 15px 0;
+                               text-align: center;
+                               font-weight: bold;
+                               font-size: 16px;
+                               color: #8b4513;
+                               font-family: "Cinzel", serif;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(round_styled, unsafe_allow_html=True)
+                elif "🦸" in line and "commence son tour" in line:
+                    hero_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(34, 139, 34, 0.12), rgba(0, 100, 0, 0.08));
+                               border-left: 4px solid #228b22;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #006400;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(hero_styled, unsafe_allow_html=True)
+                elif "👹" in line and "commence son tour" in line:
+                    enemy_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(220, 20, 60, 0.12), rgba(139, 0, 0, 0.08));
+                               border-left: 4px solid #dc143c;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #8b0000;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(enemy_styled, unsafe_allow_html=True)
+                elif "💀" in line or "mort" in line.lower() or "inconscient" in line.lower():
+                    death_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(128, 128, 128, 0.12), rgba(64, 64, 64, 0.08));
+                               border-left: 4px solid #808080;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #404040;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(death_styled, unsafe_allow_html=True)
+                elif "🎯" in line or "attaque" in line.lower():
+                    attack_styled = f"""
+                    <div style='background: linear-gradient(135deg, rgba(255, 69, 0, 0.12), rgba(255, 140, 0, 0.08));
+                               border-left: 4px solid #ff4500;
+                               border-radius: 6px;
+                               padding: 8px 12px;
+                               margin: 4px 0;
+                               color: #cc3700;'>
+                        {line}
+                    </div>
+                    """
+                    st.markdown(attack_styled, unsafe_allow_html=True)
+                else:
+                    # Ligne normale
+                    st.markdown(f"<div style='padding: 4px 0; color: #e0e0e0;'>{line}</div>", unsafe_allow_html=True)
 
     # === BOUTON NOUVEAU ROUND (MODE MANUEL) ===
     if phase == 'COMBAT' and not initiative_enabled:
