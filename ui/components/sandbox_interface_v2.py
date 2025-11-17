@@ -479,10 +479,8 @@ def configure_combat():
         st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
-        # RÉCUPÉRATION DU PARAMÈTRE INITIATIVE depuis l'onglet Sélection
-        # Lire depuis initiative_setting (persiste entre changements d'onglet)
-        initiative_enabled = st.session_state.get('initiative_setting', True)  # Par défaut: activé
-        st.session_state.sandbox_v2_initiative_enabled = initiative_enabled
+        # NOTE: On ne stocke plus sandbox_v2_initiative_enabled pour éviter les désynchronisations
+        # On lit toujours directement depuis initiative_setting
 
         # Architecture existante
         rules = GameRules(
@@ -624,8 +622,8 @@ def next_turn():
     if not st.session_state.sandbox_v2_combatants:
         return
 
-    # Vérifier le mode
-    initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled', True)
+    # Vérifier le mode (lire directement depuis initiative_setting)
+    initiative_enabled = st.session_state.get('initiative_setting', True)
 
     if not initiative_enabled:
         # MODE MANUEL : Retour à "aucun tour actuel" après une action
@@ -1290,9 +1288,8 @@ def main_sandbox_v2():
 
     # === PHASE INITIATIVE ===
     elif phase == 'INITIATIVE':
-        # Vérifier si l'initiative est activée (lire depuis initiative_setting pour compatibilité)
-        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled',
-                                                   st.session_state.get('initiative_setting', True))
+        # Lire directement depuis initiative_setting (source unique de vérité)
+        initiative_enabled = st.session_state.get('initiative_setting', True)
 
         if initiative_enabled:
             # MODE INITIATIVE ACTIVÉE : Jets de dés D20
@@ -1319,9 +1316,8 @@ def main_sandbox_v2():
 
     # === PHASE COMBAT ===
     elif phase == 'COMBAT':
-        # Déterminer le mode d'affichage (lire depuis initiative_setting pour compatibilité)
-        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled',
-                                                   st.session_state.get('initiative_setting', True))
+        # Lire directement depuis initiative_setting (source unique de vérité)
+        initiative_enabled = st.session_state.get('initiative_setting', True)
 
         if initiative_enabled:
             # MODE INITIATIVE : Afficher ordre d'initiative et cartes dans l'ordre des jets
