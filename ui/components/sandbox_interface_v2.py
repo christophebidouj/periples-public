@@ -480,8 +480,8 @@ def configure_combat():
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
         # RÉCUPÉRATION DU PARAMÈTRE INITIATIVE depuis l'onglet Sélection
-        # Lire directement depuis la checkbox (key='combat_initiative' dans app.py)
-        initiative_enabled = st.session_state.get('combat_initiative', True)  # Par défaut: activé
+        # Lire depuis initiative_setting (persiste entre changements d'onglet)
+        initiative_enabled = st.session_state.get('initiative_setting', True)  # Par défaut: activé
         st.session_state.sandbox_v2_initiative_enabled = initiative_enabled
 
         # Architecture existante
@@ -1235,7 +1235,13 @@ def main_sandbox_v2():
     apply_sandbox_v2_theme()
 
     st.title("🎮 Sandbox V2")
-    st.caption("✅ Ciblage manuel | Initiative | Système Undo/Redo")
+
+    # Indicateur de mode
+    initiative_mode = st.session_state.get('initiative_setting', True)
+    if initiative_mode:
+        st.caption("✅ Ciblage manuel | 🎲 Initiative D20 | Système Undo/Redo")
+    else:
+        st.caption("✅ Ciblage manuel | 🎮 Ordre Manuel | Système Undo/Redo")
 
     init_sandbox_state()
 

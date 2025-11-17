@@ -428,14 +428,27 @@ def tab_selection(data):
     
     # === LANCEMENT COMBAT ===
     st.subheader("⚙️ Configuration")
-    
+
+    # Initialiser la valeur d'initiative si elle n'existe pas
+    if 'initiative_setting' not in st.session_state:
+        st.session_state.initiative_setting = True
+
+    # Callback pour sauvegarder immédiatement la valeur de l'initiative
+    def on_initiative_change():
+        st.session_state.initiative_setting = st.session_state.combat_initiative
+
     col1, col2 = st.columns(2)
     with col1:
         rules = {
             'ranged_attacks': True,
             'magical_damage': True,
             'criticals': st.checkbox("🎯 Critiques", value=True, key='combat_criticals'),
-            'initiative': st.checkbox("🎲 Initiative", value=True, key='combat_initiative')
+            'initiative': st.checkbox(
+                "🎲 Initiative",
+                value=st.session_state.initiative_setting,
+                key='combat_initiative',
+                on_change=on_initiative_change
+            )
         }
     with col2:
         st.info("⚔️ Combat avec builds selon niveaux sélectionnés")
