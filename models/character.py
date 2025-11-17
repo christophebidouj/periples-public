@@ -518,25 +518,86 @@ class Character(BaseModel):
         
         return result
     
+    def use_specific_potion(self, potion_type: PotionType, target: Optional['Character'] = None) -> Dict:
+        """
+        Utilise une potion spécifique du type demandé
+
+        Args:
+            potion_type: Type de potion à utiliser (SMALL ou LARGE)
+            target: Cible de la potion (self par défaut, ou autre héros pour "faire boire")
+
+        Returns:
+            Dict avec détails de l'utilisation
+        """
+        result = {
+            'success': False,
+            'potion_used': None,
+            'healing_done': 0,
+            'message': '',
+            'prevents_attack': False,
+            'target_name': target.name if target else self.name
+        }
+
+        # Vérifier disponibilité de la potion
+        potion = self.get_potion_by_type(potion_type)
+        if not potion or not potion.can_use():
+            result['message'] = f"{potion_type.value.capitalize()} potion non disponible"
+            return result
+
+        # Cible par défaut = soi-même
+        if target is None:
+            target = self
+
+        # Vérifier si la cible peut bénéficier de la potion
+        if target.is_at_full_health():
+            result['message'] = f"{target.name} a déjà sa santé au maximum"
+            return result
+
+        # Consommer la potion
+        if not potion.use_potion():
+            result['message'] = "Échec utilisation potion"
+            return result
+
+        # Appliquer les soins sur la cible
+        if potion.is_full_heal:
+            old_health = target.current_health
+            target.current_health = target.get_total_health()
+            healing = target.current_health - old_health
+        else:
+            healing = target.heal(potion.heal_amount)
+
+        # Marquer l'action comme effectuée pour le donneur
+        self.potion_used_this_turn = True
+
+        result.update({
+            'success': True,
+            'potion_used': potion.name,
+            'potion_icon': potion.icon,
+            'healing_done': healing,
+            'message': f"{potion.icon} {potion.name} utilisée sur {target.name} : +{healing} PV"
+        })
+
+        return result
+
     def _choose_best_potion(self) -> Optional[PotionType]:
         """IA : Choisit la meilleure potion"""
         health_percent = (self.current_health / self.get_total_health()) * 100
-        
+
         # Critique : Grande potion
         if health_percent < 25:
             if self.get_potion_by_type(PotionType.LARGE):
                 return PotionType.LARGE
-        
+
         # Normal : Petite potion
         if health_percent < 75:
             if self.get_potion_by_type(PotionType.SMALL):
                 return PotionType.SMALL
-        
+
         # Fallback
         for potion in self.health_potions:
             if potion.can_use():
                 return potion.potion_type
-        
+
         return None
     
     def get_potions_summary(self) -> Dict:

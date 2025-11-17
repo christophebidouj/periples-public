@@ -9,7 +9,7 @@ import random
 from typing import List, Dict, Optional
 from copy import deepcopy
 
-from models.character import Character, Enemy
+from models.character import Character, Enemy, PotionType
 from models.combat.combat_engine import CombatEngine
 from models.combat.turn_manager import TurnManager
 from models.combat.combat_actions import CombatActions
@@ -899,28 +899,133 @@ def display_actions_and_potions(char: Character, combatant_id: str):
     # Potions
     st.markdown("### 🧪 Potions")
 
-    if hasattr(char, 'health_potions') and char.health_potions:
+    # État de sélection pour "faire boire"
+    action_state = st.session_state.get('sandbox_v2_action_state', None)
+
+    # MODE SÉLECTION: Faire boire une potion
+    if action_state == 'GIVING_POTION':
+        st.info("🤝 Sélectionnez le type de potion à donner:")
+
         potions_summary = char.get_potions_summary()
+        potion_type_selected = st.session_state.get('sandbox_v2_potion_type', None)
 
-        col1, col2 = st.columns(2)
+        if potion_type_selected is None:
+            # Étape 1: Choisir le type de potion
+            col1, col2 = st.columns(2)
 
-        with col1:
-            small_count = potions_summary['small_count']
-            if small_count > 0:
-                if st.button(f"🩸 Soin\n{small_count}", key=f"sandbox_potion_small_{combatant_id}", use_container_width=True):
-                    use_potion_action(char)
+            with col1:
+                small_count = potions_summary['small_count']
+                if small_count > 0:
+                    if st.button(f"🩸 Donner Petite\n{small_count}", key=f"give_small_{combatant_id}", use_container_width=True):
+                        st.session_state.sandbox_v2_potion_type = PotionType.SMALL
+                        st.rerun()
+                else:
+                    st.button(f"🩸 Petite\n0", disabled=True, use_container_width=True)
+
+            with col2:
+                large_count = potions_summary['large_count']
+                if large_count > 0:
+                    if st.button(f"❤️‍🩹 Donner Grande\n{large_count}", key=f"give_large_{combatant_id}", use_container_width=True):
+                        st.session_state.sandbox_v2_potion_type = PotionType.LARGE
+                        st.rerun()
+                else:
+                    st.button(f"❤️‍🩹 Grande\n0", disabled=True, use_container_width=True)
+
+            if st.button("❌ Annuler", key=f"cancel_give_potion_{combatant_id}"):
+                st.session_state.sandbox_v2_action_state = None
+                st.rerun()
+        else:
+            # Étape 2: Choisir la cible
+            st.info("👥 Sélectionnez le héros qui recevra la potion:")
+
+            # Liste des héros vivants (sauf soi-même)
+            all_combatants = st.session_state.sandbox_v2_combatants
+            available_heroes = [
+                c for c in all_combatants
+                if c['faction'] == 'hero'
+                and c['character'].is_alive()
+                and c['character'].code != char.code
+            ]
+
+            if not available_heroes:
+                st.warning("Aucun autre héros disponible")
+                if st.button("❌ Annuler", key=f"cancel_no_target_{combatant_id}"):
+                    st.session_state.sandbox_v2_action_state = None
+                    st.session_state.sandbox_v2_potion_type = None
+                    st.rerun()
             else:
-                st.button(f"🩸 Soin\n0", disabled=True, use_container_width=True)
+                # Afficher boutons de sélection pour chaque héros
+                for target_data in available_heroes:
+                    target = target_data['character']
+                    health_pct = round((target.current_health / target.get_total_health()) * 100, 1)
 
-        with col2:
-            large_count = potions_summary['large_count']
-            if large_count > 0:
-                if st.button(f"❤️‍🩹 Vitesse\n{large_count}", key=f"sandbox_potion_large_{combatant_id}", use_container_width=True):
-                    use_potion_action(char)
-            else:
-                st.button(f"❤️‍🩹 Vitesse\n0", disabled=True, use_container_width=True)
+                    if st.button(
+                        f"🎯 {target.name} ({target.current_health}/{target.get_total_health()} PV - {health_pct}%)",
+                        key=f"give_to_{target_data['id']}",
+                        use_container_width=True
+                    ):
+                        # Exécuter l'action
+                        give_potion_to_ally_action(char, target, potion_type_selected)
+                        st.session_state.sandbox_v2_action_state = None
+                        st.session_state.sandbox_v2_potion_type = None
+                        st.rerun()
+
+                if st.button("❌ Annuler", key=f"cancel_targeting_potion_{combatant_id}"):
+                    st.session_state.sandbox_v2_action_state = None
+                    st.session_state.sandbox_v2_potion_type = None
+                    st.rerun()
+
+    # MODE NORMAL: Utiliser sur soi-même ou entrer en mode "faire boire"
     else:
-        st.info("Aucune potion")
+        if hasattr(char, 'health_potions') and char.health_potions:
+            potions_summary = char.get_potions_summary()
+
+            # Boire soi-même
+            st.caption("Boire soi-même:")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                small_count = potions_summary['small_count']
+                if small_count > 0:
+                    if st.button(f"🩸 Petite\n{small_count}", key=f"sandbox_potion_small_{combatant_id}", use_container_width=True):
+                        use_small_potion_action(char)
+                else:
+                    st.button(f"🩸 Petite\n0", disabled=True, use_container_width=True)
+
+            with col2:
+                large_count = potions_summary['large_count']
+                if large_count > 0:
+                    if st.button(f"❤️‍🩹 Grande\n{large_count}", key=f"sandbox_potion_large_{combatant_id}", use_container_width=True):
+                        use_large_potion_action(char)
+                else:
+                    st.button(f"❤️‍🩹 Grande\n0", disabled=True, use_container_width=True)
+
+            # Faire boire à un allié
+            st.caption("Ou donner à un allié:")
+            has_any_potion = potions_summary['total_count'] > 0
+
+            # Vérifier si une action a déjà été prise ce tour
+            action_already_taken = (
+                char.action_taken_this_turn or
+                char.potion_used_this_turn or
+                not char.can_attack_this_turn
+            )
+
+            # Le bouton "Faire Boire" est disponible seulement si:
+            # - Le héros a des potions
+            # - Aucune action n'a été prise ce tour
+            if has_any_potion and not action_already_taken:
+                if st.button("🤝 Faire Boire une Potion", key=f"give_potion_{combatant_id}", use_container_width=True):
+                    st.session_state.sandbox_v2_action_state = 'GIVING_POTION'
+                    st.session_state.sandbox_v2_current_actor = char
+                    st.rerun()
+            else:
+                button_label = "🤝 Faire Boire une Potion"
+                if action_already_taken:
+                    button_label += " (Action déjà prise)"
+                st.button(button_label, disabled=True, use_container_width=True)
+        else:
+            st.info("Aucune potion")
 
 # === ACTIONS DE COMBAT ===
 
@@ -938,13 +1043,62 @@ def use_ability_action(char: Character, ability):
             st.error(f"❌ Impossible d'utiliser {ability.name}")
 
 def use_potion_action(char: Character):
-    """Utilise une potion"""
+    """Utilise une potion (sélection automatique)"""
     if hasattr(char, 'use_health_potion'):
         result = char.use_health_potion()
         if result['success']:
             st.session_state.sandbox_v2_log.append(f"🧪 {char.name} boit une potion: {result['message']}")
             save_game_state(f"{char.name} utilise potion")
             st.success(f"✅ {result['message']}")
+        else:
+            st.error(f"❌ {result['message']}")
+
+def use_small_potion_action(char: Character):
+    """Utilise une petite potion (4 PV)"""
+    if hasattr(char, 'use_specific_potion'):
+        result = char.use_specific_potion(PotionType.SMALL)
+        if result['success']:
+            st.session_state.sandbox_v2_log.append(f"🩸 {char.name} boit une Petite Potion : +{result['healing_done']} PV")
+            save_game_state(f"{char.name} utilise Petite Potion")
+            st.success(f"✅ {result['message']}")
+        else:
+            st.error(f"❌ {result['message']}")
+
+def use_large_potion_action(char: Character):
+    """Utilise une grande potion (100% PV)"""
+    if hasattr(char, 'use_specific_potion'):
+        result = char.use_specific_potion(PotionType.LARGE)
+        if result['success']:
+            st.session_state.sandbox_v2_log.append(f"❤️‍🩹 {char.name} boit une Grande Potion : +{result['healing_done']} PV")
+            save_game_state(f"{char.name} utilise Grande Potion")
+            st.success(f"✅ {result['message']}")
+        else:
+            st.error(f"❌ {result['message']}")
+
+def give_potion_to_ally_action(giver: Character, target: Character, potion_type: PotionType):
+    """
+    Fait boire une potion à un allié
+
+    Args:
+        giver: Le héros qui donne la potion
+        target: Le héros qui reçoit la potion
+        potion_type: Type de potion (SMALL ou LARGE)
+    """
+    if hasattr(giver, 'use_specific_potion'):
+        result = giver.use_specific_potion(potion_type, target=target)
+        if result['success']:
+            potion_name = "Petite Potion" if potion_type == PotionType.SMALL else "Grande Potion"
+            icon = "🩸" if potion_type == PotionType.SMALL else "❤️‍🩹"
+
+            st.session_state.sandbox_v2_log.append(
+                f"🤝 {giver.name} donne une {potion_name} à {target.name} : +{result['healing_done']} PV"
+            )
+            save_game_state(f"{giver.name} donne potion à {target.name}")
+
+            # Passer au tour suivant (action exclusive)
+            next_turn()
+
+            st.success(f"✅ {icon} {giver.name} a donné une {potion_name} à {target.name} (+{result['healing_done']} PV)")
         else:
             st.error(f"❌ {result['message']}")
 

@@ -330,6 +330,78 @@ To add a new global setting that syncs between Selection tab and combat interfac
 
 5. **Use in business logic** (pass to GameRules or use directly)
 
+### Potion System
+
+The potion system allows heroes to heal themselves or allies during combat.
+
+**Two Potion Types:**
+- **Petite Potion (Small):** Heals 4 PV - Icon: 🩸
+- **Grande Potion (Large):** Heals 100% PV (full heal) - Icon: ❤️‍🩹
+
+**Character Model API (models/character.py):**
+
+```python
+from models.character import PotionType
+
+# Use a specific potion on self
+result = hero.use_specific_potion(PotionType.SMALL)
+# Returns: {'success': bool, 'potion_used': str, 'healing_done': int, 'message': str}
+
+# Give a potion to another hero
+result = hero.use_specific_potion(PotionType.LARGE, target=other_hero)
+# target parameter allows giving potions to allies
+```
+
+**Sandbox V2 Potion Actions:**
+
+1. **Boire soi-même (Drink self):**
+   - Buttons: "🩸 Petite" and "❤️‍🩹 Grande"
+   - Does NOT end the hero's turn
+   - Marks `potion_used_this_turn = True`
+   - Hero can still attack or use abilities after drinking
+
+2. **Faire Boire une Potion (Give to ally):**
+   - Button: "🤝 Faire Boire une Potion"
+   - **Exclusive action:** Ends the turn immediately after use
+   - **Cannot be used if any action was already taken this turn**
+   - Workflow:
+     1. Click "Faire Boire" button
+     2. Select potion type (Petite or Grande)
+     3. Select target ally
+     4. Turn ends automatically
+
+**Action Exclusivity Rules:**
+
+The "Faire Boire" button is disabled if:
+- `char.action_taken_this_turn == True` (hero used an ability that prevents attack)
+- `char.potion_used_this_turn == True` (hero already drank a potion)
+- `char.can_attack_this_turn == False` (hero already attacked)
+
+**UI Implementation (ui/components/sandbox_interface_v2.py):**
+
+```python
+# Import PotionType
+from models.character import Character, Enemy, PotionType
+
+# Action functions
+def use_small_potion_action(char: Character):
+    """Drink small potion - does not end turn"""
+    result = char.use_specific_potion(PotionType.SMALL)
+    # Log and display result
+
+def use_large_potion_action(char: Character):
+    """Drink large potion - does not end turn"""
+    result = char.use_specific_potion(PotionType.LARGE)
+    # Log and display result
+
+def give_potion_to_ally_action(giver: Character, target: Character, potion_type: PotionType):
+    """Give potion to ally - ENDS TURN"""
+    result = giver.use_specific_potion(potion_type, target=target)
+    next_turn()  # Exclusive action - turn ends
+```
+
+**Location:** Potion buttons are displayed in the hero action panel (lines 895-1024 in `sandbox_interface_v2.py`)
+
 ## Git Workflow
 
 **Branch naming:** All development branches must start with `claude/` and end with the session ID.
