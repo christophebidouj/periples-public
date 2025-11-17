@@ -434,8 +434,8 @@ def tab_selection(data):
         rules = {
             'ranged_attacks': True,
             'magical_damage': True,
-            'criticals': st.checkbox("🎯 Critiques", value=True),
-            'initiative': st.checkbox("🎲 Initiative", value=True)
+            'criticals': st.checkbox("🎯 Critiques", value=True, key='combat_criticals'),
+            'initiative': st.checkbox("🎲 Initiative", value=True, key='combat_initiative')
         }
     with col2:
         st.info("⚔️ Combat avec builds selon niveaux sélectionnés")

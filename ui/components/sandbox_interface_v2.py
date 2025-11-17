@@ -480,9 +480,8 @@ def configure_combat():
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
         # RÉCUPÉRATION DU PARAMÈTRE INITIATIVE depuis l'onglet Sélection
-        simulation_config = st.session_state.get('simulation_config', {})
-        rules_config = simulation_config.get('rules', {})
-        initiative_enabled = rules_config.get('initiative', True)  # Par défaut: activé
+        # Lire directement depuis la checkbox (key='combat_initiative' dans app.py)
+        initiative_enabled = st.session_state.get('combat_initiative', True)  # Par défaut: activé
         st.session_state.sandbox_v2_initiative_enabled = initiative_enabled
 
         # Architecture existante
