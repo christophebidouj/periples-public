@@ -1179,36 +1179,26 @@ def display_combat_status_team_mode():
                     # Désactiver si déjà joué
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
-                    button_color = "#6c757d" if has_played else "#0d6efd"
-                    cursor_style = "not-allowed" if has_played else "pointer"
-                    opacity = "0.65" if has_played else "1"
 
-                    # Bouton HTML personnalisé avec largeur fixe 260px
-                    button_html = f"""
-                    <div style="width: 260px; margin: 10px auto 0 auto;">
-                        <button
-                            onclick="document.getElementById('hero_btn_{hero_data['id']}').click()"
-                            style="width: 100%;
-                                   padding: 10px;
-                                   background-color: {button_color};
-                                   color: white;
-                                   border: none;
-                                   border-radius: 5px;
-                                   font-size: 14px;
-                                   font-weight: bold;
-                                   cursor: {cursor_style};
-                                   opacity: {opacity};
-                                   transition: all 0.2s;"
-                            {'disabled' if button_disabled else ''}>
-                            {button_label}
-                        </button>
-                    </div>
-                    """
-                    st.markdown(button_html, unsafe_allow_html=True)
+                    # CSS pour fixer la largeur du bouton à 260px
+                    st.markdown("""
+                    <style>
+                    div.stButton > button {
+                        width: 260px;
+                        margin-left: auto;
+                        margin-right: auto;
+                        display: block;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
 
-                    # Bouton Streamlit caché pour le callback
-                    if not button_disabled:
-                        if st.button("_", key=f"hero_btn_{hero_data['id']}", label_visibility="collapsed"):
+                    if st.button(
+                        button_label,
+                        key=f"select_hero_{hero_data['id']}",
+                        type="secondary" if has_played else "primary",
+                        disabled=button_disabled
+                    ):
+                        if not button_disabled:
                             select_combatant_manually(hero_data['id'])
     else:
         st.warning("Aucun héros trouvé")
@@ -1234,36 +1224,26 @@ def display_combat_status_team_mode():
                     # Désactiver si déjà joué
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
-                    button_color = "#6c757d" if has_played else "#0d6efd"
-                    cursor_style = "not-allowed" if has_played else "pointer"
-                    opacity = "0.65" if has_played else "1"
 
-                    # Bouton HTML personnalisé avec largeur fixe 260px
-                    button_html = f"""
-                    <div style="width: 260px; margin: 10px auto 0 auto;">
-                        <button
-                            onclick="document.getElementById('enemy_btn_{enemy_data['id']}').click()"
-                            style="width: 100%;
-                                   padding: 10px;
-                                   background-color: {button_color};
-                                   color: white;
-                                   border: none;
-                                   border-radius: 5px;
-                                   font-size: 14px;
-                                   font-weight: bold;
-                                   cursor: {cursor_style};
-                                   opacity: {opacity};
-                                   transition: all 0.2s;"
-                            {'disabled' if button_disabled else ''}>
-                            {button_label}
-                        </button>
-                    </div>
-                    """
-                    st.markdown(button_html, unsafe_allow_html=True)
+                    # CSS pour fixer la largeur du bouton à 260px
+                    st.markdown("""
+                    <style>
+                    div.stButton > button {
+                        width: 260px;
+                        margin-left: auto;
+                        margin-right: auto;
+                        display: block;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
 
-                    # Bouton Streamlit caché pour le callback
-                    if not button_disabled:
-                        if st.button("_", key=f"enemy_btn_{enemy_data['id']}", label_visibility="collapsed"):
+                    if st.button(
+                        button_label,
+                        key=f"select_enemy_{enemy_data['id']}",
+                        type="secondary" if has_played else "primary",
+                        disabled=button_disabled
+                    ):
+                        if not button_disabled:
                             select_combatant_manually(enemy_data['id'])
     else:
         st.warning("Aucun ennemi trouvé")
