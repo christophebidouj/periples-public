@@ -117,14 +117,6 @@ def apply_sandbox_v2_theme():
         gap: 15px;
         align-items: center;
     }
-
-    /* === BOUTONS À SON TOUR (LARGEUR FIXE 260PX) === */
-    .combat-turn-button-container button {
-        width: 260px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        display: block !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -618,23 +610,6 @@ def display_guidance_banner():
                 ⚔️ {name} ({faction}) - C'est votre tour !
             </div>
             """, unsafe_allow_html=True)
-        else:
-            # Mode manuel : Afficher la dernière ligne du log si disponible
-            initiative_enabled = st.session_state.get('initiative_setting', True)
-            if not initiative_enabled and st.session_state.sandbox_v2_log:
-                # Chercher la dernière ligne significative (pas vide, pas un séparateur)
-                last_action = None
-                for line in reversed(st.session_state.sandbox_v2_log):
-                    if line.strip() and not line.startswith("===") and not line.startswith("---"):
-                        last_action = line
-                        break
-
-                if last_action:
-                    st.markdown(f"""
-                    <div class="guidance-compact guidance-combat">
-                        📋 Dernière action : {last_action}
-                    </div>
-                    """, unsafe_allow_html=True)
 
 def get_current_combatant() -> Optional[Dict]:
     """Retourne le combattant actuel"""
@@ -1187,19 +1162,15 @@ def display_combat_status_team_mode():
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
 
-                    # Conteneur avec largeur fixe pour le bouton
-                    st.markdown('<div class="combat-turn-button-container">', unsafe_allow_html=True)
-
                     if st.button(
                         button_label,
                         key=f"select_hero_{hero_data['id']}",
                         type="secondary" if has_played else "primary",
-                        disabled=button_disabled
+                        disabled=button_disabled,
+                        use_container_width=True
                     ):
                         if not button_disabled:
                             select_combatant_manually(hero_data['id'])
-
-                    st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning("Aucun héros trouvé")
 
@@ -1225,19 +1196,15 @@ def display_combat_status_team_mode():
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
 
-                    # Conteneur avec largeur fixe pour le bouton
-                    st.markdown('<div class="combat-turn-button-container">', unsafe_allow_html=True)
-
                     if st.button(
                         button_label,
                         key=f"select_enemy_{enemy_data['id']}",
                         type="secondary" if has_played else "primary",
-                        disabled=button_disabled
+                        disabled=button_disabled,
+                        use_container_width=True
                     ):
                         if not button_disabled:
                             select_combatant_manually(enemy_data['id'])
-
-                    st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning("Aucun ennemi trouvé")
 
