@@ -1259,137 +1259,118 @@ def display_combat_log_colored():
 
 def display_combat_status():
     """
-    Affiche l'état du combat avec cartes stylées en deux colonnes côte à côte
-    - Colonne Gauche : Héros alignés horizontalement
-    - Colonne Droite : Ennemis alignés horizontalement
+    MODE INITIATIVE ACTIVÉE - Affiche tous les combattants dans l'ordre d'initiative (D20)
+    - Grille horizontale avec max 8 cartes par ligne
+    - Ordre : celui de sandbox_v2_combatants (déjà trié par InitiativeManager)
+    - Pas de séparation héros/ennemis (ordre d'initiative respecté)
     RÉUTILISE display_hero_combat_card() et display_enemy_combat_card()
     """
-    # Récupérer héros et ennemis depuis combattants (source de vérité unique)
-    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+    # Récupérer tous les combattants dans l'ordre d'initiative (source de vérité unique)
+    all_combatants = st.session_state.sandbox_v2_combatants
 
     # Déterminer quel combattant a le tour actuel
     current_combatant = get_current_combatant()
     current_character_id = current_combatant['id'] if current_combatant else None
 
-    # === DEUX COLONNES CÔTE À CÔTE (Option 1) ===
-    main_col1, main_col2 = st.columns(2)
+    if not all_combatants:
+        st.warning("Aucun combattant trouvé")
+        return
 
-    # === COLONNE GAUCHE : HÉROS ===
-    with main_col1:
-        st.markdown("### 🦸 Héros")
-        if hero_combatants:
-            # Créer sous-colonnes pour aligner héros horizontalement
-            hero_cols = st.columns(len(hero_combatants))
-            for idx, hero_data in enumerate(hero_combatants):
-                with hero_cols[idx]:
-                    hero = hero_data['character']
-                    # Vérifier si c'est son tour
-                    is_current = (hero_data['id'] == current_character_id)
-                    # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
-                    display_hero_combat_card(hero, is_current_turn=is_current)
-        else:
-            st.warning("Aucun héros trouvé")
+    # === GRILLE AVEC MAX 8 CARTES PAR LIGNE ===
+    max_cards_per_row = 8
+    total_combatants = len(all_combatants)
 
-    # === COLONNE DROITE : ENNEMIS ===
-    with main_col2:
-        st.markdown("### 👹 Ennemis")
-        if enemy_combatants:
-            # Créer sous-colonnes pour aligner ennemis horizontalement
-            enemy_cols = st.columns(len(enemy_combatants))
-            for idx, enemy_data in enumerate(enemy_combatants):
-                with enemy_cols[idx]:
-                    enemy = enemy_data['character']
-                    # Vérifier si c'est son tour
-                    is_current = (enemy_data['id'] == current_character_id)
-                    # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
-                    display_enemy_combat_card(enemy, is_current_turn=is_current)
-        else:
-            st.warning("Aucun ennemi trouvé")
+    # Calculer nombre de lignes nécessaires
+    num_rows = (total_combatants + max_cards_per_row - 1) // max_cards_per_row
+
+    # Parcourir ligne par ligne
+    for row_idx in range(num_rows):
+        # Calculer indices pour cette ligne
+        start_idx = row_idx * max_cards_per_row
+        end_idx = min(start_idx + max_cards_per_row, total_combatants)
+        row_combatants = all_combatants[start_idx:end_idx]
+
+        # Créer colonnes pour cette ligne
+        cols = st.columns(len(row_combatants))
+
+        # Afficher chaque carte
+        for col_idx, combatant_data in enumerate(row_combatants):
+            with cols[col_idx]:
+                character = combatant_data['character']
+                is_current = (combatant_data['id'] == current_character_id)
+
+                # Afficher carte selon le type (héros ou ennemi)
+                if combatant_data['faction'] == 'hero':
+                    display_hero_combat_card(character, is_current_turn=is_current)
+                else:
+                    display_enemy_combat_card(character, is_current_turn=is_current)
 
 def display_combat_status_team_mode():
     """
-    Affiche l'état du combat par ÉQUIPE (sans initiative)
-    - Ligne 1 : Tous les héros alignés horizontalement
-    - Ligne 2 : Tous les ennemis alignés horizontalement
+    MODE MANUEL - Affiche tous les combattants en grille unique (héros et ennemis mélangés)
+    - Grille horizontale avec max 7 cartes par ligne
+    - Ordre : héros d'abord, puis ennemis (ordre de sandbox_v2_combatants)
     - Boutons "▶️ À son tour" pour sélection manuelle
     RÉUTILISE display_hero_combat_card() et display_enemy_combat_card()
     """
-    # Séparer héros et ennemis depuis combattants
-    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+    # Récupérer tous les combattants (ordre: héros puis ennemis)
+    all_combatants = st.session_state.sandbox_v2_combatants
 
     # Déterminer quel combattant a le tour actuel (si défini)
     current_combatant = get_current_combatant()
     current_character_id = current_combatant['id'] if current_combatant else None
 
-    # === LIGNE 1 : HÉROS ===
-    st.markdown("### 🦸 Héros")
-    if hero_combatants:
-        # Créer colonnes pour aligner héros horizontalement
-        hero_cols = st.columns(len(hero_combatants))
-        for idx, hero_data in enumerate(hero_combatants):
-            with hero_cols[idx]:
-                hero = hero_data['character']
-                is_current = (hero_data['id'] == current_character_id)
+    if not all_combatants:
+        st.warning("Aucun combattant trouvé")
+        return
 
-                # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
-                display_hero_combat_card(hero, is_current_turn=is_current)
+    # === GRILLE AVEC MAX 7 CARTES PAR LIGNE ===
+    max_cards_per_row = 7
+    total_combatants = len(all_combatants)
+
+    # Calculer nombre de lignes nécessaires
+    num_rows = (total_combatants + max_cards_per_row - 1) // max_cards_per_row
+
+    # Parcourir ligne par ligne
+    for row_idx in range(num_rows):
+        # Calculer indices pour cette ligne
+        start_idx = row_idx * max_cards_per_row
+        end_idx = min(start_idx + max_cards_per_row, total_combatants)
+        row_combatants = all_combatants[start_idx:end_idx]
+
+        # Créer colonnes pour cette ligne
+        cols = st.columns(len(row_combatants))
+
+        # Afficher chaque carte
+        for col_idx, combatant_data in enumerate(row_combatants):
+            with cols[col_idx]:
+                character = combatant_data['character']
+                is_current = (combatant_data['id'] == current_character_id)
+
+                # Afficher carte selon le type (héros ou ennemi)
+                if combatant_data['faction'] == 'hero':
+                    display_hero_combat_card(character, is_current_turn=is_current)
+                else:
+                    display_enemy_combat_card(character, is_current_turn=is_current)
 
                 # Vérifier si le combattant a déjà joué ce round
-                has_played = hero_data['id'] in st.session_state.sandbox_v2_played_this_round
+                has_played = combatant_data['id'] in st.session_state.sandbox_v2_played_this_round
 
                 # Bouton "À son tour" si vivant et pas déjà en cours
-                if hero.is_alive() and not is_current:
+                if character.is_alive() and not is_current:
                     # Désactiver si déjà joué
                     button_disabled = has_played
                     button_label = "✅ A joué" if has_played else "▶️ À son tour"
 
                     if st.button(
                         button_label,
-                        key=f"select_hero_{hero_data['id']}",
+                        key=f"select_{combatant_data['faction']}_{combatant_data['id']}",
                         type="secondary" if has_played else "primary",
                         disabled=button_disabled,
                         use_container_width=True
                     ):
                         if not button_disabled:
-                            select_combatant_manually(hero_data['id'])
-    else:
-        st.warning("Aucun héros trouvé")
-
-    # === LIGNE 2 : ENNEMIS ===
-    st.markdown("### 👹 Ennemis")
-    if enemy_combatants:
-        # Créer colonnes pour aligner ennemis horizontalement
-        enemy_cols = st.columns(len(enemy_combatants))
-        for idx, enemy_data in enumerate(enemy_combatants):
-            with enemy_cols[idx]:
-                enemy = enemy_data['character']
-                is_current = (enemy_data['id'] == current_character_id)
-
-                # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
-                display_enemy_combat_card(enemy, is_current_turn=is_current)
-
-                # Vérifier si le combattant a déjà joué ce round
-                has_played = enemy_data['id'] in st.session_state.sandbox_v2_played_this_round
-
-                # Bouton "À son tour" si vivant et pas déjà en cours
-                if enemy.is_alive() and not is_current:
-                    # Désactiver si déjà joué
-                    button_disabled = has_played
-                    button_label = "✅ A joué" if has_played else "▶️ À son tour"
-
-                    if st.button(
-                        button_label,
-                        key=f"select_enemy_{enemy_data['id']}",
-                        type="secondary" if has_played else "primary",
-                        disabled=button_disabled,
-                        use_container_width=True
-                    ):
-                        if not button_disabled:
-                            select_combatant_manually(enemy_data['id'])
-    else:
-        st.warning("Aucun ennemi trouvé")
+                            select_combatant_manually(combatant_data['id'])
 
 def select_combatant_manually(combatant_id: str):
     """

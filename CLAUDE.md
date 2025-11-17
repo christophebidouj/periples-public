@@ -106,6 +106,33 @@ UI components are in `ui/components/` and should ONLY handle:
 
 Both interfaces REUSE the combat logic via adapters - they do NOT duplicate it.
 
+#### Sandbox V2 - Combat Display Modes
+
+Sandbox V2 has **two distinct display modes** controlled by the `initiative_setting` checkbox in the Selection tab (Onglet 1):
+
+**1. Initiative Mode (`display_combat_status()`)** - Location: `ui/components/sandbox_interface_v2.py:1260`
+- **When:** Initiative checkbox is ENABLED
+- **Display:** All combatants in a **single grid** following D20 initiative order
+- **Layout:** Max **8 cards per row** (auto-wraps to multiple rows if needed)
+- **Order:** Mixed heroes/enemies sorted by initiative value (highest to lowest)
+- **No titles:** Cards displayed without "Héros" / "Ennemis" section headers
+- **Data source:** `st.session_state.sandbox_v2_combatants` (already sorted by `InitiativeManager`)
+
+**2. Manual Mode (`display_combat_status_team_mode()`)** - Location: `ui/components/sandbox_interface_v2.py:1308`
+- **When:** Initiative checkbox is DISABLED
+- **Display:** All combatants in a **single grid** with manual selection
+- **Layout:** Max **7 cards per row** (auto-wraps to multiple rows if needed)
+- **Order:** Heroes first, then enemies (not sorted by initiative)
+- **No titles:** Cards displayed without separate section headers
+- **Interactive:** Each card has "▶️ À son tour" button for manual turn selection
+- **Data source:** `st.session_state.sandbox_v2_combatants` (organized by `organize_teams_without_initiative()`)
+
+**When to modify these functions:**
+- Changing card layout per row (8 vs 7 limit)
+- Altering card display order logic
+- Adding/removing visual separators between factions
+- Modifying grid responsiveness or breakpoints
+
 ## Development Workflow
 
 ### Adding New Functionality
