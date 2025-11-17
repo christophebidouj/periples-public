@@ -24,7 +24,7 @@ from debug_mode import create_debug_tab
 from hero_builds_data import get_abilities_for_level
 from ui.components.sandbox_interface_v2 import main_sandbox_v2
 
-# Import capacités et potions
+# Import des capacités et des potions
 try:
     from ui.components.forge_abilities_components import (
         display_abilities_selection_section,
