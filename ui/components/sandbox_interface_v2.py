@@ -1290,8 +1290,9 @@ def main_sandbox_v2():
 
     # === PHASE INITIATIVE ===
     elif phase == 'INITIATIVE':
-        # Vérifier si l'initiative est activée
-        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled', True)
+        # Vérifier si l'initiative est activée (lire depuis initiative_setting pour compatibilité)
+        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled',
+                                                   st.session_state.get('initiative_setting', True))
 
         if initiative_enabled:
             # MODE INITIATIVE ACTIVÉE : Jets de dés D20
@@ -1318,8 +1319,9 @@ def main_sandbox_v2():
 
     # === PHASE COMBAT ===
     elif phase == 'COMBAT':
-        # Déterminer le mode d'affichage
-        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled', True)
+        # Déterminer le mode d'affichage (lire depuis initiative_setting pour compatibilité)
+        initiative_enabled = st.session_state.get('sandbox_v2_initiative_enabled',
+                                                   st.session_state.get('initiative_setting', True))
 
         if initiative_enabled:
             # MODE INITIATIVE : Afficher ordre d'initiative et cartes dans l'ordre des jets
