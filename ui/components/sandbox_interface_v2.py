@@ -139,7 +139,8 @@ def init_sandbox_state():
         'sandbox_v2_history_index': -1,
         'sandbox_v2_action_state': None,  # Pour gérer le ciblage
         'sandbox_v2_current_actor': None,  # Personnage qui agit
-        'sandbox_v2_last_selection': None  # Mémoriser la dernière sélection
+        'sandbox_v2_last_selection': None,  # Mémoriser la dernière sélection
+        'sandbox_v2_played_this_round': []  # Liste des IDs qui ont joué ce round (mode manuel)
     }
 
     for key, value in defaults.items():
@@ -160,6 +161,7 @@ def save_game_state(description: str = "Action"):
         'turn_index': st.session_state.sandbox_v2_current_turn_index,
         'round_number': st.session_state.sandbox_v2_round_number,
         'log': st.session_state.sandbox_v2_log.copy(),
+        'played_this_round': st.session_state.sandbox_v2_played_this_round.copy(),
         'description': description
     }
 
@@ -178,6 +180,7 @@ def restore_previous_state():
         st.session_state.sandbox_v2_current_turn_index = state['turn_index']
         st.session_state.sandbox_v2_round_number = state['round_number']
         st.session_state.sandbox_v2_log = state['log'].copy()
+        st.session_state.sandbox_v2_played_this_round = state.get('played_this_round', []).copy()
 
         # Synchroniser héros/ennemis depuis les combattants
         hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
@@ -195,6 +198,7 @@ def restore_next_state():
         st.session_state.sandbox_v2_current_turn_index = state['turn_index']
         st.session_state.sandbox_v2_round_number = state['round_number']
         st.session_state.sandbox_v2_log = state['log'].copy()
+        st.session_state.sandbox_v2_played_this_round = state.get('played_this_round', []).copy()
 
         # Synchroniser héros/ennemis depuis les combattants
         hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
@@ -587,11 +591,14 @@ def display_guidance_banner():
         """, unsafe_allow_html=True)
 
     elif phase == 'INITIATIVE':
-        st.markdown("""
-        <div class="guidance-compact guidance-initiative">
-            🎲 Initiative - Cliquez pour générer l'ordre des tours
-        </div>
-        """, unsafe_allow_html=True)
+        # Ne pas afficher le message si on est en mode manuel
+        initiative_enabled = st.session_state.get('initiative_setting', True)
+        if initiative_enabled:
+            st.markdown("""
+            <div class="guidance-compact guidance-initiative">
+                🎲 Initiative - Cliquez pour générer l'ordre des tours
+            </div>
+            """, unsafe_allow_html=True)
 
     elif phase == 'COMBAT':
         current = get_current_combatant()
@@ -1146,13 +1153,21 @@ def display_combat_status_team_mode():
                 # Afficher carte stylée (RÉUTILISE display_hero_combat_card)
                 display_hero_combat_card(hero, is_current_turn=is_current)
 
+                # Vérifier si le combattant a déjà joué ce round
+                has_played = hero_data['id'] in st.session_state.sandbox_v2_played_this_round
+
                 # Bouton "À son tour" si vivant et pas déjà en cours
                 if hero.is_alive() and not is_current:
+                    # Désactiver si déjà joué
+                    button_disabled = has_played
+                    button_label = "✅ A joué" if has_played else "▶️ À son tour"
+
                     if st.button(
-                        "▶️ À son tour",
+                        button_label,
                         key=f"select_hero_{hero_data['id']}",
                         use_container_width=True,
-                        type="primary"
+                        type="secondary" if has_played else "primary",
+                        disabled=button_disabled
                     ):
                         select_combatant_manually(hero_data['id'])
     else:
@@ -1171,13 +1186,21 @@ def display_combat_status_team_mode():
                 # Afficher carte stylée (RÉUTILISE display_enemy_combat_card)
                 display_enemy_combat_card(enemy, is_current_turn=is_current)
 
+                # Vérifier si le combattant a déjà joué ce round
+                has_played = enemy_data['id'] in st.session_state.sandbox_v2_played_this_round
+
                 # Bouton "À son tour" si vivant et pas déjà en cours
                 if enemy.is_alive() and not is_current:
+                    # Désactiver si déjà joué
+                    button_disabled = has_played
+                    button_label = "✅ A joué" if has_played else "▶️ À son tour"
+
                     if st.button(
-                        "▶️ À son tour",
+                        button_label,
                         key=f"select_enemy_{enemy_data['id']}",
                         use_container_width=True,
-                        type="primary"
+                        type="secondary" if has_played else "primary",
+                        disabled=button_disabled
                     ):
                         select_combatant_manually(enemy_data['id'])
     else:
@@ -1199,6 +1222,10 @@ def select_combatant_manually(combatant_id: str):
                 char.start_hero_turn()
             else:
                 char.start_enemy_turn()
+
+            # Marquer comme ayant joué ce round (mode manuel)
+            if combatant_id not in st.session_state.sandbox_v2_played_this_round:
+                st.session_state.sandbox_v2_played_this_round.append(combatant_id)
 
             # Log
             name = char.name
@@ -1378,6 +1405,32 @@ def main_sandbox_v2():
         with st.expander("📜 Journal de Combat", expanded=False):
             for line in st.session_state.sandbox_v2_log[-20:]:
                 st.text(line)
+
+    # === BOUTON NOUVEAU ROUND (MODE MANUEL) ===
+    if phase == 'COMBAT' and not initiative_enabled:
+        # Afficher le bouton seulement si au moins un combattant a joué
+        if st.session_state.sandbox_v2_played_this_round:
+            st.markdown("---")
+            # Compter combien de combattants vivants ont joué
+            alive_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['character'].is_alive()]
+            played_count = len(st.session_state.sandbox_v2_played_this_round)
+            total_alive = len(alive_combatants)
+
+            st.markdown(f"**Round {st.session_state.sandbox_v2_round_number}** - {played_count}/{total_alive} combattants ont joué")
+
+            if st.button("🔄 Nouveau Round", type="primary", use_container_width=True):
+                # Réinitialiser la liste des joueurs
+                st.session_state.sandbox_v2_played_this_round = []
+                # Incrémenter le numéro de round
+                st.session_state.sandbox_v2_round_number += 1
+                # Réinitialiser l'index de tour
+                st.session_state.sandbox_v2_current_turn_index = -1
+                # Log
+                st.session_state.sandbox_v2_log.append("")
+                st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+                # Sauvegarder
+                save_game_state(f"Nouveau round {st.session_state.sandbox_v2_round_number}")
+                st.rerun()
 
     # === CONTRÔLES UNDO/REDO ===
     if st.session_state.sandbox_v2_game_history and phase == 'COMBAT':
