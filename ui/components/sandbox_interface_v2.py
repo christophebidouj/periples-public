@@ -209,6 +209,27 @@ def validate_character_state(char, context: str = ""):
 
     return len(issues) == 0, issues
 
+def ensure_character_attributes(char):
+    """
+    Garantit que tous les attributs requis sont présents sur un Character/Enemy
+    Initialise les attributs manquants avec leurs valeurs par défaut
+
+    Utilisé après restore undo/redo pour gérer les états sauvegardés AVANT
+    l'ajout de nouveaux attributs au modèle
+    """
+    # Attributs avec valeurs par défaut
+    default_attrs = {
+        'attack_done_this_turn': False,
+        'action_taken_this_turn': False,
+        'potion_used_this_turn': False,
+        'can_attack_this_turn': True,
+        'magic_abilities_used_this_turn': 0
+    }
+
+    for attr, default_value in default_attrs.items():
+        if not hasattr(char, attr):
+            setattr(char, attr, default_value)
+
 def reset_temporary_ui_flags():
     """
     Réinitialise tous les flags temporaires de l'interface utilisateur
@@ -264,6 +285,11 @@ def restore_previous_state():
         # NOUVEAU - Réinitialiser les flags temporaires de l'interface
         reset_temporary_ui_flags()
 
+        # NOUVEAU - Garantir que tous les attributs requis sont présents (rétrocompatibilité)
+        for combatant in st.session_state.sandbox_v2_combatants:
+            char = combatant['character']
+            ensure_character_attributes(char)
+
         # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
         for combatant in st.session_state.sandbox_v2_combatants:
             char = combatant['character']
@@ -293,6 +319,11 @@ def restore_next_state():
 
         # NOUVEAU - Réinitialiser les flags temporaires de l'interface
         reset_temporary_ui_flags()
+
+        # NOUVEAU - Garantir que tous les attributs requis sont présents (rétrocompatibilité)
+        for combatant in st.session_state.sandbox_v2_combatants:
+            char = combatant['character']
+            ensure_character_attributes(char)
 
         # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
         for combatant in st.session_state.sandbox_v2_combatants:
