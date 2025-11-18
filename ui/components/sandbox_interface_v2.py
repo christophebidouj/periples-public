@@ -990,7 +990,12 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if ability.name == "Parade" and hasattr(char, 'temporary_buffs'):
         parade_already_used = char.temporary_buffs.get('parade_used_this_turn', False)
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used
+    # NOUVEAU - Vérifier si Armure du Mage déjà utilisée (limitation 1/combat permanent)
+    armure_mage_already_used = False
+    if ability.name == "Armure du mage" and hasattr(char, 'temporary_buffs'):
+        armure_mage_already_used = char.temporary_buffs.get('armure_mage_active', False)
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not armure_mage_already_used
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
@@ -999,7 +1004,9 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
 
     # Label conditionnel selon la raison du blocage
     button_label = f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨"
-    if parade_already_used:
+    if armure_mage_already_used:
+        button_label = f"{type_icon} {short_name}\n✅ Active"
+    elif parade_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
     elif magic_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"

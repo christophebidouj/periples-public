@@ -349,6 +349,18 @@ class Character(BaseModel):
         if hasattr(self, 'temporary_buffs'):
             temporary_bonus = self.temporary_buffs.get('temporary_defense_bonus', 0)
 
+            # ARMURE DU MAGE - Bonus permanent parade (calculé depuis max_parade_tokens modifié)
+            if self.temporary_buffs.get('armure_mage_active', False):
+                # Armure du Mage ajoute +2 à max_parade_tokens
+                # On doit refléter ça dans l'affichage
+                armure_bonus = self.max_parade_tokens - base_parade - persistent_bonus - permanent_bonus
+                temporary_bonus += max(0, armure_bonus)  # S'assurer que c'est positif
+
+        # PARADE D'ATUCAN - Si actif, utiliser max_parade_tokens directement
+        if hasattr(self, 'temporary_buffs') and 'parade_original_max' in self.temporary_buffs:
+            # Parade d'Atucan est actif, retourner la valeur modifiée directement
+            return self.max_parade_tokens
+
         return base_parade + persistent_bonus + permanent_bonus + temporary_bonus
     
     def refresh_parade_tokens(self):
@@ -1208,11 +1220,16 @@ class Character(BaseModel):
         # Reset état du tour standard (inclut magic_abilities_used_this_turn)
         self.reset_turn_state()
 
+        # NOUVEAU - Restaurer jetons de parade originaux (Parade d'Atucan)
+        if hasattr(self, 'temporary_buffs') and 'parade_original_max' in self.temporary_buffs:
+            self.max_parade_tokens = self.temporary_buffs['parade_original_max']
+            self.temporary_buffs.pop('parade_original_max', None)
+
         # NOUVEAU - Nettoyer flags de capacités par tour + buffs temporaires de tour
         if hasattr(self, 'temporary_buffs'):
             self.temporary_buffs.pop('parade_used_this_turn', None)
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
-            self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan
+            self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan (affichage)
 
         # Recharger jetons parade avec effets
         self.refresh_parade_tokens()

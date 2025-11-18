@@ -133,15 +133,22 @@ class AtucanParade(BaseAbility):
                 log.append(f"⚠️ {caster.name} n'a pas de bouclier équipé (Rondache/Bouclier requis)")
                 return False
 
-            # 2. Appliquer bonus défense avec API RÉELLE temporary_buffs
-            caster.temporary_buffs['temporary_defense_bonus'] = shield_defense
+            # 2. CORRIGÉ - Sauvegarder la valeur originale avant modification
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['parade_original_max'] = caster.max_parade_tokens
 
-            # 3. Empêcher attaque ce tour avec API RÉELLE
+            # 3. Modifier RÉELLEMENT les jetons de parade (pas juste l'affichage)
+            caster.max_parade_tokens += shield_defense
+            caster.current_parade_tokens = caster.max_parade_tokens  # Recharge immédiate avec nouveau max
+
+            # 4. Empêcher attaque ce tour avec API RÉELLE
             caster.can_attack_this_turn = False  # API Character pour bloquer attaque
             caster.temporary_buffs['parade_used_this_turn'] = True  # Marquer comme utilisée
 
             log.append(f"🛡️ {caster.name} adopte une posture défensive avec son {shield_name}")
-            log.append(f"   ⚔️ Défense doublée (+{shield_defense}), ne peut pas attaquer ce tour")
+            log.append(f"   ⚔️ Jetons de parade: {caster.temporary_buffs['parade_original_max']} → {caster.max_parade_tokens} (bonus +{shield_defense})")
+            log.append(f"   ⚠️ Ne peut pas attaquer ce tour")
 
             return True
             
