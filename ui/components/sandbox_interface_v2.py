@@ -1335,7 +1335,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     current_hp = hero.current_health
     max_hp = hero.get_total_health()
     attack = hero.get_total_damage()
-    defense = hero.get_total_parade()
+    defense = hero.current_parade_tokens  # CORRIGÉ: Afficher jetons actuels, pas maximum
     magic = hero.get_total_spells()
     is_alive = hero.is_alive()
 
