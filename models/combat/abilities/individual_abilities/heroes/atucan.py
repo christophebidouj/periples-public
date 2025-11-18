@@ -58,38 +58,38 @@ class AtucanImpositionDesMains(BaseAbility):
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
-            # 2. Trouver cibles valides (alliés vivants sauf Atucan)
-            allies = self._get_all_allies(caster, context)
+
+            # 2. Trouver cibles valides (alliés vivants SAUF Atucan lui-même - règle officielle)
+            allies = [hero for hero in self._get_all_allies(caster, context) if hero != caster]
             if not allies:
-                log.append(f"⚠️ {caster.name} ne trouve personne à soigner")
+                log.append(f"⚠️ {caster.name} ne trouve personne à soigner (sauf lui-même)")
                 return False
-            
+
             # 3. Calcul soins selon mécanisme officiel - API RÉELLE
             # Utiliser current_health directement (API confirmée)
             atucan_current_health = caster.current_health
             healing_amount = max(1, atucan_current_health // 2)  # Au moins 1 PV
-            
-            # 4. Sélectionner cible (allié le plus blessé)  
+
+            # 4. Sélectionner cible (allié le plus blessé)
             target = min(allies, key=lambda ally: ally.current_health)
-            
+
             # 5. Appliquer soins avec API OFFICIELLE BaseAbility
             actual_healing = self._apply_healing(target, healing_amount, log)
-            
+
             log.append(f"✨ {caster.name} impose ses mains sur {target.name}")
             log.append(f"   💖 Soins = PV actuels Atucan ({atucan_current_health}) ÷ 2 = {healing_amount}")
-            
+
             return True
-            
+
         except Exception as e:
             log.append(f"❌ Erreur Imposition des mains: {e}")
             return False
-    
+
     def get_preview(self) -> str:
         return f"💖 {self.name}: Soins = PV actuels Atucan / 2 (Coût: {self.spell_cost} sort)"
-    
+
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        """Cible les alliés vivants sauf Atucan"""
+        """Cible les alliés vivants SAUF Atucan (règle officielle)"""
         return [hero for hero in all_heroes if hero != caster and self._is_alive(hero)]
 
 
