@@ -657,6 +657,12 @@ def next_turn():
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
         current = get_current_combatant()
         if current and current['character'].is_alive():
+            # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
+            char = current['character']
+            if current['faction'] == 'hero':
+                char.start_hero_turn()
+            else:
+                char.start_enemy_turn()
             return  # Combattant vivant trouvé !
 
         # Combattant mort, continuer la recherche
