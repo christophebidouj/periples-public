@@ -56,6 +56,13 @@ class AbilityEffectsManager:
             individual_ability = get_ability(hero.code, ability.ability_number)
             
             if individual_ability:
+                # SYNC: Copier les compteurs d'utilisation depuis l'objet CSV vers l'instance individuelle
+                # Ceci préserve les bonus d'équipement (ex: Bâton de puissance +1 utilisation)
+                if hasattr(ability, 'uses_remaining_combat') and hasattr(individual_ability, 'uses_remaining_combat'):
+                    individual_ability.uses_remaining_combat = ability.uses_remaining_combat
+                if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
+                    individual_ability.uses_per_combat = ability.uses_per_combat
+
                 # Préparer le contexte pour l'exécution
                 base_context = {
                     'spell_manager': self.spell_manager,
@@ -63,21 +70,28 @@ class AbilityEffectsManager:
                     'ability': ability
                 }
                 context = {**base_context, **(context or {})}
-                
+
                 # Déterminer les cibles (pour l'instant, le lanceur par défaut)
                 # TODO: Améliorer le système de ciblage dans les prochaines versions
                 targets = [hero]
-                
+
                 # Exécuter la capacité individuelle
                 log.append(f"🔧 Utilisation de capacité individuelle: {individual_ability.name}")
                 success = individual_ability.execute(hero, targets, context, log)
-                
+
+                # SYNC RETOUR: Copier les compteurs MIS À JOUR vers l'objet CSV
+                # Ceci permet de conserver le décompte entre utilisations
+                if hasattr(ability, 'uses_remaining_combat') and hasattr(individual_ability, 'uses_remaining_combat'):
+                    ability.uses_remaining_combat = individual_ability.uses_remaining_combat
+                if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
+                    ability.uses_per_combat = individual_ability.uses_per_combat
+
                 if success:
                     self.individual_abilities_used += 1
                     log.append(f"✅ Capacité individuelle {individual_ability.name} exécutée avec succès")
                 else:
                     log.append(f"⚠️ Capacité individuelle {individual_ability.name} a échoué")
-                
+
                 return success
             
         except Exception as e:
