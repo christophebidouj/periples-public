@@ -161,22 +161,36 @@ def validate_character_state(char, context: str = ""):
     """
     issues = []
 
-    # Attributs critiques de combat
-    critical_attrs = [
+    # Déterminer si c'est un Character (héros) ou Enemy
+    is_hero = hasattr(char, 'abilities')
+
+    # Attributs communs à tous (héros et ennemis)
+    common_attrs = [
         'current_health',
+        'current_parade_tokens'
+    ]
+
+    # Attributs spécifiques aux héros
+    hero_attrs = [
         'current_spells',
         'spells_used',
         'magic_abilities_used_this_turn',
-        'current_parade_tokens',
         'can_attack_this_turn',
         'attack_done_this_turn',
         'action_taken_this_turn',
         'potion_used_this_turn'
     ]
 
-    for attr in critical_attrs:
+    # Validation des attributs communs
+    for attr in common_attrs:
         if not hasattr(char, attr):
             issues.append(f"Attribut manquant: {attr}")
+
+    # Validation des attributs spécifiques aux héros
+    if is_hero:
+        for attr in hero_attrs:
+            if not hasattr(char, attr):
+                issues.append(f"Attribut manquant: {attr}")
 
     # Vérifier cohérence des valeurs
     if hasattr(char, 'current_health') and char.current_health < 0:
@@ -217,18 +231,25 @@ def ensure_character_attributes(char):
     Utilisé après restore undo/redo pour gérer les états sauvegardés AVANT
     l'ajout de nouveaux attributs au modèle
     """
-    # Attributs avec valeurs par défaut
-    default_attrs = {
-        'attack_done_this_turn': False,
-        'action_taken_this_turn': False,
-        'potion_used_this_turn': False,
-        'can_attack_this_turn': True,
-        'magic_abilities_used_this_turn': 0
-    }
+    # Déterminer si c'est un Character (héros) ou Enemy
+    # Les héros ont des abilities, les ennemis n'en ont pas
+    is_hero = hasattr(char, 'abilities')
 
-    for attr, default_value in default_attrs.items():
-        if not hasattr(char, attr):
-            setattr(char, attr, default_value)
+    if is_hero:
+        # Attributs spécifiques aux héros (Character)
+        default_attrs = {
+            'attack_done_this_turn': False,
+            'action_taken_this_turn': False,
+            'potion_used_this_turn': False,
+            'can_attack_this_turn': True,
+            'magic_abilities_used_this_turn': 0
+        }
+
+        for attr, default_value in default_attrs.items():
+            if not hasattr(char, attr):
+                # Utiliser __dict__ pour éviter la validation Pydantic stricte
+                char.__dict__[attr] = default_value
+    # Les Enemy n'ont pas besoin de ces attributs spécifiques aux héros
 
 def reset_temporary_ui_flags():
     """
