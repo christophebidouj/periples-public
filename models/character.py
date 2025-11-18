@@ -1203,6 +1203,11 @@ class Character(BaseModel):
         # Reset état du tour standard (inclut magic_abilities_used_this_turn)
         self.reset_turn_state()
 
+        # NOUVEAU - Nettoyer flags de capacités par tour (ex: parade_used_this_turn)
+        if hasattr(self, 'temporary_buffs'):
+            self.temporary_buffs.pop('parade_used_this_turn', None)
+            self.temporary_buffs.pop('cannot_attack_this_turn', None)
+
         # Recharger jetons parade avec effets
         self.refresh_parade_tokens()
         

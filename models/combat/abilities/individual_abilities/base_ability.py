@@ -109,23 +109,26 @@ class BaseAbility(ABC):
             return actual_healing
         
         # Système de PV classique (fallback) - PV augmentent avec les soins
-        elif hasattr(target, 'current_health') and hasattr(target, 'max_health'):
-            old_health = target.current_health
-            target.current_health = min(target.current_health + amount, target.max_health)
-            actual_healing = target.current_health - old_health
-            
-            if actual_healing > 0:
-                log.append(f"💚 {target.name} récupère {actual_healing} PV")
-            return actual_healing
-        
-        # Système simple sans max_health
         elif hasattr(target, 'current_health'):
             old_health = target.current_health
-            target.current_health = target.current_health + amount
-            actual_healing = amount
-            
+
+            # Déterminer PV max (utiliser get_total_health() pour les héros, max_health pour les ennemis)
+            if hasattr(target, 'get_total_health'):
+                max_hp = target.get_total_health()
+            elif hasattr(target, 'max_health'):
+                max_hp = target.max_health
+            else:
+                # Pas de limite si aucun max défini (cas rare)
+                max_hp = old_health + amount
+
+            # Plafonner les soins au maximum
+            target.current_health = min(target.current_health + amount, max_hp)
+            actual_healing = target.current_health - old_health
+
             if actual_healing > 0:
-                log.append(f"💚 {target.name} récupère {actual_healing} PV")
+                log.append(f"💚 {target.name} récupère {actual_healing} PV (max {max_hp})")
+            elif amount > 0 and actual_healing == 0:
+                log.append(f"⚠️ {target.name} est déjà à PV max ({max_hp})")
             return actual_healing
         
         return 0

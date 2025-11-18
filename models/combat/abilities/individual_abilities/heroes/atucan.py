@@ -107,33 +107,40 @@ class AtucanParade(BaseAbility):
         self.spell_cost = 0  # Coût officiel: 0 sort
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Double défense bouclier avec API temporary_defense_bonus CORRIGÉE"""
+        """Double défense bouclier avec API temporary_defense_bonus CORRIGÉE + limitation 1/tour"""
         try:
             # Pas de coût en sorts (capacité gratuite)
-            
-            # 1. Vérifier équipement bouclier avec API RÉELLE
+
+            # 0. NOUVEAU - Vérifier si déjà utilisée ce tour (empêcher doublement infini)
+            if caster.temporary_buffs.get('parade_used_this_turn', False):
+                log.append(f"⚠️ {caster.name} a déjà utilisé Parade ce tour")
+                return False
+
+            # 1. Vérifier équipement bouclier avec API RÉELLE (type=armure ET defense>0)
             shield_defense = 0
             shield_name = "bouclier"
-            
+
             for equipment in caster.equipped_items:
-                if equipment.type.lower() in ['bouclier', 'shield']:
+                # Les boucliers sont de type "armure" avec defense > 0
+                if equipment.type.lower() == 'armure' and equipment.defense > 0:
                     shield_defense += equipment.defense
                     shield_name = equipment.name if hasattr(equipment, 'name') else "bouclier"
                     break
-            
+
             if shield_defense == 0:
-                log.append(f"⚠️ {caster.name} n'a pas de bouclier équipé")
+                log.append(f"⚠️ {caster.name} n'a pas de bouclier équipé (nécessite armure avec défense)")
                 return False
-            
+
             # 2. Appliquer bonus défense avec API RÉELLE temporary_buffs
             caster.temporary_buffs['temporary_defense_bonus'] = shield_defense
-            
+
             # 3. Empêcher attaque ce tour avec API RÉELLE
-            caster.temporary_buffs['cannot_attack_this_turn'] = True
-            
+            caster.can_attack_this_turn = False  # API Character pour bloquer attaque
+            caster.temporary_buffs['parade_used_this_turn'] = True  # Marquer comme utilisée
+
             log.append(f"🛡️ {caster.name} adopte une posture défensive avec son {shield_name}")
             log.append(f"   ⚔️ Défense doublée (+{shield_defense}), ne peut pas attaquer ce tour")
-            
+
             return True
             
         except Exception as e:
