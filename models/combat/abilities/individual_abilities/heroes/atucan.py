@@ -182,14 +182,14 @@ class AtucanChatimentDivin(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active buff châtiment divin - 2e frappe magique après attaque réussie"""
         try:
-            # 1. Consommer coût sorts avec API officielle
-            spell_manager = context.get('spell_manager')
-            if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
-                return False
-
-            # 2. Vérifier limitation combat
+            # 1. CORRIGÉ - Vérifier limitation combat AVANT de consommer sorts
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Châtiment divin déjà utilisé ce combat")
+                return False
+
+            # 2. Consommer coût sorts avec API officielle
+            spell_manager = context.get('spell_manager')
+            if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
 
             # 3. CORRIGÉ - Activer buff pour 2e frappe magique séparée (pas un simple bonus)

@@ -538,7 +538,9 @@ def configure_combat():
                 if abilities and hasattr(hero, 'abilities'):
                     hero_abilities = loader.get_hero_abilities(hero_code)
                     if hero_abilities:
-                        hero.add_abilities(hero_abilities)
+                        # CRITIQUE: Deepcopy pour éviter réutilisation des mêmes instances (singletons)
+                        hero_abilities_copy = [deepcopy(ability) for ability in hero_abilities]
+                        hero.add_abilities(hero_abilities_copy)
                         for num in abilities:
                             hero.unlock_ability(num)
             else:
@@ -576,7 +578,9 @@ def configure_combat():
                     if abilities_level > 0 and hasattr(hero, 'abilities'):
                         hero_abilities = loader.get_hero_abilities(hero_code)
                         if hero_abilities:
-                            hero.add_abilities(hero_abilities)
+                            # CRITIQUE: Deepcopy pour éviter réutilisation des mêmes instances
+                            hero_abilities_copy = [deepcopy(ability) for ability in hero_abilities]
+                            hero.add_abilities(hero_abilities_copy)
                             # Débloquer capacités 1 à abilities_level
                             for num in range(1, min(abilities_level + 1, 7)):  # Max 6 capacités
                                 hero.unlock_ability(num)
