@@ -757,6 +757,25 @@ def get_current_combatant() -> Optional[Dict]:
         return st.session_state.sandbox_v2_combatants[st.session_state.sandbox_v2_current_turn_index]
     return None
 
+def is_enemy_stunned(enemy) -> tuple:
+    """
+    Vérifie si un ennemi est étourdi (stunned) SANS décrémenter le compteur
+
+    Fonction centralisée utilisée par :
+    - display_enemy_interface() : Bloquer les actions si stunné
+    - display_enemy_combat_card() : Afficher badge "😵 Étourdi (X tours)"
+    - Mode manuel : Désactiver bouton "▶️ À son tour"
+
+    Returns:
+        (is_stunned, turns_remaining): (bool, int)
+        - is_stunned: True si l'ennemi a stunned > 0
+        - turns_remaining: Nombre de tours restants (0 si pas stunné)
+    """
+    if hasattr(enemy, 'status_effects') and enemy.status_effects:
+        stunned_turns = enemy.status_effects.get('stunned', 0)
+        return (stunned_turns > 0, stunned_turns)
+    return (False, 0)
+
 def next_turn():
     """
     Passe au tour suivant EN SAUTANT les combattants morts (utilise is_alive())
@@ -870,6 +889,9 @@ def display_enemy_interface(combatant: Dict):
     """Interface ennemi - Style Arène"""
     char = combatant['character']
 
+    # CRITIQUE : Vérifier stun AVANT d'afficher les actions (fonction centralisée)
+    is_stunned, stunned_turns = is_enemy_stunned(char)
+
     # Stats ennemis
     current_hp = char.current_health
     max_hp = char.max_health
@@ -901,7 +923,25 @@ def display_enemy_interface(combatant: Dict):
     </div>
     """, unsafe_allow_html=True)
 
-    # Actions ennemi
+    # Si l'ennemi est étourdi, bloquer les actions et passer automatiquement le tour
+    if is_stunned:
+        st.markdown("### 😵 Étourdi !")
+        st.warning(f"**{char.name}** est étourdi pour encore **{stunned_turns} tour(s)** ! Son tour est automatiquement sauté.")
+
+        # Bouton pour passer manuellement (mode manuel) ou auto-skip (mode initiative)
+        if st.button("⏭️ Sauter le tour (Étourdi)", key=f"sandbox_enemy_stunned_{combatant['id']}", type="secondary", use_container_width=True):
+            # Décrémenter le compteur via check_enemy_status_effects()
+            if hasattr(char, 'check_enemy_status_effects'):
+                status = char.check_enemy_status_effects()
+                stunned_after = char.status_effects.get('stunned', 0) if hasattr(char, 'status_effects') else 0
+                st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} → {stunned_after} tour(s)) - Tour sauté")
+
+            save_game_state(f"{char.name} étourdi - tour sauté")
+            next_turn()
+            st.rerun()
+        return  # NE PAS afficher les actions d'attaque
+
+    # Actions ennemi (seulement si NON stunné)
     st.markdown("### ⚔️ Actions")
 
     # Vérifier si on est en mode sélection de cible pour l'ennemi
@@ -1466,12 +1506,8 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🎯 {defense} • 🛡️ {parade_tokens}{magic_indicator}
     </div>"""
 
-    # Vérifier si l'ennemi est étourdi (stunned)
-    is_stunned = False
-    stunned_turns = 0
-    if hasattr(enemy, 'status_effects') and enemy.status_effects:
-        stunned_turns = enemy.status_effects.get('stunned', 0)
-        is_stunned = stunned_turns > 0
+    # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
+    is_stunned, stunned_turns = is_enemy_stunned(enemy)
 
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
@@ -1773,17 +1809,14 @@ def display_combat_status_team_mode():
                 # Vérifier si le combattant a déjà joué ce round
                 has_played = combatant_data['id'] in st.session_state.sandbox_v2_played_this_round
 
-                # NOUVEAU - Vérifier si le combattant est étourdi (stunned)
-                is_stunned = False
-                if hasattr(character, 'status_effects') and character.status_effects:
-                    is_stunned = character.status_effects.get('stunned', 0) > 0
+                # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
+                is_stunned, stunned_turns = is_enemy_stunned(character) if combatant_data['faction'] == 'enemy' else (False, 0)
 
                 # Bouton "À son tour" si vivant et pas déjà en cours
                 if character.is_alive() and not is_current:
                     # Désactiver si déjà joué OU étourdi
                     button_disabled = has_played or is_stunned
                     if is_stunned:
-                        stunned_turns = character.status_effects.get('stunned', 0)
                         button_label = f"😵 Étourdi ({stunned_turns} tours)"
                     elif has_played:
                         button_label = "✅ A joué"
