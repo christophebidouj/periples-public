@@ -1042,8 +1042,10 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
 
     # NOUVEAU - Vérifier si Parade a déjà été utilisée ce tour (limitation 1/tour)
     parade_already_used = False
+    parade_blocked_by_attack = False
     if ability.name == "Parade" and hasattr(char, 'temporary_buffs'):
         parade_already_used = char.temporary_buffs.get('parade_used_this_turn', False)
+        parade_blocked_by_attack = char.temporary_buffs.get('parade_blocked_by_attack', False)
 
     # NOUVEAU - Vérifier si Armure du Mage déjà utilisée (limitation 1/combat permanent)
     armure_mage_already_used = False
@@ -1058,7 +1060,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         combat_uses_remaining = ability.uses_remaining_combat
         combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not armure_mage_already_used and not combat_uses_exhausted
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
@@ -1076,6 +1078,8 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         button_label = f"{type_icon} {short_name}\n✅ Active"
     elif parade_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
+    elif parade_blocked_by_attack:
+        button_label = f"{type_icon} {short_name}\n⚠️ Attaque faite"
     elif combat_uses_exhausted:
         button_label = f"{type_icon} {short_name}\n❌ 0/{ability.uses_per_combat} restant"
     elif magic_already_used:
@@ -1119,6 +1123,12 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             # Marquer qu'une attaque a été effectuée (empêche d'attaquer à nouveau + bloquer capacités magiques)
             char.can_attack_this_turn = False
             char.attack_done_this_turn = True  # NOUVEAU - Empêche capacités magiques après attaque (règle p.24)
+
+            # NOUVEAU - Si Atucan attaque, désactiver Parade pour ce tour (règle inverse de Parade)
+            if hasattr(char, 'code') and char.code == "P-3":  # Atucan
+                if not hasattr(char, 'temporary_buffs'):
+                    char.temporary_buffs = {}
+                char.temporary_buffs['parade_blocked_by_attack'] = True
 
             st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")

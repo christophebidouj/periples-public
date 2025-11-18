@@ -116,6 +116,11 @@ class AtucanParade(BaseAbility):
                 log.append(f"⚠️ {caster.name} a déjà utilisé Parade ce tour")
                 return False
 
+            # 0bis. NOUVEAU - Vérifier si bloquée par attaque ce tour (règle inverse)
+            if caster.temporary_buffs.get('parade_blocked_by_attack', False):
+                log.append(f"⚠️ {caster.name} ne peut pas utiliser Parade après avoir attaqué")
+                return False
+
             # 1. Vérifier équipement bouclier avec API RÉELLE (via nom officiel)
             # Les boucliers officiels : Rondache de bois, Bouclier de bois, Bouclier de fer
             shield_defense = 0

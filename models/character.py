@@ -1034,9 +1034,13 @@ class Character(BaseModel):
         
         # Consommer les buffs d'attaque unique
         consumed_buffs = []
-        
+
+        # CORRIGÉ - Ne PAS consommer double_next_attack si c'est Forme de loup (géré par combat_actions)
         if 'double_next_attack' in self.temporary_buffs:
-            consumed_buffs.append('double_next_attack')
+            # Vérifier si c'est Forme de loup d'Elneha (compteur personnalisé)
+            is_wolf_form = self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0
+            if not is_wolf_form:
+                consumed_buffs.append('double_next_attack')
         
         if 'damage_bonus_next_attack' in self.temporary_buffs:
             consumed_buffs.append('damage_bonus_next_attack')
@@ -1238,6 +1242,7 @@ class Character(BaseModel):
         # NOUVEAU - Nettoyer flags de capacités par tour + buffs temporaires de tour
         if hasattr(self, 'temporary_buffs'):
             self.temporary_buffs.pop('parade_used_this_turn', None)
+            self.temporary_buffs.pop('parade_blocked_by_attack', None)  # NOUVEAU - Reset blocage Parade par attaque
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
             self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan (affichage)
 
