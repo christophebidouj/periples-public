@@ -536,7 +536,11 @@ class CombatActions:
 
         damage_type_emoji = "✨" if ignore_parade else "👹"
         log.append(f"{damage_type_emoji} {enemy_name} attaque {target_name}: {damage} dégâts")
-        
+
+        # NOUVEAU : Log Aura sacrée si active
+        if damage_result.get('aura_reduction', 0) > 0:
+            log.append(f"  ✨ Aura sacrée : -{damage_result['aura_reduction']} dégât(s) ignoré(s)")
+
         if damage_result['blocked_by_parade'] > 0:
             log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
         else:

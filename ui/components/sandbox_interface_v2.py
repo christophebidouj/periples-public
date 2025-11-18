@@ -2043,11 +2043,17 @@ def main_sandbox_v2():
 
             # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
             if current['faction'] == 'enemy' and initiative_enabled:
-                # CORRIGÉ : Utiliser is_enemy_stunned() qui NE décrémente PAS
-                # next_turn() se charge de décrémenter via check_enemy_status_effects()
                 is_stunned, stunned_turns = is_enemy_stunned(current['character'])
                 if is_stunned:
-                    # Ennemi étourdi : passer au tour suivant (next_turn décrémentera)
+                    # CRITIQUE : Décrémenter AVANT de skip (sinon jamais décrémenté)
+                    if hasattr(current['character'], 'check_enemy_status_effects'):
+                        status = current['character'].check_enemy_status_effects()
+                        stunned_after = current['character'].status_effects.get('stunned', 0) if hasattr(current['character'], 'status_effects') else 0
+                        st.session_state.sandbox_v2_log.append(
+                            f"😵 {current['character'].name} est étourdi ! ({stunned_turns} → {stunned_after} tour(s)) - Tour sauté"
+                        )
+
+                    # Passer au tour suivant
                     next_turn()
                     st.rerun()
                     return

@@ -1246,6 +1246,10 @@ class Character(BaseModel):
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
             self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan (affichage)
 
+            # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)
+            if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
+                self.temporary_buffs['double_next_attack'] = True
+
         # Recharger jetons parade avec effets
         self.refresh_parade_tokens()
         
