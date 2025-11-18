@@ -494,9 +494,12 @@ class SandboxTurnManagerAdapter:
         enemy_stats = enemy.get_stats_for_players(player_count)
         damage = enemy_stats['damage']
 
-        damage_result = target.apply_damage_with_parade(damage)
+        # Dégâts magiques ignorent la parade (règles officielles p.26)
+        ignore_parade = getattr(enemy, 'has_magical_damage', False)
+        damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
 
-        log.append(f"⚔️ {enemy.name} attaque {target.name} : {damage} dégâts")
+        damage_type_emoji = "✨" if ignore_parade else "⚔️"
+        log.append(f"{damage_type_emoji} {enemy.name} attaque {target.name} : {damage} dégâts")
         if damage_result['blocked_by_parade'] > 0:
             log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
 

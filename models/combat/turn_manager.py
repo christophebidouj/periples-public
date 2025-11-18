@@ -105,13 +105,16 @@ class TurnManager:
             
             # Les joueurs choisissent qui prend les dégâts (héros ou pets)
             target = self.heroes_distribute_damage(all_targets, damage, enemy.name, log)
-            
+
             # Application dégâts avec système parade
-            damage_result = target.apply_damage_with_parade(damage)
-            
+            # Dégâts magiques ignorent la parade (règles officielles p.26)
+            ignore_parade = getattr(enemy, 'has_magical_damage', False)
+            damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
+
             # Log détaillé avec nom approprié
             target_name = getattr(target, 'display_name', target.name)
-            log_parts = [f"{enemy.name} attaque l'équipe: {damage} dégâts → {target_name}"]
+            damage_emoji = "✨" if ignore_parade else "⚔️"
+            log_parts = [f"{damage_emoji} {enemy.name} attaque l'équipe: {damage} dégâts → {target_name}"]
             
             if damage_result['blocked_by_parade'] > 0:
                 log_parts.append(f"({damage_result['blocked_by_parade']} bloqués par parade)")
