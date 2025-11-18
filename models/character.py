@@ -324,10 +324,10 @@ class Character(BaseModel):
         self.current_parade_tokens = self.max_parade_tokens
     
     def get_total_parade(self) -> int:
-        """Version améliorée pour calculer la parade max avec bonus persistants"""
+        """Version améliorée pour calculer la parade max avec bonus persistants + temporaires"""
         # Parade de base
         base_parade = self.get_equipment_bonus('defense')
-        
+
         # Bonus persistants
         persistent_bonus = 0
         if hasattr(self, 'active_persistent_effects'):
@@ -337,14 +337,19 @@ class Character(BaseModel):
                 persistent_bonus = persistent_system.get_parade_bonus(self)
             except ImportError:
                 pass
-        
+
         # Buffs permanents
         permanent_bonus = 0
         if hasattr(self, 'permanent_buffs'):
             if self.permanent_buffs.get('defense_sans_armure', False):
                 permanent_bonus += 1
-        
-        return base_parade + persistent_bonus + permanent_bonus
+
+        # NOUVEAU - Buffs temporaires (Parade d'Atucan, Armure du Mage de Liarie, etc.)
+        temporary_bonus = 0
+        if hasattr(self, 'temporary_buffs'):
+            temporary_bonus = self.temporary_buffs.get('temporary_defense_bonus', 0)
+
+        return base_parade + persistent_bonus + permanent_bonus + temporary_bonus
     
     def refresh_parade_tokens(self):
         """Version améliorée de refresh_parade_tokens qui gère les effets persistants"""
@@ -1203,10 +1208,11 @@ class Character(BaseModel):
         # Reset état du tour standard (inclut magic_abilities_used_this_turn)
         self.reset_turn_state()
 
-        # NOUVEAU - Nettoyer flags de capacités par tour (ex: parade_used_this_turn)
+        # NOUVEAU - Nettoyer flags de capacités par tour + buffs temporaires de tour
         if hasattr(self, 'temporary_buffs'):
             self.temporary_buffs.pop('parade_used_this_turn', None)
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
+            self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan
 
         # Recharger jetons parade avec effets
         self.refresh_parade_tokens()
