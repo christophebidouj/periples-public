@@ -1977,7 +1977,18 @@ def main_sandbox_v2():
                 st.rerun()
                 return
 
-            # Afficher interface seulement si vivant
+            # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
+            if current['faction'] == 'enemy' and initiative_enabled:
+                if hasattr(current['character'], 'status_effects') and current['character'].status_effects:
+                    stunned_turns = current['character'].status_effects.get('stunned', 0)
+                    if stunned_turns > 0:
+                        # Ennemi étourdi : sauter son tour immédiatement
+                        # next_turn() va décrémenter le compteur et logger le message approprié
+                        next_turn()
+                        st.rerun()
+                        return
+
+            # Afficher interface seulement si vivant ET non-stunné
             if current['faction'] == 'hero':
                 display_hero_interface(current)
             else:
