@@ -428,7 +428,8 @@ class ManualTargeting:
 
         # Liste héros avec cartes stylées
         for hero in alive_heroes:
-            parade = hero.get_total_parade()
+            # CORRIGÉ : Utiliser jetons actuels (pas maximum) pour calcul correct après Parade
+            parade = hero.current_parade_tokens
             damage_after_parade = max(0, stats['damage'] - parade)
 
             col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
@@ -1445,11 +1446,21 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         ❤️ {current_hp}/{max_hp} • ⚔️ {attack} • 🛡️ {defense} • ✨ {magic}
     </div>"""
 
+    # NOUVEAU - Vérifier buff Forme de loup (RÉUTILISE temporary_buffs API)
+    wolf_form_active = False
+    wolf_remaining = 0
+    if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
+        wolf_remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
+        wolf_form_active = wolf_remaining > 0
+
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
     elif not is_alive:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 INCONSCIENT</div>'
+    elif wolf_form_active:
+        # NOUVEAU : Badge Forme de loup avec compteur et indication x2 dégâts
+        build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FF4500; text-shadow: 2px 2px 4px black;">🐺 LOUP ×2 ATK<br/>({wolf_remaining} rest.)</div>'
     else:
         build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #90EE90;">✓ Prêt</div>'
 
