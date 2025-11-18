@@ -58,7 +58,9 @@ class CombatActions:
         # Critique
         if self.rules.criticals and attack_roll == 20:
             final_damage = damage_value * 2
-            damage_result = target.apply_damage_with_parade(final_damage)
+            # Dégâts magiques ignorent la parade (règles officielles p.26)
+            ignore_parade = (damage_type == 'magical')
+            damage_result = target.apply_damage_with_parade(final_damage, ignore_parade=ignore_parade)
             
             total_attack = attack_roll + hero.get_total_precision()
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
@@ -96,9 +98,11 @@ class CombatActions:
         # Attaque normale
         else:
             total_attack = attack_roll + hero.get_total_precision()
-            
+
             if total_attack >= target.defense:
-                damage_result = target.apply_damage_with_parade(damage_value)
+                # Dégâts magiques ignorent la parade (règles officielles p.26)
+                ignore_parade = (damage_type == 'magical')
+                damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade)
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 
                 log_parts = [f"{damage_type_emoji} {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
@@ -280,9 +284,11 @@ class CombatActions:
         
         total_attack = attack_roll + pet.precision
         pet_name = getattr(pet, 'display_name', 'Pet')
-        
+
         if total_attack >= target.defense:
-            damage_result = target.apply_damage_with_parade(damage_value)
+            # Dégâts magiques des pets ignorent la parade (règles officielles p.26)
+            ignore_parade = (damage_type == 'magical')
+            damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade)
             damage_type_emoji = "✨" if damage_type == "magical" else "🐾"
             
             log.append(f"{damage_type_emoji} {pet_name}[{total_attack}] → {target.name}({damage_result['health_damage']})")
@@ -495,9 +501,12 @@ class CombatActions:
             return
         
         # Attaque normale
-        damage_result = target.apply_damage_with_parade(damage)
-        
-        log.append(f"👹 {enemy_name} attaque {target_name}: {damage} dégâts")
+        # Dégâts magiques des ennemis ignorent la parade (règles officielles p.26)
+        ignore_parade = getattr(enemy, 'has_magical_damage', False)
+        damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
+
+        damage_type_emoji = "✨" if ignore_parade else "👹"
+        log.append(f"{damage_type_emoji} {enemy_name} attaque {target_name}: {damage} dégâts")
         
         if damage_result['blocked_by_parade'] > 0:
             log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
