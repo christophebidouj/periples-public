@@ -528,7 +528,10 @@ class CombatActions:
         
         # Attaque normale
         # Dégâts magiques des ennemis ignorent la parade (règles officielles p.26)
-        ignore_parade = getattr(enemy, 'has_magical_damage', False)
+        # CORRIGÉ: Vérifier SOIT is_magical SOIT has_magical_damage
+        is_magical = getattr(enemy, 'is_magical', False)
+        has_magical_dmg = getattr(enemy, 'has_magical_damage', False)
+        ignore_parade = is_magical or has_magical_dmg
         damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
 
         damage_type_emoji = "✨" if ignore_parade else "👹"

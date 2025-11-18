@@ -942,9 +942,9 @@ def display_enemy_interface(combatant: Dict):
                 st.rerun()
 
         with col2:
-            if st.button("⏭️ Passer le Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
-                st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
-                save_game_state(f"{char.name} passe son tour")
+            if st.button("⏭️ Fin du Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
+                st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
+                save_game_state(f"{char.name} termine son tour")
                 next_turn()
                 st.rerun()
 
@@ -1097,9 +1097,9 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             st.button("⚔️ Attaquer (déjà fait)", key=f"sandbox_attack_{combatant_id}", disabled=True, use_container_width=True)
 
         # Passer
-        if st.button("⏭️ Passer le Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
-            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} passe son tour")
-            save_game_state(f"{char.name} passe son tour")
+        if st.button("⏭️ Fin du Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
+            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
+            save_game_state(f"{char.name} termine son tour")
             next_turn()
             st.rerun()
 
@@ -2002,6 +2002,17 @@ def main_sandbox_v2():
             st.markdown(f"**Round {st.session_state.sandbox_v2_round_number}** - {played_count}/{total_alive} combattants ont joué")
 
             if st.button("🔄 Nouveau Round", type="primary", use_container_width=True):
+                # NOUVEAU - Décrémenter les compteurs stunned de tous les ennemis
+                for combatant in st.session_state.sandbox_v2_combatants:
+                    char = combatant['character']
+                    if combatant['faction'] == 'enemy' and hasattr(char, 'status_effects'):
+                        if 'stunned' in char.status_effects and char.status_effects['stunned'] > 0:
+                            old_stunned = char.status_effects['stunned']
+                            char.status_effects['stunned'] -= 1
+                            if char.status_effects['stunned'] <= 0:
+                                del char.status_effects['stunned']
+                                st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+
                 # Réinitialiser la liste des joueurs
                 st.session_state.sandbox_v2_played_this_round = []
                 # Incrémenter le numéro de round
@@ -2036,9 +2047,17 @@ def main_sandbox_v2():
 
         with col3:
             if st.button("🔄 Reset Combat", use_container_width=True):
+                # Réinitialiser TOUS les états du combat
                 st.session_state.sandbox_v2_phase = 'CONFIG'
                 st.session_state.sandbox_v2_game_history = []
                 st.session_state.sandbox_v2_history_index = -1
+                st.session_state.sandbox_v2_log = []
+                st.session_state.sandbox_v2_round_number = 1
+                st.session_state.sandbox_v2_played_this_round = []
+                st.session_state.sandbox_v2_current_turn_index = 0
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_combatants = []
                 st.rerun()
 
 if __name__ == "__main__":
