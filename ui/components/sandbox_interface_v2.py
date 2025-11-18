@@ -814,16 +814,14 @@ def next_turn():
         if current and current['character'].is_alive():
             char = current['character']
 
-            # CORRIGÉ - Vérifier stun AVANT d'initialiser le tour (pour ennemis)
+            # Vérifier stun SANS décrémenter (déjà fait dans main_sandbox_v2)
             if current['faction'] == 'enemy':
-                if hasattr(char, 'check_enemy_status_effects'):
-                    status = char.check_enemy_status_effects()
-                    if not status['can_act']:
-                        # Ennemi stunné - sauter son tour SANS l'initialiser
-                        stunned_turns_remaining = char.status_effects.get('stunned', 0) if hasattr(char, 'status_effects') else 0
-                        st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns_remaining + 1} → {stunned_turns_remaining} tour(s)) - Tour sauté")
-                        iterations += 1
-                        continue  # Passer au combattant suivant
+                is_stunned, stunned_turns = is_enemy_stunned(char)
+                if is_stunned:
+                    # Ennemi stunné - sauter son tour SANS l'initialiser
+                    # NE PAS décrémenter ici (déjà fait dans main_sandbox_v2)
+                    iterations += 1
+                    continue  # Passer au combattant suivant
 
             # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
             if current['faction'] == 'hero':
