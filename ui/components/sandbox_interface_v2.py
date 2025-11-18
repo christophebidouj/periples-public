@@ -483,29 +483,6 @@ class SandboxTurnManagerAdapter:
         target = ManualTargeting.select_hero_for_enemy_attack(enemy, heroes)
         return target
 
-    def execute_enemy_attack(
-        self,
-        enemy: Enemy,
-        target: Character,
-        player_count: int,
-        log: List[str]
-    ):
-        """Exécute l'attaque de l'ennemi sur la cible"""
-        enemy_stats = enemy.get_stats_for_players(player_count)
-        damage = enemy_stats['damage']
-
-        # Dégâts magiques ignorent la parade (règles officielles p.26)
-        ignore_parade = getattr(enemy, 'has_magical_damage', False)
-        damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
-
-        damage_type_emoji = "✨" if ignore_parade else "⚔️"
-        log.append(f"{damage_type_emoji} {enemy.name} attaque {target.name} : {damage} dégâts")
-        if damage_result['blocked_by_parade'] > 0:
-            log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
-
-        if not target.is_alive():
-            log.append(f"💀 {target.name} est inconscient !")
-
 # === CONFIGURATION COMBAT - RÉUTILISE LOGIQUE EXISTANTE ===
 
 def configure_combat():
@@ -923,11 +900,14 @@ def display_enemy_interface(combatant: Dict):
         )
 
         if target:
-            adapter.execute_enemy_attack(
-                char,
-                target,
-                player_count,
-                st.session_state.sandbox_v2_log
+            # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
+            adapter.combat_actions.enemy_attack(
+                enemy=char,
+                heroes=heroes_list,
+                player_count=player_count,
+                log=st.session_state.sandbox_v2_log,
+                active_pets=[],  # Pas de pets dans Sandbox V2 pour l'instant
+                manual_target=target
             )
             st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")

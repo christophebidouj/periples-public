@@ -474,20 +474,28 @@ class CombatActions:
         # PLUS D'USAGE AVEUGLE - Si aucune logique ne s'applique, ne rien faire
         return False
 
-    def enemy_attack(self, enemy, heroes: list, player_count: int, log: list, active_pets: list):
-        """Attaque ennemi - cible l'équipe + Pets selon règles + FORME D'OURS via temporary_buffs"""
+    def enemy_attack(self, enemy, heroes: list, player_count: int, log: list, active_pets: list, manual_target=None):
+        """Attaque ennemi - cible l'équipe + Pets selon règles + FORME D'OURS via temporary_buffs
+
+        Args:
+            manual_target: Si fourni, cible spécifique (bypass sélection automatique IA)
+        """
         all_targets = heroes + active_pets
         alive_targets = [t for t in all_targets if t.is_alive()]
-        
+
         if not alive_targets:
             return
-        
+
         enemy.current_parade_tokens = enemy.get_total_parade_tokens()
-        
+
         enemy_stats = enemy.get_stats_for_players(player_count)
         damage = enemy_stats['damage']
-        
-        target = self._select_enemy_target(enemy, alive_targets)
+
+        # Sélection de cible : manuelle OU automatique (IA)
+        if manual_target:
+            target = manual_target
+        else:
+            target = self._select_enemy_target(enemy, alive_targets)
         
         enemy_name = getattr(enemy, 'display_name', enemy.name)
         target_name = getattr(target, 'display_name', target.name)
