@@ -1007,7 +1007,8 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     # NOUVEAU - Vérifier uses_per_combat générique (pour toutes les capacités)
     combat_uses_exhausted = False
     combat_uses_remaining = None
-    if hasattr(ability, 'uses_per_combat') and hasattr(ability, 'uses_remaining_combat'):
+    if (hasattr(ability, 'uses_per_combat') and hasattr(ability, 'uses_remaining_combat') and
+        ability.uses_per_combat is not None and ability.uses_remaining_combat is not None):
         combat_uses_remaining = ability.uses_remaining_combat
         combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
 
