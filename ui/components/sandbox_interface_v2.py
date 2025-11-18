@@ -1466,11 +1466,21 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🎯 {defense} • 🛡️ {parade_tokens}{magic_indicator}
     </div>"""
 
+    # Vérifier si l'ennemi est étourdi (stunned)
+    is_stunned = False
+    stunned_turns = 0
+    if hasattr(enemy, 'status_effects') and enemy.status_effects:
+        stunned_turns = enemy.status_effects.get('stunned', 0)
+        is_stunned = stunned_turns > 0
+
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
     elif not is_alive:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 MORT</div>'
+    elif is_stunned:
+        # NOUVEAU : Badge visuel pour ennemi étourdi (cohérent avec mode manuel)
+        build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">😵 Étourdi ({stunned_turns} tours)</div>'
     else:
         build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #ff6666;">✓ En attente</div>'
 
@@ -1979,11 +1989,12 @@ def main_sandbox_v2():
 
             # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
             if current['faction'] == 'enemy' and initiative_enabled:
-                if hasattr(current['character'], 'status_effects') and current['character'].status_effects:
-                    stunned_turns = current['character'].status_effects.get('stunned', 0)
-                    if stunned_turns > 0:
-                        # Ennemi étourdi : sauter son tour immédiatement
-                        # next_turn() va décrémenter le compteur et logger le message approprié
+                if hasattr(current['character'], 'check_enemy_status_effects'):
+                    # CRITIQUE : Appeler check_enemy_status_effects() pour décrémenter le compteur
+                    status = current['character'].check_enemy_status_effects()
+                    if not status['can_act']:
+                        # Ennemi étourdi : son tour a été sauté et le compteur a été décrémenté
+                        # Passer au combattant suivant sans afficher l'interface
                         next_turn()
                         st.rerun()
                         return
