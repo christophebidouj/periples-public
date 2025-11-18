@@ -147,6 +147,78 @@ def init_sandbox_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
+def validate_character_state(char, context: str = ""):
+    """
+    Valide que tous les attributs critiques d'un Character sont présents et cohérents
+    Utilisé pour vérifier l'intégrité après restore undo/redo
+
+    Args:
+        char: Character ou Enemy à valider
+        context: Contexte pour les logs de débogage (ex: "après undo")
+
+    Returns:
+        tuple[bool, List[str]]: (is_valid, list_of_issues)
+    """
+    issues = []
+
+    # Attributs critiques de combat
+    critical_attrs = [
+        'current_health',
+        'current_spells',
+        'spells_used',
+        'magic_abilities_used_this_turn',
+        'current_parade_tokens',
+        'can_attack_this_turn',
+        'action_taken_this_turn',
+        'potion_used_this_turn'
+    ]
+
+    for attr in critical_attrs:
+        if not hasattr(char, attr):
+            issues.append(f"Attribut manquant: {attr}")
+
+    # Vérifier cohérence des valeurs
+    if hasattr(char, 'current_health') and char.current_health < 0:
+        issues.append(f"Santé négative: {char.current_health}")
+
+    if hasattr(char, 'current_spells') and char.current_spells is not None:
+        if char.current_spells < 0:
+            issues.append(f"Sorts négatifs: {char.current_spells}")
+
+    if hasattr(char, 'current_parade_tokens') and char.current_parade_tokens < 0:
+        issues.append(f"Jetons parade négatifs: {char.current_parade_tokens}")
+
+    # Vérifier listes d'objets imbriqués
+    if hasattr(char, 'health_potions'):
+        for i, potion in enumerate(char.health_potions):
+            if not hasattr(potion, 'quantity'):
+                issues.append(f"Potion {i} manque l'attribut quantity")
+            elif potion.quantity < 0:
+                issues.append(f"Potion {i} a une quantité négative: {potion.quantity}")
+
+    if hasattr(char, 'abilities'):
+        for i, ability in enumerate(char.abilities):
+            if not hasattr(ability, 'uses_remaining_combat'):
+                issues.append(f"Capacité {i} manque l'attribut uses_remaining_combat")
+
+    # Log de débogage si des problèmes sont détectés
+    if issues and context:
+        error_msg = f"⚠️ Validation {context} - {char.name}: {len(issues)} problème(s) détecté(s)"
+        st.session_state.sandbox_v2_log.append(error_msg)
+
+    return len(issues) == 0, issues
+
+def reset_temporary_ui_flags():
+    """
+    Réinitialise tous les flags temporaires de l'interface utilisateur
+    À appeler après chaque restore (undo/redo) pour éviter les états incohérents
+    """
+    st.session_state.sandbox_v2_action_state = None
+    st.session_state.sandbox_v2_current_actor = None
+    st.session_state.sandbox_v2_potion_type = None
+
+    # Note: sandbox_v2_last_selection est conservé car il sert de mémorisation entre tours
+
 def save_game_state(description: str = "Action"):
     """Sauvegarde l'état pour Undo/Redo"""
     # Synchroniser les listes de héros/ennemis depuis les combattants avant de sauvegarder
@@ -188,6 +260,18 @@ def restore_previous_state():
         st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
 
+        # NOUVEAU - Réinitialiser les flags temporaires de l'interface
+        reset_temporary_ui_flags()
+
+        # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
+        for combatant in st.session_state.sandbox_v2_combatants:
+            char = combatant['character']
+            is_valid, issues = validate_character_state(char, context="après undo")
+            if not is_valid:
+                # Log détaillé des problèmes détectés (pour débogage)
+                for issue in issues:
+                    st.session_state.sandbox_v2_log.append(f"  ↳ {issue}")
+
 def restore_next_state():
     """Refaire - Restaure l'état suivant"""
     if st.session_state.sandbox_v2_history_index < len(st.session_state.sandbox_v2_game_history) - 1:
@@ -205,6 +289,18 @@ def restore_next_state():
         enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
         st.session_state.sandbox_v2_heroes = [c['character'] for c in hero_combatants]
         st.session_state.sandbox_v2_enemies = [c['character'] for c in enemy_combatants]
+
+        # NOUVEAU - Réinitialiser les flags temporaires de l'interface
+        reset_temporary_ui_flags()
+
+        # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
+        for combatant in st.session_state.sandbox_v2_combatants:
+            char = combatant['character']
+            is_valid, issues = validate_character_state(char, context="après redo")
+            if not is_valid:
+                # Log détaillé des problèmes détectés (pour débogage)
+                for issue in issues:
+                    st.session_state.sandbox_v2_log.append(f"  ↳ {issue}")
 
 # === INTERFACE CIBLAGE MANUEL STYLÉE ===
 
