@@ -893,14 +893,21 @@ class Character(BaseModel):
         return available
     
     def use_ability(self, ability) -> AbilityAction:
-        """MODIFIÉ - Support VirtualAbility + Ability normale"""
+        """MODIFIÉ - Support VirtualAbility + Ability normale + limite capacités magiques"""
         action = AbilityAction(
             ability_id=ability.unique_id,
             ability_name=ability.name,
             user_name=self.name,
             prevents_attack=ability.prevents_attack
         )
-        
+
+        # Vérifier limite capacités magiques (règle p.24 - une seule capacité magique par tour)
+        if ability.prevents_attack:  # Capacité magique
+            if self.magic_abilities_used_this_turn >= 1:
+                action.success = False
+                action.message = "⚠️ Une seule capacité magique par tour autorisée !"
+                return action
+
         # Gestion des formes d'Elneha (capacités 1 et 3 seulement)
         if self.code == "P-1" and hasattr(ability, 'ability_number'):
             if ability.ability_number == 1:  # Forme d'ours
@@ -926,7 +933,9 @@ class Character(BaseModel):
         if ability.prevents_attack:
             self.action_taken_this_turn = True
             self.can_attack_this_turn = False
-        
+            # Incrémenter compteur capacités magiques
+            self.magic_abilities_used_this_turn += 1
+
         action.success = True
         return action
     

@@ -833,15 +833,26 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         current_spells = char.get_total_spells() if hasattr(char, 'get_total_spells') else 0
     has_spells = ability.spell_cost <= current_spells
 
-    is_available = can_use and has_spells
+    # Vérifier si une capacité magique a déjà été utilisée ce tour (règle p.24)
+    magic_already_used = (
+        ability.prevents_attack and
+        getattr(char, 'magic_abilities_used_this_turn', 0) >= 1
+    )
+
+    is_available = can_use and has_spells and not magic_already_used
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
 
     button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
 
+    # Label conditionnel si capacité magique déjà utilisée
+    button_label = f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨"
+    if magic_already_used:
+        button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
+
     if st.button(
-        f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨",
+        button_label,
         key=button_key,
         type="primary" if is_available else "secondary",
         disabled=not is_available,
@@ -1050,7 +1061,9 @@ def use_ability_action(char: Character, ability):
             st.success(f"✅ {ability.name} utilisée !")
             st.rerun()
         else:
-            st.error(f"❌ Impossible d'utiliser {ability.name}")
+            # Afficher le message d'erreur spécifique (ex: limite capacités magiques)
+            st.error(action.message if action.message else f"❌ Impossible d'utiliser {ability.name}")
+            st.session_state.sandbox_v2_log.append(f"❌ {char.name} : {action.message}")
 
 def use_potion_action(char: Character):
     """Utilise une potion (sélection automatique)"""
