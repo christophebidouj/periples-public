@@ -399,14 +399,14 @@ class AtucanJugementDernier(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Attaque AoE + stun avec APIs _apply_damage et status_effects CORRIGÉE"""
         try:
-            # 1. Consommer coût sorts avec API officielle
-            spell_manager = context.get('spell_manager')
-            if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
-                return False
-            
-            # 2. Vérifier limitation combat
+            # 1. CORRIGÉ - Vérifier limitation combat AVANT de consommer sorts
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Jugement dernier déjà utilisé ce combat")
+                return False
+
+            # 2. Consommer coût sorts avec API officielle
+            spell_manager = context.get('spell_manager')
+            if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
             # 3. Trouver tous les ennemis vivants

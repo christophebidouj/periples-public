@@ -792,21 +792,25 @@ def next_turn():
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
         current = get_current_combatant()
         if current and current['character'].is_alive():
-            # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
             char = current['character']
+
+            # CORRIGÉ - Vérifier stun AVANT d'initialiser le tour (pour ennemis)
+            if current['faction'] == 'enemy':
+                if hasattr(char, 'check_enemy_status_effects'):
+                    status = char.check_enemy_status_effects()
+                    if not status['can_act']:
+                        # Ennemi stunné - sauter son tour SANS l'initialiser
+                        stunned_turns_remaining = char.status_effects.get('stunned', 0) if hasattr(char, 'status_effects') else 0
+                        st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns_remaining + 1} → {stunned_turns_remaining} tour(s)) - Tour sauté")
+                        iterations += 1
+                        continue  # Passer au combattant suivant
+
+            # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
             if current['faction'] == 'hero':
                 char.start_hero_turn()
             else:
                 char.start_enemy_turn()
-                # NOUVEAU - Vérifier status stunned pour ennemis
-                if hasattr(char, 'check_enemy_status_effects'):
-                    status = char.check_enemy_status_effects()
-                    if not status['can_act']:
-                        # Ennemi stunné - sauter son tour
-                        stunned_turns = char.status_effects.get('stunned', 0)
-                        st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} tour(s) restant(s)) - Tour sauté")
-                        iterations += 1
-                        continue  # Passer au combattant suivant
+
             return  # Combattant vivant trouvé !
 
         # Combattant mort, continuer la recherche
