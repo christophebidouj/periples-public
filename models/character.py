@@ -410,13 +410,22 @@ class Character(BaseModel):
         Returns:
             Dict avec détails de l'application des dégâts
         """
+        # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Atucan)
+        aura_reduction = 0
+        if hasattr(self, 'temporary_buffs') and 'aura_protection' in self.temporary_buffs:
+            aura_info = self.temporary_buffs['aura_protection']
+            if aura_info.get('type') == 'per_attack':
+                aura_reduction = aura_info.get('damage_reduction', 0)
+                damage = max(0, damage - aura_reduction)  # Réduire les dégâts AVANT parade
+
         if damage <= 0:
             return {
-                'total_damage': 0,
+                'total_damage': damage + aura_reduction,  # Montant original
                 'blocked_by_parade': 0,
                 'health_damage': 0,
                 'parade_tokens_used': 0,
-                'parade_tokens_remaining': self.current_parade_tokens
+                'parade_tokens_remaining': self.current_parade_tokens,
+                'aura_reduction': aura_reduction  # Pour le log
             }
 
         if ignore_parade:
@@ -433,11 +442,12 @@ class Character(BaseModel):
         actual_health_damage = old_health - self.current_health
 
         return {
-            'total_damage': damage,
+            'total_damage': damage + aura_reduction,  # Montant original avant réduction aura
             'blocked_by_parade': blocked,
             'health_damage': actual_health_damage,
             'parade_tokens_used': blocked,
-            'parade_tokens_remaining': self.current_parade_tokens
+            'parade_tokens_remaining': self.current_parade_tokens,
+            'aura_reduction': aura_reduction  # Pour le log
         }
     
     def get_parade_status(self) -> Dict:
@@ -1441,23 +1451,32 @@ class Enemy(BaseModel):
     def apply_damage_with_parade(self, damage: int, ignore_parade: bool = False) -> Dict:
         """
         Applique dégâts avec système parade à jetons
-        
+
         Args:
             damage: Montant des dégâts
             ignore_parade: Si True, bypass complètement la parade (dégâts magiques)
-            
+
         Returns:
             Dict avec détails de l'application des dégâts
         """
+        # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Atucan) - Les ennemis n'ont pas ce buff normalement
+        aura_reduction = 0
+        if hasattr(self, 'temporary_buffs') and 'aura_protection' in self.temporary_buffs:
+            aura_info = self.temporary_buffs['aura_protection']
+            if aura_info.get('type') == 'per_attack':
+                aura_reduction = aura_info.get('damage_reduction', 0)
+                damage = max(0, damage - aura_reduction)
+
         if damage <= 0:
             return {
-                'total_damage': 0,
+                'total_damage': damage + aura_reduction,
                 'blocked_by_parade': 0,
                 'health_damage': 0,
                 'parade_tokens_used': 0,
-                'parade_tokens_remaining': self.current_parade_tokens
+                'parade_tokens_remaining': self.current_parade_tokens,
+                'aura_reduction': aura_reduction
             }
-        
+
         if ignore_parade:
             # Bypass complet de la parade (dégâts magiques)
             blocked = 0
@@ -1470,15 +1489,16 @@ class Enemy(BaseModel):
         old_health = self.current_health
         self.current_health = max(0, self.current_health - remaining)
         actual_health_damage = old_health - self.current_health
-        
+
         return {
-            'total_damage': damage,
+            'total_damage': damage + aura_reduction,  # Montant original avant réduction aura
             'blocked_by_parade': blocked,
             'health_damage': actual_health_damage,
             'parade_tokens_used': blocked,
-            'parade_tokens_remaining': self.current_parade_tokens
+            'parade_tokens_remaining': self.current_parade_tokens,
+            'aura_reduction': aura_reduction  # Pour le log
         }
-    
+
     def get_parade_status(self) -> Dict:
         """État actuel du système parade"""
         return {

@@ -2022,15 +2022,14 @@ def main_sandbox_v2():
 
             # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
             if current['faction'] == 'enemy' and initiative_enabled:
-                if hasattr(current['character'], 'check_enemy_status_effects'):
-                    # CRITIQUE : Appeler check_enemy_status_effects() pour décrémenter le compteur
-                    status = current['character'].check_enemy_status_effects()
-                    if not status['can_act']:
-                        # Ennemi étourdi : son tour a été sauté et le compteur a été décrémenté
-                        # Passer au combattant suivant sans afficher l'interface
-                        next_turn()
-                        st.rerun()
-                        return
+                # CORRIGÉ : Utiliser is_enemy_stunned() qui NE décrémente PAS
+                # next_turn() se charge de décrémenter via check_enemy_status_effects()
+                is_stunned, stunned_turns = is_enemy_stunned(current['character'])
+                if is_stunned:
+                    # Ennemi étourdi : passer au tour suivant (next_turn décrémentera)
+                    next_turn()
+                    st.rerun()
+                    return
 
             # Afficher interface seulement si vivant ET non-stunné
             if current['faction'] == 'hero':
