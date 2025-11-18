@@ -129,6 +129,7 @@ class Character(BaseModel):
     action_taken_this_turn: bool = False
     ability_used_this_turn: Optional[Ability] = None
     can_attack_this_turn: bool = True
+    attack_done_this_turn: bool = False  # NOUVEAU - Pour bloquer capacités magiques après attaque (règle p.24)
     potion_used_this_turn: bool = False
     
     # Système de formes pour Elneha
@@ -908,6 +909,12 @@ class Character(BaseModel):
                 action.message = "⚠️ Une seule capacité magique par tour autorisée !"
                 return action
 
+            # NOUVEAU - Vérifier si une attaque a déjà été effectuée ce tour (règle p.24)
+            if self.attack_done_this_turn:
+                action.success = False
+                action.message = "⚠️ Impossible d'utiliser une capacité magique après avoir attaqué !"
+                return action
+
         # Gestion des formes d'Elneha (capacités 1 et 3 seulement)
         if self.code == "P-1" and hasattr(ability, 'ability_number'):
             if ability.ability_number == 1:  # Forme d'ours
@@ -1143,6 +1150,7 @@ class Character(BaseModel):
         self.action_taken_this_turn = False
         self.ability_used_this_turn = None
         self.can_attack_this_turn = True
+        self.attack_done_this_turn = False
         self.potion_used_this_turn = False
     
     def start_new_combat(self):

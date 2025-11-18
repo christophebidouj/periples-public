@@ -169,6 +169,7 @@ def validate_character_state(char, context: str = ""):
         'magic_abilities_used_this_turn',
         'current_parade_tokens',
         'can_attack_this_turn',
+        'attack_done_this_turn',
         'action_taken_this_turn',
         'potion_used_this_turn'
     ]
@@ -986,8 +987,9 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             adapter = st.session_state.sandbox_v2_adapter
             adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
 
-            # Marquer qu'une attaque a été effectuée (empêche d'attaquer à nouveau)
+            # Marquer qu'une attaque a été effectuée (empêche d'attaquer à nouveau + bloquer capacités magiques)
             char.can_attack_this_turn = False
+            char.attack_done_this_turn = True  # NOUVEAU - Empêche capacités magiques après attaque (règle p.24)
 
             st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")
