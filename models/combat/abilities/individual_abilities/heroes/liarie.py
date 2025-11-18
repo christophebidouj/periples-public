@@ -224,12 +224,12 @@ class LiarieMurDeGlace(BaseAbility):
             
             # Récupérer tous les ennemis vivants
             enemies = self._get_all_enemies(caster, context)
-            
+
             if not enemies:
                 log.append(f"❄️ {caster.name} invoque un mur de glace mais il n'y a aucun ennemi !")
-                self.uses_remaining_combat -= 1
+                # NE PAS décrémenter ici - déjà fait par ability.use_ability() dans character.py
                 return True
-            
+
             # Appliquer l'effet de gel (stun) à tous les ennemis
             frozen_count = 0
             for enemy in enemies:
@@ -238,12 +238,12 @@ class LiarieMurDeGlace(BaseAbility):
                     enemy.status_effects = {}
                 enemy.status_effects['stunned'] = 1
                 frozen_count += 1
-            
+
             log.append(f"❄️ {caster.name} invoque un {self.name} !")
             log.append(f"   🧊 {frozen_count} ennemi(s) gelé(s) - perdront leur prochaine action")
-            
-            # Décompter l'utilisation
-            self.uses_remaining_combat -= 1
+
+            # NE PAS décrémenter ici - déjà fait par ability.use_ability() dans character.py
+            # La synchronisation bidirectionnelle dans ability_manager copie le compteur correctement
             remaining = self.uses_remaining_combat
             log.append(f"   📊 Utilisations restantes: {remaining}/{self.uses_per_combat}")
             

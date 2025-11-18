@@ -79,10 +79,9 @@ class AbilityEffectsManager:
                 log.append(f"🔧 Utilisation de capacité individuelle: {individual_ability.name}")
                 success = individual_ability.execute(hero, targets, context, log)
 
-                # SYNC RETOUR: Copier les compteurs MIS À JOUR vers l'objet CSV
-                # Ceci permet de conserver le décompte entre utilisations
-                if hasattr(ability, 'uses_remaining_combat') and hasattr(individual_ability, 'uses_remaining_combat'):
-                    ability.uses_remaining_combat = individual_ability.uses_remaining_combat
+                # SYNC RETOUR: Copier uses_per_combat (limite peut changer) mais PAS uses_remaining_combat
+                # uses_remaining_combat de l'objet CSV est la source de vérité (décrémenté par character.py)
+                # Les individual abilities NE doivent PAS décrémenter manuellement (déjà supprimé de Mur de glace)
                 if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
                     ability.uses_per_combat = individual_ability.uses_per_combat
 

@@ -1707,20 +1707,23 @@ def display_combat_log_colored():
         # Ligne par défaut (blanc/gris clair)
         return f'<div style="color: #e0e0e0;">{line_stripped}</div>'
 
-    # Construction du HTML colorisé
+    # Construction du HTML colorisé avec ancre de scroll en bas
     log_html = ""
     for line in st.session_state.sandbox_v2_log:
         log_html += colorize_line(line)
 
-    # Container scrollable avec style Arène + auto-scroll vers le bas
+    # Ajouter une ancre invisible en bas du log
+    log_html += '<div id="log-bottom"></div>'
+
+    # Container scrollable avec style Arène
     scrollable_log = f"""
-    <div id="combat-log-container" style="
+    <div style="
         background: linear-gradient(135deg, #1a1a2e, #16213e);
         border: 2px solid #0f3460;
         border-radius: 10px;
         padding: 15px 20px;
         height: 400px;
-        overflow-y: scroll;
+        overflow-y: auto;
         font-family: 'Courier New', monospace;
         font-size: 0.9rem;
         line-height: 1.6;
@@ -1728,16 +1731,12 @@ def display_combat_log_colored():
     ">
         {log_html}
     </div>
-    <script>
-        // Auto-scroll vers le bas à chaque mise à jour
-        var logContainer = document.getElementById('combat-log-container');
-        if (logContainer) {{
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }}
-    </script>
     """
 
     st.markdown(scrollable_log, unsafe_allow_html=True)
+
+    # Forcer le scroll vers l'ancre #log-bottom (solution native HTML)
+    st.markdown('<script>document.getElementById("log-bottom")?.scrollIntoView();</script>', unsafe_allow_html=True)
 
 def display_combat_status():
     """
@@ -2060,6 +2059,8 @@ def main_sandbox_v2():
                         st.session_state.sandbox_v2_log.append(
                             f"😵 {current['character'].name} est étourdi ! Tour sauté ({stunned_after + 1} → {stunned_after} tour(s))"
                         )
+                        # CRITIQUE : Sauvegarder l'état AVANT rerun() pour persister la décrémentation
+                        save_game_state(f"{current['character'].name} étourdi - tour sauté")
                         next_turn()
                         st.rerun()
                         return
