@@ -486,8 +486,6 @@ class CombatActions:
         if not alive_targets:
             return
 
-        enemy.current_parade_tokens = enemy.get_total_parade_tokens()
-
         enemy_stats = enemy.get_stats_for_players(player_count)
         damage = enemy_stats['damage']
 
