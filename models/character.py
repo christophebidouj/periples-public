@@ -1152,6 +1152,7 @@ class Character(BaseModel):
         self.can_attack_this_turn = True
         self.attack_done_this_turn = False
         self.potion_used_this_turn = False
+        self.magic_abilities_used_this_turn = 0  # Reset compteur capacités magiques
     
     def start_new_combat(self):
         """MODIFIÉ - Prépare nouveau combat + reset stats"""
@@ -1189,10 +1190,9 @@ class Character(BaseModel):
     
     def start_hero_turn(self):
         """Version améliorée de start_hero_turn avec gestion des effets"""
-        # Reset état du tour standard
+        # Reset état du tour standard (inclut magic_abilities_used_this_turn)
         self.reset_turn_state()
-        self.magic_abilities_used_this_turn = 0
-        
+
         # Recharger jetons parade avec effets
         self.refresh_parade_tokens()
         
