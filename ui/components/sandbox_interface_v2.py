@@ -1085,12 +1085,16 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     elif blocked_by_attack:
         button_label = f"{type_icon} {short_name}\n⚠️ Attaque faite"
 
+    # Tooltip avec description de la capacité
+    tooltip_text = ability.description if hasattr(ability, 'description') else None
+
     if st.button(
         button_label,
         key=button_key,
         type="primary" if is_available else "secondary",
         disabled=not is_available,
-        use_container_width=True
+        use_container_width=True,
+        help=tooltip_text  # Affiche la description au survol
     ):
         if is_available:
             use_ability_action(char, ability)
@@ -1708,9 +1712,9 @@ def display_combat_log_colored():
     for line in st.session_state.sandbox_v2_log:
         log_html += colorize_line(line)
 
-    # Container scrollable avec style Arène
+    # Container scrollable avec style Arène + auto-scroll vers le bas
     scrollable_log = f"""
-    <div style="
+    <div id="combat-log-container" style="
         background: linear-gradient(135deg, #1a1a2e, #16213e);
         border: 2px solid #0f3460;
         border-radius: 10px;
@@ -1724,6 +1728,13 @@ def display_combat_log_colored():
     ">
         {log_html}
     </div>
+    <script>
+        // Auto-scroll vers le bas à chaque mise à jour
+        var logContainer = document.getElementById('combat-log-container');
+        if (logContainer) {{
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }}
+    </script>
     """
 
     st.markdown(scrollable_log, unsafe_allow_html=True)
