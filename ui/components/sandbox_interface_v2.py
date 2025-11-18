@@ -796,6 +796,15 @@ def next_turn():
                 char.start_hero_turn()
             else:
                 char.start_enemy_turn()
+                # NOUVEAU - Vérifier status stunned pour ennemis
+                if hasattr(char, 'check_enemy_status_effects'):
+                    status = char.check_enemy_status_effects()
+                    if not status['can_act']:
+                        # Ennemi stunné - sauter son tour
+                        stunned_turns = char.status_effects.get('stunned', 0)
+                        st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} tour(s) restant(s)) - Tour sauté")
+                        iterations += 1
+                        continue  # Passer au combattant suivant
             return  # Combattant vivant trouvé !
 
         # Combattant mort, continuer la recherche
@@ -995,7 +1004,14 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if ability.name == "Armure du mage" and hasattr(char, 'temporary_buffs'):
         armure_mage_already_used = char.temporary_buffs.get('armure_mage_active', False)
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not armure_mage_already_used
+    # NOUVEAU - Vérifier uses_per_combat générique (pour toutes les capacités)
+    combat_uses_exhausted = False
+    combat_uses_remaining = None
+    if hasattr(ability, 'uses_per_combat') and hasattr(ability, 'uses_remaining_combat'):
+        combat_uses_remaining = ability.uses_remaining_combat
+        combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not armure_mage_already_used and not combat_uses_exhausted
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
@@ -1004,10 +1020,17 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
 
     # Label conditionnel selon la raison du blocage
     button_label = f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨"
+
+    # Ajouter indication uses_per_combat si disponible
+    if combat_uses_remaining is not None:
+        button_label = f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨ • {combat_uses_remaining}/{ability.uses_per_combat} ⚡"
+
     if armure_mage_already_used:
         button_label = f"{type_icon} {short_name}\n✅ Active"
     elif parade_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
+    elif combat_uses_exhausted:
+        button_label = f"{type_icon} {short_name}\n❌ 0/{ability.uses_per_combat} restant"
     elif magic_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
     elif blocked_by_attack:
@@ -1733,16 +1756,27 @@ def display_combat_status_team_mode():
                 # Vérifier si le combattant a déjà joué ce round
                 has_played = combatant_data['id'] in st.session_state.sandbox_v2_played_this_round
 
+                # NOUVEAU - Vérifier si le combattant est étourdi (stunned)
+                is_stunned = False
+                if hasattr(character, 'status_effects') and character.status_effects:
+                    is_stunned = character.status_effects.get('stunned', 0) > 0
+
                 # Bouton "À son tour" si vivant et pas déjà en cours
                 if character.is_alive() and not is_current:
-                    # Désactiver si déjà joué
-                    button_disabled = has_played
-                    button_label = "✅ A joué" if has_played else "▶️ À son tour"
+                    # Désactiver si déjà joué OU étourdi
+                    button_disabled = has_played or is_stunned
+                    if is_stunned:
+                        stunned_turns = character.status_effects.get('stunned', 0)
+                        button_label = f"😵 Étourdi ({stunned_turns} tours)"
+                    elif has_played:
+                        button_label = "✅ A joué"
+                    else:
+                        button_label = "▶️ À son tour"
 
                     if st.button(
                         button_label,
                         key=f"select_{combatant_data['faction']}_{combatant_data['id']}",
-                        type="secondary" if has_played else "primary",
+                        type="secondary" if (has_played or is_stunned) else "primary",
                         disabled=button_disabled,
                         use_container_width=True
                     ):

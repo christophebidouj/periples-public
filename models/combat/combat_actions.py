@@ -75,13 +75,23 @@ class CombatActions:
             if elneha_wolf_used:
                 remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                 log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
-            
+
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
-            
+
+            # NOUVEAU - Châtiment divin : 2e frappe magique après attaque critique réussie
+            if hasattr(hero, 'temporary_buffs') and 'chatiment_divin_active' in hero.temporary_buffs:
+                chatiment_info = hero.temporary_buffs['chatiment_divin_active']
+                chatiment_damage = chatiment_info['damage']
+                # 2e frappe magique qui ignore parade (règles officielles)
+                chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True)
+                log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
+                # Consommer le buff après utilisation
+                hero.temporary_buffs.pop('chatiment_divin_active', None)
+
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
-            
+
             CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
             return
         
@@ -120,10 +130,20 @@ class CombatActions:
                     log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
                 else:
                     log.append(f"  💥 {damage_result['health_damage']} aux PV")
-                
+
+                # NOUVEAU - Châtiment divin : 2e frappe magique après attaque réussie
+                if hasattr(hero, 'temporary_buffs') and 'chatiment_divin_active' in hero.temporary_buffs:
+                    chatiment_info = hero.temporary_buffs['chatiment_divin_active']
+                    chatiment_damage = chatiment_info['damage']
+                    # 2e frappe magique qui ignore parade (règles officielles)
+                    chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True)
+                    log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
+                    # Consommer le buff après utilisation
+                    hero.temporary_buffs.pop('chatiment_divin_active', None)
+
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")
-                
+
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
             else:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"

@@ -311,7 +311,15 @@ class BaseAbility(ABC):
             return character.current_health <= 0
         
         return False
-    
+
+    def reset_combat_uses(self):
+        """
+        Réinitialise les utilisations par combat au début d'un nouveau combat
+        À appeler depuis Character.start_new_combat()
+        """
+        if hasattr(self, 'uses_per_combat') and hasattr(self, 'uses_remaining_combat'):
+            self.uses_remaining_combat = self.uses_per_combat
+
     def __str__(self):
         """ReprÃ©sentation textuelle de la capacitÃ©"""
         return f"{self.hero_code}-{self.ability_number}: {self.name}"

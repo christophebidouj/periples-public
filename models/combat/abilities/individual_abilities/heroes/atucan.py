@@ -180,30 +180,36 @@ class AtucanChatimentDivin(BaseAbility):
         self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active buff châtiment divin avec API damage_bonus_next_attack CORRIGÉE"""
+        """Active buff châtiment divin - 2e frappe magique après attaque réussie"""
         try:
             # 1. Consommer coût sorts avec API officielle
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
+
             # 2. Vérifier limitation combat
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Châtiment divin déjà utilisé ce combat")
                 return False
-            
-            # 3. Activer buff avec API RÉELLE
-            # API RÉELLE : damage_bonus_next_attack (confirmé dans character_integration.py)
-            caster.temporary_buffs['damage_bonus_next_attack'] = 4
-            
+
+            # 3. CORRIGÉ - Activer buff pour 2e frappe magique séparée (pas un simple bonus)
+            # La prochaine attaque réussie déclenchera 4 dégâts magiques supplémentaires
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['chatiment_divin_active'] = {
+                'damage': 4,
+                'type': 'magical',
+                'ignore_parade': True
+            }
+
             # 4. Décompter utilisation
             self.uses_remaining_combat -= 1
-            
+
             log.append(f"⚡ {caster.name} invoque le châtiment divin")
-            log.append(f"   🔥 Prochaine attaque réussie: +4 dégâts magiques supplémentaires")
-            
+            log.append(f"   🔥 Prochaine attaque réussie déclenchera +4 dégâts magiques (ignore parade)")
+
             return True
-            
+
         except Exception as e:
             log.append(f"❌ Erreur Châtiment divin: {e}")
             return False
