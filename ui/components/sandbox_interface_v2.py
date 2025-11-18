@@ -455,9 +455,12 @@ class ManualTargeting:
 class SandboxTurnManagerAdapter:
     """Adapter qui RÉUTILISE TurnManager existant avec ciblage manuel"""
 
-    def __init__(self, turn_manager: TurnManager, combat_actions: CombatActions):
+    def __init__(self, turn_manager: TurnManager, combat_actions: CombatActions, spell_manager: SpellManager):
         self.turn_manager = turn_manager
         self.combat_actions = combat_actions
+        self.spell_manager = spell_manager
+        # NOUVEAU - AbilityEffectsManager pour exécuter les capacités
+        self.ability_effects_manager = combat_actions.ability_effects_manager
 
     def hero_turn_manual(
         self,
@@ -631,11 +634,12 @@ def configure_combat():
         combat_actions = CombatActions(spell_manager, rules)
         turn_manager = TurnManager(spell_manager, combat_actions)
 
-        # Adapter
+        # Adapter (AJOUT spell_manager pour accès aux capacités)
         st.session_state.sandbox_v2_turn_manager = turn_manager
         st.session_state.sandbox_v2_adapter = SandboxTurnManagerAdapter(
             turn_manager,
-            combat_actions
+            combat_actions,
+            spell_manager
         )
 
         # Initialiser sorts héros
@@ -1195,15 +1199,45 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 # === ACTIONS DE COMBAT ===
 
 def use_ability_action(char: Character, ability):
-    """Utilise une capacité - NE termine PAS le tour automatiquement"""
+    """
+    Utilise une capacité - NE termine PAS le tour automatiquement
+    RÉUTILISE AbilityEffectsManager pour exécuter les effets réels
+    """
     if hasattr(char, 'use_ability'):
+        # 1. Vérifications + consommation sorts (via Character.use_ability)
         action = char.use_ability(ability)
+
         if action.success:
-            st.session_state.sandbox_v2_log.append(f"🔮 {char.name} utilise {ability.name}")
+            # 2. Préparer le contexte pour AbilityEffectsManager (RÉUTILISE pattern TurnManager)
+            adapter = st.session_state.sandbox_v2_adapter
+            heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+            enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+            context = {
+                'alive_enemies': [e for e in enemies if e.is_alive()],
+                'current_enemies': [e for e in enemies if e.is_alive()],
+                'heroes': heroes,
+                'current_heroes': heroes,
+                'spell_manager': adapter.spell_manager,
+                'log': st.session_state.sandbox_v2_log,
+                'player_count': len([h for h in heroes if h.is_alive()])
+            }
+
+            # 3. Exécuter les effets réels via AbilityEffectsManager (RÉUTILISE architecture)
+            result = adapter.ability_effects_manager.apply_ability_effects(
+                char, ability, st.session_state.sandbox_v2_log, context
+            )
+
+            # 4. Feedback utilisateur
+            if result:
+                st.success(f"✅ {ability.name} utilisée avec succès !")
+            else:
+                st.warning(f"⚠️ {ability.name} utilisée (vérifiez les logs pour détails)")
+
+            # 5. Sauvegarder état pour undo/redo
             save_game_state(f"{char.name} utilise {ability.name}")
-            # NE PAS appeler next_turn() - le héros peut encore agir (boire potion, etc.)
-            # Note: ability.prevents_attack a déjà mis can_attack_this_turn = False si nécessaire
-            st.success(f"✅ {ability.name} utilisée !")
+
+            # 6. Rafraîchir interface (les cartes afficheront les nouvelles stats)
             st.rerun()
         else:
             # Afficher le message d'erreur spécifique (ex: limite capacités magiques)
