@@ -942,17 +942,23 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         getattr(char, 'magic_abilities_used_this_turn', 0) >= 1
     )
 
-    is_available = can_use and has_spells and not magic_already_used
+    # NOUVEAU - Vérifier si une attaque a été effectuée (règle p.24 - blocage bidirectionnel)
+    attack_already_done = getattr(char, 'attack_done_this_turn', False)
+    blocked_by_attack = ability.prevents_attack and attack_already_done
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
 
     button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
 
-    # Label conditionnel si capacité magique déjà utilisée
+    # Label conditionnel selon la raison du blocage
     button_label = f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨"
     if magic_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
+    elif blocked_by_attack:
+        button_label = f"{type_icon} {short_name}\n⚠️ Attaque faite"
 
     if st.button(
         button_label,
