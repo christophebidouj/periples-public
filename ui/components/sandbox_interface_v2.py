@@ -1385,7 +1385,8 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     max_hp = enemy.max_health
     stats = enemy.get_stats_for_players(player_count)
     damage = stats['damage']
-    defense = enemy.defense
+    defense = enemy.defense  # Seuil de défense (à battre pour toucher)
+    parade_tokens = enemy.current_parade_tokens  # Jetons de parade (bloquent dégâts)
     is_alive = enemy.is_alive()
 
     # Détermination border color selon l'état
@@ -1414,11 +1415,11 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         # Fallback: gradient rouge si image non disponible
         background_style = "background: linear-gradient(135deg, #8b0000, #4a0000);"
 
-    # Préparer stats_content (adapté pour ennemis)
+    # Préparer stats_content (CORRIGÉ : défense avec cible, parade avec bouclier)
     magic_indicator = " ✨" if enemy.is_magical else ""
     stats_content = f"""
     <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🛡️ {defense}{magic_indicator}
+        ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🎯 {defense} • 🛡️ {parade_tokens}{magic_indicator}
     </div>"""
 
     # Préparer build_content (remplacé par status pour le combat)
