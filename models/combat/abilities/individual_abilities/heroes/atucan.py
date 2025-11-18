@@ -116,19 +116,21 @@ class AtucanParade(BaseAbility):
                 log.append(f"⚠️ {caster.name} a déjà utilisé Parade ce tour")
                 return False
 
-            # 1. Vérifier équipement bouclier avec API RÉELLE (type=armure ET defense>0)
+            # 1. Vérifier équipement bouclier avec API RÉELLE (via nom officiel)
+            # Les boucliers officiels : Rondache de bois, Bouclier de bois, Bouclier de fer
             shield_defense = 0
             shield_name = "bouclier"
 
             for equipment in caster.equipped_items:
-                # Les boucliers sont de type "armure" avec defense > 0
-                if equipment.type.lower() == 'armure' and equipment.defense > 0:
+                # Détecter boucliers via nomenclature officielle (nom contient "bouclier" ou "rondache")
+                equipment_name_lower = equipment.name.lower()
+                if 'bouclier' in equipment_name_lower or 'rondache' in equipment_name_lower:
                     shield_defense += equipment.defense
-                    shield_name = equipment.name if hasattr(equipment, 'name') else "bouclier"
+                    shield_name = equipment.name
                     break
 
             if shield_defense == 0:
-                log.append(f"⚠️ {caster.name} n'a pas de bouclier équipé (nécessite armure avec défense)")
+                log.append(f"⚠️ {caster.name} n'a pas de bouclier équipé (Rondache/Bouclier requis)")
                 return False
 
             # 2. Appliquer bonus défense avec API RÉELLE temporary_buffs
