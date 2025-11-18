@@ -142,9 +142,15 @@ class DataLoader:
     # === CAPACITÉS ===
     
     def get_hero_abilities(self, hero_code: str) -> List[Ability]:
-        """Retourne les capacités d'un héros"""
+        """
+        Retourne les capacités d'un héros
+        CRITIQUE: Retourne des COPIES pour éviter modification des instances cachées
+        """
+        from copy import deepcopy
         abilities_data = self._load_abilities()
-        return abilities_data.get(hero_code, [])
+        original_abilities = abilities_data.get(hero_code, [])
+        # Deepcopy pour éviter modification des instances cachées (uses_remaining_combat, etc.)
+        return [deepcopy(ability) for ability in original_abilities]
     
     def get_abilities_summary(self) -> Dict[str, Any]:
         """Retourne un résumé des capacités disponibles"""
