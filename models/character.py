@@ -382,10 +382,14 @@ class Character(BaseModel):
         
         return blocked_damage, remaining_damage
     
-    def apply_damage_with_parade(self, damage: int) -> Dict:
+    def apply_damage_with_parade(self, damage: int, ignore_parade: bool = False) -> Dict:
         """
         Applique dégâts avec système parade à jetons
-        
+
+        Args:
+            damage: Montant des dégâts
+            ignore_parade: Si True, bypass complètement la parade (dégâts magiques)
+
         Returns:
             Dict avec détails de l'application des dégâts
         """
@@ -397,14 +401,20 @@ class Character(BaseModel):
                 'parade_tokens_used': 0,
                 'parade_tokens_remaining': self.current_parade_tokens
             }
-        
-        blocked, remaining = self.consume_parade_tokens(damage)
-        
+
+        if ignore_parade:
+            # Bypass complet de la parade (dégâts magiques)
+            blocked = 0
+            remaining = damage
+        else:
+            # Logique normale avec parade
+            blocked, remaining = self.consume_parade_tokens(damage)
+
         # Dégâts aux PV
         old_health = self.current_health
         self.current_health = max(0, self.current_health - remaining)
         actual_health_damage = old_health - self.current_health
-        
+
         return {
             'total_damage': damage,
             'blocked_by_parade': blocked,
