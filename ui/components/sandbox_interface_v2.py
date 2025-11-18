@@ -814,18 +814,13 @@ def next_turn():
         if current and current['character'].is_alive():
             char = current['character']
 
-            # Vérifier stun et décrémenter (seul endroit où on décrémente)
+            # Vérifier stun SANS décrémenter (déjà fait dans main_sandbox_v2)
             if current['faction'] == 'enemy':
-                if hasattr(char, 'check_enemy_status_effects'):
-                    status = char.check_enemy_status_effects()
-                    if not status['can_act']:
-                        # Ennemi stunné - décrémenter et sauter son tour
-                        stunned_turns_remaining = char.status_effects.get('stunned', 0) if hasattr(char, 'status_effects') else 0
-                        st.session_state.sandbox_v2_log.append(
-                            f"😵 {char.name} est étourdi ! ({stunned_turns_remaining + 1} → {stunned_turns_remaining} tour(s)) - Tour sauté"
-                        )
-                        iterations += 1
-                        continue  # Passer au combattant suivant
+                is_stunned_here, _ = is_enemy_stunned(char)
+                if is_stunned_here:
+                    # Ennemi stunné - sauter SANS décrémenter (déjà fait dans main_sandbox_v2)
+                    iterations += 1
+                    continue  # Passer au combattant suivant
 
             # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
             if current['faction'] == 'hero':
@@ -2045,12 +2040,18 @@ def main_sandbox_v2():
 
             # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
             if current['faction'] == 'enemy' and initiative_enabled:
-                is_stunned, stunned_turns = is_enemy_stunned(current['character'])
-                if is_stunned:
-                    # Ennemi étourdi : next_turn() va décrémenter et trouver le prochain
-                    next_turn()
-                    st.rerun()
-                    return
+                # Décrémenter le stun de CET ennemi AVANT de passer au suivant
+                if hasattr(current['character'], 'check_enemy_status_effects'):
+                    status = current['character'].check_enemy_status_effects()
+                    if not status['can_act']:
+                        # Ennemi étourdi - on a décrémenté, passer au suivant
+                        stunned_after = current['character'].status_effects.get('stunned', 0) if hasattr(current['character'], 'status_effects') else 0
+                        st.session_state.sandbox_v2_log.append(
+                            f"😵 {current['character'].name} est étourdi ! Tour sauté ({stunned_after + 1} → {stunned_after} tour(s))"
+                        )
+                        next_turn()
+                        st.rerun()
+                        return
 
             # Afficher interface seulement si vivant ET non-stunné
             if current['faction'] == 'hero':
