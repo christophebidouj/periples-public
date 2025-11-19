@@ -238,22 +238,20 @@ def apply_fantasy_theme():
         box-shadow: none !important;
     }
 
-    /* === BOUTONS DE CARTES (largeur fixe 260px) === */
+    /* === BOUTONS DE CARTES (responsive, harmonisé avec les cartes) === */
 
-    /* Conteneur pour limiter la largeur des boutons à 260px (même que les cartes) */
+    /* Conteneur pour harmoniser largeur boutons avec cartes (max 260px, responsive) */
     .card-width-button-container {
-        width: 260px;
+        width: 100%;
         max-width: 260px;
         margin: 0 auto;
         display: block;
     }
 
-    /* Force les boutons à l'intérieur à prendre 260px */
-    .card-width-button-container .stButton,
+    /* Boutons prennent 100% du conteneur (donc max 260px comme les cartes) */
     .card-width-button-container .stButton > button {
-        width: 260px !important;
-        max-width: 260px !important;
-        margin: 0 auto !important;
+        width: 100% !important;
+        margin: 0 !important;
         display: block !important;
     }
     </style>
@@ -314,7 +312,7 @@ def apply_custom_button_style(container_class: str, width: str = "260px", center
 def get_hero_card_style(hero_name: str, border_color: str, background_style: str) -> str:
     """Génère le style CSS pour une carte héros"""
     return f"""
-    <div style="width: 260px; height: 370px; border-radius: 15px; overflow: hidden;
+    <div style="width: 100%; max-width: 260px; height: 370px; border-radius: 15px; overflow: hidden;
                 box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 3px solid {border_color};
                 {background_style} background-size: cover; background-position: center top;
                 display: flex; flex-direction: column; justify-content: flex-end; color: white; margin: 10px auto;">
