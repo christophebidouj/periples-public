@@ -270,7 +270,7 @@ def display_build_details_expander(hero: Character, current_build_info: Dict):
             expander_title = f"🔴 Détails Build Spartiate"
             expander_color = "#dc143c"
         else:
-            expander_title = f"🔵 Détails Build Standard"
+            expander_title = f"🔵 Détails"
             expander_color = "#4169e1"
     
     with st.expander(expander_title, expanded=False):
@@ -283,41 +283,40 @@ def display_build_details_expander(hero: Character, current_build_info: Dict):
         # === ÉQUIPEMENTS ===
         if build_details['equipment']:
             st.markdown("**⚔️ Équipements :**")
-            
+
             equipment_by_type = {'arme': [], 'armure': [], 'accessoire': []}
             for eq in build_details['equipment']:
                 eq_type = eq['type'].lower()
                 if eq_type not in equipment_by_type:
                     eq_type = 'accessoire'
                 equipment_by_type[eq_type].append(eq)
-            
-            cols = st.columns(3)
+
             type_icons = {'arme': '⚔️', 'armure': '🛡️', 'accessoire': '💍'}
             type_names = {'arme': 'Armes', 'armure': 'Armures', 'accessoire': 'Accessoires'}
-            
-            for i, (eq_type, equipment) in enumerate(equipment_by_type.items()):
-                if equipment and i < 3:
-                    with cols[i]:
-                        st.markdown(f"**{type_icons[eq_type]} {type_names[eq_type]}**")
-                        for eq in equipment:
-                            # Stats non-nulles
-                            stats_parts = []
-                            if eq['precision'] > 0:
-                                stats_parts.append(f"🎯{eq['precision']}")
-                            if eq['physical_damage'] > 0:
-                                stats_parts.append(f"⚔️{eq['physical_damage']}")
-                            if eq['magical_damage'] > 0:
-                                stats_parts.append(f"✨{eq['magical_damage']}")
-                            if eq['defense'] > 0:
-                                stats_parts.append(f"🛡️{eq['defense']}")
-                            if eq['spells'] > 0:
-                                stats_parts.append(f"🔮{eq['spells']}")
-                            if eq['health'] > 0:
-                                stats_parts.append(f"❤️{eq['health']}")
-                            
-                            stats_text = " • ".join(stats_parts) if stats_parts else "Pas de bonus"
-                            st.caption(f"• **{eq['name']}**")
-                            st.caption(f"  {stats_text}")
+
+            # Affichage vertical (une seule colonne)
+            for eq_type, equipment in equipment_by_type.items():
+                if equipment:
+                    st.markdown(f"**{type_icons[eq_type]} {type_names[eq_type]}**")
+                    for eq in equipment:
+                        # Stats non-nulles
+                        stats_parts = []
+                        if eq['precision'] > 0:
+                            stats_parts.append(f"🎯{eq['precision']}")
+                        if eq['physical_damage'] > 0:
+                            stats_parts.append(f"⚔️{eq['physical_damage']}")
+                        if eq['magical_damage'] > 0:
+                            stats_parts.append(f"✨{eq['magical_damage']}")
+                        if eq['defense'] > 0:
+                            stats_parts.append(f"🛡️{eq['defense']}")
+                        if eq['spells'] > 0:
+                            stats_parts.append(f"🔮{eq['spells']}")
+                        if eq['health'] > 0:
+                            stats_parts.append(f"❤️{eq['health']}")
+
+                        stats_text = " • ".join(stats_parts) if stats_parts else "Pas de bonus"
+                        st.caption(f"• **{eq['name']}**")
+                        st.caption(f"  {stats_text}")
         else:
             st.info("🎒 Aucun équipement")
         
