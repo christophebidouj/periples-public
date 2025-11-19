@@ -1285,10 +1285,18 @@ class Character(BaseModel):
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
             self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan (affichage)
             self.temporary_buffs.pop('attacks_this_turn', None)  # Reset compteur attaques Kraor
+            self.temporary_buffs.pop('lame_ability_used_this_turn', None)  # Reset limitation 1 capacité/tour pour Lame
 
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)
             if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
                 self.temporary_buffs['double_next_attack'] = True
+
+            # NOUVEAU - Raishi Maîtrise absolue : Recharger 2 charges par tour (auto-recharge)
+            if 'raishi_maitrise_charges' in self.temporary_buffs:
+                maitrise = self.temporary_buffs['raishi_maitrise_charges']
+                if isinstance(maitrise, dict) and maitrise.get('auto_recharge', False):
+                    max_charges = maitrise.get('max_charges', 2)
+                    maitrise['charges'] = max_charges  # Recharge complète à chaque tour
 
         # NOUVEAU - Kraor Pluie de flèches : Reset compteur attaques par tour
         if hasattr(self, 'attacks_this_turn'):

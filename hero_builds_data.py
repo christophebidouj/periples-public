@@ -65,7 +65,7 @@ HERO_BUILDS_DETAILED = {
     },
     "P-4": {  # Kraor
         "Facile": {
-            "equipment": ["O-11", "O-22", "O-35", "O-3", "O-40"],  # Arc long, Hache de combat, Armure de cuir, Médaillon d'appel, Bague d'impact
+            "equipment": ["O-11", "O-35", "O-3", "O-40"],  # Arc long, Armure de cuir, Médaillon d'appel, Bague d'impact
             "abilities_level": 6,
             "potions": {"small": 0, "large": 0},
             "name": "🟢 Build Renforcé"

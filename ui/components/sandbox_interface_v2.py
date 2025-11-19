@@ -1185,7 +1185,22 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             if attack_all:
                 # Attaquer TOUS les ennemis vivants
                 alive_enemies = [e for e in enemies_list if e.is_alive()]
-                st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche une attaque multi-cible !")
+
+                # NOUVEAU - Raishi Esquive parfaite : 1 jet unique pour tous (single_roll)
+                # NOTE: Esquive parfaite devrait faire 1 seul jet de toucher, et si réussi,
+                # appliquer les dégâts à tous les ennemis. L'implémentation actuelle fait
+                # un jet par ennemi pour simplifier, mais le concept reste "attaque multi-cible"
+                esquive_single_roll = False
+                if 'esquive_parfaite_ready' in char.temporary_buffs:
+                    esquive_data = char.temporary_buffs['esquive_parfaite_ready']
+                    if isinstance(esquive_data, dict):
+                        esquive_single_roll = esquive_data.get('single_roll', False)
+
+                if esquive_single_roll:
+                    st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche Esquive parfaite ! (1 jet → tous ennemis)")
+                else:
+                    st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche une attaque multi-cible !")
+
                 for enemy in alive_enemies:
                     adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
 

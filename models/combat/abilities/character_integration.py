@@ -145,13 +145,16 @@ class CharacterAbilitiesIntegration:
         
         # Consommer les buffs d'attaque unique
         consumed_buffs = []
-        
+
         if 'double_next_attack' in character.temporary_buffs:
             consumed_buffs.append('double_next_attack')
-        
+
         if 'damage_bonus_next_attack' in character.temporary_buffs:
             consumed_buffs.append('damage_bonus_next_attack')
-        
+
+        if 'meditation_damage_boost' in character.temporary_buffs:
+            consumed_buffs.append('meditation_damage_boost')
+
         if 'ambidextre_active' in character.temporary_buffs:
             consumed_buffs.append('ambidextre_active')
         
@@ -200,6 +203,12 @@ class CharacterAbilitiesIntegration:
                 modifiers['damage_multiplier'] = stealth_data.get('damage_multiplier', 2.0)
             else:
                 modifiers['damage_multiplier'] = 2.0
+
+        # NOUVEAU - Raishi Méditation : Dégâts ×1.5 (si pas déjà un autre multiplicateur)
+        if modifiers['damage_multiplier'] == 1.0 and 'meditation_damage_boost' in character.temporary_buffs:
+            meditation_data = character.temporary_buffs['meditation_damage_boost']
+            if isinstance(meditation_data, dict):
+                modifiers['damage_multiplier'] = meditation_data.get('damage_multiplier', 1.5)
 
         # Bonus de dégâts (legacy + Thordius Frappe puissante)
         if 'damage_bonus_next_attack' in character.temporary_buffs:

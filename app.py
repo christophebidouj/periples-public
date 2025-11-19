@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Périples Balance Workshop - Version avec 8 Héros Principaux
+Périples – Atelier d'Équilibrage - Version avec 8 Héros Principaux
 🎲 Jeu : Périples © Bastien LIAUTY
 💻 Code : Christophe Bidouj (assistance Claude AI)
 VERSION FINALE MIGRÉE - Système de builds basé sur équipements réels
@@ -266,7 +266,7 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
 
 def init_app():
     """Configure Streamlit et session"""
-    st.set_page_config(page_title="Périples Balance Workshop", page_icon="⚔️", layout="wide")
+    st.set_page_config(page_title="Périples – Atelier d'Équilibrage", page_icon="⚔️", layout="wide")
     os.makedirs("data", exist_ok=True)
     
     # NOUVEAU - Nettoyage automatique des pseudo-héros supprimés
@@ -722,7 +722,7 @@ def main():
     apply_fantasy_theme()
     
     # Titre natif Streamlit
-    st.title("⚔️ Périples Balance Workshop ⚔️")
+    st.title("⚔️ Périples – Atelier d'Équilibrage ⚔️")
     st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Dev Python : **Christophe Bidouj** | Simulateur d'équilibrage RPG avec système de builds basé sur équipements réels")
     
     # Données avec cache

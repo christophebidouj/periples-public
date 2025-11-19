@@ -230,60 +230,70 @@ class AtucanChatimentDivin(BaseAbility):
 @register_ability
 class AtucanAuraSacree(BaseAbility):
     """P-3-4: Aura sacrée - Tous ignorent 1 blessure par attaque"""
-    
+
     hero_code = "P-3"
     ability_number = 4
     name = "Aura sacrée"  # Nom CSV compatible
     description = "Tous les personnages de votre groupe ignorent désormais une blessure par attaque d'ennemi."
-    
+
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1  # Coût officiel: 1 sort
+        self.uses_per_combat = 1  # Limitation : 1 seule utilisation par combat
+        self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Applique protection groupe avec API aura_protection CORRIGÉE"""
+        """Applique protection groupe permanente avec API aura_protection - EFFET PERMANENT"""
         try:
-            # 1. Consommer coût sorts avec API officielle
+            # 1. Vérifier limitation combat (1 seule utilisation)
+            if self.uses_remaining_combat <= 0:
+                log.append(f"⚠️ Aura sacrée déjà utilisée ce combat")
+                return False
+
+            # 2. Consommer coût sorts avec API officielle
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
-            # 2. Appliquer à tous les alliés (y compris Atucan)
+
+            # 3. Appliquer à tous les alliés (y compris Atucan)
             all_heroes = context.get('heroes', [])
             if not all_heroes:
                 log.append(f"⚠️ Aucun allié trouvé pour l'aura")
                 return False
-            
+
             protected_count = 0
             protected_names = []
-            
+
             for hero in all_heroes:
                 if self._is_alive(hero):
-                    # API OFFICIELLE CORRIGÉE: buff de réduction dégâts
+                    # API OFFICIELLE CORRIGÉE: buff de réduction dégâts PERMANENT
                     if not hasattr(hero, 'temporary_buffs'):
                         hero.temporary_buffs = {}
 
                     hero.temporary_buffs['aura_protection'] = {
                         'damage_reduction': 1,
                         'type': 'per_attack',
-                        'source': 'aura_sacree',
-                        'rounds_remaining': 1  # NOUVEAU - Expire à la fin du round actuel
+                        'source': 'aura_sacree'
+                        # PAS de 'rounds_remaining' → effet permanent jusqu'à la fin du combat
                     }
                     protected_count += 1
                     protected_names.append(hero.name)
-            
-            log.append(f"✨ {caster.name} génère une aura protectrice divine")
+
+            # 4. Décompter utilisation (désactive le bouton)
+            self.uses_remaining_combat -= 1
+
+            log.append(f"✨ {caster.name} génère une aura protectrice divine PERMANENTE")
             log.append(f"   🛡️ {protected_count} alliés protégés: {', '.join(protected_names)}")
-            log.append(f"   💫 Chacun ignore 1 blessure par attaque reçue")
-            
+            log.append(f"   💫 Chacun ignore 1 blessure par attaque reçue (jusqu'à la fin du combat)")
+
             return True
-            
+
         except Exception as e:
             log.append(f"❌ Erreur Aura sacrée: {e}")
             return False
     
     def get_preview(self) -> str:
-        return f"✨ {self.name}: Tous alliés -1 blessure/attaque (Coût: {self.spell_cost} sort)"
+        return f"✨ {self.name}: Tous alliés -1 blessure/attaque permanent (Coût: {self.spell_cost} sort, 1/combat)"
     
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         """Cible tous les alliés vivants"""

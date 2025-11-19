@@ -513,7 +513,7 @@ def get_waiting_combat_style() -> str:
 
 def get_native_app_title():
     """Version native Streamlit - simple et efficace"""
-    st.title("⚔️ Périples Balance Workshop ⚔️")
+    st.title("⚔️ Périples – Atelier d'Équilibrage ⚔️")
     st.caption("🎲 Simulateur d'équilibrage RPG dans l'univers fantasy")
 
 def style_combat_log_entry(line: str) -> str:

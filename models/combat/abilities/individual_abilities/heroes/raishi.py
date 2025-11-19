@@ -70,40 +70,40 @@ class RaishiArtMartial(BaseAbility):
 
 @register_ability
 class RaishiMeditation(BaseAbility):
-    """P-8-2: Méditation - Double dégâts sur même cible après attaque"""
+    """P-8-2: Méditation - Dégâts x1.5 sur prochaine attaque"""
 
     hero_code = "P-8"
     ability_number = 2
     name = "Méditation"
-    description = "Permet d'infliger une deuxième fois les dégâts, après une attaque réussie, sur la même cible. Les dégâts de cette nouvelle attaque sont cependant divisés par deux."
+    description = "La prochaine attaque inflige 150% des dégâts normaux (×1.5)."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 0
         self.uses_per_combat = 2
         self.uses_remaining_combat = 2
+        self.damage_multiplier = 1.5
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Prochaine attaque inflige dégâts une 2e fois (divisés par 2) sur même cible"""
+        """Prochaine attaque inflige x1.5 dégâts"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Méditation déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            # Ajouter buff double frappe
+            # Ajouter buff multiplicateur de dégâts
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            caster.temporary_buffs['meditation_double_hit'] = {
+            caster.temporary_buffs['meditation_damage_boost'] = {
                 'type': 'next_attack',
-                'second_hit_multiplier': 0.5,  # 2e attaque avec dégâts / 2
-                'same_target': True,
+                'damage_multiplier': self.damage_multiplier,
                 'source': 'raishi_meditation'
             }
 
-            log.append(f"🧘 {caster.name} médite...")
-            log.append(f"   💥 Prochaine attaque frappe 2× la même cible (2e frappe: dégâts / 2)")
+            log.append(f"🧘 {caster.name} médite profondément...")
+            log.append(f"   💥 Prochaine attaque: dégâts ×{self.damage_multiplier}")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -115,7 +115,7 @@ class RaishiMeditation(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"🧘 {self.name}: Attaque 2× même cible ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"🧘 {self.name}: Dégâts ×{self.damage_multiplier} ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
@@ -123,7 +123,7 @@ class RaishiMeditation(BaseAbility):
 
 @register_ability
 class RaishiCoupCritique(BaseAbility):
-    """P-8-3: Coup critique (en réalité auto-soin) - Soigne 4 PV, empêche attaque"""
+    """P-8-3: Coup critique (AUTO-SOIN UNIQUEMENT) - Soigne 4 PV sur soi-même, empêche attaque"""
 
     hero_code = "P-8"
     ability_number = 3
@@ -138,20 +138,21 @@ class RaishiCoupCritique(BaseAbility):
         self.heal_amount = 4
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Soigne 4 PV sur soi-même, empêche attaque ce tour"""
+        """Soigne 4 PV sur soi-même UNIQUEMENT (ne peut pas soigner les autres), empêche attaque ce tour"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Coup critique déjà utilisé ce combat")
                 return False
 
-            # Soigner avec API officielle
+            # IMPORTANT: AUTO-SOIN UNIQUEMENT - ignore les targets, soigne toujours le caster
+            # Cette capacité ne peut PAS soigner d'autres héros, seulement Raishi
             actual_healing = self._apply_healing(caster, self.heal_amount, log)
 
             # Empêcher attaque ce tour
             caster.can_attack_this_turn = False
 
-            log.append(f"💚 {caster.name} se concentre pour se soigner")
+            log.append(f"💚 {caster.name} se concentre pour se soigner (auto-soin uniquement)")
             log.append(f"   ⚔️ Attaque bloquée ce tour")
 
             # Décompter utilisation
@@ -164,20 +165,21 @@ class RaishiCoupCritique(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"💚 {self.name}: Soins {self.heal_amount} PV (pas d'attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"💚 {self.name}: Auto-soin {self.heal_amount} PV (pas d'attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
+        # AUTO-CIBLAGE UNIQUEMENT - retourne toujours le caster (Raishi ne peut soigner que lui-même)
         return [caster]
 
 
 @register_ability
 class RaishiEsquiveParfaite(BaseAbility):
-    """P-8-4: Esquive parfaite - Dégâts attaque sur tous ennemis"""
+    """P-8-4: Esquive parfaite - 1 jet de toucher, si réussi applique sur tous ennemis"""
 
     hero_code = "P-8"
     ability_number = 4
     name = "Esquive parfaite"
-    description = "Inflige les dégâts d'une attaque réussie sur un adversaire, à tous les ennemis."
+    description = "Un seul jet de toucher est effectué. Si l'attaque réussit, les dégâts sont appliqués à tous les ennemis."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -186,25 +188,26 @@ class RaishiEsquiveParfaite(BaseAbility):
         self.uses_remaining_combat = 2
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Prochaine attaque cible TOUS les ennemis (multi-target)"""
+        """Prochaine attaque: 1 seul jet de toucher, si réussi applique dégâts à TOUS les ennemis"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Esquive parfaite déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            # Ajouter buff multi-attaque
+            # Ajouter buff multi-attaque avec jet unique
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
             caster.temporary_buffs['esquive_parfaite_ready'] = {
                 'type': 'multi_target',
                 'applies_to': 'next_attack',
+                'single_roll': True,  # NOUVEAU: 1 seul jet pour tous les ennemis
                 'source': 'raishi_esquive_parfaite'
             }
 
             log.append(f"💫 {caster.name} prépare une Esquive parfaite !")
-            log.append(f"   ⚔️ Prochaine attaque touchera TOUS les ennemis")
+            log.append(f"   ⚔️ 1 jet de toucher → Si réussi: dégâts sur TOUS les ennemis")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -216,7 +219,7 @@ class RaishiEsquiveParfaite(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"💫 {self.name}: Attaque multi-cible ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"💫 {self.name}: 1 jet → tous ennemis ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
@@ -277,41 +280,43 @@ class RaishiCombo(BaseAbility):
 
 @register_ability
 class RaishiMaitriseAbsolue(BaseAbility):
-    """P-8-6: Maîtrise absolue - Absorbe 2 attaques sans dégâts permanent"""
+    """P-8-6: Maîtrise absolue - Absorbe 2 attaques par tour (recharge automatique)"""
 
     hero_code = "P-8"
     ability_number = 6
     name = "Maîtrise absolue"
-    description = "Permet d'être ciblé par deux attaques ennemies et d'en ignorer les dégâts, pendant toute la durée du combat."
+    description = "Ignore les dégâts de 2 attaques ennemies par tour (recharge automatique chaque tour), pendant toute la durée du combat."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 0
         self.uses_per_combat = 1
         self.uses_remaining_combat = 1
-        self.charges = 2
+        self.charges_per_turn = 2
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active bouclier - absorbe 2 attaques sans dégâts pour tout le combat"""
+        """Active bouclier permanent - absorbe 2 attaques par tour (auto-recharge)"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Maîtrise absolue déjà utilisée ce combat")
                 return False
 
-            # Activer bouclier avec charges
+            # Activer bouclier avec recharge automatique
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
             caster.temporary_buffs['raishi_maitrise_charges'] = {
                 'type': 'permanent_combat',
-                'charges': self.charges,
+                'charges': self.charges_per_turn,
+                'max_charges': self.charges_per_turn,  # NOUVEAU: Pour recharge auto
+                'auto_recharge': True,  # NOUVEAU: Indicateur de recharge par tour
                 'damage_negation': True,
                 'source': 'maitrise_absolue'
             }
 
             log.append(f"🛡️✨ {caster.name} atteint la MAÎTRISE ABSOLUE !")
-            log.append(f"   💫 {self.charges} attaques seront absorbées sans dégâts")
+            log.append(f"   💫 Ignore {self.charges_per_turn} attaques par tour (permanent, auto-recharge)")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -323,7 +328,7 @@ class RaishiMaitriseAbsolue(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"🛡️✨ {self.name}: Absorbe {self.charges} attaques ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"🛡️✨ {self.name}: Ignore {self.charges_per_turn} attaques/tour ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]

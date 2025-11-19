@@ -24,12 +24,12 @@ from ..ability_registry import register_ability
 
 @register_ability
 class LameFurtivite(BaseAbility):
-    """P-7-1: Furtivité - N'attaque pas ce tour, double dégâts tour suivant"""
+    """P-7-1: Furtivité - Esquive totale ce tour + double dégâts tour suivant"""
 
     hero_code = "P-7"
     ability_number = 1
     name = "Furtivité"
-    description = "N'attaque pas ce tour, pour pouvoir infliger le double de dégâts le tour suivant sans avoir à jeter le dé."
+    description = "N'attaque pas ce tour. Esquive totale (ignore toutes attaques ennemies). Double dégâts le tour suivant sans avoir à jeter le dé."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -37,19 +37,34 @@ class LameFurtivite(BaseAbility):
         self.damage_multiplier = 2
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active furtivité - empêche attaque ce tour, double dégâts tour suivant"""
+        """Active furtivité - empêche attaque ce tour, esquive totale, double dégâts tour suivant"""
         try:
-            # Empêcher l'attaque ce tour
-            caster.can_attack_this_turn = False
-
-            # Ajouter buff pour tour suivant (utilise système existant double_next_attack)
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            # CORRECTION: Utiliser double_next_attack lu par check_attack_modifiers()
+            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+                log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
+                return False
+
+            # 1. Empêcher l'attaque ce tour
+            caster.can_attack_this_turn = False
+
+            # 2. NOUVEAU - Esquive totale ce tour (ignore toutes les attaques ennemies)
+            caster.temporary_buffs['lame_dodge_ready'] = {
+                'type': 'damage_negation',
+                'charges': 99,  # Assez de charges pour esquiver toutes les attaques ce tour
+                'source': 'furtivite'
+            }
+
+            # 3. Double dégâts tour suivant
             caster.temporary_buffs['double_next_attack'] = True
 
+            # Marquer capacité utilisée ce tour
+            caster.temporary_buffs['lame_ability_used_this_turn'] = True
+
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
+            log.append(f"   🛡️ Esquive TOTALE ce tour (ignore toutes attaques)")
             log.append(f"   ⚔️ Attaque bloquée ce tour, dégâts ×{self.damage_multiplier} au prochain tour")
 
             return True
@@ -59,7 +74,7 @@ class LameFurtivite(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"🌑 {self.name}: Pas d'attaque → ×{self.damage_multiplier} dégâts tour suivant (Gratuit)"
+        return f"🌑 {self.name}: Esquive totale + ×{self.damage_multiplier} dégâts tour suivant (Gratuit)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
@@ -83,20 +98,27 @@ class LameAttaqueSournoise(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active esquive - prochaine attaque subie est annulée"""
         try:
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+
+            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+                log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
+                return False
+
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Attaque sournoise déjà utilisée ({self.uses_per_combat} fois)")
                 return False
-
-            # Ajouter buff esquive
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
 
             caster.temporary_buffs['lame_dodge_ready'] = {
                 'type': 'damage_negation',
                 'charges': 1,  # Annule 1 attaque
                 'source': 'attaque_sournoise'
             }
+
+            # Marquer capacité utilisée ce tour
+            caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"💨 {caster.name} prépare une esquive sournoise !")
             log.append(f"   🛡️ Prochaine attaque subie sera ignorée")
@@ -140,6 +162,14 @@ class LameParalysie(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Paralyse tous les ennemis pour 2 tours (AoE stun)"""
         try:
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+
+            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+                log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
+                return False
+
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Paralysie déjà utilisée ce combat")
@@ -161,6 +191,9 @@ class LameParalysie(BaseAbility):
                     'source': 'lame_paralysie'
                 }
                 paralyzed_count += 1
+
+            # Marquer capacité utilisée ce tour
+            caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"🕷️ {caster.name} empoisonne TOUS les ennemis !")
             log.append(f"   😵 {paralyzed_count} ennemis paralysés pour {self.stun_duration} tours")
@@ -199,20 +232,27 @@ class LameAssassination(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Prochaine attaque cible TOUS les ennemis (multi-target)"""
         try:
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+
+            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+                log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
+                return False
+
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Assassination déjà utilisée ({self.uses_per_combat} fois)")
                 return False
-
-            # Ajouter buff multi-attaque
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
 
             caster.temporary_buffs['assassination_ready'] = {
                 'type': 'multi_target',
                 'applies_to': 'next_attack',
                 'source': 'lame_assassination'
             }
+
+            # Marquer capacité utilisée ce tour
+            caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"🗡️ {caster.name} prépare une Assassination !")
             log.append(f"   ⚔️ Prochaine attaque touchera TOUS les ennemis")
@@ -251,14 +291,18 @@ class LameOmbreMortelle(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active furtivité permanente - appliqué automatiquement chaque tour"""
         try:
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+
+            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+                log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
+                return False
+
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Ombre mortelle déjà utilisée ce combat")
                 return False
-
-            # Activer furtivité permanente
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
 
             caster.temporary_buffs['permanent_stealth'] = {
                 'type': 'permanent_combat',
@@ -266,6 +310,9 @@ class LameOmbreMortelle(BaseAbility):
                 'auto_apply': True,  # S'applique chaque début de tour
                 'source': 'ombre_mortelle'
             }
+
+            # Marquer capacité utilisée ce tour
+            caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"👤💀 {caster.name} devient l'OMBRE MORTELLE !")
             log.append(f"   🌑 Furtivité automatique chaque tour (×2 dégâts permanent)")
