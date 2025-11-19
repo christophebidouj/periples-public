@@ -69,12 +69,53 @@ except ImportError as e:
     print(f"⚠️ Impossible de charger les capacités de Kraor: {e}")
     KRAOR_LOADED = False
 
-# Imports futurs (Phases 4+)
-# try:
-#     from .thordius import *
-#     THORDIUS_LOADED = True
-# except ImportError:
-#     THORDIUS_LOADED = False
+# Import des capacités de Thordius (P-5) - NOUVEAU PHASE 4
+try:
+    from .thordius import (
+        ThordiusCoupDeRage, ThordiusCharge, ThordiusIntimidation,
+        ThordiusFrappePuissante, ThordiusCriDeGuerre, ThordiusBerserker
+    )
+    THORDIUS_LOADED = True
+    print("✅ Capacités de Thordius (P-5) chargées avec succès")
+except ImportError as e:
+    print(f"⚠️ Impossible de charger les capacités de Thordius: {e}")
+    THORDIUS_LOADED = False
+
+# Import des capacités de Stephe (P-6) - NOUVEAU PHASE 4
+try:
+    from .stephe import (
+        StepheSoinLeger, StepheBenediction, StepheProtectionDivine,
+        StephePurification, StepheGuerisonDeGroupe, StepheMiracle
+    )
+    STEPHE_LOADED = True
+    print("✅ Capacités de Stephe (P-6) chargées avec succès")
+except ImportError as e:
+    print(f"⚠️ Impossible de charger les capacités de Stephe: {e}")
+    STEPHE_LOADED = False
+
+# Import des capacités de Lame (P-7) - NOUVEAU PHASE 4
+try:
+    from .lame import (
+        LameFurtivite, LameAttaqueSournoise, LameParalysie,
+        LameAssassination, LameOmbreMortelle
+    )
+    LAME_LOADED = True
+    print("✅ Capacités de Lame (P-7) chargées avec succès")
+except ImportError as e:
+    print(f"⚠️ Impossible de charger les capacités de Lame: {e}")
+    LAME_LOADED = False
+
+# Import des capacités de Raishi (P-8) - NOUVEAU PHASE 4
+try:
+    from .raishi import (
+        RaishiArtMartial, RaishiMeditation, RaishiCoupCritique,
+        RaishiEsquiveParfaite, RaishiCombo, RaishiMaitriseAbsolue
+    )
+    RAISHI_LOADED = True
+    print("✅ Capacités de Raishi (P-8) chargées avec succès")
+except ImportError as e:
+    print(f"⚠️ Impossible de charger les capacités de Raishi: {e}")
+    RAISHI_LOADED = False
 
 # ========================================
 # EXPORTS PUBLICS
@@ -109,18 +150,50 @@ if KRAOR_LOADED:
         'KraorPiege', 'KraorPoison', 'KraorFlecheExplosive', 'KraorPluieDeFlèches'
     ])
 
+# Thordius exports - NOUVEAU PHASE 4
+if THORDIUS_LOADED:
+    __all__.extend([
+        'ThordiusCoupDeRage', 'ThordiusCharge', 'ThordiusIntimidation',
+        'ThordiusFrappePuissante', 'ThordiusCriDeGuerre', 'ThordiusBerserker'
+    ])
+
+# Stephe exports - NOUVEAU PHASE 4
+if STEPHE_LOADED:
+    __all__.extend([
+        'StepheSoinLeger', 'StepheBenediction', 'StepheProtectionDivine',
+        'StephePurification', 'StepheGuerisonDeGroupe', 'StepheMiracle'
+    ])
+
+# Lame exports - NOUVEAU PHASE 4
+if LAME_LOADED:
+    __all__.extend([
+        'LameFurtivite', 'LameAttaqueSournoise', 'LameParalysie',
+        'LameAssassination', 'LameOmbreMortelle'
+    ])
+
+# Raishi exports - NOUVEAU PHASE 4
+if RAISHI_LOADED:
+    __all__.extend([
+        'RaishiArtMartial', 'RaishiMeditation', 'RaishiCoupCritique',
+        'RaishiEsquiveParfaite', 'RaishiCombo', 'RaishiMaitriseAbsolue'
+    ])
+
 # ========================================
 # STATISTIQUES GLOBALES PHASE 3+
 # ========================================
 
 def get_phase2_statistics() -> dict:
-    """Retourne les statistiques complètes - MISE À JOUR PHASE 3+ avec Kraor"""
-    
+    """Retourne les statistiques complètes - MISE À JOUR PHASE 4 avec 8 héros"""
+
     elneha_count = get_elneha_abilities_count() if ELNEHA_LOADED else 0
     liarie_count = get_liarie_abilities_count() if LIARIE_LOADED else 0
     atucan_count = get_atucan_abilities_count() if ATUCAN_LOADED else 0
-    kraor_count = get_kraor_abilities_count() if KRAOR_LOADED else 0  # NOUVEAU
-    total_count = elneha_count + liarie_count + atucan_count + kraor_count  # Kraor ajouté
+    kraor_count = get_kraor_abilities_count() if KRAOR_LOADED else 0
+    thordius_count = 6 if THORDIUS_LOADED else 0  # NOUVEAU PHASE 4
+    stephe_count = 6 if STEPHE_LOADED else 0      # NOUVEAU PHASE 4
+    lame_count = 5 if LAME_LOADED else 0          # NOUVEAU PHASE 4 (5 capacités, P-7-3 désactivée)
+    raishi_count = 6 if RAISHI_LOADED else 0      # NOUVEAU PHASE 4
+    total_count = elneha_count + liarie_count + atucan_count + kraor_count + thordius_count + stephe_count + lame_count + raishi_count
     
     heroes_completed = []
     if ELNEHA_LOADED and elneha_count == 6:
@@ -129,25 +202,41 @@ def get_phase2_statistics() -> dict:
         heroes_completed.append("P-2 (Liarie)")
     if ATUCAN_LOADED and atucan_count == 6:
         heroes_completed.append("P-3 (Atucan)")
-    if KRAOR_LOADED and kraor_count == 4:  # Kraor a 4 capacités combat (pas 6)
+    if KRAOR_LOADED and kraor_count == 4:
         heroes_completed.append("P-4 (Kraor)")
-    
+    if THORDIUS_LOADED and thordius_count == 6:  # NOUVEAU
+        heroes_completed.append("P-5 (Thordius)")
+    if STEPHE_LOADED and stephe_count == 6:  # NOUVEAU
+        heroes_completed.append("P-6 (Stephe)")
+    if LAME_LOADED and lame_count == 5:  # NOUVEAU (5 car P-7-3 désactivée)
+        heroes_completed.append("P-7 (Lame)")
+    if RAISHI_LOADED and raishi_count == 6:  # NOUVEAU
+        heroes_completed.append("P-8 (Raishi)")
+
     return {
-        "phase": "3+",  # Mise à jour phase avec Kraor
+        "phase": "4",  # PHASE 4 COMPLÈTE avec 8 héros
         "heroes_completed": heroes_completed,
         "total_abilities": total_count,
         "elneha_abilities": elneha_count,
         "liarie_abilities": liarie_count,
         "atucan_abilities": atucan_count,
-        "kraor_abilities": kraor_count,  # NOUVEAU
-        "progress_percentage": round((total_count / 59) * 100, 1),  # /59 au lieu de /48
-        "mechanical_abilities_estimate": total_count + 2,  # +2 legacy transformations
-        "next_phase_target": 30,  # Phase 4 objectif avec Thordius
+        "kraor_abilities": kraor_count,
+        "thordius_abilities": thordius_count,  # NOUVEAU
+        "stephe_abilities": stephe_count,      # NOUVEAU
+        "lame_abilities": lame_count,          # NOUVEAU
+        "raishi_abilities": raishi_count,      # NOUVEAU
+        "progress_percentage": round((total_count / 59) * 100, 1),
+        "mechanical_abilities_estimate": total_count + 2,
+        "next_phase_target": 59,  # Phase 5 objectif = toutes capacités
         "loading_status": {
             "elneha_loaded": ELNEHA_LOADED,
             "liarie_loaded": LIARIE_LOADED,
             "atucan_loaded": ATUCAN_LOADED,
-            "kraor_loaded": KRAOR_LOADED  # NOUVEAU
+            "kraor_loaded": KRAOR_LOADED,
+            "thordius_loaded": THORDIUS_LOADED,  # NOUVEAU
+            "stephe_loaded": STEPHE_LOADED,      # NOUVEAU
+            "lame_loaded": LAME_LOADED,          # NOUVEAU
+            "raishi_loaded": RAISHI_LOADED       # NOUVEAU
         }
     }
 
@@ -364,31 +453,47 @@ def validate_phase2_implementation() -> bool:
 def get_loaded_heroes():
     """Retourne la liste des héros avec capacités chargées"""
     loaded = []
-    
+
     if ELNEHA_LOADED:
         loaded.append("P-1 (Elneha)")
     if LIARIE_LOADED:
         loaded.append("P-2 (Liarie)")
     if ATUCAN_LOADED:
         loaded.append("P-3 (Atucan)")
-    if KRAOR_LOADED:  # NOUVEAU
+    if KRAOR_LOADED:
         loaded.append("P-4 (Kraor)")
-    
+    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-5 (Thordius)")
+    if STEPHE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-6 (Stephe)")
+    if LAME_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-7 (Lame)")
+    if RAISHI_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-8 (Raishi)")
+
     return loaded
 
 def get_loaded_abilities_count():
     """Retourne le nombre de capacités individuelles chargées"""
     count = 0
-    
+
     if ELNEHA_LOADED:
         count += get_elneha_abilities_count()
     if LIARIE_LOADED:
         count += get_liarie_abilities_count()
     if ATUCAN_LOADED:
         count += get_atucan_abilities_count()
-    if KRAOR_LOADED:  # NOUVEAU
+    if KRAOR_LOADED:
         count += get_kraor_abilities_count()
-    
+    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
+        count += 6
+    if STEPHE_LOADED:  # NOUVEAU PHASE 4
+        count += 6
+    if LAME_LOADED:  # NOUVEAU PHASE 4
+        count += 5  # P-7-3 désactivée
+    if RAISHI_LOADED:  # NOUVEAU PHASE 4
+        count += 6
+
     return count
 
 # ========================================
@@ -643,31 +748,47 @@ def validate_phase2_implementation() -> bool:
 def get_loaded_heroes():
     """Retourne la liste des héros avec capacités chargées"""
     loaded = []
-    
+
     if ELNEHA_LOADED:
         loaded.append("P-1 (Elneha)")
     if LIARIE_LOADED:
         loaded.append("P-2 (Liarie)")
     if ATUCAN_LOADED:
         loaded.append("P-3 (Atucan)")
-    if KRAOR_LOADED:  # NOUVEAU
+    if KRAOR_LOADED:
         loaded.append("P-4 (Kraor)")
-    
+    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-5 (Thordius)")
+    if STEPHE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-6 (Stephe)")
+    if LAME_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-7 (Lame)")
+    if RAISHI_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-8 (Raishi)")
+
     return loaded
 
 def get_loaded_abilities_count():
     """Retourne le nombre de capacités individuelles chargées"""
     count = 0
-    
+
     if ELNEHA_LOADED:
         count += get_elneha_abilities_count()
     if LIARIE_LOADED:
         count += get_liarie_abilities_count()
     if ATUCAN_LOADED:
         count += get_atucan_abilities_count()
-    if KRAOR_LOADED:  # NOUVEAU
+    if KRAOR_LOADED:
         count += get_kraor_abilities_count()
-    
+    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
+        count += 6
+    if STEPHE_LOADED:  # NOUVEAU PHASE 4
+        count += 6
+    if LAME_LOADED:  # NOUVEAU PHASE 4
+        count += 5  # P-7-3 désactivée
+    if RAISHI_LOADED:  # NOUVEAU PHASE 4
+        count += 6
+
     return count
 
 # ========================================
