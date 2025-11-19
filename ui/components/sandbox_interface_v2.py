@@ -1979,26 +1979,14 @@ def display_combat_status_team_mode():
                     else:
                         button_label = "▶️ À son tour"
 
-                    # Injection CSS dynamique pour ce bouton spécifique
+                    # Bouton simple avec use_container_width pour cohérence
                     button_key = f"select_{combatant_data['faction']}_{combatant_data['id']}"
-                    st.markdown(f"""
-                    <style>
-                    div[data-testid="element-container"]:has(button[key="{button_key}"]) .stButton > button,
-                    div[data-testid="stVerticalBlock"] > div:has(button[key="{button_key}"]) .stButton > button {{
-                        width: 260px !important;
-                        max-width: 260px !important;
-                        margin-left: auto !important;
-                        margin-right: auto !important;
-                        display: block !important;
-                    }}
-                    </style>
-                    """, unsafe_allow_html=True)
-
                     if st.button(
                         button_label,
                         key=button_key,
                         type="secondary" if (has_played or is_stunned) else "primary",
-                        disabled=button_disabled
+                        disabled=button_disabled,
+                        use_container_width=True
                     ):
                         if not button_disabled:
                             select_combatant_manually(combatant_data['id'])

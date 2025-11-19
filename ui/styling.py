@@ -310,9 +310,9 @@ def apply_custom_button_style(container_class: str, width: str = "260px", center
     """, unsafe_allow_html=True)
 
 def get_hero_card_style(hero_name: str, border_color: str, background_style: str) -> str:
-    """Génère le style CSS pour une carte héros"""
+    """Génère le style CSS pour une carte héros - responsive 100%"""
     return f"""
-    <div style="width: 100%; max-width: 260px; height: 370px; border-radius: 15px; overflow: hidden;
+    <div style="width: 100%; height: 370px; border-radius: 15px; overflow: hidden;
                 box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 3px solid {border_color};
                 {background_style} background-size: cover; background-position: center top;
                 display: flex; flex-direction: column; justify-content: flex-end; color: white; margin: 10px auto;">

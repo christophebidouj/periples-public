@@ -491,26 +491,10 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         # OPTIMISÉ : Expander avec données pré-calculées
         display_build_details_expander(hero, build_info)
         
-        # Bouton sélection héros
+        # Bouton sélection héros - utilise use_container_width pour cohérence
         if show_button:
             button_key = f"hero_btn_{hero.code}_{is_selected}"
-            container_key = f"container_{hero.code}_{is_selected}"
-
-            # CSS ciblant le container Streamlit par son data-testid
-            st.markdown(f"""
-            <style>
-            div[data-testid="element-container"]:has(button[key="{button_key}"]) .stButton > button,
-            div[data-testid="stVerticalBlock"] > div:has(button[key="{button_key}"]) .stButton > button {{
-                width: 260px !important;
-                max-width: 260px !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
-                display: block !important;
-            }}
-            </style>
-            """, unsafe_allow_html=True)
-
-            result = st.button(button_text, key=button_key, type=button_type)
+            result = st.button(button_text, key=button_key, type=button_type, use_container_width=True)
             return result
 
         return False
