@@ -265,20 +265,32 @@ class CharacterAbilitiesIntegration:
             Dict: {can_act: bool, effects: List[str]}
         """
         status = {'can_act': True, 'effects': []}
-        
+
         if not hasattr(enemy, 'status_effects'):
             return status
-        
-        # Stun
+
+        # Stun - Gérer format dict {'duration': X, 'source': Y}
         if 'stunned' in enemy.status_effects:
-            if enemy.status_effects['stunned'] > 0:
-                status['can_act'] = False
-                status['effects'].append('stunned')
-                # Décrémenter la durée
-                enemy.status_effects['stunned'] -= 1
-                if enemy.status_effects['stunned'] <= 0:
-                    del enemy.status_effects['stunned']
-        
+            stunned_data = enemy.status_effects['stunned']
+            # Support ancien format (int) et nouveau format (dict)
+            if isinstance(stunned_data, dict):
+                duration = stunned_data.get('duration', 0)
+                if duration > 0:
+                    status['can_act'] = False
+                    status['effects'].append('stunned')
+                    # Décrémenter la durée
+                    stunned_data['duration'] = duration - 1
+                    if stunned_data['duration'] <= 0:
+                        del enemy.status_effects['stunned']
+            else:
+                # Ancien format int (rétrocompatibilité)
+                if stunned_data > 0:
+                    status['can_act'] = False
+                    status['effects'].append('stunned')
+                    enemy.status_effects['stunned'] -= 1
+                    if enemy.status_effects['stunned'] <= 0:
+                        del enemy.status_effects['stunned']
+
         return status
     
     @staticmethod
