@@ -809,6 +809,16 @@ def next_turn():
             st.session_state.sandbox_v2_round_number += 1
             st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
 
+            # CRITIQUE : Décrémenter les compteurs stunned (même logique que mode manuel)
+            for combatant in st.session_state.sandbox_v2_combatants:
+                char = combatant['character']
+                if combatant['faction'] == 'enemy' and hasattr(char, 'status_effects'):
+                    if 'stunned' in char.status_effects and char.status_effects['stunned'] > 0:
+                        char.status_effects['stunned'] -= 1
+                        if char.status_effects['stunned'] <= 0:
+                            del char.status_effects['stunned']
+                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
         current = get_current_combatant()
         if current and current['character'].is_alive():
@@ -2050,23 +2060,16 @@ def main_sandbox_v2():
 
             # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
             if current['faction'] == 'enemy' and initiative_enabled:
-                # Décrémenter le stun de CET ennemi AVANT de passer au suivant
-                if hasattr(current['character'], 'check_enemy_status_effects'):
-                    status = current['character'].check_enemy_status_effects()
-                    if not status['can_act']:
-                        # Ennemi étourdi - on a décrémenté, passer au suivant
-                        stunned_after = current['character'].status_effects.get('stunned', 0) if hasattr(current['character'], 'status_effects') else 0
-                        st.session_state.sandbox_v2_log.append(
-                            f"😵 {current['character'].name} est étourdi ! Tour sauté ({stunned_after + 1} → {stunned_after} tour(s))"
-                        )
-                        # CRITIQUE : Forcer Streamlit à détecter le changement en réassignant la liste
-                        # Streamlit ne détecte pas les modifications "profondes" d'objets Python
-                        st.session_state.sandbox_v2_combatants = st.session_state.sandbox_v2_combatants[:]
-                        # Sauvegarder l'état AVANT rerun() pour persister la décrémentation
-                        save_game_state(f"{current['character'].name} étourdi - tour sauté")
-                        next_turn()
-                        st.rerun()
-                        return
+                # Vérifier si l'ennemi est étourdi SANS décrémenter (décrémentation au nouveau round)
+                is_stunned, stunned_turns = is_enemy_stunned(current['character'])
+                if is_stunned:
+                    # Ennemi étourdi - sauter son tour (stun sera décrémenté au prochain round)
+                    st.session_state.sandbox_v2_log.append(
+                        f"😵 {current['character'].name} est étourdi ! Tour sauté ({stunned_turns} tour(s) restant(s))"
+                    )
+                    next_turn()
+                    st.rerun()
+                    return
 
             # Afficher interface seulement si vivant ET non-stunné
             if current['faction'] == 'hero':
