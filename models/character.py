@@ -410,6 +410,44 @@ class Character(BaseModel):
         Returns:
             Dict avec détails de l'application des dégâts
         """
+        # NOUVEAU : Vérifier esquive (Lame Attaque sournoise, Raishi Maîtrise absolue)
+        dodge_negated = False
+        if hasattr(self, 'temporary_buffs') and self.temporary_buffs:
+            # Lame Attaque sournoise : Esquive 1 attaque
+            if 'lame_dodge_ready' in self.temporary_buffs:
+                dodge_data = self.temporary_buffs['lame_dodge_ready']
+                if isinstance(dodge_data, dict) and dodge_data.get('charges', 0) > 0:
+                    dodge_negated = True
+                    dodge_data['charges'] -= 1
+                    if dodge_data['charges'] <= 0:
+                        self.temporary_buffs.pop('lame_dodge_ready', None)
+
+            # Raishi Maîtrise absolue : Absorbe 2 attaques
+            elif 'raishi_maitrise_charges' in self.temporary_buffs:
+                maitrise_data = self.temporary_buffs['raishi_maitrise_charges']
+                if isinstance(maitrise_data, dict) and maitrise_data.get('charges', 0) > 0:
+                    dodge_negated = True
+                    maitrise_data['charges'] -= 1
+                    if maitrise_data['charges'] <= 0:
+                        self.temporary_buffs.pop('raishi_maitrise_charges', None)
+                elif isinstance(maitrise_data, int) and maitrise_data > 0:
+                    # Legacy : charges directement en int
+                    dodge_negated = True
+                    self.temporary_buffs['raishi_maitrise_charges'] -= 1
+                    if self.temporary_buffs['raishi_maitrise_charges'] <= 0:
+                        self.temporary_buffs.pop('raishi_maitrise_charges', None)
+
+        if dodge_negated:
+            # Annuler complètement les dégâts (esquive parfaite)
+            return {
+                'total_damage': damage,
+                'blocked_by_parade': 0,
+                'health_damage': 0,
+                'parade_tokens_used': 0,
+                'parade_tokens_remaining': self.current_parade_tokens,
+                'dodged': True  # Nouveau flag
+            }
+
         # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Atucan)
         aura_reduction = 0
         if hasattr(self, 'temporary_buffs') and 'aura_protection' in self.temporary_buffs:

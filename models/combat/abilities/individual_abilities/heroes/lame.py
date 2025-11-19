@@ -42,16 +42,12 @@ class LameFurtivite(BaseAbility):
             # Empêcher l'attaque ce tour
             caster.can_attack_this_turn = False
 
-            # Ajouter buff pour tour suivant
+            # Ajouter buff pour tour suivant (utilise système existant double_next_attack)
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            caster.temporary_buffs['lame_stealth_next'] = {
-                'type': 'next_turn',
-                'damage_multiplier': self.damage_multiplier,
-                'auto_hit': False,  # Pas auto-hit, juste x2 dégâts
-                'source': 'furtivite'
-            }
+            # CORRECTION: Utiliser double_next_attack lu par check_attack_modifiers()
+            caster.temporary_buffs['double_next_attack'] = True
 
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
             log.append(f"   ⚔️ Attaque bloquée ce tour, dégâts ×{self.damage_multiplier} au prochain tour")

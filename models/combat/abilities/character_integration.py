@@ -170,39 +170,56 @@ class CharacterAbilitiesIntegration:
         """
         Vérifie les modificateurs d'attaque actifs
         À appeler avant de calculer une attaque
-        
+
         Returns:
-            Dict avec les modificateurs: damage_multiplier, damage_bonus, no_retaliation, etc.
+            Dict avec les modificateurs: damage_multiplier, damage_bonus, no_retaliation, ignore_parade, etc.
         """
         modifiers = {
             'damage_multiplier': 1.0,
             'damage_bonus': 0,
             'no_retaliation': False,
-            'auto_hit': False
+            'auto_hit': False,
+            'ignore_parade': False
         }
-        
+
         if not hasattr(character, 'temporary_buffs'):
             return modifiers
-        
-        # Double dégâts
+
+        # Double dégâts (legacy + Lame Furtivité)
         if character.temporary_buffs.get('double_next_attack', False):
             modifiers['damage_multiplier'] = 2.0
-        
-        # Bonus de dégâts
+
+        # NOUVEAU - Lame Ombre mortelle : Furtivité permanente
+        if character.temporary_buffs.get('permanent_stealth', False):
+            modifiers['damage_multiplier'] = 2.0
+
+        # NOUVEAU - Lame Furtivité : Stealth next attack (si pas déjà double_next_attack)
+        if modifiers['damage_multiplier'] == 1.0 and 'lame_stealth_next' in character.temporary_buffs:
+            stealth_data = character.temporary_buffs['lame_stealth_next']
+            if isinstance(stealth_data, dict):
+                modifiers['damage_multiplier'] = stealth_data.get('damage_multiplier', 2.0)
+            else:
+                modifiers['damage_multiplier'] = 2.0
+
+        # Bonus de dégâts (legacy + Thordius Frappe puissante)
         if 'damage_bonus_next_attack' in character.temporary_buffs:
             modifiers['damage_bonus'] = character.temporary_buffs['damage_bonus_next_attack']
-        
+
+        # NOUVEAU - Raishi Art martial : Ignore parade ennemis
+        if 'ignore_parade' in character.temporary_buffs:
+            modifiers['ignore_parade'] = True
+
         # Pas de riposte
         if character.temporary_buffs.get('no_retaliation', False):
             modifiers['no_retaliation'] = True
-        
+
         # Flags d'attaque
         if hasattr(character, 'attack_flags'):
             if character.attack_flags.get('no_retaliation', False):
                 modifiers['no_retaliation'] = True
                 # Reset le flag après vérification
                 character.attack_flags.pop('no_retaliation', None)
-        
+
         return modifiers
     
     @staticmethod

@@ -54,12 +54,21 @@ class CombatActions:
                 hero.temporary_buffs['double_next_attack'] = True
         
         combatant_name = getattr(hero, 'display_name', hero.name)
-        
+
+        # Vérifier plage de critiques étendue (Thordius Cri de guerre)
+        is_critical = False
+        if self.rules.criticals:
+            if hasattr(hero, 'temporary_buffs') and 'expanded_crit_range' in hero.temporary_buffs:
+                crit_range = hero.temporary_buffs['expanded_crit_range'].get('critical_rolls', [20])
+                is_critical = attack_roll in crit_range
+            else:
+                is_critical = attack_roll == 20
+
         # Critique
-        if self.rules.criticals and attack_roll == 20:
+        if is_critical:
             final_damage = damage_value * 2
-            # Dégâts magiques ignorent la parade (règles officielles p.26)
-            ignore_parade = (damage_type == 'magical')
+            # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
+            ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
             damage_result = target.apply_damage_with_parade(final_damage, ignore_parade=ignore_parade)
             
             total_attack = attack_roll + hero.get_total_precision()
@@ -68,9 +77,13 @@ class CombatActions:
             log_parts = [f"{damage_type_emoji} CRITIQUE ! {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
             self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
             log.append(' '.join(log_parts))
-            
+
+            # 🔥 Log Cri de guerre si critique sur 18-19 (pas 20)
+            if attack_roll in [18, 19] and hasattr(hero, 'temporary_buffs') and 'expanded_crit_range' in hero.temporary_buffs:
+                log.append(f"  🔥 CRI DE GUERRE ! Critique sur {attack_roll} (plage étendue 18-19-20)")
+
             self._add_conversion_logs(log, attack_info)
-            
+
             # 🐺 Log forme de loup si utilisée
             if elneha_wolf_used:
                 remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
@@ -110,8 +123,8 @@ class CombatActions:
             total_attack = attack_roll + hero.get_total_precision()
 
             if total_attack >= target.defense:
-                # Dégâts magiques ignorent la parade (règles officielles p.26)
-                ignore_parade = (damage_type == 'magical')
+                # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
+                ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
                 damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade)
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 
