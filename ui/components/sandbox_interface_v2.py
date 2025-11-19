@@ -828,11 +828,23 @@ def next_turn():
             for combatant in st.session_state.sandbox_v2_combatants:
                 char = combatant['character']
                 if combatant['faction'] == 'enemy' and hasattr(char, 'status_effects'):
-                    if 'stunned' in char.status_effects and char.status_effects['stunned'] > 0:
-                        char.status_effects['stunned'] -= 1
-                        if char.status_effects['stunned'] <= 0:
-                            del char.status_effects['stunned']
-                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+                    if 'stunned' in char.status_effects:
+                        stunned_data = char.status_effects['stunned']
+                        # Gérer format dict ou int (legacy)
+                        if isinstance(stunned_data, dict):
+                            duration = stunned_data.get('duration', 0)
+                            if duration > 0:
+                                stunned_data['duration'] = duration - 1
+                                if stunned_data['duration'] <= 0:
+                                    del char.status_effects['stunned']
+                                    st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+                        else:
+                            # Legacy: stunned est un int
+                            if stunned_data > 0:
+                                char.status_effects['stunned'] -= 1
+                                if char.status_effects['stunned'] <= 0:
+                                    del char.status_effects['stunned']
+                                    st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
 
                 # NOUVEAU : Décrémenter Aura sacrée (pour tous les personnages)
                 if combatant['faction'] == 'hero' and hasattr(char, 'temporary_buffs'):
@@ -2220,12 +2232,23 @@ def main_sandbox_v2():
                 for combatant in st.session_state.sandbox_v2_combatants:
                     char = combatant['character']
                     if combatant['faction'] == 'enemy' and hasattr(char, 'status_effects'):
-                        if 'stunned' in char.status_effects and char.status_effects['stunned'] > 0:
-                            old_stunned = char.status_effects['stunned']
-                            char.status_effects['stunned'] -= 1
-                            if char.status_effects['stunned'] <= 0:
-                                del char.status_effects['stunned']
-                                st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+                        if 'stunned' in char.status_effects:
+                            stunned_data = char.status_effects['stunned']
+                            # Gérer format dict ou int (legacy)
+                            if isinstance(stunned_data, dict):
+                                duration = stunned_data.get('duration', 0)
+                                if duration > 0:
+                                    stunned_data['duration'] = duration - 1
+                                    if stunned_data['duration'] <= 0:
+                                        del char.status_effects['stunned']
+                                        st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+                            else:
+                                # Legacy: stunned est un int
+                                if stunned_data > 0:
+                                    char.status_effects['stunned'] -= 1
+                                    if char.status_effects['stunned'] <= 0:
+                                        del char.status_effects['stunned']
+                                        st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
 
                     # NOUVEAU : Décrémenter Aura sacrée (pour tous les personnages)
                     if combatant['faction'] == 'hero' and hasattr(char, 'temporary_buffs'):
