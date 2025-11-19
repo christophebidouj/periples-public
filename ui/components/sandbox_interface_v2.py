@@ -2042,7 +2042,7 @@ def main_sandbox_v2():
     """Interface principale Sandbox V2 - Style Arène"""
     apply_sandbox_v2_theme()
 
-    st.title("🎮 Sandbox V2")
+    st.title("🎮 Playtest Manuel")
 
     # Indicateurs de mode
     initiative_mode = st.session_state.get('initiative_setting', True)

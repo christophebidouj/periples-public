@@ -738,7 +738,7 @@ def main():
         st.stop()
     
     # Onglets
-    tab1, tab2, tab3, tab4, tab5, tab6,tab7 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène","🎮 Sandbox V2", "🔧 Debug", "ℹ️ À Propos"])
+    tab1, tab2, tab3, tab4, tab5, tab6,tab7 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "⚔️ Arène","🎮 Playtest Manuel", "🔧 Debug", "ℹ️ À Propos"])
     
     with tab1: 
         tab_selection(data)
