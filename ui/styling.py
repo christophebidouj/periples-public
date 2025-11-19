@@ -238,9 +238,24 @@ def apply_fantasy_theme():
         box-shadow: none !important;
     }
 
-    /* === BOUTONS DE CARTES === */
-    /* Note: La largeur 100% est gérée nativement avec use_container_width=True */
-    /* Les wrappers .card-select-button et .turn-button ont été supprimés */
+    /* === BOUTONS DE CARTES (largeur fixe 260px) === */
+
+    /* Conteneur pour limiter la largeur des boutons à 260px (même que les cartes) */
+    .card-width-button-container {
+        width: 260px;
+        max-width: 260px;
+        margin: 0 auto;
+        display: block;
+    }
+
+    /* Force les boutons à l'intérieur à prendre 260px */
+    .card-width-button-container .stButton,
+    .card-width-button-container .stButton > button {
+        width: 260px !important;
+        max-width: 260px !important;
+        margin: 0 auto !important;
+        display: block !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 

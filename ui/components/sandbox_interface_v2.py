@@ -1979,14 +1979,13 @@ def display_combat_status_team_mode():
                     else:
                         button_label = "▶️ À son tour"
 
-                    # Wrapper 260px pour correspondre exactement à la largeur de la carte
-                    st.markdown('<div style="width: 260px; margin: 0 auto;">', unsafe_allow_html=True)
+                    # Conteneur avec classe CSS pour limiter la largeur du bouton à 260px
+                    st.markdown('<div class="card-width-button-container">', unsafe_allow_html=True)
                     if st.button(
                         button_label,
                         key=f"select_{combatant_data['faction']}_{combatant_data['id']}",
                         type="secondary" if (has_played or is_stunned) else "primary",
-                        disabled=button_disabled,
-                        use_container_width=True
+                        disabled=button_disabled
                     ):
                         if not button_disabled:
                             select_combatant_manually(combatant_data['id'])
