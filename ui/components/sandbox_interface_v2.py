@@ -819,6 +819,16 @@ def next_turn():
                             del char.status_effects['stunned']
                             st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
 
+                # NOUVEAU : Décrémenter Aura sacrée (pour tous les personnages)
+                if combatant['faction'] == 'hero' and hasattr(char, 'temporary_buffs'):
+                    if 'aura_protection' in char.temporary_buffs:
+                        aura = char.temporary_buffs['aura_protection']
+                        if 'rounds_remaining' in aura:
+                            aura['rounds_remaining'] -= 1
+                            if aura['rounds_remaining'] <= 0:
+                                del char.temporary_buffs['aura_protection']
+                                st.session_state.sandbox_v2_log.append(f"✨ Aura sacrée de {char.name} a expiré")
+
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
         current = get_current_combatant()
         if current and current['character'].is_alive():
@@ -2112,6 +2122,16 @@ def main_sandbox_v2():
                             if char.status_effects['stunned'] <= 0:
                                 del char.status_effects['stunned']
                                 st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+
+                    # NOUVEAU : Décrémenter Aura sacrée (pour tous les personnages)
+                    if combatant['faction'] == 'hero' and hasattr(char, 'temporary_buffs'):
+                        if 'aura_protection' in char.temporary_buffs:
+                            aura = char.temporary_buffs['aura_protection']
+                            if 'rounds_remaining' in aura:
+                                aura['rounds_remaining'] -= 1
+                                if aura['rounds_remaining'] <= 0:
+                                    del char.temporary_buffs['aura_protection']
+                                    st.session_state.sandbox_v2_log.append(f"✨ Aura sacrée de {char.name} a expiré")
 
                 # Réinitialiser la liste des joueurs
                 st.session_state.sandbox_v2_played_this_round = []

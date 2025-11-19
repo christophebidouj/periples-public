@@ -262,11 +262,12 @@ class AtucanAuraSacree(BaseAbility):
                     # API OFFICIELLE CORRIGÉE: buff de réduction dégâts
                     if not hasattr(hero, 'temporary_buffs'):
                         hero.temporary_buffs = {}
-                    
+
                     hero.temporary_buffs['aura_protection'] = {
                         'damage_reduction': 1,
                         'type': 'per_attack',
-                        'source': 'aura_sacree'
+                        'source': 'aura_sacree',
+                        'rounds_remaining': 1  # NOUVEAU - Expire à la fin du round actuel
                     }
                     protected_count += 1
                     protected_names.append(hero.name)
