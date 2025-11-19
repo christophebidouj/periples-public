@@ -264,10 +264,10 @@ def display_build_details_expander(hero: Character, current_build_info: Dict):
     else:
         difficulty = current_build_info['difficulty_level']
         if difficulty == "Facile":
-            expander_title = f"🟢 Détails Build Renforcé"
+            expander_title = f"🟢 Détails"
             expander_color = "#228b22"
         elif difficulty == "Difficile":
-            expander_title = f"🔴 Détails Build Spartiate"
+            expander_title = f"🔴 Détails"
             expander_color = "#dc143c"
         else:
             expander_title = f"🔵 Détails"

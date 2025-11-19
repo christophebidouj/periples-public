@@ -1899,10 +1899,10 @@ def display_combat_status():
         end_idx = min(start_idx + max_cards_per_row, total_combatants)
         row_combatants = all_combatants[start_idx:end_idx]
 
-        # Créer colonnes pour cette ligne
-        cols = st.columns(len(row_combatants))
+        # TOUJOURS créer 8 colonnes pour largeur constante (colonnes vides si moins de cartes)
+        cols = st.columns(max_cards_per_row)
 
-        # Afficher chaque carte
+        # Afficher chaque carte dans les colonnes nécessaires
         for col_idx, combatant_data in enumerate(row_combatants):
             with cols[col_idx]:
                 character = combatant_data['character']
@@ -1947,10 +1947,10 @@ def display_combat_status_team_mode():
         end_idx = min(start_idx + max_cards_per_row, total_combatants)
         row_combatants = all_combatants[start_idx:end_idx]
 
-        # Créer colonnes pour cette ligne
-        cols = st.columns(len(row_combatants))
+        # TOUJOURS créer 7 colonnes pour largeur constante (colonnes vides si moins de cartes)
+        cols = st.columns(max_cards_per_row)
 
-        # Afficher chaque carte
+        # Afficher chaque carte dans les colonnes nécessaires
         for col_idx, combatant_data in enumerate(row_combatants):
             with cols[col_idx]:
                 character = combatant_data['character']
