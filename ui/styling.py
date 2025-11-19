@@ -238,31 +238,31 @@ def apply_fantasy_theme():
         box-shadow: none !important;
     }
 
-    /* === BOUTONS DE CARTES (largeur fixe 260px) === */
+    /* === BOUTONS DE CARTES (largeur fixe - correspond aux cartes) === */
     /* Pour les boutons sous les cartes de héros/ennemis */
     div[data-testid="column"] > div > div[data-testid="stVerticalBlock"] > div:has(.card-button-container) .stButton > button {
-        width: 260px !important;
-        max-width: 260px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
         display: block !important;
     }
 
     /* Classe pour boutons de sélection de cartes */
     .card-select-button .stButton > button {
-        width: 260px !important;
-        max-width: 260px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
         display: block !important;
     }
 
     /* Classe pour boutons "À son tour" */
     .turn-button .stButton > button {
-        width: 260px !important;
-        max-width: 260px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
         display: block !important;
     }
     </style>
