@@ -1140,10 +1140,42 @@ def display_actions_and_potions(char: Character, combatant_id: str):
         if target:
             player_count = len([h for h in heroes_list if h.is_alive()])
             adapter = st.session_state.sandbox_v2_adapter
-            adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
 
-            # Marquer qu'une attaque a été effectuée (empêche d'attaquer à nouveau + bloquer capacités magiques)
-            char.can_attack_this_turn = False
+            # NOUVEAU - Kraor Poison : Vérifier buff attack_all_enemies
+            attack_all = hasattr(char, 'temporary_buffs') and 'attack_all_enemies' in char.temporary_buffs
+
+            if attack_all:
+                # Attaquer TOUS les ennemis vivants
+                alive_enemies = [e for e in enemies_list if e.is_alive()]
+                st.session_state.sandbox_v2_log.append(f"🏹 {char.name} déclenche une attaque multi-cible !")
+                for enemy in alive_enemies:
+                    adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+                # Consommer le buff
+                char.temporary_buffs.pop('attack_all_enemies', None)
+                save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
+            else:
+                # Attaque normale (cible unique)
+                adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+                save_game_state(f"{char.name} attaque {target.name}")
+
+            # Marquer qu'une attaque a été effectuée
+            # NOUVEAU - Kraor Pluie de flèches : Permettre 2 attaques si buff actif
+            has_double_attacks = hasattr(char, 'temporary_buffs') and 'double_attacks_permanent' in char.temporary_buffs
+
+            if has_double_attacks:
+                # Compter les attaques ce tour
+                if not hasattr(char, 'attacks_this_turn'):
+                    char.attacks_this_turn = 0
+                char.attacks_this_turn += 1
+
+                # Bloquer après 2 attaques
+                if char.attacks_this_turn >= 2:
+                    char.can_attack_this_turn = False
+                # Sinon, permettre une 2ème attaque
+            else:
+                # Comportement normal : bloquer après 1 attaque
+                char.can_attack_this_turn = False
+
             char.attack_done_this_turn = True  # NOUVEAU - Empêche capacités magiques après attaque (règle p.24)
 
             # NOUVEAU - Si Atucan attaque, désactiver Parade pour ce tour (règle inverse de Parade)
@@ -1153,7 +1185,6 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                 char.temporary_buffs['parade_blocked_by_attack'] = True
 
             st.session_state.sandbox_v2_action_state = None
-            save_game_state(f"{char.name} attaque {target.name}")
             # NE PAS appeler next_turn() - le héros peut encore agir (boire potion, etc.)
             st.rerun()
 
@@ -1474,6 +1505,11 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         wolf_remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
         wolf_form_active = wolf_remaining > 0
 
+    # NOUVEAU - Vérifier buff Pluie de flèches (Kraor P-4-6)
+    pluie_active = False
+    if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
+        pluie_active = 'double_attacks_permanent' in hero.temporary_buffs
+
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
@@ -1482,6 +1518,9 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     elif wolf_form_active:
         # NOUVEAU : Badge Forme de loup avec compteur et indication x2 dégâts
         build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FF4500; text-shadow: 2px 2px 4px black;">🐺 LOUP ×2 ATK<br/>({wolf_remaining} rest.)</div>'
+    elif pluie_active:
+        # NOUVEAU : Badge Pluie de flèches (2 attaques par tour)
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #00CED1; text-shadow: 2px 2px 4px black;">🏹 PLUIE<br/>(2 ATK/tour)</div>'
     else:
         build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #90EE90;">✓ Prêt</div>'
 

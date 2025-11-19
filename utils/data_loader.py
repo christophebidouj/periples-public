@@ -263,11 +263,21 @@ class DataLoader:
         return self._abilities or {}
     
     def _add_abilities_to_hero(self, hero: Character, abilities_data: Dict):
-        """Ajoute les capacités à un héros"""
+        """Ajoute les capacités à un héros (filtre capacités hors-combat)"""
         hero_abilities = abilities_data.get(hero.code, [])
         if hero_abilities and hasattr(hero, 'add_abilities'):
-            hero.add_abilities(hero_abilities)
-            print(f"🔮 {hero.name}: {len(hero_abilities)} capacités ajoutées")
+            # FILTRER les capacités "Pas utile en combat"
+            combat_abilities = [
+                ability for ability in hero_abilities
+                if not (hasattr(ability, 'description') and
+                       'Pas utile en combat' in ability.description)
+            ]
+            hero.add_abilities(combat_abilities)
+            excluded_count = len(hero_abilities) - len(combat_abilities)
+            if excluded_count > 0:
+                print(f"🔮 {hero.name}: {len(combat_abilities)} capacités ajoutées ({excluded_count} hors-combat exclues)")
+            else:
+                print(f"🔮 {hero.name}: {len(combat_abilities)} capacités ajoutées")
     
     # === MÉTHODES PRIVÉES - BUILDS ===
     

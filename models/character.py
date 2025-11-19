@@ -1251,6 +1251,10 @@ class Character(BaseModel):
             if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
                 self.temporary_buffs['double_next_attack'] = True
 
+        # NOUVEAU - Kraor Pluie de flèches : Reset compteur attaques par tour
+        if hasattr(self, 'attacks_this_turn'):
+            self.attacks_this_turn = 0
+
         # Recharger jetons parade avec effets
         self.refresh_parade_tokens()
         
