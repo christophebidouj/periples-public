@@ -1697,6 +1697,11 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
     is_stunned, stunned_turns = is_enemy_stunned(enemy)
 
+    # NOUVEAU - Vérifier si l'ennemi est marqué par Kraor (Piège)
+    is_marked_by_kraor = False
+    if hasattr(enemy, 'status_effects') and enemy.status_effects:
+        is_marked_by_kraor = 'kraor_marked' in enemy.status_effects
+
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
@@ -1705,6 +1710,9 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     elif is_stunned:
         # NOUVEAU : Badge visuel pour ennemi étourdi (cohérent avec mode manuel)
         build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">😵 Étourdi ({stunned_turns} tours)</div>'
+    elif is_marked_by_kraor:
+        # NOUVEAU : Badge visuel pour ennemi marqué par Kraor (Piège +2 dégâts groupe)
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF6347; text-shadow: 2px 2px 4px black;">🎯 MARQUÉ<br/>+2 dégâts groupe</div>'
     else:
         build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #ff6666;">✓ En attente</div>'
 
