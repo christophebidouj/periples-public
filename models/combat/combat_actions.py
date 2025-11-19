@@ -115,6 +115,21 @@ class CombatActions:
                 # Consommer le buff après utilisation
                 hero.temporary_buffs.pop('meditation_double_hit', None)
 
+            # NOUVEAU - Combo (Raishi P-8-5) : Stun ennemi 3 tours après attaque réussie
+            if hasattr(hero, 'temporary_buffs') and 'combo_ready' in hero.temporary_buffs:
+                combo_info = hero.temporary_buffs['combo_ready']
+                stun_duration = combo_info.get('stun_duration', 3)
+                # Appliquer stun sur la cible touchée
+                if not hasattr(target, 'status_effects'):
+                    target.status_effects = {}
+                target.status_effects['stunned'] = {
+                    'duration': stun_duration,
+                    'source': 'raishi_combo'
+                }
+                log.append(f"  💥🥊 COMBO ! {target.name} étourdi pour {stun_duration} tours")
+                # Consommer le buff après utilisation
+                hero.temporary_buffs.pop('combo_ready', None)
+
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
 
@@ -179,6 +194,21 @@ class CombatActions:
                     log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
                     # Consommer le buff après utilisation
                     hero.temporary_buffs.pop('meditation_double_hit', None)
+
+                # NOUVEAU - Combo (Raishi P-8-5) : Stun ennemi 3 tours après attaque réussie
+                if hasattr(hero, 'temporary_buffs') and 'combo_ready' in hero.temporary_buffs:
+                    combo_info = hero.temporary_buffs['combo_ready']
+                    stun_duration = combo_info.get('stun_duration', 3)
+                    # Appliquer stun sur la cible touchée
+                    if not hasattr(target, 'status_effects'):
+                        target.status_effects = {}
+                    target.status_effects['stunned'] = {
+                        'duration': stun_duration,
+                        'source': 'raishi_combo'
+                    }
+                    log.append(f"  💥🥊 COMBO ! {target.name} étourdi pour {stun_duration} tours")
+                    # Consommer le buff après utilisation
+                    hero.temporary_buffs.pop('combo_ready', None)
 
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")

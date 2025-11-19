@@ -239,33 +239,25 @@ class RaishiCombo(BaseAbility):
         self.stun_duration = 3
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Stun un ennemi pour 3 tours (combo puissant)"""
+        """Active Combo - Prochaine attaque réussie stun l'ennemi pour 3 tours"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Combo déjà utilisé ({self.uses_per_combat} fois)")
                 return False
 
-            # Sélectionner ennemi cible
-            enemies = self._get_all_enemies(caster, context)
-            if not enemies:
-                log.append(f"⚠️ Aucun ennemi pour Combo")
-                return False
+            # Ajouter buff pour prochaine attaque
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
 
-            # Prioriser ennemi avec plus de PV (plus rentable)
-            target = max(enemies, key=lambda e: e.current_health)
-
-            # Appliquer stun longue durée
-            if not hasattr(target, 'status_effects'):
-                target.status_effects = {}
-
-            target.status_effects['stunned'] = {
-                'duration': self.stun_duration,
+            caster.temporary_buffs['combo_ready'] = {
+                'type': 'next_attack',
+                'stun_duration': self.stun_duration,
                 'source': 'raishi_combo'
             }
 
-            log.append(f"💥🥊 {caster.name} enchaîne un COMBO sur {target.name} !")
-            log.append(f"   😵 {target.name} neutralisé pour {self.stun_duration} tours")
+            log.append(f"💥🥊 {caster.name} prépare un COMBO !")
+            log.append(f"   ⚡ Prochaine attaque réussie étourdit l'ennemi {self.stun_duration} tours")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -277,10 +269,10 @@ class RaishiCombo(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"💥🥊 {self.name}: Stun ennemi {self.stun_duration} tours ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"💥🥊 {self.name}: Prochaine attaque stun {self.stun_duration} tours ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [e for e in all_enemies if self._is_alive(e)]
+        return [caster]
 
 
 @register_ability
