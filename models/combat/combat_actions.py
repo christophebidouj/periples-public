@@ -102,6 +102,19 @@ class CombatActions:
                 # Consommer le buff après utilisation
                 hero.temporary_buffs.pop('chatiment_divin_active', None)
 
+            # NOUVEAU - Méditation (Raishi P-8-2) : 2e frappe avec dégâts / 2 après attaque réussie
+            if hasattr(hero, 'temporary_buffs') and 'meditation_double_hit' in hero.temporary_buffs:
+                meditation_info = hero.temporary_buffs['meditation_double_hit']
+                second_hit_multiplier = meditation_info.get('second_hit_multiplier', 0.5)
+                # Utiliser les dégâts de BASE (avant critique) divisés par 2
+                meditation_damage = int(damage_value * second_hit_multiplier)
+                # 2e frappe sur même cible (respecte parade)
+                ignore_parade_meditation = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
+                meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation)
+                log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
+                # Consommer le buff après utilisation
+                hero.temporary_buffs.pop('meditation_double_hit', None)
+
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
 
@@ -153,6 +166,19 @@ class CombatActions:
                     log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
                     # Consommer le buff après utilisation
                     hero.temporary_buffs.pop('chatiment_divin_active', None)
+
+                # NOUVEAU - Méditation (Raishi P-8-2) : 2e frappe avec dégâts / 2 après attaque réussie
+                if hasattr(hero, 'temporary_buffs') and 'meditation_double_hit' in hero.temporary_buffs:
+                    meditation_info = hero.temporary_buffs['meditation_double_hit']
+                    second_hit_multiplier = meditation_info.get('second_hit_multiplier', 0.5)
+                    # Utiliser les dégâts de BASE divisés par 2
+                    meditation_damage = int(damage_value * second_hit_multiplier)
+                    # 2e frappe sur même cible (respecte parade)
+                    ignore_parade_meditation = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
+                    meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation)
+                    log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
+                    # Consommer le buff après utilisation
+                    hero.temporary_buffs.pop('meditation_double_hit', None)
 
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")

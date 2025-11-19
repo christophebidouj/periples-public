@@ -75,7 +75,7 @@ class RaishiMeditation(BaseAbility):
     hero_code = "P-8"
     ability_number = 2
     name = "Méditation"
-    description = "Permet d'infliger une deuxième fois les dégâts, après une attaque réussie, sur la même cible. Les dégâts sont les mêmes que ceux de l'attaque."
+    description = "Permet d'infliger une deuxième fois les dégâts, après une attaque réussie, sur la même cible. Les dégâts de cette nouvelle attaque sont cependant divisés par deux."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -84,7 +84,7 @@ class RaishiMeditation(BaseAbility):
         self.uses_remaining_combat = 2
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Prochaine attaque inflige dégâts 2× sur même cible"""
+        """Prochaine attaque inflige dégâts une 2e fois (divisés par 2) sur même cible"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
@@ -97,13 +97,13 @@ class RaishiMeditation(BaseAbility):
 
             caster.temporary_buffs['meditation_double_hit'] = {
                 'type': 'next_attack',
-                'multiplier': 2,  # Attaque 2 fois
+                'second_hit_multiplier': 0.5,  # 2e attaque avec dégâts / 2
                 'same_target': True,
                 'source': 'raishi_meditation'
             }
 
             log.append(f"🧘 {caster.name} médite...")
-            log.append(f"   💥 Prochaine attaque frappe 2× la même cible")
+            log.append(f"   💥 Prochaine attaque frappe 2× la même cible (2e frappe: dégâts / 2)")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
