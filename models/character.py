@@ -1432,8 +1432,12 @@ class Enemy(BaseModel):
             self.marks = {}
     
     def is_alive(self) -> bool:
+        # NOUVEAU - Berserker rage (Thordius P-5-6) : Continue à combattre même inconscient
+        if hasattr(self, 'temporary_buffs') and self.temporary_buffs.get('berserker_rage_active', False):
+            return True  # Rage active = immortel
+
         return self.current_health > 0
-    
+
     # === SYSTÈME JETONS PARADE ===
     
     def refresh_parade_tokens(self):

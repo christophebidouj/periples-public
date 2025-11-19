@@ -428,6 +428,9 @@ class ManualTargeting:
 
         # Liste héros avec cartes stylées
         for hero in alive_heroes:
+            # NOUVEAU - Vérifier invisibilité (Stephe Purification)
+            is_invisible = hasattr(hero, 'status_effects') and hero.status_effects.get('invisible', False)
+
             # CORRIGÉ : Utiliser jetons actuels (pas maximum) pour calcul correct après Parade
             parade = hero.current_parade_tokens
             damage_after_parade = max(0, stats['damage'] - parade)
@@ -435,18 +438,24 @@ class ManualTargeting:
             col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
 
             with col1:
-                st.write(f"**{hero.name}**")
+                if is_invisible:
+                    st.write(f"**{hero.name}** 🌫️ *(Invisible)*")
+                else:
+                    st.write(f"**{hero.name}**")
             with col2:
                 st.write(f"❤️ {hero.current_health}/{hero.get_total_health()}")
             with col3:
                 st.write(f"🛡️ {parade}")
             with col4:
-                if damage_after_parade > 0:
+                if is_invisible:
+                    st.write("🌫️ Invisible")
+                elif damage_after_parade > 0:
                     st.write(f"💔 -{damage_after_parade}")
                 else:
                     st.write("✅ Bloqué")
             with col5:
-                if st.button("🎯 Cibler", key=f"enemy_target_{hero.name}_{id(hero)}", type="primary", use_container_width=True):
+                # NOUVEAU - Désactiver bouton si invisible
+                if st.button("🎯 Cibler", key=f"enemy_target_{hero.name}_{id(hero)}", type="primary", use_container_width=True, disabled=is_invisible):
                     return hero
 
         return None
@@ -1141,18 +1150,39 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             player_count = len([h for h in heroes_list if h.is_alive()])
             adapter = st.session_state.sandbox_v2_adapter
 
-            # NOUVEAU - Kraor Poison : Vérifier buff attack_all_enemies
-            attack_all = hasattr(char, 'temporary_buffs') and 'attack_all_enemies' in char.temporary_buffs
+            # NOUVEAU - Vérifier buffs multi-cibles (Kraor, Lame, Raishi)
+            attack_all = hasattr(char, 'temporary_buffs') and (
+                'attack_all_enemies' in char.temporary_buffs or
+                'assassination_ready' in char.temporary_buffs or
+                'esquive_parfaite_ready' in char.temporary_buffs
+            )
+
+            # NOUVEAU - Vérifier buff Méditation (Raishi) - Attaque 2× même cible
+            meditation_active = hasattr(char, 'temporary_buffs') and 'meditation_double_hit' in char.temporary_buffs
 
             if attack_all:
                 # Attaquer TOUS les ennemis vivants
                 alive_enemies = [e for e in enemies_list if e.is_alive()]
-                st.session_state.sandbox_v2_log.append(f"🏹 {char.name} déclenche une attaque multi-cible !")
+                st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche une attaque multi-cible !")
                 for enemy in alive_enemies:
                     adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
-                # Consommer le buff
-                char.temporary_buffs.pop('attack_all_enemies', None)
+
+                # Consommer les buffs multi-cibles
+                if hasattr(char, 'temporary_buffs'):
+                    char.temporary_buffs.pop('attack_all_enemies', None)
+                    char.temporary_buffs.pop('assassination_ready', None)
+                    char.temporary_buffs.pop('esquive_parfaite_ready', None)
+
                 save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
+            elif meditation_active:
+                # Méditation : Attaquer 2× la même cible
+                st.session_state.sandbox_v2_log.append(f"🧘 {char.name} médite et frappe 2× {target.name} !")
+                adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+                adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+
+                # Consommer le buff
+                char.temporary_buffs.pop('meditation_double_hit', None)
+                save_game_state(f"{char.name} attaque 2× {target.name} (Méditation)")
             else:
                 # Attaque normale (cible unique)
                 adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
@@ -1211,6 +1241,26 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             save_game_state(f"{char.name} termine son tour")
             next_turn()
             st.rerun()
+
+    # NOUVEAU - Bouton Rage pour Thordius (P-5) si Berserker débloqué
+    if hasattr(char, 'code') and char.code == "P-5":
+        berserker_unlocked = hasattr(char, 'temporary_buffs') and char.temporary_buffs.get('berserker_unlocked', False)
+
+        if berserker_unlocked:
+            rage_active = char.temporary_buffs.get('berserker_rage_active', False)
+
+            st.markdown("### 🔥 Mode Berserker")
+            if st.button(
+                f"{'🔥 DÉSACTIVER RAGE' if rage_active else '⚔️ ACTIVER RAGE'}",
+                key=f"toggle_rage_{combatant_id}",
+                type="primary" if rage_active else "secondary",
+                use_container_width=True
+            ):
+                char.temporary_buffs['berserker_rage_active'] = not rage_active
+                new_state = "activée" if not rage_active else "désactivée"
+                st.session_state.sandbox_v2_log.append(f"🔥 {char.name} - Rage {new_state}")
+                save_game_state(f"{char.name} - Rage {new_state}")
+                st.rerun()
 
     # Potions
     st.markdown("### 🧪 Potions")
@@ -1510,11 +1560,22 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
         pluie_active = 'double_attacks_permanent' in hero.temporary_buffs
 
+    # NOUVEAU - Vérifier rage Berserker (Thordius P-5-6)
+    rage_active = False
+    if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
+        rage_active = hero.temporary_buffs.get('berserker_rage_active', False)
+
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
+    elif not is_alive and rage_active:
+        # NOUVEAU : Badge Rage active même inconscient
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: 2px 2px 4px black;">🔥💀 RAGE<br/>(IMMORTEL)</div>'
     elif not is_alive:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 INCONSCIENT</div>'
+    elif rage_active:
+        # NOUVEAU : Badge Rage active
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: 2px 2px 4px black;">🔥 RAGE ACTIVE</div>'
     elif wolf_form_active:
         # NOUVEAU : Badge Forme de loup avec compteur et indication x2 dégâts
         build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FF4500; text-shadow: 2px 2px 4px black;">🐺 LOUP ×2 ATK<br/>({wolf_remaining} rest.)</div>'
