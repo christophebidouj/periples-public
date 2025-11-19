@@ -58,24 +58,24 @@ def apply_fantasy_theme():
     }
     
     /* === SYSTÈME DE BOUTONS FLEXIBLE === */
-    
+
     /* Bouton bordeaux par défaut (conservation de l'existant) */
     .stButton > button:not([class*="btn-"]) {
-        background: linear-gradient(135deg, #800020, #5d0015) !important;
-        color: #f4e4bc !important;
-        border: 2px solid #4d0012 !important;
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        font-family: 'Cinzel', serif !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
-        box-shadow: 0 4px 8px rgba(128,0,32,0.4) !important;
-        transition: all 0.3s ease !important;
+        background: linear-gradient(135deg, #800020, #5d0015);
+        color: #f4e4bc;
+        border: 2px solid #4d0012;
+        border-radius: 8px;
+        font-weight: bold;
+        font-family: 'Cinzel', serif;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        box-shadow: 0 4px 8px rgba(128,0,32,0.4);
+        transition: all 0.3s ease;
     }
-    
+
     .stButton > button:not([class*="btn-"]):hover {
-        background: linear-gradient(135deg, #a0002a, #800020) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(128,0,32,0.6) !important;
+        background: linear-gradient(135deg, #a0002a, #800020);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(128,0,32,0.6);
     }
     
     /* Classes spécifiques pour différents types de boutons */
@@ -237,19 +237,47 @@ def apply_fantasy_theme():
         transform: none !important;
         box-shadow: none !important;
     }
+
+    /* === BOUTONS DE CARTES (largeur fixe 260px) === */
+    /* Pour les boutons sous les cartes de héros/ennemis */
+    div[data-testid="column"] > div > div[data-testid="stVerticalBlock"] > div:has(.card-button-container) .stButton > button {
+        width: 260px !important;
+        max-width: 260px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        display: block !important;
+    }
+
+    /* Classe pour boutons de sélection de cartes */
+    .card-select-button .stButton > button {
+        width: 260px !important;
+        max-width: 260px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        display: block !important;
+    }
+
+    /* Classe pour boutons "À son tour" */
+    .turn-button .stButton > button {
+        width: 260px !important;
+        max-width: 260px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        display: block !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 def create_button_with_class(label: str, button_class: str = "", key: str = None, **kwargs) -> bool:
     """
     Crée un bouton avec une classe CSS spécifique
-    
+
     Args:
         label: Texte du bouton
         button_class: Classe CSS à appliquer (success, info, warning, danger, magic, neutral, gold)
         key: Clé unique du bouton
         **kwargs: Arguments additionnels pour st.button
-    
+
     Returns:
         bool: True si le bouton est cliqué
     """
@@ -262,8 +290,35 @@ def create_button_with_class(label: str, button_class: str = "", key: str = None
         }}
         </style>
         """, unsafe_allow_html=True)
-    
+
     return st.button(label, key=key, **kwargs)
+
+def apply_custom_button_style(container_class: str, width: str = "260px", center: bool = True):
+    """
+    Applique un style personnalisé aux boutons dans un conteneur spécifique
+
+    Args:
+        container_class: Classe CSS unique du conteneur
+        width: Largeur des boutons (ex: "260px", "100%", "auto")
+        center: Centre le bouton dans son conteneur
+
+    Usage:
+        apply_custom_button_style("card-button-container", "260px")
+        with st.container():
+            st.markdown('<div class="card-button-container">', unsafe_allow_html=True)
+            st.button("Mon bouton", key="btn1")
+            st.markdown('</div>', unsafe_allow_html=True)
+    """
+    center_style = "margin-left: auto; margin-right: auto; display: block;" if center else ""
+    st.markdown(f"""
+    <style>
+    .{container_class} .stButton > button {{
+        width: {width} !important;
+        {center_style}
+        max-width: none !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 def get_hero_card_style(hero_name: str, border_color: str, background_style: str) -> str:
     """Génère le style CSS pour une carte héros"""

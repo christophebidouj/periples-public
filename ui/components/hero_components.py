@@ -494,8 +494,12 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         # Bouton sélection héros
         if show_button:
             button_key = f"hero_btn_{hero.code}_{is_selected}"
-            return st.button(button_text, key=button_key, type=button_type, use_container_width=True)
-        
+            # Wrapper pour appliquer la largeur fixe (260px comme les cartes)
+            st.markdown('<div class="card-select-button">', unsafe_allow_html=True)
+            result = st.button(button_text, key=button_key, type=button_type)
+            st.markdown('</div>', unsafe_allow_html=True)
+            return result
+
         return False
 
 def display_team_recap(heroes_details, enemies_details, player_count):
