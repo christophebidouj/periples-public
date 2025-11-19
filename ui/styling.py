@@ -238,32 +238,45 @@ def apply_fantasy_theme():
         box-shadow: none !important;
     }
 
-    /* === BOUTONS DE CARTES (largeur fixe - correspond aux cartes) === */
-    /* Pour les boutons sous les cartes de héros/ennemis */
-    div[data-testid="column"] > div > div[data-testid="stVerticalBlock"] > div:has(.card-button-container) .stButton > button {
+    /* === BOUTONS DE CARTES (largeur 100% pour correspondre aux cartes) === */
+
+    /* Sélecteur ultra-spécifique pour forcer la largeur à 100% */
+    /* Cible à la fois le conteneur .stButton ET le bouton lui-même */
+
+    /* Pour boutons de sélection de cartes (onglet Sélection) */
+    .card-select-button .stButton,
+    .card-select-button .stButton > button,
+    div.card-select-button .stButton,
+    div.card-select-button .stButton > button {
         width: 100% !important;
         max-width: 100% !important;
+        min-width: 100% !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
         display: block !important;
     }
 
-    /* Classe pour boutons de sélection de cartes */
-    .card-select-button .stButton > button {
+    /* Pour boutons "À son tour" (Playtest Manuel) */
+    .turn-button .stButton,
+    .turn-button .stButton > button,
+    div.turn-button .stButton,
+    div.turn-button .stButton > button {
         width: 100% !important;
         max-width: 100% !important;
+        min-width: 100% !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
         display: block !important;
     }
 
-    /* Classe pour boutons "À son tour" */
-    .turn-button .stButton > button {
+    /* Sélecteur alternatif basé sur data-testid pour compatibilité maximale */
+    div[data-testid="column"] .card-select-button .stButton,
+    div[data-testid="column"] .card-select-button .stButton > button,
+    div[data-testid="column"] .turn-button .stButton,
+    div[data-testid="column"] .turn-button .stButton > button {
         width: 100% !important;
         max-width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        display: block !important;
+        min-width: 100% !important;
     }
     </style>
     """, unsafe_allow_html=True)
