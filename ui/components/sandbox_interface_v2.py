@@ -1105,7 +1105,12 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         combat_uses_remaining = ability.uses_remaining_combat
         combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted
+    # NOUVEAU - Désactiver capacités "Pas utile en combat"
+    not_useful_in_combat = False
+    if hasattr(ability, 'description') and ability.description:
+        not_useful_in_combat = "Pas utile en combat" in ability.description or "pas utile en combat" in ability.description
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
@@ -1119,7 +1124,9 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if combat_uses_remaining is not None:
         button_label = f"{type_icon} {short_name}\nCoût: {ability.spell_cost} ✨ • {combat_uses_remaining}/{ability.uses_per_combat} ⚡"
 
-    if armure_mage_already_used:
+    if not_useful_in_combat:
+        button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
+    elif armure_mage_already_used:
         button_label = f"{type_icon} {short_name}\n✅ Active"
     elif parade_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
@@ -1239,9 +1246,38 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
         if can_attack:
             if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
-                st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
-                st.session_state.sandbox_v2_current_actor = char
-                st.rerun()
+                # Vérifier si attack_all_enemies est actif (Kraor capacité 4)
+                attack_all = hasattr(char, 'temporary_buffs') and 'attack_all_enemies' in char.temporary_buffs
+
+                if attack_all:
+                    # Attaque multi-cible : pas besoin de sélectionner une cible
+                    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+                    enemies_list = [c['character'] for c in enemy_combatants]
+                    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                    heroes_list = [c['character'] for c in hero_combatants]
+                    player_count = len([h for h in heroes_list if h.is_alive()])
+                    adapter = st.session_state.sandbox_v2_adapter
+
+                    # Attaquer TOUS les ennemis vivants
+                    alive_enemies = [e for e in enemies_list if e.is_alive()]
+                    st.session_state.sandbox_v2_log.append(f"💥 {char.name} déclenche une attaque ciblant TOUS les ennemis !")
+                    for enemy in alive_enemies:
+                        adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+
+                    # Consommer le buff
+                    char.temporary_buffs.pop('attack_all_enemies', None)
+
+                    # Marquer attaque effectuée
+                    char.can_attack_this_turn = False
+                    char.attack_done_this_turn = True
+
+                    save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
+                    st.rerun()
+                else:
+                    # Attaque normale : sélectionner une cible
+                    st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
+                    st.session_state.sandbox_v2_current_actor = char
+                    st.rerun()
         else:
             st.button("⚔️ Attaquer (déjà fait)", key=f"sandbox_attack_{combatant_id}", disabled=True, use_container_width=True)
 
