@@ -254,7 +254,10 @@ class ElnehaOndeTonnante(BaseAbility):
                 # Effet stun
                 if not hasattr(enemy, 'status_effects'):
                     enemy.status_effects = {}
-                enemy.status_effects['stunned'] = 1
+                enemy.status_effects['stunned'] = {
+                    'duration': 1,
+                    'source': 'elneha_eclair'
+                }
                 stunned_enemies.append(enemy.name)
             
             log.append(f"⚡ {caster.name} lance {self.name} !")

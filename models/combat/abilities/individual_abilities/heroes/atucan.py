@@ -436,7 +436,10 @@ class AtucanJugementDernier(BaseAbility):
                 # API RÉELLE : status_effects pour Enemy (confirmé)
                 if not hasattr(enemy, 'status_effects'):
                     enemy.status_effects = {}
-                enemy.status_effects['stunned'] = 2  # 2 tours
+                enemy.status_effects['stunned'] = {
+                    'duration': 2,  # 2 tours
+                    'source': 'atucan_jugement_dernier'
+                }
                 stunned_enemies.append(enemy.name)
             
             # 5. Décompter utilisation
