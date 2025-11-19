@@ -2002,6 +2002,10 @@ def main_sandbox_v2():
 
             # Bouton génération initiative
             if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
+                # CRITIQUE : Réinitialiser les compteurs des individual abilities avant nouveau combat
+                from models.combat.abilities.individual_abilities import reset_all_combat_uses
+                reset_all_combat_uses()
+
                 generate_initiative()
                 st.session_state.sandbox_v2_phase = 'COMBAT'
                 st.session_state.sandbox_v2_current_turn_index = 0
@@ -2013,6 +2017,10 @@ def main_sandbox_v2():
 
             # Bouton pour commencer le combat en mode manuel
             if st.button("▶️ Commencer le Combat (Mode Manuel)", type="primary", use_container_width=True):
+                # CRITIQUE : Réinitialiser les compteurs des individual abilities avant nouveau combat
+                from models.combat.abilities.individual_abilities import reset_all_combat_uses
+                reset_all_combat_uses()
+
                 organize_teams_without_initiative()
                 st.session_state.sandbox_v2_phase = 'COMBAT'
                 st.rerun()
@@ -2178,6 +2186,11 @@ def main_sandbox_v2():
                 st.session_state.sandbox_v2_action_state = None
                 st.session_state.sandbox_v2_current_actor = None
                 st.session_state.sandbox_v2_combatants = []
+
+                # CRITIQUE : Réinitialiser les compteurs des individual abilities (singleton cache)
+                from models.combat.abilities.individual_abilities import reset_all_combat_uses
+                reset_all_combat_uses()
+
                 st.rerun()
 
 if __name__ == "__main__":

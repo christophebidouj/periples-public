@@ -20,8 +20,9 @@ except ImportError:
 # Points d'entrée principaux
 __all__ = [
     'BaseAbility',
-    'ABILITY_REGISTRY', 
-    'register_ability'
+    'ABILITY_REGISTRY',
+    'register_ability',
+    'reset_all_combat_uses'
 ]
 
 # Version du module
@@ -55,8 +56,23 @@ def get_hero_abilities(hero_code: str):
 def get_registry_stats():
     """
     Retourne les statistiques du registre
-    
+
     Returns:
         Dict avec les stats (total, par héros, etc.)
     """
     return ABILITY_REGISTRY.get_debug_info()
+
+def reset_all_combat_uses():
+    """
+    Réinitialise les compteurs uses_remaining_combat de toutes les capacités
+
+    À appeler au début d'un nouveau combat pour réinitialiser les limitations
+    d'utilisation (ex: Châtiment divin 1/combat, Mur de glace 2/combat, etc.)
+
+    Cette fonction parcourt toutes les instances cachées dans le registre
+    et remet uses_remaining_combat à uses_per_combat.
+    """
+    for ability_instance in ABILITY_REGISTRY._instances_cache.values():
+        if hasattr(ability_instance, 'uses_per_combat') and hasattr(ability_instance, 'uses_remaining_combat'):
+            if ability_instance.uses_per_combat is not None:
+                ability_instance.uses_remaining_combat = ability_instance.uses_per_combat
