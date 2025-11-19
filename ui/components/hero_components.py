@@ -494,8 +494,10 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         # Bouton sélection héros
         if show_button:
             button_key = f"hero_btn_{hero.code}_{is_selected}"
-            # use_container_width=True force le bouton à prendre 100% de la largeur (natif Streamlit)
+            # Wrapper 260px pour correspondre exactement à la largeur de la carte
+            st.markdown('<div style="width: 260px; margin: 0 auto;">', unsafe_allow_html=True)
             result = st.button(button_text, key=button_key, type=button_type, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             return result
 
         return False
