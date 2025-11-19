@@ -494,12 +494,23 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         # Bouton sélection héros
         if show_button:
             button_key = f"hero_btn_{hero.code}_{is_selected}"
+            container_key = f"container_{hero.code}_{is_selected}"
 
-            # Conteneur avec classe CSS pour limiter la largeur du bouton à 260px
-            st.markdown('<div class="card-width-button-container">', unsafe_allow_html=True)
+            # CSS ciblant le container Streamlit par son data-testid
+            st.markdown(f"""
+            <style>
+            div[data-testid="element-container"]:has(button[key="{button_key}"]) .stButton > button,
+            div[data-testid="stVerticalBlock"] > div:has(button[key="{button_key}"]) .stButton > button {{
+                width: 260px !important;
+                max-width: 260px !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                display: block !important;
+            }}
+            </style>
+            """, unsafe_allow_html=True)
+
             result = st.button(button_text, key=button_key, type=button_type)
-            st.markdown('</div>', unsafe_allow_html=True)
-
             return result
 
         return False

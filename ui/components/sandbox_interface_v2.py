@@ -1979,17 +1979,29 @@ def display_combat_status_team_mode():
                     else:
                         button_label = "▶️ À son tour"
 
-                    # Conteneur avec classe CSS pour limiter la largeur du bouton à 260px
-                    st.markdown('<div class="card-width-button-container">', unsafe_allow_html=True)
+                    # Injection CSS dynamique pour ce bouton spécifique
+                    button_key = f"select_{combatant_data['faction']}_{combatant_data['id']}"
+                    st.markdown(f"""
+                    <style>
+                    div[data-testid="element-container"]:has(button[key="{button_key}"]) .stButton > button,
+                    div[data-testid="stVerticalBlock"] > div:has(button[key="{button_key}"]) .stButton > button {{
+                        width: 260px !important;
+                        max-width: 260px !important;
+                        margin-left: auto !important;
+                        margin-right: auto !important;
+                        display: block !important;
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
+
                     if st.button(
                         button_label,
-                        key=f"select_{combatant_data['faction']}_{combatant_data['id']}",
+                        key=button_key,
                         type="secondary" if (has_played or is_stunned) else "primary",
                         disabled=button_disabled
                     ):
                         if not button_disabled:
                             select_combatant_manually(combatant_data['id'])
-                    st.markdown('</div>', unsafe_allow_html=True)
 
 def select_combatant_manually(combatant_id: str):
     """
