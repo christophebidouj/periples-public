@@ -352,22 +352,18 @@ def tab_selection(data):
     # PRÉ-CALCUL DES BUILDS (mise en cache)
     preloaded_builds = get_preloaded_builds(heroes, data['equipment'], loader)
     
-    # NOUVEAU - Grille héros compacte 2x4
+    # Grille héros 1 ligne x 8 colonnes
     current_builds = st.session_state.get('custom_builds', {})
     hero_changes = []
-    
-    # Grille 2x4 - Plus compacte
-    for row in range(2):
-        cols = st.columns(4, gap="small")
-        for col_idx in range(4):
-            hero_idx = row * 4 + col_idx
-            if hero_idx < len(heroes):
-                hero = heroes[hero_idx]
-                is_selected = hero.code in st.session_state.selected_heroes
-                
-                with cols[col_idx]:
-                    if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
-                        hero_changes.append(hero.code)
+
+    # 8 héros sur une seule ligne
+    cols = st.columns(8, gap="small")
+    for hero_idx, hero in enumerate(heroes):
+        is_selected = hero.code in st.session_state.selected_heroes
+
+        with cols[hero_idx]:
+            if display_hero_card(hero, is_selected, preloaded_builds, current_builds, ENABLE_IMAGES):
+                hero_changes.append(hero.code)
     
     # Application des changements héros
     if hero_changes:
