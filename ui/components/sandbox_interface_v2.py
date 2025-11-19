@@ -782,8 +782,14 @@ def is_enemy_stunned(enemy) -> tuple:
         - turns_remaining: Nombre de tours restants (0 si pas stunné)
     """
     if hasattr(enemy, 'status_effects') and enemy.status_effects:
-        stunned_turns = enemy.status_effects.get('stunned', 0)
-        return (stunned_turns > 0, stunned_turns)
+        stunned_data = enemy.status_effects.get('stunned', None)
+        if stunned_data:
+            # stunned peut être un dict {'duration': X} ou un int (legacy)
+            if isinstance(stunned_data, dict):
+                stunned_turns = stunned_data.get('duration', 0)
+            else:
+                stunned_turns = stunned_data
+            return (stunned_turns > 0, stunned_turns)
     return (False, 0)
 
 def next_turn():

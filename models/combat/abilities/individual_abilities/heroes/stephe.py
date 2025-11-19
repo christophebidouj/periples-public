@@ -188,10 +188,15 @@ class StepheProtectionDivine(BaseAbility):
                     'source': 'protection_divine'
                 }
 
-                # Appliquer modifications directes
-                if hasattr(ally, 'precision'):
+                # Appliquer modifications directes sur current_* (utilisé par get_total_*)
+                if hasattr(ally, 'current_precision'):
+                    ally.current_precision += self.precision_bonus
+                elif hasattr(ally, 'precision'):
                     ally.precision += self.precision_bonus
-                if hasattr(ally, 'damage'):
+
+                if hasattr(ally, 'current_attack'):
+                    ally.current_attack += self.damage_bonus
+                elif hasattr(ally, 'damage'):
                     ally.damage += self.damage_bonus
 
                 buffed_count += 1

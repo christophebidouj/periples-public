@@ -66,8 +66,10 @@ class ThordiusCoupDeRage(BaseAbility):
                 'duration': 1  # Ce tour uniquement
             }
 
-            # Appliquer bonus parade directement
-            if hasattr(caster, 'defense'):
+            # Appliquer bonus parade directement sur current_defense
+            if hasattr(caster, 'current_defense'):
+                caster.current_defense += self.parade_bonus
+            elif hasattr(caster, 'defense'):
                 caster.defense += self.parade_bonus
 
             log.append(f"💪 {caster.name} utilise Coup de rage (+{self.parade_bonus} parade ce tour)")
@@ -119,8 +121,10 @@ class ThordiusCharge(BaseAbility):
                 'source': 'charge'
             }
 
-            # Appliquer bonus dégâts directement
-            if hasattr(caster, 'damage'):
+            # Appliquer bonus dégâts directement sur current_attack
+            if hasattr(caster, 'current_attack'):
+                caster.current_attack += self.damage_bonus
+            elif hasattr(caster, 'damage'):
                 caster.damage += self.damage_bonus
 
             log.append(f"⚡ {caster.name} charge ! (+{self.damage_bonus} dégâts permanent)")
@@ -216,27 +220,30 @@ class ThordiusFrappePuissante(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Convertit parade actuelle en bonus dégâts pour prochaine attaque"""
         try:
-            # Récupérer parade actuelle
+            # Récupérer parade actuelle (current_parade_tokens ou current_defense)
             current_parade = 0
-            if hasattr(caster, 'defense'):
+            if hasattr(caster, 'current_parade_tokens'):
+                current_parade = caster.current_parade_tokens
+            elif hasattr(caster, 'current_defense'):
+                current_parade = caster.current_defense
+            elif hasattr(caster, 'defense'):
                 current_parade = caster.defense
-            elif hasattr(caster, 'precision'):
-                # Certains héros utilisent precision pour parade
-                current_parade = caster.precision
 
             if current_parade <= 0:
                 log.append(f"⚠️ {caster.name} n'a pas de parade à convertir")
                 return False
 
-            # Ajouter bonus dégâts
+            # Ajouter bonus dégâts pour prochaine attaque (utilise système existant)
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
             caster.temporary_buffs['damage_bonus_next_attack'] = current_parade
 
             # Retirer parade temporairement
-            if hasattr(caster, 'defense'):
-                caster.defense = 0
+            if hasattr(caster, 'current_parade_tokens'):
+                caster.current_parade_tokens = 0
+            if hasattr(caster, 'current_defense'):
+                caster.current_defense = 0
 
             # Marquer qu'on ne peut pas utiliser parade ce tour
             caster.temporary_buffs['frappe_puissante_active'] = {
