@@ -967,9 +967,10 @@ class Character(BaseModel):
             self.current_spells = current_spells - ability.spell_cost
             self.spells_used += ability.spell_cost
             action.spell_cost_paid = ability.spell_cost
-        
-        # Consommation utilisations (seulement pour Ability normales)
-        if hasattr(ability, 'use_ability'):
+
+        # Consommation utilisations (SEULEMENT pour Ability CSV normales, PAS individual abilities)
+        # Les individual abilities (ability_number présent) gèrent leur propre compteur dans execute()
+        if hasattr(ability, 'use_ability') and not hasattr(ability, 'ability_number'):
             ability.use_ability()
         
         # État tour

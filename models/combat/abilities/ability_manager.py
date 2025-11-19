@@ -56,12 +56,14 @@ class AbilityEffectsManager:
             individual_ability = get_ability(hero.code, ability.ability_number)
             
             if individual_ability:
-                # SYNC: Copier les compteurs d'utilisation depuis l'objet CSV vers l'instance individuelle
-                # Ceci préserve les bonus d'équipement (ex: Bâton de puissance +1 utilisation)
-                if hasattr(ability, 'uses_remaining_combat') and hasattr(individual_ability, 'uses_remaining_combat'):
-                    individual_ability.uses_remaining_combat = ability.uses_remaining_combat
+                # SYNC INPUT: Copier uses_per_combat pour bénéficier des bonus équipement (Bâton de puissance)
+                # Les individual abilities sont des singletons cachés qui conservent leur état
                 if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
-                    individual_ability.uses_per_combat = ability.uses_per_combat
+                    # Si la limite CSV est supérieure (bonus équipement), mettre à jour l'instance
+                    if ability.uses_per_combat > individual_ability.uses_per_combat:
+                        # Première utilisation avec bonus : initialiser avec la nouvelle limite
+                        individual_ability.uses_per_combat = ability.uses_per_combat
+                        individual_ability.uses_remaining_combat = ability.uses_per_combat
 
                 # Préparer le contexte pour l'exécution
                 base_context = {
@@ -79,9 +81,10 @@ class AbilityEffectsManager:
                 log.append(f"🔧 Utilisation de capacité individuelle: {individual_ability.name}")
                 success = individual_ability.execute(hero, targets, context, log)
 
-                # SYNC RETOUR: Copier uses_per_combat (limite peut changer) mais PAS uses_remaining_combat
-                # uses_remaining_combat de l'objet CSV est la source de vérité (décrémenté par character.py)
-                # Les individual abilities NE doivent PAS décrémenter manuellement (déjà supprimé de Mur de glace)
+                # SYNC OUTPUT: Copier le compteur décrémenté vers l'objet CSV pour l'affichage UI
+                # L'instance individual est la source de vérité (elle décrémente dans execute())
+                if hasattr(ability, 'uses_remaining_combat') and hasattr(individual_ability, 'uses_remaining_combat'):
+                    ability.uses_remaining_combat = individual_ability.uses_remaining_combat
                 if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
                     ability.uses_per_combat = individual_ability.uses_per_combat
 

@@ -2059,7 +2059,10 @@ def main_sandbox_v2():
                         st.session_state.sandbox_v2_log.append(
                             f"😵 {current['character'].name} est étourdi ! Tour sauté ({stunned_after + 1} → {stunned_after} tour(s))"
                         )
-                        # CRITIQUE : Sauvegarder l'état AVANT rerun() pour persister la décrémentation
+                        # CRITIQUE : Forcer Streamlit à détecter le changement en réassignant la liste
+                        # Streamlit ne détecte pas les modifications "profondes" d'objets Python
+                        st.session_state.sandbox_v2_combatants = st.session_state.sandbox_v2_combatants[:]
+                        # Sauvegarder l'état AVANT rerun() pour persister la décrémentation
                         save_game_state(f"{current['character'].name} étourdi - tour sauté")
                         next_turn()
                         st.rerun()
