@@ -1201,13 +1201,15 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             has_double_attacks = hasattr(char, 'temporary_buffs') and 'double_attacks_permanent' in char.temporary_buffs
 
             if has_double_attacks:
-                # Compter les attaques ce tour
-                if not hasattr(char, 'attacks_this_turn'):
-                    char.attacks_this_turn = 0
-                char.attacks_this_turn += 1
+                # Compter les attaques ce tour dans temporary_buffs (dict flexible)
+                if not hasattr(char, 'temporary_buffs'):
+                    char.temporary_buffs = {}
+
+                attacks_count = char.temporary_buffs.get('attacks_this_turn', 0)
+                char.temporary_buffs['attacks_this_turn'] = attacks_count + 1
 
                 # Bloquer après 2 attaques
-                if char.attacks_this_turn >= 2:
+                if char.temporary_buffs['attacks_this_turn'] >= 2:
                     char.can_attack_this_turn = False
                 # Sinon, permettre une 2ème attaque
             else:

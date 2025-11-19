@@ -1284,6 +1284,7 @@ class Character(BaseModel):
             self.temporary_buffs.pop('parade_blocked_by_attack', None)  # NOUVEAU - Reset blocage Parade par attaque
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
             self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan (affichage)
+            self.temporary_buffs.pop('attacks_this_turn', None)  # Reset compteur attaques Kraor
 
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)
             if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
