@@ -1979,17 +1979,16 @@ def display_combat_status_team_mode():
                     else:
                         button_label = "▶️ À son tour"
 
-                    # Wrapper pour appliquer la largeur fixe (260px comme les cartes)
-                    st.markdown('<div class="turn-button">', unsafe_allow_html=True)
+                    # use_container_width=True force le bouton à prendre 100% de la largeur (natif Streamlit)
                     if st.button(
                         button_label,
                         key=f"select_{combatant_data['faction']}_{combatant_data['id']}",
                         type="secondary" if (has_played or is_stunned) else "primary",
-                        disabled=button_disabled
+                        disabled=button_disabled,
+                        use_container_width=True
                     ):
                         if not button_disabled:
                             select_combatant_manually(combatant_data['id'])
-                    st.markdown('</div>', unsafe_allow_html=True)
 
 def select_combatant_manually(combatant_id: str):
     """

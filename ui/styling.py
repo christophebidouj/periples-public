@@ -238,46 +238,9 @@ def apply_fantasy_theme():
         box-shadow: none !important;
     }
 
-    /* === BOUTONS DE CARTES (largeur 100% pour correspondre aux cartes) === */
-
-    /* Sélecteur ultra-spécifique pour forcer la largeur à 100% */
-    /* Cible à la fois le conteneur .stButton ET le bouton lui-même */
-
-    /* Pour boutons de sélection de cartes (onglet Sélection) */
-    .card-select-button .stButton,
-    .card-select-button .stButton > button,
-    div.card-select-button .stButton,
-    div.card-select-button .stButton > button {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        display: block !important;
-    }
-
-    /* Pour boutons "À son tour" (Playtest Manuel) */
-    .turn-button .stButton,
-    .turn-button .stButton > button,
-    div.turn-button .stButton,
-    div.turn-button .stButton > button {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        display: block !important;
-    }
-
-    /* Sélecteur alternatif basé sur data-testid pour compatibilité maximale */
-    div[data-testid="column"] .card-select-button .stButton,
-    div[data-testid="column"] .card-select-button .stButton > button,
-    div[data-testid="column"] .turn-button .stButton,
-    div[data-testid="column"] .turn-button .stButton > button {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
-    }
+    /* === BOUTONS DE CARTES === */
+    /* Note: La largeur 100% est gérée nativement avec use_container_width=True */
+    /* Les wrappers .card-select-button et .turn-button ont été supprimés */
     </style>
     """, unsafe_allow_html=True)
 
