@@ -1163,9 +1163,6 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                 'esquive_parfaite_ready' in char.temporary_buffs
             )
 
-            # NOUVEAU - Vérifier buff Méditation (Raishi) - Attaque 2× même cible
-            meditation_active = hasattr(char, 'temporary_buffs') and 'meditation_double_hit' in char.temporary_buffs
-
             if attack_all:
                 # Attaquer TOUS les ennemis vivants
                 alive_enemies = [e for e in enemies_list if e.is_alive()]
@@ -1180,17 +1177,10 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                     char.temporary_buffs.pop('esquive_parfaite_ready', None)
 
                 save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
-            elif meditation_active:
-                # Méditation : Attaquer 2× la même cible
-                st.session_state.sandbox_v2_log.append(f"🧘 {char.name} médite et frappe 2× {target.name} !")
-                adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
-                adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
-
-                # Consommer le buff
-                char.temporary_buffs.pop('meditation_double_hit', None)
-                save_game_state(f"{char.name} attaque 2× {target.name} (Méditation)")
             else:
                 # Attaque normale (cible unique)
+                # NOTE: Méditation (Raishi P-8-2) gérée automatiquement par combat_actions.py
+                # La 2e frappe (dégâts / 2) est déclenchée automatiquement après l'attaque réussie
                 adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
                 save_game_state(f"{char.name} attaque {target.name}")
 
