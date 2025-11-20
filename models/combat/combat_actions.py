@@ -226,25 +226,25 @@ class CombatActions:
 
     def _get_mark_bonus_for_target(self, hero, target) -> int:
         """
-        Calcule le bonus de dégâts contre une cible marquée (Kraor)
+        Calcule le bonus de dégâts contre une cible marquée par Kraor
+        IMPORTANT: Le bonus s'applique à TOUS les alliés qui attaquent la cible marquée
         CORRIGÉ: Utilise status_effects/marks existants au lieu de is_marked/marked_by
         """
-        # Seulement pour Kraor
-        if hero.code != "P-4":
-            return 0
-        
+        # CORRECTION: Tous les alliés bénéficient du bonus, pas seulement Kraor
+        # La capacité dit: "Tous les dégâts infligés sur ce dernier, par n'importe quel membre du groupe"
+
         # Vérifier dans status_effects (écrit par kraor.py)
         if hasattr(target, 'status_effects') and target.status_effects:
             if 'kraor_marked' in target.status_effects:
                 mark_info = target.status_effects['kraor_marked']
                 return mark_info.get('bonus_damage', 2)
-        
+
         # Fallback: vérifier dans marks
         if hasattr(target, 'marks') and target.marks:
             if 'kraor_hunter_mark' in target.marks:
                 mark_info = target.marks['kraor_hunter_mark']
                 return mark_info.get('bonus_damage', 2)
-        
+
         return 0
 
     def _handle_critical_failure(self, attacker, target, log: list):
