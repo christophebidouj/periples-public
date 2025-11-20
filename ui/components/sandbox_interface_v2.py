@@ -1110,7 +1110,12 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if hasattr(ability, 'description') and ability.description:
         not_useful_in_combat = "Pas utile en combat" in ability.description or "pas utile en combat" in ability.description
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat
+    # NOUVEAU - Lame (P-7): Limitation 1 capacité par tour
+    lame_ability_already_used = False
+    if char.code == "P-7" and hasattr(char, 'temporary_buffs'):
+        lame_ability_already_used = char.temporary_buffs.get('lame_ability_used_this_turn', False)
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
@@ -1128,6 +1133,8 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
     elif armure_mage_already_used:
         button_label = f"{type_icon} {short_name}\n✅ Active"
+    elif lame_ability_already_used:
+        button_label = f"{type_icon} {short_name}\n⚠️ 1 capacité/tour"
     elif parade_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
     elif parade_blocked_by_attack:
