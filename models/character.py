@@ -1286,18 +1286,21 @@ class Character(BaseModel):
             self.temporary_buffs.pop('attacks_this_turn', None)  # Reset compteur attaques Kraor
             self.temporary_buffs.pop('lame_ability_used_this_turn', None)  # Reset limitation 1 capacité/tour pour Lame
 
-        # NOUVEAU - Retirer statut furtivité de Lame si expire à la fin du tour
+        # NOUVEAU - Retirer statut furtivité de Lame si expire (legacy - normalement géré dans sandbox)
         if hasattr(self, 'status_effects') and 'invisible' in self.status_effects:
             stealth_data = self.status_effects['invisible']
-            # Vérifier si c'est la furtivité de Lame (source = lame_furtivite) et qu'elle expire en fin de tour
+            # Vérifier si c'est la furtivité de Lame avec compteur de tours
             if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
-                if stealth_data.get('expires_end_of_turn', False):
-                    del self.status_effects['invisible']
-                    # NOUVEAU - Aussi supprimer le buff d'esquive pour arrêter l'esquive
-                    if hasattr(self, 'temporary_buffs') and 'lame_dodge_ready' in self.temporary_buffs:
-                        dodge_data = self.temporary_buffs['lame_dodge_ready']
-                        if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                            self.temporary_buffs.pop('lame_dodge_ready', None)
+                if 'turns_remaining' in stealth_data:
+                    stealth_data['turns_remaining'] -= 1
+                    # Si compteur atteint 0, supprimer la furtivité
+                    if stealth_data['turns_remaining'] <= 0:
+                        del self.status_effects['invisible']
+                        # Aussi supprimer le buff d'esquive
+                        if hasattr(self, 'temporary_buffs') and 'lame_dodge_ready' in self.temporary_buffs:
+                            dodge_data = self.temporary_buffs['lame_dodge_ready']
+                            if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
+                                self.temporary_buffs.pop('lame_dodge_ready', None)
 
         if hasattr(self, 'temporary_buffs'):
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)

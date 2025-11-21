@@ -867,20 +867,23 @@ def next_turn():
                             if old_charges < max_charges:
                                 st.session_state.sandbox_v2_log.append(f"🛡️✨ {char.name} - Maîtrise absolue rechargée ({max_charges} charges)")
 
-                # NOUVEAU : Nettoyer statut invisible de Lame en fin de round (pour tous les héros)
+                # NOUVEAU : Décrémenter compteur furtivité de Lame au début du round (pour tous les héros)
                 if combatant['faction'] == 'hero' and hasattr(char, 'status_effects'):
                     if 'invisible' in char.status_effects:
                         stealth_data = char.status_effects['invisible']
-                        # Vérifier si c'est la furtivité de Lame et qu'elle expire en fin de tour
+                        # Vérifier si c'est la furtivité de Lame avec compteur de tours
                         if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
-                            if stealth_data.get('expires_end_of_turn', False):
-                                del char.status_effects['invisible']
-                                # Aussi supprimer le buff d'esquive
-                                if hasattr(char, 'temporary_buffs') and 'lame_dodge_ready' in char.temporary_buffs:
-                                    dodge_data = char.temporary_buffs['lame_dodge_ready']
-                                    if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                                        char.temporary_buffs.pop('lame_dodge_ready', None)
-                                st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (fin de round)")
+                            if 'turns_remaining' in stealth_data:
+                                stealth_data['turns_remaining'] -= 1
+                                # Si compteur atteint 0, supprimer la furtivité
+                                if stealth_data['turns_remaining'] <= 0:
+                                    del char.status_effects['invisible']
+                                    # Aussi supprimer le buff d'esquive
+                                    if hasattr(char, 'temporary_buffs') and 'lame_dodge_ready' in char.temporary_buffs:
+                                        dodge_data = char.temporary_buffs['lame_dodge_ready']
+                                        if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
+                                            char.temporary_buffs.pop('lame_dodge_ready', None)
+                                    st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (furtivité expirée)")
 
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
         current = get_current_combatant()
@@ -2366,20 +2369,23 @@ def main_sandbox_v2():
                                 if old_charges < max_charges:
                                     st.session_state.sandbox_v2_log.append(f"🛡️✨ {char.name} - Maîtrise absolue rechargée ({max_charges} charges)")
 
-                    # NOUVEAU : Nettoyer statut invisible de Lame en fin de round (pour tous les héros)
+                    # NOUVEAU : Décrémenter compteur furtivité de Lame au début du round (pour tous les héros)
                     if combatant['faction'] == 'hero' and hasattr(char, 'status_effects'):
                         if 'invisible' in char.status_effects:
                             stealth_data = char.status_effects['invisible']
-                            # Vérifier si c'est la furtivité de Lame et qu'elle expire en fin de tour
+                            # Vérifier si c'est la furtivité de Lame avec compteur de tours
                             if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
-                                if stealth_data.get('expires_end_of_turn', False):
-                                    del char.status_effects['invisible']
-                                    # Aussi supprimer le buff d'esquive
-                                    if hasattr(char, 'temporary_buffs') and 'lame_dodge_ready' in char.temporary_buffs:
-                                        dodge_data = char.temporary_buffs['lame_dodge_ready']
-                                        if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                                            char.temporary_buffs.pop('lame_dodge_ready', None)
-                                    st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (fin de round)")
+                                if 'turns_remaining' in stealth_data:
+                                    stealth_data['turns_remaining'] -= 1
+                                    # Si compteur atteint 0, supprimer la furtivité
+                                    if stealth_data['turns_remaining'] <= 0:
+                                        del char.status_effects['invisible']
+                                        # Aussi supprimer le buff d'esquive
+                                        if hasattr(char, 'temporary_buffs') and 'lame_dodge_ready' in char.temporary_buffs:
+                                            dodge_data = char.temporary_buffs['lame_dodge_ready']
+                                            if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
+                                                char.temporary_buffs.pop('lame_dodge_ready', None)
+                                        st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (furtivité expirée)")
 
                 # Réinitialiser la liste des joueurs
                 st.session_state.sandbox_v2_played_this_round = []

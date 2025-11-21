@@ -64,7 +64,9 @@ class LameFurtivite(BaseAbility):
             caster.status_effects['invisible'] = {
                 'type': 'untargetable',
                 'expires_on_damage_dealt': True,  # Se termine si Lame inflige des dégâts
-                'expires_end_of_turn': True,       # Se termine à la fin du tour
+                'expires_end_of_turn': False,      # Ne se termine PAS à la fin du tour
+                'duration_turns': 2,               # Dure 2 tours (tour actuel + prochain tour)
+                'turns_remaining': 2,              # Compteur de tours restants
                 'source': 'lame_furtivite'
             }
 
@@ -76,9 +78,9 @@ class LameFurtivite(BaseAbility):
 
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
             log.append(f"   👻 INVISIBLE - Les ennemis ne peuvent plus le cibler !")
-            log.append(f"   🛡️ Esquive TOTALE ce tour (ignore toutes attaques)")
+            log.append(f"   🛡️ Esquive TOTALE pendant 2 tours")
             log.append(f"   ⚔️ Attaque bloquée ce tour, dégâts ×{self.damage_multiplier} au prochain tour")
-            log.append(f"   ⚠️ Furtivité se termine : fin du tour OU si inflige des dégâts")
+            log.append(f"   ⚠️ Furtivité se termine : si attaque OU après 2 tours")
 
             return True
 
