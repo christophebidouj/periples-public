@@ -483,6 +483,13 @@ class SandboxTurnManagerAdapter:
     ) -> bool:
         """Tour héros avec ciblage manuel - Retourne True si action effectuée"""
         hero.start_hero_turn()
+
+        # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+        if hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects:
+            if hero.status_effects['invisible'].get('source') == 'ombre_mortelle':
+                hero_name = getattr(hero, 'display_name', hero.name)
+                log.append(f"🌑 {hero_name} redevient invisible (Assaut furieux)")
+
         return False  # L'action sera gérée par les boutons de l'interface
 
     def enemy_turn_manual(
@@ -896,6 +903,12 @@ def next_turn():
             # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
             if current['faction'] == 'hero':
                 char.start_hero_turn()
+
+                # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+                if hasattr(char, 'status_effects') and 'invisible' in char.status_effects:
+                    if char.status_effects['invisible'].get('source') == 'ombre_mortelle':
+                        char_name = getattr(char, 'display_name', char.name)
+                        st.session_state.sandbox_v2_log.append(f"🌑 {char_name} redevient invisible (Assaut furieux)")
             else:
                 char.start_enemy_turn()
 
@@ -2097,6 +2110,12 @@ def select_combatant_manually(combatant_id: str):
             char = combatant['character']
             if combatant['faction'] == 'hero':
                 char.start_hero_turn()
+
+                # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+                if hasattr(char, 'status_effects') and 'invisible' in char.status_effects:
+                    if char.status_effects['invisible'].get('source') == 'ombre_mortelle':
+                        char_name = getattr(char, 'display_name', char.name)
+                        st.session_state.sandbox_v2_log.append(f"🌑 {char_name} redevient invisible (Assaut furieux)")
             else:
                 char.start_enemy_turn()
 

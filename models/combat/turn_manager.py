@@ -25,10 +25,16 @@ class TurnManager:
             # Début tour allié (recharge parade + reset capacités magiques)
             ally.start_hero_turn()
             self.spell_manager.reset_magic_abilities_turn(ally)
-            
+
             if ally.max_parade_tokens > 0:
                 ally_name = getattr(ally, 'display_name', ally.name)
                 log.append(f"🔄 {ally_name} recharge {ally.max_parade_tokens} jetons parade")
+
+            # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+            if hasattr(ally, 'status_effects') and 'invisible' in ally.status_effects:
+                if ally.status_effects['invisible'].get('source') == 'ombre_mortelle':
+                    ally_name = getattr(ally, 'display_name', ally.name)
+                    log.append(f"🌑 {ally_name} redevient invisible (Assaut furieux)")
             
             # Logique différente pour héros vs Pets
             if hasattr(ally, 'owner_code'):  # C'est un Pet

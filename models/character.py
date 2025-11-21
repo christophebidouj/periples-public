@@ -1316,6 +1316,16 @@ class Character(BaseModel):
             if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
                 self.temporary_buffs['double_next_attack'] = True
 
+            # NOUVEAU - Lame P-7-6 Assaut furieux : Réappliquer invisibilité automatiquement chaque tour
+            if 'permanent_stealth' in self.temporary_buffs:
+                if not hasattr(self, 'status_effects'):
+                    self.status_effects = {}
+                self.status_effects['invisible'] = {
+                    'type': 'untargetable',
+                    'expires_on_damage_dealt': True,  # Disparaît quand Lame attaque
+                    'source': 'ombre_mortelle'
+                }
+
             # NOUVEAU - Raishi Maîtrise absolue : Recharger 2 charges par tour (auto-recharge)
             if 'raishi_maitrise_charges' in self.temporary_buffs:
                 maitrise = self.temporary_buffs['raishi_maitrise_charges']
