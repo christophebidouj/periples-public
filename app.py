@@ -458,22 +458,7 @@ def tab_selection(data):
             )
         }
     with col2:
-        st.info("⚔️ Combat avec builds selon niveaux sélectionnés")
-    
-    # Bouton combat
-    ready = nb_heroes >= 2 and nb_enemies > 0
-    if ready:
-        if st.button("⚔️ ENGAGER LE COMBAT !", type="primary", use_container_width=True):
-            safe_session_update('run_simulation', True)
-            safe_session_update('simulation_config', {
-                'hero_codes': st.session_state.selected_heroes,
-                'enemy_codes': st.session_state.selected_enemies,
-                'player_count': player_count,
-                'rules': rules
-            })
-            st.success("⚡ Configuration sauvegardée !")
-    else:
-        st.button("⚔️ FORMATION INCOMPLÈTE", disabled=True, use_container_width=True)
+        st.info("⚔️ Utilisez l'onglet 'Playtest Manuel' pour tester vos compositions")
 
 def tab_forge(data):
     """Onglet forge des équipements - Version 8 héros MIGRÉE"""
