@@ -856,6 +856,16 @@ def next_turn():
                                 del char.temporary_buffs['aura_protection']
                                 st.session_state.sandbox_v2_log.append(f"✨ Aura sacrée de {char.name} a expiré")
 
+                    # NOUVEAU : Recharger Raishi Maîtrise absolue (au début de chaque round pour TOUS les héros)
+                    if 'raishi_maitrise_charges' in char.temporary_buffs:
+                        maitrise = char.temporary_buffs['raishi_maitrise_charges']
+                        if isinstance(maitrise, dict) and maitrise.get('auto_recharge', False):
+                            max_charges = maitrise.get('max_charges', 2)
+                            old_charges = maitrise.get('charges', 0)
+                            maitrise['charges'] = max_charges  # Recharge complète à chaque round
+                            if old_charges < max_charges:
+                                st.session_state.sandbox_v2_log.append(f"🛡️✨ {char.name} - Maîtrise absolue rechargée ({max_charges} charges)")
+
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
         current = get_current_combatant()
         if current and current['character'].is_alive():
