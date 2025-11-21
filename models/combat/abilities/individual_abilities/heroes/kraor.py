@@ -55,7 +55,7 @@ class KraorPiege(BaseAbility):
                 return False
             
             # Prioriser ennemi avec plus de PV (marquage plus rentable)
-            target = max(enemies, key=lambda e: e.current_health)
+            target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
             
             # 3. Appliquer marque avec champs EXISTANTS Enemy
             if not hasattr(target, 'marks'):
@@ -194,11 +194,14 @@ class KraorFlecheExplosive(BaseAbility):
                 return False
             
             # Cible = allié avec moins de PV actuels
-            target = min(wounded_heroes, key=lambda hero: hero.current_health)
-            
+            target = min(wounded_heroes, key=lambda hero: hero.current_health if hero.current_health is not None else float('inf'))
+
             # 3. Calculer soins nécessaires (jusqu'à 4 PV max)
             max_health = target.get_total_health()
-            missing_health = max_health - target.current_health
+            target_current = getattr(target, 'current_health', 0)
+            if target_current is None:
+                target_current = 0
+            missing_health = max_health - target_current
             healing_amount = min(self.max_healing, missing_health)
             
             if healing_amount <= 0:

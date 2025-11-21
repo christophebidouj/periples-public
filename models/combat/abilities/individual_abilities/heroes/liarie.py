@@ -96,7 +96,7 @@ class LiarieEclairMagique(BaseAbility):
         remaining_damage = total_damage
         
         # Trier ennemis par PV croissants (finir les plus faibles d'abord)
-        sorted_enemies = sorted(enemies, key=lambda e: e.current_health)
+        sorted_enemies = sorted(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
         
         # Phase 1: Éliminer les ennemis qu'on peut finir
         for enemy in sorted_enemies:

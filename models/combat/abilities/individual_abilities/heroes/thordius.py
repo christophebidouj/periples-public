@@ -175,7 +175,7 @@ class ThordiusIntimidation(BaseAbility):
                 return False
 
             # Prioriser ennemi avec plus de PV
-            target = max(enemies, key=lambda e: e.current_health)
+            target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
 
             # Appliquer stun
             if not hasattr(target, 'status_effects'):

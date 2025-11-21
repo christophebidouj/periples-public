@@ -270,46 +270,56 @@ class BaseAbility(ABC):
     def _is_alive(self, character) -> bool:
         """
         Vérifie si un personnage est vivant
-        
+
         Args:
             character: Personnage à vérifier
-            
+
         Returns:
             bool: True si le personnage est vivant
         """
         # Système de blessures (Périples)
         if hasattr(character, 'current_wounds') and hasattr(character, 'health'):
-            return character.current_wounds < character.health
-        
+            wounds = getattr(character, 'current_wounds', None)
+            health = getattr(character, 'health', None)
+            if wounds is not None and health is not None:
+                return wounds < health
+
         # Système de PV classique
         elif hasattr(character, 'current_health'):
-            return character.current_health > 0
-        
+            current_health = getattr(character, 'current_health', None)
+            if current_health is not None:
+                return current_health > 0
+
         # Fallback: supposer vivant si pas d'info
         return True
     
     def _is_unconscious(self, character) -> bool:
         """
         Vérifie si un personnage est inconscient
-        
+
         Args:
             character: Personnage à vérifier
-            
+
         Returns:
             bool: True si le personnage est inconscient
         """
         # Vérification explicite d'état
         if hasattr(character, 'is_unconscious'):
             return character.is_unconscious
-        
+
         # Système de blessures (Périples) - inconscient si blessures >= santé max
         if hasattr(character, 'current_wounds') and hasattr(character, 'health'):
-            return character.current_wounds >= character.health
-        
+            wounds = getattr(character, 'current_wounds', None)
+            health = getattr(character, 'health', None)
+            if wounds is not None and health is not None:
+                return wounds >= health
+
         # Système de PV classique - inconscient si PV <= 0
         elif hasattr(character, 'current_health'):
-            return character.current_health <= 0
-        
+            current_health = getattr(character, 'current_health', None)
+            if current_health is not None:
+                return current_health <= 0
+
         return False
 
     def reset_combat_uses(self):

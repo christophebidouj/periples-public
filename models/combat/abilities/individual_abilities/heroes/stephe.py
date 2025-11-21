@@ -51,7 +51,7 @@ class StepheSoinLeger(BaseAbility):
                 log.append(f"⚠️ Aucun ennemi à affaiblir")
                 return False
 
-            target = max(enemies, key=lambda e: e.current_health)
+            target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
 
             # Appliquer debuff permanent défense
             if hasattr(target, 'precision'):
@@ -61,7 +61,8 @@ class StepheSoinLeger(BaseAbility):
             if hasattr(target, 'health'):
                 target.health = max(1, target.health - self.health_reduction)
                 # Ajuster HP actuel si supérieur au nouveau max
-                if hasattr(target, 'current_health') and target.current_health > target.health:
+                target_current = getattr(target, 'current_health', None)
+                if target_current is not None and target_current > target.health:
                     target.current_health = target.health
 
             log.append(f"🌙 {caster.name} affaiblit {target.name}")
@@ -248,7 +249,7 @@ class StephePurification(BaseAbility):
                 return False
 
             # Prioriser allié le plus blessé (protection prioritaire)
-            target = min(allies, key=lambda a: a.current_health)
+            target = min(allies, key=lambda a: a.current_health if a.current_health is not None else float('inf'))
 
             # Appliquer invisibilité
             if not hasattr(target, 'status_effects'):
@@ -299,14 +300,14 @@ class StepheGuerisonDeGroupe(BaseAbility):
 
             # Récupérer alliés blessés
             allies = self._get_all_allies(caster, context)
-            wounded_allies = [a for a in allies if a.current_health < a.get_total_health()]
+            wounded_allies = [a for a in allies if a.current_health is not None and a.current_health < a.get_total_health()]
 
             if not wounded_allies:
                 log.append(f"⚠️ Aucun allié blessé à soigner")
                 return False
 
             # Trier par PV actuels (plus blessés en premier)
-            wounded_allies.sort(key=lambda a: a.current_health)
+            wounded_allies.sort(key=lambda a: a.current_health if a.current_health is not None else 0)
 
             # Répartir soins (priorité aux plus blessés)
             remaining_healing = self.max_healing
@@ -376,7 +377,7 @@ class StepheMiracle(BaseAbility):
 
             # Trouver ennemis éligibles (<30 HP)
             enemies = self._get_all_enemies(caster, context)
-            eligible_enemies = [e for e in enemies if e.current_health < self.hp_threshold]
+            eligible_enemies = [e for e in enemies if e.current_health is not None and e.current_health < self.hp_threshold]
 
             if not eligible_enemies:
                 log.append(f"⚠️ Aucun ennemi <{self.hp_threshold} HP pour Miracle")
@@ -384,7 +385,7 @@ class StepheMiracle(BaseAbility):
                 return False
 
             # Prioriser ennemi avec plus de PV (dans la limite)
-            target = max(eligible_enemies, key=lambda e: e.current_health)
+            target = max(eligible_enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
 
             # Kill instantané
             target.current_health = 0
@@ -405,4 +406,4 @@ class StepheMiracle(BaseAbility):
         return f"⚡✨ {self.name}: Kill instantané ennemi <{self.hp_threshold} HP ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [e for e in all_enemies if self._is_alive(e) and e.current_health < self.hp_threshold]
+        return [e for e in all_enemies if self._is_alive(e) and e.current_health is not None and e.current_health < self.hp_threshold]

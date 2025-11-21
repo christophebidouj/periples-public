@@ -100,7 +100,7 @@ class ElnehaSoinMineur(BaseAbility):
                 return False
             
             # Sélectionner le plus blessé (PV actuels les plus bas)
-            target = min(injured_candidates, key=lambda h: h.current_health)
+            target = min(injured_candidates, key=lambda h: h.current_health if h.current_health is not None else float('inf'))
             
             healed = self._apply_healing(target, self.healing_amount, log)
             
@@ -324,17 +324,18 @@ class ElnehaResurrection(BaseAbility):
             
             # 🔧 CORRECTION MAJEURE : Utiliser la méthode spéciale qui inclut les inconscients
             all_allies = self._get_all_allies_including_unconscious(caster, context)
-            unconscious_allies = [ally for ally in all_allies if ally.current_health <= 0]
-            
+            unconscious_allies = [ally for ally in all_allies if (ally.current_health is not None and ally.current_health <= 0) or (ally.current_health is None)]
+
             if not unconscious_allies:
                 log.append(f"❌ {self.name} nécessite une cible inconsciente")
                 return False
-            
+
             # Prendre le premier allié inconscient trouvé
             target = unconscious_allies[0]
-            
+
             # Double vérification de sécurité
-            if target.current_health > 0:
+            target_health = getattr(target, 'current_health', None)
+            if target_health is not None and target_health > 0:
                 log.append(f"❌ {target.name} n'est pas inconscient")
                 return False
             

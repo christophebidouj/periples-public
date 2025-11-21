@@ -67,11 +67,13 @@ class AtucanImpositionDesMains(BaseAbility):
 
             # 3. Calcul soins selon mécanisme officiel - API RÉELLE
             # Utiliser current_health directement (API confirmée)
-            atucan_current_health = caster.current_health
+            atucan_current_health = getattr(caster, 'current_health', 0)
+            if atucan_current_health is None:
+                atucan_current_health = 0
             healing_amount = max(1, atucan_current_health // 2)  # Au moins 1 PV
 
             # 4. Sélectionner cible (allié le plus blessé)
-            target = min(allies, key=lambda ally: ally.current_health)
+            target = min(allies, key=lambda ally: ally.current_health if ally.current_health is not None else float('inf'))
 
             # 5. Appliquer soins avec API OFFICIELLE BaseAbility
             actual_healing = self._apply_healing(target, healing_amount, log)
@@ -352,7 +354,7 @@ class AtucanSoinSuperieur(BaseAbility):
             healing_details = []
             
             # Trier par plus blessé en premier (moins de PV actuels)
-            wounded_heroes.sort(key=lambda hero: hero.current_health)
+            wounded_heroes.sort(key=lambda hero: hero.current_health if hero.current_health is not None else 0)
             
             # Stratégie: priorité aux plus blessés
             remaining_healing = total_healing
