@@ -57,23 +57,16 @@ class ThordiusDefenseSansArmure(BaseAbility):
                 log.append(f"⚠️ {caster.name} porte une armure ou un bouclier - Défense sans armure impossible")
                 return False
 
-            # Ajouter bonus parade temporaire
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
-
-            caster.temporary_buffs['thordius_rage_parade'] = {
-                'type': 'defense',
-                'bonus': self.parade_bonus,
-                'duration': 1  # Ce tour uniquement
-            }
-
-            # Appliquer bonus parade directement sur current_defense
-            if hasattr(caster, 'current_defense'):
-                caster.current_defense += self.parade_bonus
-            elif hasattr(caster, 'defense'):
-                caster.defense += self.parade_bonus
-
-            log.append(f"💪 {caster.name} utilise Défense sans armure (+{self.parade_bonus} parade ce tour)")
+            # CORRECTION: Ajouter les jetons de parade pour ce tour uniquement
+            # On modifie SEULEMENT current_parade_tokens (pas max_parade_tokens)
+            # Ainsi, au prochain refresh_parade_tokens(), les jetons reviendront à la normale
+            if hasattr(caster, 'current_parade_tokens'):
+                caster.current_parade_tokens += self.parade_bonus
+                log.append(f"💪 {caster.name} utilise Défense sans armure (+{self.parade_bonus} jetons de parade ce tour)")
+                log.append(f"  🛡️ Jetons de parade actuels: {caster.current_parade_tokens}")
+            else:
+                log.append(f"⚠️ {caster.name} ne peut pas utiliser Défense sans armure (pas de système de parade)")
+                return False
 
             return True
 
