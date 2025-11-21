@@ -878,11 +878,6 @@ def next_turn():
                                 # Si compteur atteint 0, supprimer la furtivité
                                 if stealth_data['turns_remaining'] <= 0:
                                     del char.status_effects['invisible']
-                                    # Aussi supprimer le buff d'esquive
-                                    if hasattr(char, 'temporary_buffs') and 'lame_dodge_ready' in char.temporary_buffs:
-                                        dodge_data = char.temporary_buffs['lame_dodge_ready']
-                                        if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                                            char.temporary_buffs.pop('lame_dodge_ready', None)
                                     st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (furtivité expirée)")
 
         # Vérifier si le combattant actuel est vivant (API Character.is_alive())
@@ -2380,11 +2375,6 @@ def main_sandbox_v2():
                                     # Si compteur atteint 0, supprimer la furtivité
                                     if stealth_data['turns_remaining'] <= 0:
                                         del char.status_effects['invisible']
-                                        # Aussi supprimer le buff d'esquive
-                                        if hasattr(char, 'temporary_buffs') and 'lame_dodge_ready' in char.temporary_buffs:
-                                            dodge_data = char.temporary_buffs['lame_dodge_ready']
-                                            if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                                                char.temporary_buffs.pop('lame_dodge_ready', None)
                                         st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (furtivité expirée)")
 
                 # Réinitialiser la liste des joueurs

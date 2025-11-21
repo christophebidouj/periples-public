@@ -50,14 +50,8 @@ class LameFurtivite(BaseAbility):
             # 1. Empêcher l'attaque ce tour
             caster.can_attack_this_turn = False
 
-            # 2. NOUVEAU - Esquive totale ce tour (ignore toutes les attaques ennemies)
-            caster.temporary_buffs['lame_dodge_ready'] = {
-                'type': 'damage_negation',
-                'charges': 99,  # Assez de charges pour esquiver toutes les attaques ce tour
-                'source': 'furtivite'
-            }
-
-            # 2.5 NOUVEAU - Statut invisible (non-ciblable par les ennemis)
+            # 2. NOUVEAU - Statut invisible (non-ciblable par les ennemis)
+            # Pas besoin d'esquive - l'invisibilité empêche le ciblage
             if not hasattr(caster, 'status_effects'):
                 caster.status_effects = {}
 
@@ -77,8 +71,7 @@ class LameFurtivite(BaseAbility):
             caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
-            log.append(f"   👻 INVISIBLE - Les ennemis ne peuvent plus le cibler !")
-            log.append(f"   🛡️ Esquive TOTALE pendant 2 tours")
+            log.append(f"   👻 INVISIBLE pendant 2 tours - Les ennemis ne peuvent pas le cibler")
             log.append(f"   ⚔️ Attaque bloquée ce tour, dégâts ×{self.damage_multiplier} au prochain tour")
             log.append(f"   ⚠️ Furtivité se termine : si attaque OU après 2 tours")
 

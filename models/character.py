@@ -1296,11 +1296,6 @@ class Character(BaseModel):
                     # Si compteur atteint 0, supprimer la furtivité
                     if stealth_data['turns_remaining'] <= 0:
                         del self.status_effects['invisible']
-                        # Aussi supprimer le buff d'esquive
-                        if hasattr(self, 'temporary_buffs') and 'lame_dodge_ready' in self.temporary_buffs:
-                            dodge_data = self.temporary_buffs['lame_dodge_ready']
-                            if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                                self.temporary_buffs.pop('lame_dodge_ready', None)
 
         if hasattr(self, 'temporary_buffs'):
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)

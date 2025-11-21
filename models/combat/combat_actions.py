@@ -267,11 +267,6 @@ class CombatActions:
             if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
                 if stealth_data.get('expires_on_damage_dealt', False):
                     del hero.status_effects['invisible']
-                    # NOUVEAU - Aussi supprimer le buff d'esquive pour arrêter l'esquive
-                    if hasattr(hero, 'temporary_buffs') and 'lame_dodge_ready' in hero.temporary_buffs:
-                        dodge_data = hero.temporary_buffs['lame_dodge_ready']
-                        if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
-                            hero.temporary_buffs.pop('lame_dodge_ready', None)
                     log.append(f"  🌑 Furtivité terminée - {hero.name} redevient visible (dégâts infligés)")
 
     def _handle_critical_failure(self, attacker, target, log: list):
