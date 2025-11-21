@@ -840,16 +840,30 @@ class Character(BaseModel):
             if hasattr(self, 'current_spells') and self.current_spells is not None:
                 # Utiliser les sorts calculés avec équipements (Forge, builds par défaut, debug)
                 return self.current_spells
-            
+
             # Fallback: Calcul automatique (sorts de base + équipements)
-            base_spells = self.spells + self.get_equipment_bonus('spells')
-            
+            base_spells = getattr(self, 'spells', 0)
+            if base_spells is None:
+                base_spells = 0
+
+            equipment_bonus = self.get_equipment_bonus('spells')
+            if equipment_bonus is None:
+                equipment_bonus = 0
+
             # O-4 Lyre phoenix : +4 sorts déjà dans equipment.csv (O-4 a Spells: 4)
             # Pas besoin de bonus supplémentaire ici
-            return base_spells
+            return base_spells + equipment_bonus
     
     def get_total_health(self) -> int:
-        return self.health + self.get_equipment_bonus('health')
+        base_health = getattr(self, 'health', 0)
+        if base_health is None:
+            base_health = 0
+
+        equipment_bonus = self.get_equipment_bonus('health')
+        if equipment_bonus is None:
+            equipment_bonus = 0
+
+        return base_health + equipment_bonus
     
     def get_attack_damage_info(self) -> Dict:
         """Infos sur le type de dégâts d'attaque (physique ou magique)"""
