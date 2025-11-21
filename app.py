@@ -19,7 +19,6 @@ from utils.data_loader import DataLoader, cleanup_removed_heroes_from_session
 from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waiting_combat_style
 from ui.components import *
 from ui.components.hero_components import preload_hero_builds_for_all_difficulties
-from debug_mode import create_debug_tab
 from hero_builds_data import get_abilities_for_level
 from ui.components.sandbox_interface_v2 import main_sandbox_v2
 
@@ -472,7 +471,7 @@ def tab_selection(data):
                 'player_count': player_count,
                 'rules': rules
             })
-            st.success("⚡ Combat engagé ! 👉 Allez dans 'Chroniques' 👈")
+            st.success("⚡ Configuration sauvegardée !")
     else:
         st.button("⚔️ FORMATION INCOMPLÈTE", disabled=True, use_container_width=True)
 
@@ -612,46 +611,6 @@ def tab_forge(data):
             time.sleep(0.5)
             st.rerun()
 
-def tab_combat(data):
-    """Onglet combat avec builds MIGRÉS vers équipements réels"""
-    st.header("📜 Chroniques du Combat")
-    
-    if not st.session_state.get('run_simulation', False):
-        st.markdown(get_waiting_combat_style(), unsafe_allow_html=True)
-        return
-    
-    # Préparation combat MIGRÉE
-    config = st.session_state['simulation_config']
-    heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
-    
-    # Équipes avec builds selon système migré (équipements réels)
-    selected_heroes = []
-    current_builds = st.session_state.get('custom_builds', {})
-    
-    for code in config['hero_codes']:
-        build = get_hero_final_stats(code, heroes, data['equipment'], loader, current_builds)
-        selected_heroes.append(build['hero_equipped'])
-    
-    selected_enemies = [e for e in enemies if e.code in config['enemy_codes']]
-    
-    # Simulation
-    with st.spinner("⚔️ Combat en cours..."):
-        engine = CombatEngine(GameRules(**config['rules']))
-        result = engine.simulate_single_combat(selected_heroes, selected_enemies, config['player_count'])
-    
-    # Affichage résultats
-    display_combat_result_banner(result['winner'])
-    
-    if 'resource_metrics' in result:
-        display_combat_metrics(result['resource_metrics'])
-        display_heroes_individual_table(result['resource_metrics'])
-    
-    display_combat_log(result['log'])
-    display_combat_summary(result)
-    
-    # Reset
-    safe_session_update('run_simulation', False)
-
 def display_about():
     """Section À Propos - Version 8 héros MIGRÉE"""
     
@@ -733,19 +692,15 @@ def main():
         st.stop()
     
     # Onglets
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🏰 Sélection", "⚙️ Forge", "📜 Chroniques", "🎮 Playtest Manuel", "🔧 Debug", "ℹ️ À Propos"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🏰 Sélection", "⚙️ Forge", "🎮 Playtest Manuel", "ℹ️ À Propos"])
 
     with tab1:
         tab_selection(data)
     with tab2:
         tab_forge(data)
     with tab3:
-        tab_combat(data)
-    with tab4:
         main_sandbox_v2()
-    with tab5:
-        create_debug_tab()
-    with tab6:
+    with tab4:
         display_about()
 
 if __name__ == "__main__":
