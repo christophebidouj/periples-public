@@ -1147,11 +1147,11 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
 
     # Label conditionnel selon la raison du blocage
-    button_label = f"{type_icon} {short_name}\n{ability.spell_cost} ✨"
+    button_label = f"{type_icon} {short_name}\n• {ability.spell_cost} ✨"
 
     # Ajouter indication uses_per_combat si disponible
     if combat_uses_remaining is not None:
-        button_label = f"{type_icon} {short_name}\n{ability.spell_cost} ✨ • {combat_uses_remaining}/{ability.uses_per_combat} ⚡"
+        button_label = f"{type_icon} {short_name}\n• {ability.spell_cost} ✨ • {combat_uses_remaining}/{ability.uses_per_combat} ⚡"
 
     if not_useful_in_combat:
         button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
