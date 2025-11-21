@@ -519,8 +519,8 @@ def display_team_recap(heroes_details, enemies_details, player_count):
             
             # Affichage avec niveau
             header_text = f"✅ {h['name']} {difficulty_color} — ⚔️ {h['damage']} | ❤️ {h['health']} | 🛡️ {h['parade']} | ✨ {h['spells']}"
-            
-            with st.expander(header_text, expanded=True):
+
+            with st.expander(header_text, expanded=False):
                 st.write(f"**Niveau :** {difficulty_color} {difficulty_level}")
                 st.write(f"**Build :** {h['build_name']}")
                 if h.get('is_custom'):
@@ -532,8 +532,8 @@ def display_team_recap(heroes_details, enemies_details, player_count):
 
         for e in enemies_details:
             header_text = f"👾 {e['name']} — ❤️ {e['health']} | ⚔️ {e['damage']} | 🛡️ {e['defense']}"
-            
-            with st.expander(header_text, expanded=True):
+
+            with st.expander(header_text, expanded=False):
                 st.write(f"**Numéro :** #{e['number']}")
                 if e.get('is_magical'):
                     st.write("🔮 *Créature magique*")

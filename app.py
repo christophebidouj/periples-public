@@ -313,8 +313,42 @@ def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
 
 def tab_selection(data):
     """Onglet sélection des équipes avec layout optimisé pour cartes héros"""
-    st.header("🏰 Sélection des Équipes")
-    
+    col_title, col_config = st.columns([3, 1])
+
+    with col_title:
+        st.header("🏰 Sélection des Équipes")
+
+    with col_config:
+        # Initialiser la valeur d'initiative si elle n'existe pas
+        if 'initiative_setting' not in st.session_state:
+            st.session_state.initiative_setting = True
+
+        # Initialiser la valeur de critiques si elle n'existe pas
+        if 'criticals_setting' not in st.session_state:
+            st.session_state.criticals_setting = True
+
+        # Callback pour sauvegarder immédiatement la valeur de l'initiative
+        def on_initiative_change():
+            st.session_state.initiative_setting = st.session_state.combat_initiative
+
+        # Callback pour sauvegarder immédiatement la valeur des critiques
+        def on_criticals_change():
+            st.session_state.criticals_setting = st.session_state.combat_criticals
+
+        st.caption("⚙️ Configuration")
+        st.checkbox(
+            "🎯 Critiques",
+            value=st.session_state.criticals_setting,
+            key='combat_criticals',
+            on_change=on_criticals_change
+        )
+        st.checkbox(
+            "🎲 Initiative",
+            value=st.session_state.initiative_setting,
+            key='combat_initiative',
+            on_change=on_initiative_change
+        )
+
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     nb_heroes = len(st.session_state.selected_heroes)
     nb_enemies = len(st.session_state.selected_enemies)
@@ -419,46 +453,6 @@ def tab_selection(data):
             player_count
         )
         display_team_recap(heroes_data, enemies_data, player_count)
-    
-    # === LANCEMENT COMBAT ===
-    st.subheader("⚙️ Configuration")
-
-    # Initialiser la valeur d'initiative si elle n'existe pas
-    if 'initiative_setting' not in st.session_state:
-        st.session_state.initiative_setting = True
-
-    # Initialiser la valeur de critiques si elle n'existe pas
-    if 'criticals_setting' not in st.session_state:
-        st.session_state.criticals_setting = True
-
-    # Callback pour sauvegarder immédiatement la valeur de l'initiative
-    def on_initiative_change():
-        st.session_state.initiative_setting = st.session_state.combat_initiative
-
-    # Callback pour sauvegarder immédiatement la valeur des critiques
-    def on_criticals_change():
-        st.session_state.criticals_setting = st.session_state.combat_criticals
-
-    col1, col2 = st.columns(2)
-    with col1:
-        rules = {
-            'ranged_attacks': True,
-            'magical_damage': True,
-            'criticals': st.checkbox(
-                "🎯 Critiques",
-                value=st.session_state.criticals_setting,
-                key='combat_criticals',
-                on_change=on_criticals_change
-            ),
-            'initiative': st.checkbox(
-                "🎲 Initiative",
-                value=st.session_state.initiative_setting,
-                key='combat_initiative',
-                on_change=on_initiative_change
-            )
-        }
-    with col2:
-        st.info("⚔️ Utilisez l'onglet 'Playtest Manuel' pour tester vos compositions")
 
 def tab_forge(data):
     """Onglet forge des équipements - Version 8 héros MIGRÉE"""
