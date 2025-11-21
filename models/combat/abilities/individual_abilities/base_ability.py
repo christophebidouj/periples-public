@@ -46,16 +46,20 @@ class BaseAbility(ABC):
         spell_manager = context.get('spell_manager')
         if not spell_manager:
             return False
-            
-        # Vérifier les utilisations restantes (MANQUANT)
+
+        # Vérifier les utilisations restantes
         if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
-            if self.uses_remaining_combat <= 0:
+            uses_remaining = getattr(self, 'uses_remaining_combat', None)
+            if uses_remaining is not None and uses_remaining <= 0:
                 return False
-        
+
         # Vérifier le coût en sorts
-        if hasattr(self, 'spell_cost') and self.spell_cost > 0:
-            return caster.current_spells >= self.spell_cost
-            
+        if hasattr(self, 'spell_cost') and self.spell_cost is not None and self.spell_cost > 0:
+            current_spells = getattr(caster, 'current_spells', None)
+            if current_spells is None:
+                return False
+            return current_spells >= self.spell_cost
+
         return True
     
     def get_preview(self) -> str:
@@ -100,17 +104,21 @@ class BaseAbility(ABC):
         
         # Système de blessures (Périples) - blessures diminuent avec les soins
         if hasattr(target, 'current_wounds') and hasattr(target, 'health'):
-            old_wounds = target.current_wounds
-            target.current_wounds = max(0, target.current_wounds - amount)
-            actual_healing = old_wounds - target.current_wounds
-            
-            if actual_healing > 0:
-                log.append(f"💚 {target.name} guérit {actual_healing} blessure(s)")
-            return actual_healing
-        
+            old_wounds = getattr(target, 'current_wounds', None)
+            health = getattr(target, 'health', None)
+            if old_wounds is not None and health is not None:
+                target.current_wounds = max(0, old_wounds - amount)
+                actual_healing = old_wounds - target.current_wounds
+
+                if actual_healing > 0:
+                    log.append(f"💚 {target.name} guérit {actual_healing} blessure(s)")
+                return actual_healing
+
         # Système de PV classique (fallback) - PV augmentent avec les soins
-        elif hasattr(target, 'current_health'):
-            old_health = target.current_health
+        if hasattr(target, 'current_health'):
+            old_health = getattr(target, 'current_health', None)
+            if old_health is None:
+                return 0
 
             # Déterminer PV max (utiliser get_total_health() pour les héros, max_health pour les ennemis)
             if hasattr(target, 'get_total_health'):
@@ -122,7 +130,7 @@ class BaseAbility(ABC):
                 max_hp = old_health + amount
 
             # Plafonner les soins au maximum
-            target.current_health = min(target.current_health + amount, max_hp)
+            target.current_health = min(old_health + amount, max_hp)
             actual_healing = target.current_health - old_health
 
             if actual_healing > 0:
@@ -130,7 +138,7 @@ class BaseAbility(ABC):
             elif amount > 0 and actual_healing == 0:
                 log.append(f"⚠️ {target.name} est déjà à PV max ({max_hp})")
             return actual_healing
-        
+
         return 0
     
     def _apply_damage(self, target, amount: int, damage_type: str, log: List[str]) -> int:
@@ -151,26 +159,30 @@ class BaseAbility(ABC):
         
         # Système de blessures (Périples) - blessures augmentent avec les dégâts
         if hasattr(target, 'current_wounds') and hasattr(target, 'health'):
-            old_wounds = target.current_wounds
-            target.current_wounds = min(target.health, target.current_wounds + amount)
-            actual_damage = target.current_wounds - old_wounds
-            
-            if actual_damage > 0:
-                emoji = "⚡" if damage_type == "magical" else "💥"
-                log.append(f"{emoji} {target.name} subit {actual_damage} blessure(s)")
-            return actual_damage
-        
+            old_wounds = getattr(target, 'current_wounds', None)
+            health = getattr(target, 'health', None)
+            if old_wounds is not None and health is not None:
+                target.current_wounds = min(health, old_wounds + amount)
+                actual_damage = target.current_wounds - old_wounds
+
+                if actual_damage > 0:
+                    emoji = "⚡" if damage_type == "magical" else "💥"
+                    log.append(f"{emoji} {target.name} subit {actual_damage} blessure(s)")
+                return actual_damage
+
         # Système de PV classique (fallback) - PV diminuent avec les dégâts
-        elif hasattr(target, 'current_health'):
-            old_health = target.current_health
-            target.current_health = max(0, target.current_health - amount)
+        if hasattr(target, 'current_health'):
+            old_health = getattr(target, 'current_health', None)
+            if old_health is None:
+                return 0
+            target.current_health = max(0, old_health - amount)
             actual_damage = old_health - target.current_health
-            
+
             if actual_damage > 0:
                 emoji = "⚡" if damage_type == "magical" else "💥"
                 log.append(f"{emoji} {target.name} subit {actual_damage} dégâts")
             return actual_damage
-                
+
         return 0
     
     def _apply_stat_modifier(self, target, stat: str, value: int, log: List[str]) -> bool:
