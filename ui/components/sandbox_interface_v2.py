@@ -2340,6 +2340,16 @@ def main_sandbox_v2():
                                     del char.temporary_buffs['aura_protection']
                                     st.session_state.sandbox_v2_log.append(f"✨ Aura sacrée de {char.name} a expiré")
 
+                        # NOUVEAU : Recharger Raishi Maîtrise absolue (au début de chaque round pour TOUS les héros)
+                        if 'raishi_maitrise_charges' in char.temporary_buffs:
+                            maitrise = char.temporary_buffs['raishi_maitrise_charges']
+                            if isinstance(maitrise, dict) and maitrise.get('auto_recharge', False):
+                                max_charges = maitrise.get('max_charges', 2)
+                                old_charges = maitrise.get('charges', 0)
+                                maitrise['charges'] = max_charges  # Recharge complète à chaque round
+                                if old_charges < max_charges:
+                                    st.session_state.sandbox_v2_log.append(f"🛡️✨ {char.name} - Maîtrise absolue rechargée ({max_charges} charges)")
+
                 # Réinitialiser la liste des joueurs
                 st.session_state.sandbox_v2_played_this_round = []
                 # Incrémenter le numéro de round
