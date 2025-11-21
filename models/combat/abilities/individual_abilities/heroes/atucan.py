@@ -246,46 +246,75 @@ class AtucanAuraSacree(BaseAbility):
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Applique protection groupe permanente avec API aura_protection - EFFET PERMANENT"""
+        import traceback
         try:
             # 1. Vérifier limitation combat (1 seule utilisation)
-            if not self._check_uses_remaining():
-                log.append(f"⚠️ Aura sacrée déjà utilisée ce combat")
+            try:
+                can_use = self._check_uses_remaining()
+                if not can_use:
+                    log.append(f"⚠️ Aura sacrée déjà utilisée ce combat")
+                    return False
+            except Exception as e:
+                log.append(f"❌ Erreur ligne _check_uses_remaining: {e}")
+                log.append(f"   Traceback: {traceback.format_exc()}")
                 return False
 
             # 2. Consommer coût sorts avec API officielle
-            spell_manager = context.get('spell_manager')
-            spell_cost = getattr(self, 'spell_cost', 0)
-            if spell_cost is None:
-                spell_cost = 0
-            if not self._consume_spell_cost(caster, spell_cost, spell_manager, log):
+            try:
+                spell_manager = context.get('spell_manager')
+                spell_cost = getattr(self, 'spell_cost', 0)
+                if spell_cost is None:
+                    spell_cost = 0
+                consume_result = self._consume_spell_cost(caster, spell_cost, spell_manager, log)
+                if not consume_result:
+                    return False
+            except Exception as e:
+                log.append(f"❌ Erreur ligne _consume_spell_cost: {e}")
+                log.append(f"   Traceback: {traceback.format_exc()}")
                 return False
 
             # 3. Appliquer à tous les alliés (y compris Atucan)
-            all_heroes = context.get('heroes', [])
-            if not all_heroes:
-                log.append(f"⚠️ Aucun allié trouvé pour l'aura")
+            try:
+                all_heroes = context.get('heroes', [])
+                if not all_heroes:
+                    log.append(f"⚠️ Aucun allié trouvé pour l'aura")
+                    return False
+            except Exception as e:
+                log.append(f"❌ Erreur ligne context.get('heroes'): {e}")
+                log.append(f"   Traceback: {traceback.format_exc()}")
                 return False
 
             protected_count = 0
             protected_names = []
 
-            for hero in all_heroes:
-                if self._is_alive(hero):
-                    # API OFFICIELLE CORRIGÉE: buff de réduction dégâts PERMANENT
-                    if not hasattr(hero, 'temporary_buffs'):
-                        hero.temporary_buffs = {}
+            try:
+                for hero in all_heroes:
+                    is_alive = self._is_alive(hero)
+                    if is_alive:
+                        # API OFFICIELLE CORRIGÉE: buff de réduction dégâts PERMANENT
+                        if not hasattr(hero, 'temporary_buffs'):
+                            hero.temporary_buffs = {}
 
-                    hero.temporary_buffs['aura_protection'] = {
-                        'damage_reduction': 1,
-                        'type': 'per_attack',
-                        'source': 'aura_sacree'
-                        # PAS de 'rounds_remaining' → effet permanent jusqu'à la fin du combat
-                    }
-                    protected_count += 1
-                    protected_names.append(hero.name)
+                        hero.temporary_buffs['aura_protection'] = {
+                            'damage_reduction': 1,
+                            'type': 'per_attack',
+                            'source': 'aura_sacree'
+                            # PAS de 'rounds_remaining' → effet permanent jusqu'à la fin du combat
+                        }
+                        protected_count += 1
+                        protected_names.append(hero.name)
+            except Exception as e:
+                log.append(f"❌ Erreur dans boucle héros (hero={hero.name if 'hero' in locals() else 'unknown'}): {e}")
+                log.append(f"   Traceback: {traceback.format_exc()}")
+                return False
 
             # 4. Décompter utilisation (désactive le bouton)
-            self.uses_remaining_combat -= 1
+            try:
+                self.uses_remaining_combat -= 1
+            except Exception as e:
+                log.append(f"❌ Erreur ligne uses_remaining_combat -= 1: {e}")
+                log.append(f"   Traceback: {traceback.format_exc()}")
+                return False
 
             log.append(f"✨ {caster.name} génère une aura protectrice divine PERMANENTE")
             log.append(f"   🛡️ {protected_count} alliés protégés: {', '.join(protected_names)}")
@@ -294,7 +323,8 @@ class AtucanAuraSacree(BaseAbility):
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Aura sacrée: {e}")
+            log.append(f"❌ Erreur Aura sacrée (catch général): {e}")
+            log.append(f"   Traceback complet: {traceback.format_exc()}")
             return False
     
     def get_preview(self) -> str:
