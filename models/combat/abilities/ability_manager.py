@@ -60,10 +60,13 @@ class AbilityEffectsManager:
                 # Les individual abilities sont des singletons cachés qui conservent leur état
                 if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
                     # Si la limite CSV est supérieure (bonus équipement), mettre à jour l'instance
-                    if ability.uses_per_combat > individual_ability.uses_per_combat:
+                    ability_uses = getattr(ability, 'uses_per_combat', None)
+                    individual_uses = getattr(individual_ability, 'uses_per_combat', None)
+
+                    if ability_uses is not None and individual_uses is not None and ability_uses > individual_uses:
                         # Première utilisation avec bonus : initialiser avec la nouvelle limite
-                        individual_ability.uses_per_combat = ability.uses_per_combat
-                        individual_ability.uses_remaining_combat = ability.uses_per_combat
+                        individual_ability.uses_per_combat = ability_uses
+                        individual_ability.uses_remaining_combat = ability_uses
 
                 # Préparer le contexte pour l'exécution
                 base_context = {
