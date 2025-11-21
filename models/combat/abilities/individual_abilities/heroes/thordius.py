@@ -40,20 +40,21 @@ class ThordiusDefenseSansArmure(BaseAbility):
         """Accorde +2 parade si Thordius ne porte ni armure ni bouclier"""
         try:
             # Vérifier équipement
-            has_armor = False
-            has_shield = False
+            # IMPORTANT: Dans equipment.csv, le type est 'armure' (lowercase) et inclut armures ET boucliers
+            has_armor_or_shield = False
 
             if hasattr(caster, 'equipment') and caster.equipment:
                 for item in caster.equipment:
                     if hasattr(item, 'type'):
-                        if item.type == 'Armure':
-                            has_armor = True
-                        elif item.type == 'Bouclier':
-                            has_shield = True
+                        # Vérifier uniquement type='armure' (inclut armures et boucliers dans le CSV)
+                        # Ignore les 'arme' et 'accessoire'
+                        if item.type == 'armure':
+                            has_armor_or_shield = True
+                            break
 
-            # Si équipé, refuser
-            if has_armor or has_shield:
-                log.append(f"⚠️ {caster.name} porte une armure ou un bouclier - Coup de rage impossible")
+            # Si armure/bouclier équipé, refuser
+            if has_armor_or_shield:
+                log.append(f"⚠️ {caster.name} porte une armure ou un bouclier - Défense sans armure impossible")
                 return False
 
             # Ajouter bonus parade temporaire
@@ -72,12 +73,12 @@ class ThordiusDefenseSansArmure(BaseAbility):
             elif hasattr(caster, 'defense'):
                 caster.defense += self.parade_bonus
 
-            log.append(f"💪 {caster.name} utilise Coup de rage (+{self.parade_bonus} parade ce tour)")
+            log.append(f"💪 {caster.name} utilise Défense sans armure (+{self.parade_bonus} parade ce tour)")
 
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Coup de rage: {e}")
+            log.append(f"❌ Erreur Défense sans armure: {e}")
             return False
 
     def get_preview(self) -> str:

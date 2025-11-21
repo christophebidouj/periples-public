@@ -71,11 +71,12 @@ class CombatActions:
             ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
             is_magical_dmg = (damage_type == 'magical')
             damage_result = target.apply_damage_with_parade(final_damage, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
-            
+
             total_attack = attack_roll + hero.get_total_precision()
+            precision_bonus = hero.get_total_precision()
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
-            
-            log_parts = [f"{damage_type_emoji} CRITIQUE ! {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
+
+            log_parts = [f"{damage_type_emoji} CRITIQUE ! {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] → {target.name}({damage_result['health_damage']})"]
             self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
             log.append(' '.join(log_parts))
 
@@ -149,7 +150,8 @@ class CombatActions:
         elif self.rules.criticals and attack_roll == 1:
             total_attack = attack_roll + hero.get_total_precision()
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
-            log.append(f"{damage_type_emoji} ÉCHEC ! {combatant_name}[{total_attack}] attaque {target.name}")
+            precision_bonus = hero.get_total_precision()
+            log.append(f"{damage_type_emoji} ÉCHEC ! {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] attaque {target.name}")
             # 🐺 Forme de loup gaspillée en cas d'échec critique
             if elneha_wolf_used:
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
@@ -158,6 +160,7 @@ class CombatActions:
         # Attaque normale
         else:
             total_attack = attack_roll + hero.get_total_precision()
+            precision_bonus = hero.get_total_precision()
 
             if total_attack >= target.defense:
                 # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
@@ -165,8 +168,8 @@ class CombatActions:
                 is_magical_dmg = (damage_type == 'magical')
                 damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
-                
-                log_parts = [f"{damage_type_emoji} {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
+
+                log_parts = [f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] → {target.name}({damage_result['health_damage']})"]
                 self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
                 log.append(' '.join(log_parts))
                 
@@ -234,7 +237,8 @@ class CombatActions:
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
             else:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
-                log.append(f"{damage_type_emoji} {combatant_name}[{total_attack}] vs DEF[{target.defense}] → Échec")
+                precision_bonus = hero.get_total_precision()
+                log.append(f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] vs DEF[{target.defense}] → Échec")
                 # 🐺 Forme de loup gaspillée en cas d'échec
                 if elneha_wolf_used:
                     log.append(f"  🐺 Forme de loup gaspillée par l'échec...")
@@ -414,8 +418,8 @@ class CombatActions:
             is_magical_dmg = (damage_type == 'magical')
             damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
             damage_type_emoji = "✨" if damage_type == "magical" else "🐾"
-            
-            log.append(f"{damage_type_emoji} {pet_name}[{total_attack}] → {target.name}({damage_result['health_damage']})")
+
+            log.append(f"{damage_type_emoji} {pet_name}[🎲{attack_roll}+{pet.precision}={total_attack}] → {target.name}({damage_result['health_damage']})")
 
             # NOUVEAU : Log résistance magique si active
             if damage_result.get('magical_resistance', 0) > 0:
@@ -428,7 +432,7 @@ class CombatActions:
                 log.append(f"    💀 {target.name} vaincu !")
         else:
             damage_type_emoji = "✨" if damage_type == "magical" else "🐾"
-            log.append(f"{damage_type_emoji} {pet_name}[{total_attack}] vs DEF[{target.defense}] → Échec")
+            log.append(f"{damage_type_emoji} {pet_name}[🎲{attack_roll}+{pet.precision}={total_attack}] vs DEF[{target.defense}] → Échec")
 
     def smart_pet_ability_usage(self, pet, log: list) -> bool:
         """IA tactique pour Pets"""
