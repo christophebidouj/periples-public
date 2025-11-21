@@ -428,8 +428,9 @@ class ManualTargeting:
 
         # Liste héros avec cartes stylées
         for hero in alive_heroes:
-            # NOUVEAU - Vérifier invisibilité (Stephe Purification)
-            is_invisible = hasattr(hero, 'status_effects') and hero.status_effects.get('invisible', False)
+            # NOUVEAU - Vérifier invisibilité (Lame Furtivité, Stephe Purification)
+            # FIX: status_effects['invisible'] est un dict, pas un booléen
+            is_invisible = hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects
 
             # CORRIGÉ : Utiliser jetons actuels (pas maximum) pour calcul correct après Parade
             parade = hero.current_parade_tokens
