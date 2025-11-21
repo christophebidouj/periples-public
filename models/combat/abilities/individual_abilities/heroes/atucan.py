@@ -248,13 +248,16 @@ class AtucanAuraSacree(BaseAbility):
         """Applique protection groupe permanente avec API aura_protection - EFFET PERMANENT"""
         try:
             # 1. Vérifier limitation combat (1 seule utilisation)
-            if self.uses_remaining_combat <= 0:
+            if not self._check_uses_remaining():
                 log.append(f"⚠️ Aura sacrée déjà utilisée ce combat")
                 return False
 
             # 2. Consommer coût sorts avec API officielle
             spell_manager = context.get('spell_manager')
-            if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
+            spell_cost = getattr(self, 'spell_cost', 0)
+            if spell_cost is None:
+                spell_cost = 0
+            if not self._consume_spell_cost(caster, spell_cost, spell_manager, log):
                 return False
 
             # 3. Appliquer à tous les alliés (y compris Atucan)

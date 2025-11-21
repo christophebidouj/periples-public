@@ -334,6 +334,23 @@ class BaseAbility(ABC):
 
         return False
 
+    def _check_uses_remaining(self) -> bool:
+        """
+        Vérifie si la capacité a encore des utilisations restantes
+        Gère les cas où uses_remaining_combat pourrait être None
+
+        Returns:
+            bool: True si la capacité peut encore être utilisée, False sinon
+        """
+        if not hasattr(self, 'uses_remaining_combat'):
+            return True  # Pas de limitation
+
+        uses_remaining = getattr(self, 'uses_remaining_combat', None)
+        if uses_remaining is None:
+            return True  # Pas de limitation définie
+
+        return uses_remaining > 0
+
     def reset_combat_uses(self):
         """
         Réinitialise les utilisations par combat au début d'un nouveau combat
