@@ -277,15 +277,15 @@ class BaseAbility(ABC):
         Returns:
             bool: True si le personnage est vivant
         """
-        # Système de blessures (Périples)
+        # Système de blessures (Périples) - vérifier ET que les valeurs ne sont pas None
         if hasattr(character, 'current_wounds') and hasattr(character, 'health'):
             wounds = getattr(character, 'current_wounds', None)
             health = getattr(character, 'health', None)
             if wounds is not None and health is not None:
                 return wounds < health
 
-        # Système de PV classique
-        elif hasattr(character, 'current_health'):
+        # Système de PV classique - fallback si blessures non disponibles
+        if hasattr(character, 'current_health'):
             current_health = getattr(character, 'current_health', None)
             if current_health is not None:
                 return current_health > 0
@@ -315,7 +315,7 @@ class BaseAbility(ABC):
                 return wounds >= health
 
         # Système de PV classique - inconscient si PV <= 0
-        elif hasattr(character, 'current_health'):
+        if hasattr(character, 'current_health'):
             current_health = getattr(character, 'current_health', None)
             if current_health is not None:
                 return current_health <= 0
