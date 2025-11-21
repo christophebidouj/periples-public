@@ -23,12 +23,12 @@ from ..ability_registry import register_ability
 # ========================================
 
 @register_ability
-class RaishiArtMartial(BaseAbility):
-    """P-8-1: Art martial - Ignore parade ennemis (permanent passif)"""
+class RaishiPointFaible(BaseAbility):
+    """P-8-1: Point faible - Ignore parade ennemis (permanent passif)"""
 
     hero_code = "P-8"
     ability_number = 1
-    name = "Art martial"
+    name = "Point faible"
     description = "Ignore la parade des ennemis."
 
     def __init__(self):
@@ -69,12 +69,12 @@ class RaishiArtMartial(BaseAbility):
 
 
 @register_ability
-class RaishiMeditation(BaseAbility):
-    """P-8-2: Méditation - Dégâts x1.5 sur prochaine attaque"""
+class RaishiAttaquesMultiples(BaseAbility):
+    """P-8-2: Attaques multiples - Dégâts x1.5 sur prochaine attaque"""
 
     hero_code = "P-8"
     ability_number = 2
-    name = "Méditation"
+    name = "Attaques multiples"
     description = "La prochaine attaque inflige 150% des dégâts normaux (×1.5)."
 
     def __init__(self):
@@ -122,12 +122,12 @@ class RaishiMeditation(BaseAbility):
 
 
 @register_ability
-class RaishiCoupCritique(BaseAbility):
-    """P-8-3: Coup critique (AUTO-SOIN UNIQUEMENT) - Soigne 4 PV sur soi-même, empêche attaque"""
+class RaishiPurification(BaseAbility):
+    """P-8-3: Purification (AUTO-SOIN UNIQUEMENT) - Soigne 4 PV sur soi-même, empêche attaque"""
 
     hero_code = "P-8"
     ability_number = 3
-    name = "Coup critique"
+    name = "Purification"
     description = "Permet de soigner jusqu'à quatre de ses blessures. Ne peut être cumulé avec une attaque, si utilisé ce tour."
 
     def __init__(self):
@@ -173,12 +173,12 @@ class RaishiCoupCritique(BaseAbility):
 
 
 @register_ability
-class RaishiEsquiveParfaite(BaseAbility):
-    """P-8-4: Esquive parfaite - 1 jet de toucher, si réussi applique sur tous ennemis"""
+class RaishiDelugeDeCups(BaseAbility):
+    """P-8-4: Déluge de coups - 1 jet de toucher, si réussi applique sur tous ennemis"""
 
     hero_code = "P-8"
     ability_number = 4
-    name = "Esquive parfaite"
+    name = "Déluge de coups"
     description = "Un seul jet de toucher est effectué. Si l'attaque réussit, les dégâts sont appliqués à tous les ennemis."
 
     def __init__(self):
@@ -226,12 +226,12 @@ class RaishiEsquiveParfaite(BaseAbility):
 
 
 @register_ability
-class RaishiCombo(BaseAbility):
-    """P-8-5: Combo - Stun ennemi 3 tours après attaque"""
+class RaishiPaumeOuverte(BaseAbility):
+    """P-8-5: Paume ouverte - Stun ennemi 3 tours après attaque"""
 
     hero_code = "P-8"
     ability_number = 5
-    name = "Combo"
+    name = "Paume ouverte"
     description = "Après une attaque réussie, empêche cet ennemi d'agir pendant 3 tours."
 
     def __init__(self):
@@ -279,12 +279,12 @@ class RaishiCombo(BaseAbility):
 
 
 @register_ability
-class RaishiMaitriseAbsolue(BaseAbility):
-    """P-8-6: Maîtrise absolue - Absorbe 2 attaques par tour (recharge automatique)"""
+class RaishiZuiQuan(BaseAbility):
+    """P-8-6: Zui quan - Absorbe 2 attaques par tour (recharge automatique)"""
 
     hero_code = "P-8"
     ability_number = 6
-    name = "Maîtrise absolue"
+    name = "Zui quan"
     description = "Ignore les dégâts de 2 attaques ennemies par tour (recharge automatique chaque tour), pendant toute la durée du combat."
 
     def __init__(self):

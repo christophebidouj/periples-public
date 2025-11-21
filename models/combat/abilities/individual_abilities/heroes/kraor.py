@@ -23,12 +23,12 @@ from ..ability_registry import register_ability
 # ========================================
 
 @register_ability
-class KraorPiege(BaseAbility):
-    """P-4-2: Piège - Marque un ennemi pour +2 dégâts de groupe"""
-    
+class KraorMarqueDuChasseur(BaseAbility):
+    """P-4-2: Marque du chasseur - Marque un ennemi pour +2 dégâts de groupe"""
+
     hero_code = "P-4"
     ability_number = 2
-    name = "Piège"  # Nom CSV officiel
+    name = "Marque du chasseur"  # Nom CSV officiel
     description = "Marque un ennemi. Tous les dégâts infligés sur ce dernier, par n'importe quel membre du groupe, inflige 2 dégâts physique en plus."
     
     def __init__(self):
@@ -98,12 +98,12 @@ class KraorPiege(BaseAbility):
 
 
 @register_ability
-class KraorPoison(BaseAbility):
-    """P-4-4: Poison - Cible tous les ennemis lors d'attaque"""
-    
+class KraorPluieDeProjectiles(BaseAbility):
+    """P-4-4: Pluie de projectiles - Cible tous les ennemis lors d'attaque"""
+
     hero_code = "P-4"
     ability_number = 4
-    name = "Poison"  # Nom CSV officiel  
+    name = "Pluie de projectiles"  # Nom CSV officiel  
     description = "Cible tous les ennemis lorsqu'il attaque."
     
     def __init__(self):
@@ -155,12 +155,12 @@ class KraorPoison(BaseAbility):
 
 
 @register_ability
-class KraorFlecheExplosive(BaseAbility):
-    """P-4-5: Flèche explosive - Soigner jusqu'à 4 blessures"""
-    
+class KraorSoinMineur(BaseAbility):
+    """P-4-5: Soin mineur - Soigner jusqu'à 4 blessures"""
+
     hero_code = "P-4"
     ability_number = 5
-    name = "Flèche explosive"  # Nom CSV officiel
+    name = "Soin mineur"  # Nom CSV officiel
     description = "Soigner jusqu'à 4 blessures de n'importe quel personnage."
     
     def __init__(self):
@@ -237,12 +237,12 @@ class KraorFlecheExplosive(BaseAbility):
 
 
 @register_ability
-class KraorPluieDeFlèches(BaseAbility):
-    """P-4-6: Pluie de flèches - Attaque 2 fois par tour pendant tout le combat"""
-    
+class KraorTirRapide(BaseAbility):
+    """P-4-6: Tir rapide - Attaque 2 fois par tour pendant tout le combat"""
+
     hero_code = "P-4"
     ability_number = 6
-    name = "Pluie de flèches"  # Nom CSV officiel
+    name = "Tir rapide"  # Nom CSV officiel
     description = "Attaque 2 fois par tour pendant tout le combat. Chaque attaque est gérée indépendamment, et doit être réussie pour infliger des dégâts."
     
     def __init__(self):

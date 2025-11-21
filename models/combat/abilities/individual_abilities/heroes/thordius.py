@@ -23,12 +23,12 @@ from ..ability_registry import register_ability
 # ========================================
 
 @register_ability
-class ThordiusCoupDeRage(BaseAbility):
-    """P-5-1: Coup de rage - +2 parade si pas d'armure/bouclier équipé"""
+class ThordiusDefenseSansArmure(BaseAbility):
+    """P-5-1: Défense sans armure - +2 parade si pas d'armure/bouclier équipé"""
 
     hero_code = "P-5"
     ability_number = 1
-    name = "Coup de rage"
+    name = "Défense sans armure"
     description = "2 en parade si aucune armure ou bouclier n'est équipé"
 
     def __init__(self):
@@ -88,12 +88,12 @@ class ThordiusCoupDeRage(BaseAbility):
 
 
 @register_ability
-class ThordiusCharge(BaseAbility):
-    """P-5-2: Charge - +3 dégâts physiques permanent pour le combat"""
+class ThordiusRageDeBerserker(BaseAbility):
+    """P-5-2: Rage de berserker - +3 dégâts physiques permanent pour le combat"""
 
     hero_code = "P-5"
     ability_number = 2
-    name = "Charge"
+    name = "Rage de berserker"
     description = "Plus 3 dégâts physique, pendant la durée du combat."
 
     def __init__(self):
@@ -146,12 +146,12 @@ class ThordiusCharge(BaseAbility):
 
 
 @register_ability
-class ThordiusIntimidation(BaseAbility):
-    """P-5-3: Intimidation - Stun ennemi après attaque réussie"""
+class ThordiusChargeDeTaureau(BaseAbility):
+    """P-5-3: Charge de taureau - Stun ennemi après attaque réussie"""
 
     hero_code = "P-5"
     ability_number = 3
-    name = "Intimidation"
+    name = "Charge de taureau"
     description = "Après une attaque réussie, bloque l'action de cet ennemi."
 
     def __init__(self):
@@ -205,12 +205,12 @@ class ThordiusIntimidation(BaseAbility):
 
 
 @register_ability
-class ThordiusFrappePuissante(BaseAbility):
-    """P-5-4: Frappe puissante - Convertit parade en bonus dégâts"""
+class ThordiusTemerité(BaseAbility):
+    """P-5-4: Témérité - Convertit parade en bonus dégâts"""
 
     hero_code = "P-5"
     ability_number = 4
-    name = "Frappe puissante"
+    name = "Témérité"
     description = "Permet de convertir son score de parade, en bonus de dégâts. La parade ne peut pas être utilisée pendant ce tour."
 
     def __init__(self):
@@ -267,12 +267,12 @@ class ThordiusFrappePuissante(BaseAbility):
 
 
 @register_ability
-class ThordiusCriDeGuerre(BaseAbility):
-    """P-5-5: Cri de guerre - Critiques sur 18-19-20 au lieu de 20 seul"""
+class ThordiusCritiqueBrutal(BaseAbility):
+    """P-5-5: Critique brutal - Critiques sur 18-19-20 au lieu de 20 seul"""
 
     hero_code = "P-5"
     ability_number = 5
-    name = "Cri de guerre"
+    name = "Critique brutal"
     description = "Les 18 & 19 sur le jet de dé, sont également des réussites critiques."
 
     def __init__(self):
@@ -313,12 +313,12 @@ class ThordiusCriDeGuerre(BaseAbility):
 
 
 @register_ability
-class ThordiusBerserker(BaseAbility):
-    """P-5-6: Berserker - Continue à combattre même inconscient"""
+class ThordiusRageInsatiable(BaseAbility):
+    """P-5-6: Rage insatiable - Continue à combattre même inconscient"""
 
     hero_code = "P-5"
     ability_number = 6
-    name = "Berserker"
+    name = "Rage insatiable"
     description = "Tant qu'il est en rage, Thordius continue de combattre même s'il atteint le maximum de points de blessures."
 
     def __init__(self):

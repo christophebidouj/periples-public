@@ -23,12 +23,12 @@ from ..ability_registry import register_ability
 # ========================================
 
 @register_ability
-class LameFurtivite(BaseAbility):
-    """P-7-1: Furtivité - Esquive totale ce tour + double dégâts tour suivant"""
+class LameAttaqueFurtive(BaseAbility):
+    """P-7-1: Attaque furtive - Esquive totale ce tour + double dégâts tour suivant"""
 
     hero_code = "P-7"
     ability_number = 1
-    name = "Furtivité"
+    name = "Attaque furtive"
     description = "N'attaque pas ce tour. Esquive totale (ignore toutes attaques ennemies). Double dégâts le tour suivant sans avoir à jeter le dé."
 
     def __init__(self):
@@ -89,12 +89,12 @@ class LameFurtivite(BaseAbility):
 
 
 @register_ability
-class LameAttaqueSournoise(BaseAbility):
-    """P-7-2: Attaque sournoise - Esquive/ignore dégâts prochaine attaque adverse"""
+class LameDerobade(BaseAbility):
+    """P-7-2: Dérobade - Esquive/ignore dégâts prochaine attaque adverse"""
 
     hero_code = "P-7"
     ability_number = 2
-    name = "Attaque sournoise"
+    name = "Dérobade"
     description = "Permet d'ignorer les dégâts reçus d'une attaque adverse."
 
     def __init__(self):
@@ -152,12 +152,12 @@ class LameAttaqueSournoise(BaseAbility):
 
 
 @register_ability
-class LameParalysie(BaseAbility):
-    """P-7-4: Paralysie - Tous ennemis paralysés 2 tours"""
+class LameBombeFumigene(BaseAbility):
+    """P-7-4: Bombe fumigène - Tous ennemis paralysés 2 tours"""
 
     hero_code = "P-7"
     ability_number = 4
-    name = "Paralysie"
+    name = "Bombe fumigène"
     description = "Utilise une ressource pour empêcher les actions de tous adversaires pendant deux tours."
 
     def __init__(self):
@@ -223,12 +223,12 @@ class LameParalysie(BaseAbility):
 
 
 @register_ability
-class LameAssassination(BaseAbility):
-    """P-7-5: Assassination - Dégâts attaque sur tous les ennemis"""
+class LameAttaqueTournoyante(BaseAbility):
+    """P-7-5: Attaque tournoyante - Dégâts attaque sur tous les ennemis"""
 
     hero_code = "P-7"
     ability_number = 5
-    name = "Assassination"
+    name = "Attaque tournoyante"
     description = "Inflige les dégâts d'une attaque réussie sur tous les ennemis."
 
     def __init__(self):
@@ -282,12 +282,12 @@ class LameAssassination(BaseAbility):
 
 
 @register_ability
-class LameOmbreMortelle(BaseAbility):
-    """P-7-6: Ombre mortelle - Furtivité permanente chaque tour"""
+class LameAssautFurieux(BaseAbility):
+    """P-7-6: Assaut furieux - Furtivité permanente chaque tour"""
 
     hero_code = "P-7"
     ability_number = 6
-    name = "Ombre mortelle"
+    name = "Assaut furieux"
     description = "Permet d'utiliser l'attaque furtive à tous les tours, au lieu d'un sur deux, pendant toute la durée du combat."
 
     def __init__(self):

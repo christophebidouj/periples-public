@@ -23,12 +23,12 @@ from ..ability_registry import register_ability
 # ========================================
 
 @register_ability
-class StepheSoinLeger(BaseAbility):
-    """P-6-1: Soin léger (en réalité debuff) - Réduit DEF et HP max ennemi"""
+class StepheAffaiblissement(BaseAbility):
+    """P-6-1: Affaiblissement (en réalité debuff) - Réduit DEF et HP max ennemi"""
 
     hero_code = "P-6"
     ability_number = 1
-    name = "Soin léger"
+    name = "Affaiblissement"
     description = "Fait baisser la défense de 4 et la santé de 2, de l'ennemi ciblé pendant toute la durée du combat."
 
     def __init__(self):
@@ -82,12 +82,12 @@ class StepheSoinLeger(BaseAbility):
 
 
 @register_ability
-class StepheBenediction(BaseAbility):
-    """P-6-2: Bénédiction - Tous ennemis perdent action ce tour (AoE stun)"""
+class StepheAccordInterdit(BaseAbility):
+    """P-6-2: Accord interdit - Tous ennemis perdent action ce tour (AoE stun)"""
 
     hero_code = "P-6"
     ability_number = 2
-    name = "Bénédiction"
+    name = "Accord interdit"
     description = "Fait perdre aux adversaires leur action pour ce tour."
 
     def __init__(self):
@@ -146,12 +146,12 @@ class StepheBenediction(BaseAbility):
 
 
 @register_ability
-class StepheProtectionDivine(BaseAbility):
-    """P-6-3: Protection divine - +2 précision +1 dégâts tous alliés permanent"""
+class StepheInspiration(BaseAbility):
+    """P-6-3: Inspiration - +2 précision +1 dégâts tous alliés permanent"""
 
     hero_code = "P-6"
     ability_number = 3
-    name = "Protection divine"
+    name = "Inspiration"
     description = "Fait gagner 2 de précision et 1 de dégât physique à tous les personnages pendant toute la durée du combat."
 
     def __init__(self):
@@ -222,12 +222,12 @@ class StepheProtectionDivine(BaseAbility):
 
 
 @register_ability
-class StephePurification(BaseAbility):
-    """P-6-4: Purification - Rend allié invisible (ne peut être ciblé)"""
+class StepheInvisibilite(BaseAbility):
+    """P-6-4: Invisibilité - Rend allié invisible (ne peut être ciblé)"""
 
     hero_code = "P-6"
     ability_number = 4
-    name = "Purification"
+    name = "Invisibilité"
     description = "Rend invisible l'un des personnages du groupe. Il ne peut alors plus être la cible d'une action ennemie."
 
     def __init__(self):
@@ -277,12 +277,12 @@ class StephePurification(BaseAbility):
 
 
 @register_ability
-class StepheGuerisonDeGroupe(BaseAbility):
-    """P-6-5: Guérison de groupe - Soigne jusqu'à 8 PV répartis"""
+class StepheSoinMajeur(BaseAbility):
+    """P-6-5: Soin majeur - Soigne jusqu'à 8 PV répartis"""
 
     hero_code = "P-6"
     ability_number = 5
-    name = "Guérison de groupe"
+    name = "Soin majeur"
     description = "Soigner jusqu'à 8 blessures entre les personnages."
 
     def __init__(self):
@@ -347,12 +347,12 @@ class StepheGuerisonDeGroupe(BaseAbility):
 
 
 @register_ability
-class StepheMiracle(BaseAbility):
-    """P-6-6: Miracle - Kill instantané ennemi <30 HP"""
+class StepheMotDeMort(BaseAbility):
+    """P-6-6: Mot de mort - Kill instantané ennemi <30 HP"""
 
     hero_code = "P-6"
     ability_number = 6
-    name = "Miracle"
+    name = "Mot de mort"
     description = "Utilise 2 pour tuer n'importe quel ennemi instantanément qui possède moins de 30 de santé."
 
     def __init__(self):
