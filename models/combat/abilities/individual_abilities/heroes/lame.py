@@ -61,7 +61,7 @@ class LameFurtivite(BaseAbility):
             if not hasattr(caster, 'status_effects'):
                 caster.status_effects = {}
 
-            caster.status_effects['lame_stealth'] = {
+            caster.status_effects['invisible'] = {
                 'type': 'untargetable',
                 'expires_on_damage_dealt': True,  # Se termine si Lame inflige des dégâts
                 'expires_end_of_turn': True,       # Se termine à la fin du tour

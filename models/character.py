@@ -1287,10 +1287,17 @@ class Character(BaseModel):
             self.temporary_buffs.pop('lame_ability_used_this_turn', None)  # Reset limitation 1 capacité/tour pour Lame
 
         # NOUVEAU - Retirer statut furtivité de Lame si expire à la fin du tour
-        if hasattr(self, 'status_effects') and 'lame_stealth' in self.status_effects:
-            stealth_data = self.status_effects['lame_stealth']
-            if isinstance(stealth_data, dict) and stealth_data.get('expires_end_of_turn', False):
-                del self.status_effects['lame_stealth']
+        if hasattr(self, 'status_effects') and 'invisible' in self.status_effects:
+            stealth_data = self.status_effects['invisible']
+            # Vérifier si c'est la furtivité de Lame (source = lame_furtivite) et qu'elle expire en fin de tour
+            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
+                if stealth_data.get('expires_end_of_turn', False):
+                    del self.status_effects['invisible']
+                    # NOUVEAU - Aussi supprimer le buff d'esquive pour arrêter l'esquive
+                    if hasattr(self, 'temporary_buffs') and 'lame_dodge_ready' in self.temporary_buffs:
+                        dodge_data = self.temporary_buffs['lame_dodge_ready']
+                        if isinstance(dodge_data, dict) and dodge_data.get('source') == 'furtivite':
+                            self.temporary_buffs.pop('lame_dodge_ready', None)
 
         if hasattr(self, 'temporary_buffs'):
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)
