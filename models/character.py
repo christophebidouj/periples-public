@@ -1538,13 +1538,14 @@ class Enemy(BaseModel):
         
         return blocked_damage, remaining_damage
     
-    def apply_damage_with_parade(self, damage: int, ignore_parade: bool = False) -> Dict:
+    def apply_damage_with_parade(self, damage: int, ignore_parade: bool = False, is_magical_damage: bool = False) -> Dict:
         """
         Applique dégâts avec système parade à jetons
 
         Args:
             damage: Montant des dégâts
             ignore_parade: Si True, bypass complètement la parade (dégâts magiques)
+            is_magical_damage: Si True, les dégâts sont magiques (pas de réduction pour créatures magiques)
 
         Returns:
             Dict avec détails de l'application des dégâts
@@ -1557,14 +1558,22 @@ class Enemy(BaseModel):
                 aura_reduction = aura_info.get('damage_reduction', 0)
                 damage = max(0, damage - aura_reduction)
 
+        # NOUVELLE MÉCANIQUE: Créatures magiques (is_magical=True) réduisent dégâts physiques de moitié
+        magical_resistance = 0
+        if not is_magical_damage and getattr(self, 'is_magical', False):
+            original_damage = damage
+            damage = damage // 2  # Division entière pour réduction de moitié
+            magical_resistance = original_damage - damage
+
         if damage <= 0:
             return {
-                'total_damage': damage + aura_reduction,
+                'total_damage': damage + aura_reduction + magical_resistance,
                 'blocked_by_parade': 0,
                 'health_damage': 0,
                 'parade_tokens_used': 0,
                 'parade_tokens_remaining': self.current_parade_tokens,
-                'aura_reduction': aura_reduction
+                'aura_reduction': aura_reduction,
+                'magical_resistance': magical_resistance  # Pour le log
             }
 
         if ignore_parade:
@@ -1574,19 +1583,20 @@ class Enemy(BaseModel):
         else:
             # Logique normale avec parade
             blocked, remaining = self.consume_parade_tokens(damage)
-        
+
         # Dégâts aux PV
         old_health = self.current_health
         self.current_health = max(0, self.current_health - remaining)
         actual_health_damage = old_health - self.current_health
 
         return {
-            'total_damage': damage + aura_reduction,  # Montant original avant réduction aura
+            'total_damage': damage + aura_reduction + magical_resistance,  # Montant original avant réductions
             'blocked_by_parade': blocked,
             'health_damage': actual_health_damage,
             'parade_tokens_used': blocked,
             'parade_tokens_remaining': self.current_parade_tokens,
-            'aura_reduction': aura_reduction  # Pour le log
+            'aura_reduction': aura_reduction,  # Pour le log
+            'magical_resistance': magical_resistance  # Pour le log
         }
 
     def get_parade_status(self) -> Dict:

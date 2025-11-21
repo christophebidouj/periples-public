@@ -69,7 +69,8 @@ class CombatActions:
             final_damage = damage_value * 2
             # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
             ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
-            damage_result = target.apply_damage_with_parade(final_damage, ignore_parade=ignore_parade)
+            is_magical_dmg = (damage_type == 'magical')
+            damage_result = target.apply_damage_with_parade(final_damage, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
             
             total_attack = attack_roll + hero.get_total_precision()
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
@@ -89,6 +90,10 @@ class CombatActions:
                 remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                 log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
 
+            # NOUVEAU : Log résistance magique si active
+            if damage_result.get('magical_resistance', 0) > 0:
+                log.append(f"  ✨ Résistance magique : -{damage_result['magical_resistance']} dégât(s) (créature magique)")
+
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
 
@@ -97,7 +102,7 @@ class CombatActions:
                 chatiment_info = hero.temporary_buffs['chatiment_divin_active']
                 chatiment_damage = chatiment_info['damage']
                 # 2e frappe magique qui ignore parade (règles officielles)
-                chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True)
+                chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True, is_magical_damage=True)
                 log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
                 # Consommer le buff après utilisation
                 hero.temporary_buffs.pop('chatiment_divin_active', None)
@@ -110,7 +115,8 @@ class CombatActions:
                 meditation_damage = int(damage_value * second_hit_multiplier)
                 # 2e frappe sur même cible (respecte parade)
                 ignore_parade_meditation = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
-                meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation)
+                is_magical_dmg = (damage_type == 'magical')
+                meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation, is_magical_damage=is_magical_dmg)
                 log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
                 # Consommer le buff après utilisation
                 hero.temporary_buffs.pop('meditation_double_hit', None)
@@ -156,7 +162,8 @@ class CombatActions:
             if total_attack >= target.defense:
                 # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
                 ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
-                damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade)
+                is_magical_dmg = (damage_type == 'magical')
+                damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 
                 log_parts = [f"{damage_type_emoji} {combatant_name}[{total_attack}] → {target.name}({damage_result['health_damage']})"]
@@ -164,12 +171,16 @@ class CombatActions:
                 log.append(' '.join(log_parts))
                 
                 self._add_conversion_logs(log, attack_info)
-                
+
                 # 🐺 Log forme de loup si utilisée
                 if elneha_wolf_used:
                     remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                     log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
-                
+
+                # NOUVEAU : Log résistance magique si active
+                if damage_result.get('magical_resistance', 0) > 0:
+                    log.append(f"  ✨ Résistance magique : -{damage_result['magical_resistance']} dégât(s) (créature magique)")
+
                 if damage_result['blocked_by_parade'] > 0:
                     log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
                 else:
@@ -180,7 +191,7 @@ class CombatActions:
                     chatiment_info = hero.temporary_buffs['chatiment_divin_active']
                     chatiment_damage = chatiment_info['damage']
                     # 2e frappe magique qui ignore parade (règles officielles)
-                    chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True)
+                    chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True, is_magical_damage=True)
                     log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
                     # Consommer le buff après utilisation
                     hero.temporary_buffs.pop('chatiment_divin_active', None)
@@ -193,7 +204,8 @@ class CombatActions:
                     meditation_damage = int(damage_value * second_hit_multiplier)
                     # 2e frappe sur même cible (respecte parade)
                     ignore_parade_meditation = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
-                    meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation)
+                    is_magical_dmg = (damage_type == 'magical')
+                    meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation, is_magical_damage=is_magical_dmg)
                     log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
                     # Consommer le buff après utilisation
                     hero.temporary_buffs.pop('meditation_double_hit', None)
@@ -399,11 +411,16 @@ class CombatActions:
         if total_attack >= target.defense:
             # Dégâts magiques des pets ignorent la parade (règles officielles p.26)
             ignore_parade = (damage_type == 'magical')
-            damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade)
+            is_magical_dmg = (damage_type == 'magical')
+            damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
             damage_type_emoji = "✨" if damage_type == "magical" else "🐾"
             
             log.append(f"{damage_type_emoji} {pet_name}[{total_attack}] → {target.name}({damage_result['health_damage']})")
-            
+
+            # NOUVEAU : Log résistance magique si active
+            if damage_result.get('magical_resistance', 0) > 0:
+                log.append(f"    [✨ Résistance magique: -{damage_result['magical_resistance']} dégât(s)]")
+
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"    [{damage_result['blocked_by_parade']}🛡️ bloqué]")
             
@@ -626,10 +643,9 @@ class CombatActions:
         
         # Attaque normale
         # Dégâts magiques des ennemis ignorent la parade (règles officielles p.26)
-        # CORRIGÉ: Vérifier SOIT is_magical SOIT has_magical_damage
-        is_magical = getattr(enemy, 'is_magical', False)
+        # CORRECTION: Seul has_magical_damage fait ignorer la parade
         has_magical_dmg = getattr(enemy, 'has_magical_damage', False)
-        ignore_parade = is_magical or has_magical_dmg
+        ignore_parade = has_magical_dmg
         damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
 
         damage_type_emoji = "✨" if ignore_parade else "👹"
