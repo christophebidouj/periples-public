@@ -313,7 +313,7 @@ def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
 
 def tab_selection(data):
     """Onglet sélection des équipes avec layout optimisé pour cartes héros"""
-    col_title, col_config = st.columns([3, 1])
+    col_title, col_config = st.columns([4, 1])
 
     with col_title:
         st.header("🏰 Sélection des Équipes")
