@@ -651,6 +651,10 @@ class CombatActions:
         damage_type_emoji = "✨" if ignore_parade else "👹"
         log.append(f"{damage_type_emoji} {enemy_name} attaque {target_name}: {damage} dégâts")
 
+        # NOUVEAU : Log explicite si dégâts magiques (ignore parade)
+        if has_magical_dmg:
+            log.append(f"  ✨ Dégâts magiques ! La créature ignore les jetons de parade")
+
         # NOUVEAU : Log Aura sacrée si active
         if damage_result.get('aura_reduction', 0) > 0:
             log.append(f"  ✨ Aura sacrée : -{damage_result['aura_reduction']} dégât(s) ignoré(s)")
