@@ -422,20 +422,19 @@ class Character(BaseModel):
                     if dodge_data['charges'] <= 0:
                         self.temporary_buffs.pop('lame_dodge_ready', None)
 
-            # Raishi Maîtrise absolue : Absorbe 2 attaques
+            # Raishi Maîtrise absolue : Absorbe 2 attaques (permanent combat, auto-recharge)
             elif 'raishi_maitrise_charges' in self.temporary_buffs:
                 maitrise_data = self.temporary_buffs['raishi_maitrise_charges']
                 if isinstance(maitrise_data, dict) and maitrise_data.get('charges', 0) > 0:
                     dodge_negated = True
                     maitrise_data['charges'] -= 1
-                    if maitrise_data['charges'] <= 0:
-                        self.temporary_buffs.pop('raishi_maitrise_charges', None)
+                    # ✅ NE PAS supprimer le buff - il se recharge automatiquement chaque tour
+                    # Le buff reste actif tout le combat grâce à 'permanent_combat' + 'auto_recharge'
                 elif isinstance(maitrise_data, int) and maitrise_data > 0:
                     # Legacy : charges directement en int
                     dodge_negated = True
                     self.temporary_buffs['raishi_maitrise_charges'] -= 1
-                    if self.temporary_buffs['raishi_maitrise_charges'] <= 0:
-                        self.temporary_buffs.pop('raishi_maitrise_charges', None)
+                    # ✅ NE PAS supprimer le buff legacy non plus
 
         if dodge_negated:
             # Annuler complètement les dégâts (esquive parfaite)
@@ -1287,6 +1286,13 @@ class Character(BaseModel):
             self.temporary_buffs.pop('attacks_this_turn', None)  # Reset compteur attaques Kraor
             self.temporary_buffs.pop('lame_ability_used_this_turn', None)  # Reset limitation 1 capacité/tour pour Lame
 
+        # NOUVEAU - Retirer statut furtivité de Lame si expire à la fin du tour
+        if hasattr(self, 'status_effects') and 'lame_stealth' in self.status_effects:
+            stealth_data = self.status_effects['lame_stealth']
+            if isinstance(stealth_data, dict) and stealth_data.get('expires_end_of_turn', False):
+                del self.status_effects['lame_stealth']
+
+        if hasattr(self, 'temporary_buffs'):
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)
             if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
                 self.temporary_buffs['double_next_attack'] = True

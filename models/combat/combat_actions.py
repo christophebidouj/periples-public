@@ -133,6 +133,9 @@ class CombatActions:
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
 
+            # NOUVEAU - Retirer furtivité de Lame si dégâts infligés
+            self._remove_stealth_on_damage(hero, log)
+
             CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
             return
         
@@ -213,6 +216,9 @@ class CombatActions:
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")
 
+                # NOUVEAU - Retirer furtivité de Lame si dégâts infligés
+                self._remove_stealth_on_damage(hero, log)
+
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
             else:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
@@ -246,6 +252,21 @@ class CombatActions:
                 return mark_info.get('bonus_damage', 2)
 
         return 0
+
+    def _remove_stealth_on_damage(self, hero, log: list):
+        """
+        Retire le statut de furtivité de Lame quand il inflige des dégâts
+        (Règle: Furtivité se termine si Lame attaque ou utilise une capacité qui inflige des dégâts)
+        """
+        if not hasattr(hero, 'status_effects'):
+            return
+
+        if 'lame_stealth' in hero.status_effects:
+            stealth_data = hero.status_effects['lame_stealth']
+            # Vérifier si la furtivité expire sur dégâts infligés
+            if isinstance(stealth_data, dict) and stealth_data.get('expires_on_damage_dealt', False):
+                del hero.status_effects['lame_stealth']
+                log.append(f"  🌑 Furtivité terminée - {hero.name} redevient visible (dégâts infligés)")
 
     def _handle_critical_failure(self, attacker, target, log: list):
         """Gère l'échec critique avec riposte de l'ennemi"""
@@ -583,7 +604,14 @@ class CombatActions:
             target = manual_target
         else:
             target = self._select_enemy_target(enemy, alive_targets)
-        
+
+        # NOUVEAU - Si aucune cible disponible (tous héros invisibles), ennemi ne peut pas attaquer
+        if target is None:
+            enemy_name = getattr(enemy, 'display_name', enemy.name)
+            log.append(f"👹 {enemy_name} cherche une cible...")
+            log.append(f"  👻 Aucune cible visible ! L'attaque échoue (tous les héros sont invisibles)")
+            return
+
         enemy_name = getattr(enemy, 'display_name', enemy.name)
         target_name = getattr(target, 'display_name', target.name)
         
@@ -619,15 +647,34 @@ class CombatActions:
             log.append(f"  💀 {target_name} vaincu !")
 
     def _select_enemy_target(self, enemy, alive_targets: list):
-        """Sélection de cible selon les règles d'IA tactique"""
+        """Sélection de cible selon les règles d'IA tactique (exclut héros invisibles)"""
         if not alive_targets:
             return None
-        
-        targets_with_parade = [(t, getattr(t, 'current_parade_tokens', 0)) for t in alive_targets]
+
+        # NOUVEAU - Filtrer les héros invisibles/non-ciblables (Lame Furtivité, etc.)
+        targetable_heroes = []
+        for target in alive_targets:
+            is_untargetable = False
+
+            # Vérifier si le héros a un statut 'untargetable'
+            if hasattr(target, 'status_effects') and target.status_effects:
+                for effect_name, effect_data in target.status_effects.items():
+                    if isinstance(effect_data, dict) and effect_data.get('type') == 'untargetable':
+                        is_untargetable = True
+                        break
+
+            if not is_untargetable:
+                targetable_heroes.append(target)
+
+        # Si tous les héros sont invisibles, retourner None (ennemi ne peut pas attaquer)
+        if not targetable_heroes:
+            return None
+
+        targets_with_parade = [(t, getattr(t, 'current_parade_tokens', 0)) for t in targetable_heroes]
         min_parade = min(targets_with_parade, key=lambda x: x[1])[1]
         lowest_parade_targets = [t for t, p in targets_with_parade if p == min_parade]
-        
+
         if len(lowest_parade_targets) > 1:
             return min(lowest_parade_targets, key=lambda t: t.current_health)
-        
+
         return lowest_parade_targets[0]

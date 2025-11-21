@@ -57,6 +57,17 @@ class LameFurtivite(BaseAbility):
                 'source': 'furtivite'
             }
 
+            # 2.5 NOUVEAU - Statut invisible (non-ciblable par les ennemis)
+            if not hasattr(caster, 'status_effects'):
+                caster.status_effects = {}
+
+            caster.status_effects['lame_stealth'] = {
+                'type': 'untargetable',
+                'expires_on_damage_dealt': True,  # Se termine si Lame inflige des dégâts
+                'expires_end_of_turn': True,       # Se termine à la fin du tour
+                'source': 'lame_furtivite'
+            }
+
             # 3. Double dégâts tour suivant
             caster.temporary_buffs['double_next_attack'] = True
 
@@ -64,8 +75,10 @@ class LameFurtivite(BaseAbility):
             caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
+            log.append(f"   👻 INVISIBLE - Les ennemis ne peuvent plus le cibler !")
             log.append(f"   🛡️ Esquive TOTALE ce tour (ignore toutes attaques)")
             log.append(f"   ⚔️ Attaque bloquée ce tour, dégâts ×{self.damage_multiplier} au prochain tour")
+            log.append(f"   ⚠️ Furtivité se termine : fin du tour OU si inflige des dégâts")
 
             return True
 
