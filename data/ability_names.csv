@@ -17,36 +17,36 @@ P-3,3,Châtiment divin
 P-3,4,Aura sacrée
 P-3,5,Soin supérieur
 P-3,6,Jugement dernier
-P-4,1,Tir de précision
-P-4,2,Piège
-P-4,3,Tir multiple
-P-4,4,Poison
-P-4,5,Flèche explosive
-P-4,6,Pluie de flèches
-P-5,1,Coup de rage
-P-5,2,Charge
-P-5,3,Intimidation
-P-5,4,Frappe puissante
-P-5,5,Cri de guerre
-P-5,6,Berserker
-P-6,1,Soin léger
-P-6,2,Bénédiction
-P-6,3,Protection divine
-P-6,4,Purification
-P-6,5,Guérison de groupe
-P-6,6,Miracle
-P-7,1,Furtivité
-P-7,2,Attaque sournoise
-P-7,3,Empoisonnement
-P-7,4,Paralysie
-P-7,5,Assassination
-P-7,6,Ombre mortelle
-P-8,1,Art martial
-P-8,2,Méditation
-P-8,3,Coup critique
-P-8,4,Esquive parfaite
-P-8,5,Combo
-P-8,6,Maîtrise absolue
+P-4,1,Cueilleur / Chasseur
+P-4,2,Marque du chasseur
+P-4,3,Ambidextre
+P-4,4,Pluie de projectiles
+P-4,5,Soin mineur
+P-4,6,Tir rapide
+P-5,1,Défense sans armure
+P-5,2,Rage de berserker
+P-5,3,Charge de taureau
+P-5,4,Témérité
+P-5,5,Critique brutal
+P-5,6,Rage insatiable
+P-6,1,Affaiblissement
+P-6,2,Accord interdit
+P-6,3,Inspiration
+P-6,4,Invisibilité
+P-6,5,Soin majeur
+P-6,6,Mot de mort
+P-7,1,Attaque furtive
+P-7,2,Dérobade
+P-7,3,Vol à la tire
+P-7,4,Bombe fumigène
+P-7,5,Attaque tournoyante
+P-7,6,Assaut furieux
+P-8,1,Point faible
+P-8,2,Attaques multiples
+P-8,3,Purification
+P-8,4,Déluge de coups
+P-8,5,Paume ouverte
+P-8,6,Zui quan
 Ours,1,Ours
 Loup,1,Loup
 Ours S,1,Ours S
