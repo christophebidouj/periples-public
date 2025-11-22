@@ -1794,8 +1794,9 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
 
     # Préparer stats_content (même format que premier onglet)
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • 🎯 {precision} PRE • ⚔️ {attack} • 🛡️ {defense} DEF • ✨ {magic}
+    <div style="font-family: monospace; font-size: 0.95rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.4;">
+        ❤️ {current_hp}/{max_hp} • 🎯 {precision} PRE • ⚔️ {attack} ATT<br/>
+        🛡️ {defense} DEF • ✨ {magic} MAG
     </div>"""
 
     # NOUVEAU - Vérifier buff Forme de loup (RÉUTILISE temporary_buffs API)
@@ -2085,15 +2086,15 @@ def display_combat_log_colored():
         # Ligne par défaut (blanc/gris clair)
         return f'<div style="color: #e0e0e0;">{line_stripped}</div>'
 
-    # Construction du HTML colorisé avec ancre de scroll en bas
+    # INVERSION DE L'ORDRE : Actions les plus récentes en HAUT (pas besoin de scroll !)
+    reversed_log = list(reversed(st.session_state.sandbox_v2_log))
+
+    # Construction du HTML colorisé
     log_html = ""
-    for line in st.session_state.sandbox_v2_log:
+    for line in reversed_log:
         log_html += colorize_line(line)
 
-    # Ajouter une ancre invisible en bas du log
-    log_html += '<div id="log-bottom"></div>'
-
-    # Container scrollable avec style Arène
+    # Container scrollable avec style Arène + indicateur "Récent en haut"
     scrollable_log = f"""
     <div style="
         background: linear-gradient(135deg, #1a1a2e, #16213e);
@@ -2107,14 +2108,14 @@ def display_combat_log_colored():
         line-height: 1.6;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     ">
+        <div style="color: #f1c40f; font-weight: bold; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid #0f3460; text-align: center;">
+            ⏬ ACTIONS LES PLUS RÉCENTES EN HAUT ⏬
+        </div>
         {log_html}
     </div>
     """
 
     st.markdown(scrollable_log, unsafe_allow_html=True)
-
-    # Forcer le scroll vers l'ancre #log-bottom (solution native HTML)
-    st.markdown('<script>document.getElementById("log-bottom")?.scrollIntoView();</script>', unsafe_allow_html=True)
 
 def display_combat_status():
     """
