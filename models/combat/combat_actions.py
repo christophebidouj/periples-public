@@ -37,10 +37,8 @@ class CombatActions:
         damage_value = base_damage
         if attack_modifiers['damage_multiplier'] > 1.0:
             damage_value = int(base_damage * attack_modifiers['damage_multiplier'])
-            print(f"🔍 [DAMAGE DEBUG] base_damage={base_damage}, multiplier={attack_modifiers['damage_multiplier']}, damage_value APRÈS multiplier={damage_value}")
         damage_value += attack_modifiers['damage_bonus']
         damage_value += self._get_mark_bonus_for_target(hero, target)
-        print(f"🔍 [DAMAGE DEBUG] damage_value FINAL (avant apply_damage)={damage_value}")
 
         # 🐺 NOUVEAU: Elneha Férocité du loup - Consommer le buff après utilisation
         elneha_wolf_used = False

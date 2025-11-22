@@ -238,7 +238,6 @@ class AbilityRegistry:
         """Affiche les informations de debug du registre"""
         info = self.get_debug_info()
         
-        print("🔍 DEBUG - État du registre des capacités")
         print("=" * 50)
         print(f"📊 Total enregistré: {info['total_registered']}/48")
         print(f"💾 Instances en cache: {info['cached_instances']}")

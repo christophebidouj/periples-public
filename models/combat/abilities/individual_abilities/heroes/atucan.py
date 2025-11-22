@@ -678,7 +678,6 @@ def print_atucan_development_summary():
     debug = get_atucan_debug_info()
     print(f"\n🔧 APIs corrigées: {len(debug['corrected_issues'])} problèmes résolus")
     
-    print("\n🎉 P-3 ATUCAN PRÊT POUR DEBUG NIVEAU 2 !")
     print("="*60)
 
 
@@ -743,7 +742,6 @@ def _validate_on_import():
         debug_info = get_atucan_debug_info()
         
         print(f"✅ Module atucan.py chargé - {validation['total_abilities']} capacités")
-        print(f"🔍 APIs réelles utilisées (project_knowledge_search effectué)")
         print(f"🎯 Prêt pour debug Niveau 2: {validation['ready_for_debug']}")
         
         return True
@@ -756,6 +754,5 @@ _validation_success = _validate_on_import()
 
 # Message de fin de module
 if _validation_success:
-    print("🎉 ATUCAN (P-3) - Module avec APIs RÉELLES prêt !")
 else:
     print("⚠️ ATUCAN (P-3) - Module chargé avec erreurs")

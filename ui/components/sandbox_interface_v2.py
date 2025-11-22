@@ -606,14 +606,6 @@ def configure_combat():
             if hasattr(hero, 'start_new_combat'):
                 hero.start_new_combat()
 
-            # DEBUG - Elneha : Afficher capacités chargées
-            if hero_code == "P-1":
-                ability_nums = [a.ability_number for a in hero.abilities]
-                unlocked_nums = getattr(hero, 'unlocked_abilities', [])
-                print(f"🔍 [configure_combat] Elneha capacités chargées : {ability_nums}")
-                print(f"🔍 [configure_combat] Elneha capacités débloquées : {unlocked_nums}")
-                print(f"🔍 [configure_combat] Elneha current_form : {getattr(hero, 'current_form', 'N/A')}")
-
             combatants.append({
                 'character': hero,
                 'faction': 'hero',
@@ -676,20 +668,8 @@ def configure_combat():
 
         st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
 
-        # DEBUG - Vérifier état d'Elneha AVANT sauvegarde
-        for combatant in st.session_state.sandbox_v2_combatants:
-            char = combatant['character']
-            if char.code == "P-1":
-                print(f"🔍 [configure_combat] AVANT save_game_state: Elneha current_form='{char.current_form}', Stats=Pré {char.precision}, Dég {char.damage}, PV {char.current_health}/{char.health}")
-
         # Sauvegarder l'état initial
         save_game_state("Début du combat")
-
-        # DEBUG - Vérifier état d'Elneha APRÈS sauvegarde
-        for combatant in st.session_state.sandbox_v2_combatants:
-            char = combatant['character']
-            if char.code == "P-1":
-                print(f"🔍 [configure_combat] APRÈS save_game_state: Elneha current_form='{char.current_form}', Stats=Pré {char.precision}, Dég {char.damage}, PV {char.current_health}/{char.health}")
 
         return True
 
@@ -1127,24 +1107,16 @@ def display_abilities_grid(char: Character, combatant_id: str):
         # En forme animale : Bouton désactivation + capacité exclusive
         abilities_to_display = []
 
-        # DEBUG - Voir toutes les capacités
-        print(f"🔍 [display_abilities_grid] Elneha en forme {char.current_form}")
-        print(f"🔍 [display_abilities_grid] Abilities disponibles : {[f'{a.ability_number}:{a.name}' for a in char.abilities]}")
-
         if char.current_form == "bear":
             # Bouton pour désactiver (P-1-1) + Capacité exclusive (101)
             for a in char.abilities:
                 if a.ability_number in [1, 101]:
                     abilities_to_display.append(a)
-                    print(f"🔍 [display_abilities_grid] Ajouté capacité {a.ability_number}: {a.name}")
         elif char.current_form == "wolf":
             # Bouton pour désactiver (P-1-3) + Capacité exclusive (102)
             for a in char.abilities:
                 if a.ability_number in [3, 102]:
                     abilities_to_display.append(a)
-                    print(f"🔍 [display_abilities_grid] Ajouté capacité {a.ability_number}: {a.name}")
-
-        print(f"🔍 [display_abilities_grid] Total capacités à afficher : {len(abilities_to_display)}")
 
         if abilities_to_display:
             st.markdown("### 🔮 Forme Animale")
@@ -1258,10 +1230,6 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
             (ability.ability_number == 1 and current_form == "bear") or
             (ability.ability_number == 3 and current_form == "wolf")
         )
-
-        # DEBUG
-        print(f"🔍 [display_ability_card] Transformation {ability.ability_number}: current_form={current_form}, is_form_active={is_form_active}")
-        print(f"🔍 [display_ability_card] action_taken={getattr(char, 'action_taken_this_turn', False)}, can_attack={getattr(char, 'can_attack_this_turn', True)}")
 
         # Si forme active, TOUJOURS permettre le retour (ne pas bloquer)
         if is_form_active:
@@ -1653,10 +1621,6 @@ def use_ability_action(char: Character, ability):
     Utilise une capacité - NE termine PAS le tour automatiquement
     RÉUTILISE AbilityEffectsManager pour exécuter les effets réels
     """
-    # DEBUG - Vérifier état d'Elneha au moment du clic
-    if char.code == "P-1":
-        print(f"🔍 [use_ability_action] AU MOMENT DU CLIC: Elneha current_form='{char.current_form}', Stats=Pré {char.precision}, Dég {char.damage}, PV {char.current_health}/{char.health}")
-
     if hasattr(char, 'use_ability'):
         # 1. Vérifications + consommation sorts (via Character.use_ability)
         action = char.use_ability(ability)

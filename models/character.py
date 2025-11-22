@@ -178,8 +178,6 @@ class Character(BaseModel):
             self.current_form = "human"
             # Réinitialiser human_stats à None
             self.human_stats = None
-            print(f"🔍 [model_post_init] Elneha initialisée : current_form='{self.current_form}'")
-            print(f"🔍 [model_post_init] Stats de base : Pré={self.precision}, Dég={self.damage}, PV={self.current_health}/{self.health}")
         
         # NOUVEAU - Initialiser attributs sorts
         if not hasattr(self, 'magic_abilities_used_this_turn'):
@@ -268,6 +266,7 @@ class Character(BaseModel):
         self.human_stats = {
             'precision': self.precision,
             'damage': self.damage,
+            'spells': self.spells,  # FIX: Sauvegarder les sorts
             'health': self.health,
             'current_health': self.current_health,
             'max_parade_tokens': self.max_parade_tokens
@@ -280,6 +279,7 @@ class Character(BaseModel):
 
         self.precision = self.human_stats['precision']
         self.damage = self.human_stats['damage']
+        self.spells = self.human_stats['spells']  # FIX: Restaurer les sorts
         self.health = self.human_stats['health']
         self.current_health = self.human_stats['current_health']
         self.max_parade_tokens = self.human_stats['max_parade_tokens']
@@ -288,7 +288,7 @@ class Character(BaseModel):
     def transform_to_bear(self) -> bool:
         """
         Transforme Elneha en ours (P-9)
-        Stats : Précision 4, Dégâts 2, Parade 2, Santé 12
+        Stats officielles : Précision 4, Dégâts 2, Sorts 2, Santé 12, Parade 2
 
         Returns:
             bool: True si transformation réussie
@@ -303,6 +303,7 @@ class Character(BaseModel):
         # Appliquer stats d'ours (selon Sorts.xlsx P-9)
         self.precision = 4
         self.damage = 2
+        self.spells = 2  # FIX: Stats officielles P-9
         self.health = 12
         self.current_health = 12  # Santé = max de la forme (pas de ratio)
         self.max_parade_tokens = 2
@@ -317,7 +318,7 @@ class Character(BaseModel):
     def transform_to_wolf(self) -> bool:
         """
         Transforme Elneha en loup (P-10)
-        Stats : Précision 6, Dégâts 4, Parade 0, Santé 8
+        Stats officielles : Précision 6, Dégâts 4, Sorts 0, Santé 8, Parade 0
 
         Returns:
             bool: True si transformation réussie
@@ -325,17 +326,14 @@ class Character(BaseModel):
         if self.code != "P-1":
             return False
 
-        # DEBUG
-        print(f"🔍 [transform_to_wolf] AVANT: current_form={self.current_form}, Pré={self.precision}, Dég={self.damage}, PV={self.current_health}/{self.health}")
-
         # Sauvegarder stats humaines si pas déjà fait
         if self.current_form == "human":
             self._save_human_stats()
-            print(f"🔍 [transform_to_wolf] Stats humaines sauvegardées: {self.human_stats}")
 
         # Appliquer stats de loup (selon Sorts.xlsx P-10)
         self.precision = 6
         self.damage = 4
+        self.spells = 0  # FIX: Stats officielles P-10
         self.health = 8
         self.current_health = 8  # Santé = max de la forme (pas de ratio)
         self.max_parade_tokens = 0
@@ -344,8 +342,6 @@ class Character(BaseModel):
         # Marquer la transformation
         self.current_form = "wolf"
         self.action_taken_this_turn = True  # Transformation = action exclusive
-
-        print(f"🔍 [transform_to_wolf] APRÈS: current_form={self.current_form}, Pré={self.precision}, Dég={self.damage}, PV={self.current_health}/{self.health}")
 
         return True
 
@@ -893,10 +889,8 @@ class Character(BaseModel):
 
         # Reset forme pour Elneha
         if self.code == "P-1":
-            print(f"🔍 [reset_current_stats] AVANT reset: current_form='{getattr(self, 'current_form', 'UNDEFINED')}'")
             self.current_form = "human"
             self.human_stats = None  # Réinitialiser aussi les stats sauvegardées
-            print(f"🔍 [reset_current_stats] APRÈS reset: current_form='{self.current_form}', human_stats={self.human_stats}")
     
     # === ÉQUIPEMENTS ===
     
@@ -1439,7 +1433,6 @@ class Character(BaseModel):
         """MODIFIÉ - Prépare nouveau combat + reset stats"""
         # CRITIQUE - Reset forme Elneha AVANT tout le reste
         if self.code == "P-1":
-            print(f"🔍 [start_new_combat] FORCING Elneha reset : current_form → 'human'")
             self.current_form = "human"
             self.human_stats = None
 
