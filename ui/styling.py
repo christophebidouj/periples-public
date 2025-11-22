@@ -36,38 +36,54 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.title_color} !important;
     }}
 
-    /* Textes généraux Streamlit */
-    .stMarkdown, .stText {{
+    /* === COMPOSANTS STREAMLIT NATIFS === */
+
+    /* Expanders (expandables) */
+    .stExpander {{
+        border: 1px solid {theme.title_color} !important;
+        background-color: rgba(255,255,255,0.05) !important;
+    }}
+
+    .stExpander summary {{
+        color: {theme.text_primary} !important;
+        font-weight: bold !important;
+    }}
+
+    .stExpander > div {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Paragraphes et spans dans le contenu principal */
-    .main p, .main span, .main label {{
+    /* Inputs (text, number, etc.) */
+    .stTextInput input, .stNumberInput input, .stTextArea textarea {{
+        background-color: rgba(255,255,255,0.1) !important;
+        color: {theme.text_primary} !important;
+        border: 1px solid {theme.title_color} !important;
+    }}
+
+    /* Selectbox */
+    .stSelectbox > div > div {{
+        background-color: rgba(255,255,255,0.1) !important;
+        color: {theme.text_primary} !important;
+        border: 1px solid {theme.title_color} !important;
+    }}
+
+    /* Containers et colonnes */
+    .stContainer, [data-testid="stVerticalBlock"] > div {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Captions et petits textes */
-    .stCaption {{
-        color: {theme.title_color} !important;
-    }}
-
-    /* Labels de formulaires */
-    .stSelectbox label, .stCheckbox label, .stTextInput label {{
+    /* Divs de contenu */
+    [data-testid="stMarkdownContainer"] p {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Texte dans les widgets */
-    .stSelectbox > div > div, .stCheckbox > label > div {{
+    /* Labels et captions */
+    label, .stCaption {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Métriques */
-    .stMetric {{
-        color: {theme.text_primary} !important;
-    }}
-
-    /* Messages d'info/warning/success */
-    .stAlert {{
+    /* Success/Info/Warning/Error messages */
+    .stSuccess, .stInfo, .stWarning, .stError {{
         color: {theme.text_primary} !important;
     }}
     
