@@ -14,6 +14,7 @@ class Theme:
     background: str
     text_primary: str
     title_color: str
+    button_text_color: str  # Couleur du texte sur les boutons
     button_primary: str
     button_primary_hover: str
     button_secondary: str
@@ -59,6 +60,7 @@ class ThemeManager:
             background="#f4e4bc",
             text_primary="#3b2f1c",
             title_color="#4a4a4a",
+            button_text_color="#f4e4bc",  # Beige sur bordeaux
 
             # Boutons principaux (bordeaux vif)
             button_primary="#800020",
@@ -106,6 +108,7 @@ class ThemeManager:
             background="#1a1d2e",
             text_primary="#e8eaed",
             title_color="#b0b3b8",
+            button_text_color="#ffffff",  # Blanc sur bordeaux sobre
 
             # Boutons principaux (bordeaux sobre)
             button_primary="#6b2737",

@@ -70,7 +70,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     /* Bouton bordeaux par défaut (conservation de l'existant) */
     .stButton > button:not([class*="btn-"]) {{
         background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary});
-        color: {theme.background};
+        color: {theme.button_text_color};
         border: 2px solid {theme.button_secondary};
         border-radius: 8px;
         font-weight: bold;
