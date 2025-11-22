@@ -57,7 +57,7 @@ class ElnehaFormeOurs(BaseAbility):
 
             if success:
                 log.append(f"🐻 {caster.name} se transforme en ours !")
-                log.append(f"   Nouvelles stats : Précision 4, Dégâts 2, Parade 2, PV 12")
+                log.append(f"   Nouvelles stats : Précision 4, Dégâts 2, Parade 0, PV 12")
                 log.append(f"   Capacité exclusive : Résistance d'ours (1/combat)")
             else:
                 log.append(f"❌ Transformation échouée")
@@ -149,21 +149,14 @@ class ElnehaFormeLoup(BaseAbility):
         try:
             spell_manager = context.get('spell_manager')
 
-            # DEBUG - Afficher état actuel
-            current_form_value = getattr(caster, 'current_form', 'UNDEFINED')
-            log.append(f"🔍 DEBUG: current_form = '{current_form_value}'")
-            log.append(f"🔍 DEBUG: Stats actuelles = Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
-
             # Si déjà en forme de loup → revenir en forme humaine
             if caster.current_form == "wolf":
-                log.append(f"🔍 DEBUG: Condition current_form == 'wolf' est VRAIE → Retour humain")
                 caster.revert_to_human()
                 log.append(f"👤 {caster.name} reprend forme humaine")
                 log.append(f"   Stats restaurées : Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
                 return True
 
             # Consommer le coût en sorts pour la transformation
-            log.append(f"🔍 DEBUG: Condition current_form == 'wolf' est FAUSSE → Transformation")
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
 
@@ -174,7 +167,6 @@ class ElnehaFormeLoup(BaseAbility):
                 log.append(f"🐺 {caster.name} se transforme en loup !")
                 log.append(f"   Nouvelles stats : Précision 6, Dégâts 4, Parade 0, PV 8")
                 log.append(f"   Capacité exclusive : Férocité du loup (2/combat)")
-                log.append(f"🔍 DEBUG: Après transformation = Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
             else:
                 log.append(f"❌ Transformation échouée")
                 return False
