@@ -97,46 +97,37 @@ def display_hero_details_expander(hero_stats: Dict):
     survived = hero_stats['survived']
     final_hp = hero_stats['final_health']
     max_hp = hero_stats['max_health']
+    initial_hp = hero_stats['initial_health']
 
     if survived:
         header = f"✅ {name} - {final_hp}/{max_hp} PV restants"
     else:
-        death_turn = hero_stats['death_turn']
-        header = f"💀 {name} - Inconscient au tour {death_turn}"
+        header = f"💀 {name} - Inconscient"
 
     with st.expander(header, expanded=False):
+        # Stats simplifiées (Phase 1)
+        st.markdown("**Bilan de survie**")
+
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("**Offensive**")
-            st.write(f"⚔️ Dégâts infligés : {hero_stats['damage_dealt']}")
-            st.write(f"🎯 Attaques : {hero_stats['attacks_hit']}/{hero_stats['attacks_made']}")
-            if hero_stats['attacks_made'] > 0:
-                hit_rate = (hero_stats['attacks_hit'] / hero_stats['attacks_made'] * 100)
-                st.write(f"   Taux réussite : {hit_rate:.0f}%")
-            st.write(f"💥 Critiques : {hero_stats['criticals']}")
-            st.write(f"❌ Échecs crit. : {hero_stats['critical_fails']}")
+            st.write(f"❤️ PV initiaux : {initial_hp}/{max_hp}")
+            st.write(f"❤️ PV finaux : {final_hp}/{max_hp}")
+
+            hp_lost = initial_hp - final_hp
+            if hp_lost > 0:
+                st.write(f"💔 PV perdus : {hp_lost}")
 
         with col2:
-            st.markdown("**Défensive**")
-            st.write(f"💔 Dégâts subis : {hero_stats['damage_taken']}")
-            st.write(f"🛡️ Parades utilisées : {hero_stats['parade_tokens_used']}")
+            if survived:
+                hp_percent = (final_hp / max_hp * 100) if max_hp > 0 else 0
+                st.write(f"📊 État final : {hp_percent:.0f}%")
+            else:
+                st.write(f"💀 État : Inconscient")
 
-            st.markdown("**Ressources**")
-            st.write(f"✨ Sorts dépensés : {hero_stats['spells_spent']}/{hero_stats['initial_spells']}")
-            st.write(f"💚 Soins reçus : {hero_stats['healing_received']} PV")
+            st.write(f"✨ Sorts disponibles : {hero_stats['initial_spells']}")
 
-        # Capacités utilisées
-        if hero_stats['abilities_used']:
-            st.markdown("**Capacités**")
-            abilities_text = ", ".join(hero_stats['abilities_used'])
-            st.write(f"🔮 {abilities_text}")
-
-        # Potions
-        small = hero_stats['potions_used']['small']
-        large = hero_stats['potions_used']['large']
-        if small > 0 or large > 0:
-            st.write(f"🧪 Potions : {small} petites, {large} grandes")
+        st.info("ℹ️ Statistiques détaillées (dégâts, attaques, capacités) disponibles dans une prochaine version")
 
 
 def display_enemy_details_expander(enemy_stats: Dict):
@@ -146,24 +137,35 @@ def display_enemy_details_expander(enemy_stats: Dict):
     survived = enemy_stats['survived']
     final_hp = enemy_stats['final_health']
     max_hp = enemy_stats['max_health']
+    initial_hp = enemy_stats['initial_health']
 
     if survived:
         header = f"✅ {name} - Survivant ({final_hp}/{max_hp} PV)"
     else:
-        death_turn = enemy_stats['death_turn']
-        header = f"💀 {name} - Éliminé au tour {death_turn}"
+        header = f"💀 {name} - Éliminé"
 
     with st.expander(header, expanded=False):
+        # Stats simplifiées (Phase 1)
+        st.markdown("**Bilan de survie**")
+
         col1, col2 = st.columns(2)
 
         with col1:
-            st.write(f"⚔️ Dégâts infligés : {enemy_stats['damage_dealt']}")
-            st.write(f"🎯 Attaques effectuées : {enemy_stats['attacks_made']}")
+            st.write(f"❤️ PV initiaux : {initial_hp}/{max_hp}")
+            st.write(f"❤️ PV finaux : {final_hp}/{max_hp}")
+
+            hp_lost = initial_hp - final_hp
+            if hp_lost > 0:
+                st.write(f"💔 PV perdus : {hp_lost}")
 
         with col2:
-            st.write(f"💔 Dégâts subis : {enemy_stats['damage_taken']}")
-            if not survived:
-                st.write(f"⏱️ Éliminé au tour : {enemy_stats['death_turn']}")
+            if survived:
+                hp_percent = (final_hp / max_hp * 100) if max_hp > 0 else 0
+                st.write(f"📊 État final : {hp_percent:.0f}%")
+            else:
+                st.write(f"💀 État : Éliminé")
+
+        st.info("ℹ️ Statistiques détaillées (dégâts infligés, attaques) disponibles dans une prochaine version")
 
 
 def display_balance_metrics(analysis: Dict):
@@ -325,7 +327,7 @@ def apply_stat_adjustments(adjustments: List[Dict]):
             st.session_state.enemy_overrides[enemy_code] = {}
 
         st.session_state.enemy_overrides[enemy_code]['max_health'] = adj['hp_new']
-        st.session_state.enemy_overrides[enemy_code]['base_damage'] = adj['damage_new']
+        st.session_state.enemy_overrides[enemy_code]['damage'] = adj['damage_new']
 
 
 def apply_enemy_removal(enemy_code: str):

@@ -627,11 +627,18 @@ def configure_combat():
                 if 'enemy_overrides' in st.session_state:
                     if enemy_code in st.session_state.enemy_overrides:
                         overrides = st.session_state.enemy_overrides[enemy_code]
+
+                        # Override PV
                         if 'max_health' in overrides:
                             enemy.max_health = overrides['max_health']
                             enemy.current_health = overrides['max_health']
-                        if 'base_damage' in overrides:
-                            enemy.base_damage = overrides['base_damage']
+
+                        # Override dégâts - Modifier stats_by_players pour tous les player_count
+                        if 'damage' in overrides:
+                            new_damage = overrides['damage']
+                            for pc in enemy.stats_by_players.keys():
+                                if 'damage' in enemy.stats_by_players[pc]:
+                                    enemy.stats_by_players[pc]['damage'] = new_damage
 
                 combatants.append({
                     'character': enemy,
