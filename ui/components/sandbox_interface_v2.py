@@ -606,6 +606,14 @@ def configure_combat():
             if hasattr(hero, 'start_new_combat'):
                 hero.start_new_combat()
 
+            # DEBUG - Elneha : Afficher capacités chargées
+            if hero_code == "P-1":
+                ability_nums = [a.ability_number for a in hero.abilities]
+                unlocked_nums = getattr(hero, 'unlocked_abilities', [])
+                print(f"🔍 [configure_combat] Elneha capacités chargées : {ability_nums}")
+                print(f"🔍 [configure_combat] Elneha capacités débloquées : {unlocked_nums}")
+                print(f"🔍 [configure_combat] Elneha current_form : {getattr(hero, 'current_form', 'N/A')}")
+
             combatants.append({
                 'character': hero,
                 'faction': 'hero',
@@ -668,8 +676,20 @@ def configure_combat():
 
         st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
 
+        # DEBUG - Vérifier état d'Elneha AVANT sauvegarde
+        for combatant in st.session_state.sandbox_v2_combatants:
+            char = combatant['character']
+            if char.code == "P-1":
+                print(f"🔍 [configure_combat] AVANT save_game_state: Elneha current_form='{char.current_form}', Stats=Pré {char.precision}, Dég {char.damage}, PV {char.current_health}/{char.health}")
+
         # Sauvegarder l'état initial
         save_game_state("Début du combat")
+
+        # DEBUG - Vérifier état d'Elneha APRÈS sauvegarde
+        for combatant in st.session_state.sandbox_v2_combatants:
+            char = combatant['character']
+            if char.code == "P-1":
+                print(f"🔍 [configure_combat] APRÈS save_game_state: Elneha current_form='{char.current_form}', Stats=Pré {char.precision}, Dég {char.damage}, PV {char.current_health}/{char.health}")
 
         return True
 
@@ -1077,24 +1097,73 @@ def display_enemy_interface(combatant: Dict):
                 st.rerun()
 
 def display_abilities_grid(char: Character, combatant_id: str):
-    """Grille capacités style Arène"""
+    """Grille capacités style Arène - Gère formes animales Elneha"""
     if not hasattr(char, 'abilities') or not char.abilities:
         st.markdown("### 🔮 Capacités Spéciales")
         st.info("Aucune capacité disponible")
         return
 
+    # CAS SPÉCIAL ELNEHA : Filtrer capacités selon forme
+    abilities_to_display = char.abilities
+    is_elneha_animal_form = (char.code == "P-1" and
+                             hasattr(char, 'current_form') and
+                             char.current_form in ["bear", "wolf"])
+
+    if is_elneha_animal_form:
+        # En forme animale : Bouton désactivation + capacité exclusive
+        abilities_to_display = []
+
+        # DEBUG - Voir toutes les capacités
+        print(f"🔍 [display_abilities_grid] Elneha en forme {char.current_form}")
+        print(f"🔍 [display_abilities_grid] Abilities disponibles : {[f'{a.ability_number}:{a.name}' for a in char.abilities]}")
+
+        if char.current_form == "bear":
+            # Bouton pour désactiver (P-1-1) + Capacité exclusive (101)
+            for a in char.abilities:
+                if a.ability_number in [1, 101]:
+                    abilities_to_display.append(a)
+                    print(f"🔍 [display_abilities_grid] Ajouté capacité {a.ability_number}: {a.name}")
+        elif char.current_form == "wolf":
+            # Bouton pour désactiver (P-1-3) + Capacité exclusive (102)
+            for a in char.abilities:
+                if a.ability_number in [3, 102]:
+                    abilities_to_display.append(a)
+                    print(f"🔍 [display_abilities_grid] Ajouté capacité {a.ability_number}: {a.name}")
+
+        print(f"🔍 [display_abilities_grid] Total capacités à afficher : {len(abilities_to_display)}")
+
+        if abilities_to_display:
+            st.markdown("### 🔮 Forme Animale")
+
+            # Affichage dynamique sans grille fixe - seulement les capacités disponibles
+            cols = st.columns(len(abilities_to_display))
+            for idx, ability in enumerate(abilities_to_display):
+                with cols[idx]:
+                    original_index = char.abilities.index(ability) if ability in char.abilities else idx
+                    display_ability_card(char, ability, combatant_id, original_index)
+        else:
+            st.markdown("### 🔮 Capacités Spéciales")
+            st.warning("⚠️ Capacités de forme manquantes")
+
+        return  # Sortir ici pour éviter d'afficher la grille 3x2 en dessous
+
+    # Forme humaine : capacités normales (1-6)
+    # Exclure les capacités exclusives (101, 102) de l'affichage normal
+    abilities_to_display = [a for a in char.abilities if a.ability_number <= 100]
     st.markdown("### 🔮 Capacités Spéciales")
 
-    # Grille 3x2
+    # Grille 3x2 pour forme humaine seulement
     for row in range(2):
         cols = st.columns(3)
         for col_idx in range(3):
             ability_index = row * 3 + col_idx
 
             with cols[col_idx]:
-                if ability_index < len(char.abilities):
-                    ability = char.abilities[ability_index]
-                    display_ability_card(char, ability, combatant_id, ability_index)
+                if ability_index < len(abilities_to_display):
+                    ability = abilities_to_display[ability_index]
+                    # Trouver l'index original pour le key unique
+                    original_index = char.abilities.index(ability) if ability in char.abilities else ability_index
+                    display_ability_card(char, ability, combatant_id, original_index)
                 else:
                     st.markdown("""
                     <div style="background: #555; border: 2px dashed #777; border-radius: 10px;
@@ -1113,14 +1182,15 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     has_spells = ability.spell_cost <= current_spells
 
     # Vérifier si une capacité magique a déjà été utilisée ce tour (règle p.24)
+    prevents_attack = getattr(ability, 'prevents_attack', False)
     magic_already_used = (
-        ability.prevents_attack and
+        prevents_attack and
         getattr(char, 'magic_abilities_used_this_turn', 0) >= 1
     )
 
     # NOUVEAU - Vérifier si une attaque a été effectuée (règle p.24 - blocage bidirectionnel)
     attack_already_done = getattr(char, 'attack_done_this_turn', False)
-    blocked_by_attack = ability.prevents_attack and attack_already_done
+    blocked_by_attack = prevents_attack and attack_already_done
 
     # NOUVEAU - Vérifier si Parade a déjà été utilisée ce tour (limitation 1/tour)
     parade_already_used = False
@@ -1152,12 +1222,51 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if char.code == "P-7" and hasattr(char, 'temporary_buffs'):
         lame_ability_already_used = char.temporary_buffs.get('lame_ability_used_this_turn', False)
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used
+    # NOUVEAU - Elneha transformations : Bloquer si action déjà prise
+    transformation_blocked_by_action = False
+    is_transformation = (char.code == "P-1" and ability.ability_number in [1, 3])
+    if is_transformation:
+        # Vérifier si on est déjà dans la forme correspondante (pour permettre le retour)
+        current_form = getattr(char, 'current_form', 'human')
+        is_form_active = (
+            (ability.ability_number == 1 and current_form == "bear") or
+            (ability.ability_number == 3 and current_form == "wolf")
+        )
+
+        # DEBUG
+        print(f"🔍 [display_ability_card] Transformation {ability.ability_number}: current_form={current_form}, is_form_active={is_form_active}")
+        print(f"🔍 [display_ability_card] action_taken={getattr(char, 'action_taken_this_turn', False)}, can_attack={getattr(char, 'can_attack_this_turn', True)}")
+
+        # Si forme active, TOUJOURS permettre le retour (ne pas bloquer)
+        if is_form_active:
+            transformation_blocked_by_action = False
+        else:
+            # Sinon, bloquer transformation si une action a déjà été prise ce tour
+            transformation_blocked_by_action = (
+                getattr(char, 'action_taken_this_turn', False) or
+                getattr(char, 'potion_used_this_turn', False) or
+                not getattr(char, 'can_attack_this_turn', True)
+            )
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
 
     button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
+
+    # NOUVEAU - Elneha transformations : Modifier label si forme active
+    is_form_active = False
+    if is_transformation:
+        current_form = getattr(char, 'current_form', 'human')
+        if ability.ability_number == 1 and current_form == "bear":
+            is_form_active = True
+            short_name = "Redevenir humain"
+            type_icon = "👤"
+        elif ability.ability_number == 3 and current_form == "wolf":
+            is_form_active = True
+            short_name = "Redevenir humain"
+            type_icon = "👤"
 
     # Label conditionnel selon la raison du blocage
     button_label = f"{type_icon} {short_name}\n• {ability.spell_cost} ✨"
@@ -1165,6 +1274,10 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     # Ajouter indication uses_per_combat si disponible
     if combat_uses_remaining is not None:
         button_label = f"{type_icon} {short_name}\n• {ability.spell_cost} ✨ • {combat_uses_remaining}/{ability.uses_per_combat} ⚡"
+
+    # NOUVEAU - Elneha transformations : Label spécial si forme active (retour gratuit)
+    if is_form_active:
+        button_label = f"{type_icon} {short_name}\n• Gratuit"
 
     if not_useful_in_combat:
         button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
@@ -1182,6 +1295,8 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
     elif blocked_by_attack:
         button_label = f"{type_icon} {short_name}\n⚠️ Attaque faite"
+    elif transformation_blocked_by_action:
+        button_label = f"{type_icon} {short_name}\n⚠️ Action déjà prise"
 
     # Tooltip avec description de la capacité
     tooltip_text = ability.description if hasattr(ability, 'description') else None
@@ -1448,7 +1563,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
     # MODE NORMAL: Utiliser sur soi-même ou entrer en mode "faire boire"
     else:
-        if hasattr(char, 'health_potions') and char.health_potions:
+        # NOUVEAU - Elneha formes animales : Bloquer toutes les potions
+        is_elneha_animal = (char.code == "P-1" and
+                           hasattr(char, 'current_form') and
+                           char.current_form in ["bear", "wolf"])
+
+        if is_elneha_animal:
+            st.warning("⚠️ Potions indisponibles en forme animale")
+        elif hasattr(char, 'health_potions') and char.health_potions:
             potions_summary = char.get_potions_summary()
 
             # Boire soi-même
@@ -1505,6 +1627,10 @@ def use_ability_action(char: Character, ability):
     Utilise une capacité - NE termine PAS le tour automatiquement
     RÉUTILISE AbilityEffectsManager pour exécuter les effets réels
     """
+    # DEBUG - Vérifier état d'Elneha au moment du clic
+    if char.code == "P-1":
+        print(f"🔍 [use_ability_action] AU MOMENT DU CLIC: Elneha current_form='{char.current_form}', Stats=Pré {char.precision}, Dég {char.damage}, PV {char.current_health}/{char.health}")
+
     if hasattr(char, 'use_ability'):
         # 1. Vérifications + consommation sorts (via Character.use_ability)
         action = char.use_ability(ability)
@@ -1621,8 +1747,21 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     """
     # Récupérer stats en temps réel (RÉUTILISE APIs Character)
     current_hp = hero.current_health
-    max_hp = hero.get_total_health()
-    attack = hero.get_total_damage()
+
+    # NOUVEAU - En forme animale, utiliser stats brutes (sans équipements)
+    is_animal_form = (hero.code == "P-1" and
+                      hasattr(hero, 'current_form') and
+                      hero.current_form in ["bear", "wolf"])
+
+    if is_animal_form:
+        # Stats de la forme animale (brutes, sans équipements)
+        max_hp = hero.health
+        attack = hero.damage
+    else:
+        # Stats normales (avec équipements)
+        max_hp = hero.get_total_health()
+        attack = hero.get_total_damage()
+
     defense = hero.current_parade_tokens  # CORRIGÉ: Afficher jetons actuels, pas maximum
     magic = hero.get_total_spells()
     is_alive = hero.is_alive()
@@ -1636,7 +1775,9 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         border_color = "#27ae60"  # Vert pour vivant en attente
 
     # Récupérer image (RÉUTILISE API ui_elements.py)
-    image_path = get_hero_image_path(hero.name)
+    # Pour Elneha, passer la forme actuelle pour afficher l'image correcte
+    current_form = getattr(hero, 'current_form', None) if hero.code == "P-1" else None
+    image_path = get_hero_image_path(hero.name, current_form)
     background_style = ""
     if image_path:
         img_base64 = load_hero_image_base64(image_path)

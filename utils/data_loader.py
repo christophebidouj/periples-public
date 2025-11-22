@@ -145,12 +145,34 @@ class DataLoader:
         """
         Retourne les capacités d'un héros
         CRITIQUE: Retourne des COPIES pour éviter modification des instances cachées
+        Fusionne les capacités de Sorts.xlsx ET de l'ability_registry (pour capacités exclusives)
         """
         from copy import deepcopy
+
+        # Capacités depuis Sorts.xlsx (1-6)
         abilities_data = self._load_abilities()
         original_abilities = abilities_data.get(hero_code, [])
-        # Deepcopy pour éviter modification des instances cachées (uses_remaining_combat, etc.)
-        return [deepcopy(ability) for ability in original_abilities]
+        abilities = [deepcopy(ability) for ability in original_abilities]
+
+        # NOUVEAU - Ajouter capacités exclusives depuis ability_registry
+        # Pour Elneha (P-1): capacités 101 et 102 (formes animales)
+        try:
+            from models.combat.abilities.individual_abilities.ability_registry import ABILITY_REGISTRY
+
+            # Récupérer capacités du registre (inclut 101, 102 pour P-1)
+            registry_abilities = ABILITY_REGISTRY.get_hero_abilities(hero_code)
+
+            # Filtrer les capacités > 100 (capacités exclusives)
+            exclusive_abilities = [deepcopy(a) for a in registry_abilities if a.ability_number > 100]
+
+            # Fusionner avec les capacités Excel
+            abilities.extend(exclusive_abilities)
+
+        except Exception as e:
+            # Si erreur, continuer avec les capacités Excel seulement
+            print(f"⚠️ Impossible de charger capacités exclusives pour {hero_code}: {e}")
+
+        return abilities
     
     def get_abilities_summary(self) -> Dict[str, Any]:
         """Retourne un résumé des capacités disponibles"""

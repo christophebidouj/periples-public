@@ -133,7 +133,8 @@ class Character(BaseModel):
     potion_used_this_turn: bool = False
     
     # Système de formes pour Elneha
-    current_form: Optional[str] = None  # "bear", "wolf", "human"
+    current_form: Optional[str] = Field(default=None)  # "bear", "wolf", "human"
+    human_stats: Optional[Dict[str, int]] = Field(default=None)  # Stats humaines sauvegardées avant transformation
     
     # === NOUVEAUX ATTRIBUTS POUR SYSTÈME D'EFFETS ===
     # Effets persistants actifs
@@ -161,19 +162,24 @@ class Character(BaseModel):
         """Initialisation avec système d'effets"""
         if self.current_health is None:
             self.current_health = self.health
-        
+
         if self.abilities and not self.unlocked_abilities:
             self.unlock_ability(1)
-        
+
         if not self.health_potions:
             self.add_default_potions()
-        
+
         # Initialiser parade selon équipements
         self._update_parade_from_equipment()
-        
-        # Initialiser forme pour Elneha
+
+        # IMPORTANT - Initialiser forme pour Elneha (FORCER à "human" au début)
         if self.code == "P-1":
+            # TOUJOURS forcer à "human" au début (reset complet)
             self.current_form = "human"
+            # Réinitialiser human_stats à None
+            self.human_stats = None
+            print(f"🔍 [model_post_init] Elneha initialisée : current_form='{self.current_form}'")
+            print(f"🔍 [model_post_init] Stats de base : Pré={self.precision}, Dég={self.damage}, PV={self.current_health}/{self.health}")
         
         # NOUVEAU - Initialiser attributs sorts
         if not hasattr(self, 'magic_abilities_used_this_turn'):
@@ -252,42 +258,179 @@ class Character(BaseModel):
         effects = self.get_special_equipment_effects()
         return effects['lyre_phoenix']
     
-    # === SYSTÈME DE FORMES (ELNEHA) ===
-    
+    # === SYSTÈME DE FORMES (ELNEHA) - VERSION COMPLÈTE ===
+
+    def _save_human_stats(self):
+        """Sauvegarde les stats humaines avant transformation (Elneha uniquement)"""
+        if self.code != "P-1":
+            return
+
+        self.human_stats = {
+            'precision': self.precision,
+            'damage': self.damage,
+            'health': self.health,
+            'current_health': self.current_health,
+            'max_parade_tokens': self.max_parade_tokens
+        }
+
+    def _restore_human_stats(self):
+        """Restaure les stats humaines après transformation (Elneha uniquement)"""
+        if self.code != "P-1" or not self.human_stats:
+            return
+
+        self.precision = self.human_stats['precision']
+        self.damage = self.human_stats['damage']
+        self.health = self.human_stats['health']
+        self.current_health = self.human_stats['current_health']
+        self.max_parade_tokens = self.human_stats['max_parade_tokens']
+        self.current_parade_tokens = self.max_parade_tokens  # Reset parade
+
+    def transform_to_bear(self) -> bool:
+        """
+        Transforme Elneha en ours (P-9)
+        Stats : Précision 4, Dégâts 2, Parade 2, Santé 12
+
+        Returns:
+            bool: True si transformation réussie
+        """
+        if self.code != "P-1":
+            return False
+
+        # Sauvegarder stats humaines si pas déjà fait
+        if self.current_form == "human":
+            self._save_human_stats()
+
+        # Appliquer stats d'ours (selon Sorts.xlsx P-9)
+        self.precision = 4
+        self.damage = 2
+        self.health = 12
+        self.current_health = 12  # Santé = max de la forme (pas de ratio)
+        self.max_parade_tokens = 2
+        self.current_parade_tokens = 2
+
+        # Marquer la transformation
+        self.current_form = "bear"
+        self.action_taken_this_turn = True  # Transformation = action exclusive
+
+        return True
+
+    def transform_to_wolf(self) -> bool:
+        """
+        Transforme Elneha en loup (P-10)
+        Stats : Précision 6, Dégâts 4, Parade 0, Santé 8
+
+        Returns:
+            bool: True si transformation réussie
+        """
+        if self.code != "P-1":
+            return False
+
+        # DEBUG
+        print(f"🔍 [transform_to_wolf] AVANT: current_form={self.current_form}, Pré={self.precision}, Dég={self.damage}, PV={self.current_health}/{self.health}")
+
+        # Sauvegarder stats humaines si pas déjà fait
+        if self.current_form == "human":
+            self._save_human_stats()
+            print(f"🔍 [transform_to_wolf] Stats humaines sauvegardées: {self.human_stats}")
+
+        # Appliquer stats de loup (selon Sorts.xlsx P-10)
+        self.precision = 6
+        self.damage = 4
+        self.health = 8
+        self.current_health = 8  # Santé = max de la forme (pas de ratio)
+        self.max_parade_tokens = 0
+        self.current_parade_tokens = 0
+
+        # Marquer la transformation
+        self.current_form = "wolf"
+        self.action_taken_this_turn = True  # Transformation = action exclusive
+
+        print(f"🔍 [transform_to_wolf] APRÈS: current_form={self.current_form}, Pré={self.precision}, Dég={self.damage}, PV={self.current_health}/{self.health}")
+
+        return True
+
+    def revert_to_human(self) -> bool:
+        """
+        Revient à la forme humaine avec stats originales
+
+        Returns:
+            bool: True si retour réussi
+        """
+        if self.code != "P-1" or self.current_form == "human":
+            return False
+
+        # Restaurer les stats humaines
+        self._restore_human_stats()
+
+        # Marquer la transformation
+        self.current_form = "human"
+
+        # Réinitialiser les flags d'action pour permettre à Elneha d'agir normalement
+        self.action_taken_this_turn = False
+        self.can_attack_this_turn = True
+        self.magic_abilities_used_this_turn = 0
+        self.potion_used_this_turn = False
+
+        return True
+
+    def handle_form_death(self) -> bool:
+        """
+        Gère la "mort" en forme animale : retour automatique en forme humaine
+        Elneha ne meurt pas en forme animale, elle reprend forme humaine
+
+        Returns:
+            bool: True si retour automatique effectué
+        """
+        if self.code != "P-1" or self.current_form == "human":
+            return False
+
+        if self.current_form in ["bear", "wolf"] and self.current_health <= 0:
+            # Restaurer forme humaine avec stats sauvegardées
+            self._restore_human_stats()
+            self.current_form = "human"
+            return True
+
+        return False
+
+    def is_in_animal_form(self) -> bool:
+        """Vérifie si Elneha est en forme animale"""
+        return self.code == "P-1" and self.current_form in ["bear", "wolf"]
+
     def set_form(self, form: str):
-        """Change la forme actuelle (pour Elneha)"""
+        """Change la forme actuelle (pour Elneha) - LEGACY, utiliser transform_to_X()"""
         if self.code == "P-1":  # Seule Elneha peut changer de forme
             self.current_form = form
-    
+
     def get_form_display(self) -> str:
         """Affichage de la forme actuelle"""
         if self.code != "P-1":
             return ""
-        
+
         form_names = {
             "bear": "🐻 Forme d'ours",
-            "wolf": "🐺 Forme de loup", 
+            "wolf": "🐺 Forme de loup",
             "human": "👤 Forme humaine"
         }
         return form_names.get(self.current_form, "👤 Forme humaine")
-    
+
     def has_magical_form_attacks(self) -> bool:
         """O-1 Gemme de pouvoir : formes d'ours/loup → attaques magiques"""
-        return (self.code == "P-1" and 
-                self.has_equipment("O-1") and 
+        return (self.code == "P-1" and
+                self.has_equipment("O-1") and
                 self.current_form in ["bear", "wolf"])
-    
+
     def get_form_status(self) -> Dict:
         """État des formes pour interface"""
         if self.code != "P-1":
             return {'has_forms': False}
-        
+
         return {
             'has_forms': True,
             'current_form': self.current_form,
             'display_name': self.get_form_display(),
             'has_gemme_pouvoir': self.has_equipment("O-1"),
-            'has_magical_attacks': self.has_magical_form_attacks()
+            'has_magical_attacks': self.has_magical_form_attacks(),
+            'is_animal_form': self.is_in_animal_form()
         }
     
     # === SYSTÈME D'INVOCATION (KRAOR) ===
@@ -478,13 +621,19 @@ class Character(BaseModel):
         self.current_health = max(0, self.current_health - remaining)
         actual_health_damage = old_health - self.current_health
 
+        # NOUVEAU - Elneha formes animales : Gérer "mort" en forme animale
+        form_reverted = False
+        if self.current_health <= 0:
+            form_reverted = self.handle_form_death()
+
         return {
             'total_damage': damage + aura_reduction,  # Montant original avant réduction aura
             'blocked_by_parade': blocked,
             'health_damage': actual_health_damage,
             'parade_tokens_used': blocked,
             'parade_tokens_remaining': self.current_parade_tokens,
-            'aura_reduction': aura_reduction  # Pour le log
+            'aura_reduction': aura_reduction,  # Pour le log
+            'form_reverted': form_reverted  # Nouveau flag pour log
         }
     
     def get_parade_status(self) -> Dict:
@@ -741,10 +890,13 @@ class Character(BaseModel):
         self.current_attack = self.damage
         self.current_defense = self.max_parade_tokens  # ← Utilise la parade max
         self.current_precision = self.precision
-        
+
         # Reset forme pour Elneha
         if self.code == "P-1":
+            print(f"🔍 [reset_current_stats] AVANT reset: current_form='{getattr(self, 'current_form', 'UNDEFINED')}'")
             self.current_form = "human"
+            self.human_stats = None  # Réinitialiser aussi les stats sauvegardées
+            print(f"🔍 [reset_current_stats] APRÈS reset: current_form='{self.current_form}', human_stats={self.human_stats}")
     
     # === ÉQUIPEMENTS ===
     
@@ -867,34 +1019,47 @@ class Character(BaseModel):
     
     def get_attack_damage_info(self) -> Dict:
         """Infos sur le type de dégâts d'attaque (physique ou magique)"""
+        # NOUVEAU - Elneha formes animales : Utiliser stats brutes (sans équipement)
+        is_animal_form = (self.code == "P-1" and
+                         hasattr(self, 'current_form') and
+                         self.current_form in ["bear", "wolf"])
+
+        # Déterminer les dégâts à utiliser
+        if is_animal_form:
+            # Forme animale : stats brutes sans équipement
+            base_damage_value = self.damage
+        else:
+            # Forme humaine : stats avec équipements
+            base_damage_value = self.get_total_damage()
+
         # Priorité 1 : O-4 Lyre phoenix (toutes les attaques → magiques)
         if self.has_magical_attacks():
             return {
                 'damage_type': 'magical',
-                'damage_value': self.get_total_magical_damage(),
+                'damage_value': self.get_total_magical_damage() if not is_animal_form else self.damage,
                 'is_converted': True,
                 'conversion_source': 'lyre_phoenix',
-                'original_physical': self.get_total_damage()
+                'original_physical': base_damage_value
             }
-        
+
         # Priorité 2 : O-1 Gemme de pouvoir (formes d'ours/loup → magiques)
         elif self.has_magical_form_attacks():
             return {
                 'damage_type': 'magical',
-                'damage_value': self.get_total_damage(),  # Même valeur, type changé
+                'damage_value': base_damage_value,  # Stats de forme (sans équipement)
                 'is_converted': True,
                 'conversion_source': 'gemme_pouvoir',
                 'current_form': self.current_form,
                 'form_display': self.get_form_display()
             }
-        
+
         # Attaques normales (physiques)
         else:
             return {
-                'damage_type': 'physical', 
-                'damage_value': self.get_total_damage(),
+                'damage_type': 'physical',
+                'damage_value': base_damage_value,
                 'is_converted': False,
-                'magical_bonus': self.get_total_magical_damage()
+                'magical_bonus': self.get_total_magical_damage() if not is_animal_form else 0
             }
     
     def get_stats_summary(self) -> Dict:
@@ -934,22 +1099,50 @@ class Character(BaseModel):
             self.unlock_ability(1)
     
     def unlock_ability(self, ability_number: int) -> bool:
+        # NOUVEAU - Gérer capacités spéciales Elneha (101, 102)
+        if ability_number in [101, 102]:
+            # Capacités exclusives formes : toujours débloquées pour Elneha
+            if self.code == "P-1":
+                if ability_number not in self.unlocked_abilities:
+                    self.unlocked_abilities.append(ability_number)
+
+                # Mettre à jour la capacité
+                for ability in self.abilities:
+                    if ability.ability_number == ability_number:
+                        ability.is_unlocked = True
+                        ability.reset_combat_uses()
+
+                return True
+            return False
+
+        # Capacités normales (1-6)
         if not (1 <= ability_number <= 6) or ability_number in self.unlocked_abilities:
             return ability_number in self.unlocked_abilities
-        
+
         # Vérifie prérequis
         for i in range(1, ability_number):
             if i not in self.unlocked_abilities:
                 return False
-        
+
         self.unlocked_abilities.append(ability_number)
-        
-        # Met à jour la capacité
+
+        # NOUVEAU - Pour Elneha, débloquer aussi 101 et 102 automatiquement
+        if self.code == "P-1" and ability_number == 1:
+            # Quand on débloque la capacité 1, débloquer aussi les capacités exclusives
+            for special_num in [101, 102]:
+                if special_num not in self.unlocked_abilities:
+                    self.unlocked_abilities.append(special_num)
+                    for ability in self.abilities:
+                        if ability.ability_number == special_num:
+                            ability.is_unlocked = True
+                            ability.reset_combat_uses()
+
+        # Met à jour la capacité normale
         for ability in self.abilities:
             if ability.ability_number == ability_number:
                 ability.is_unlocked = True
                 ability.reset_combat_uses()
-        
+
         return True
     
     def get_available_abilities(self) -> List:
@@ -1003,15 +1196,10 @@ class Character(BaseModel):
                 action.message = "⚠️ Impossible d'utiliser une capacité magique après avoir attaqué !"
                 return action
 
-        # Gestion des formes d'Elneha (capacités 1 et 3 seulement)
-        if self.code == "P-1" and hasattr(ability, 'ability_number'):
-            if ability.ability_number == 1:  # Forme d'ours
-                self.set_form("bear")
-                action.add_effect(f"Transformation en {self.get_form_display()}")
-            elif ability.ability_number == 3:  # Forme de loup
-                self.set_form("wolf")
-                action.add_effect(f"Transformation en {self.get_form_display()}")
-        
+        # SUPPRIMÉ - Ancien système de gestion des formes d'Elneha
+        # Les transformations sont maintenant gérées par les individual abilities (ElnehaFormeOurs, ElnehaFormeLoup)
+        # Lignes 1182-1188 désactivées car elles causaient un conflit avec le nouveau système
+
         # Consommation sorts (seulement pour Ability normales)
         if hasattr(ability, 'spell_cost') and ability.spell_cost > 0:
             current_spells = self.current_spells or self.get_total_spells()
@@ -1249,16 +1437,28 @@ class Character(BaseModel):
     
     def start_new_combat(self):
         """MODIFIÉ - Prépare nouveau combat + reset stats"""
+        # CRITIQUE - Reset forme Elneha AVANT tout le reste
+        if self.code == "P-1":
+            print(f"🔍 [start_new_combat] FORCING Elneha reset : current_form → 'human'")
+            self.current_form = "human"
+            self.human_stats = None
+
+            # Auto-unlock exclusive abilities 101 and 102
+            if 101 not in self.unlocked_abilities:
+                self.unlocked_abilities.append(101)
+            if 102 not in self.unlocked_abilities:
+                self.unlocked_abilities.append(102)
+
         self.reset_turn_state()
         self.current_spells = self.get_total_spells()
         self.spells_used = 0
-        
+
         # NOUVEAU - Reset stats modifiables
         self.reset_current_stats()
-        
+
         # NOUVEAU - Initialiser compteur capacités magiques
         self.magic_abilities_used_this_turn = 0
-        
+
         # Reset capacités
         for ability in self.abilities:
             ability.reset_combat_uses()

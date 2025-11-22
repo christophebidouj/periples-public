@@ -25,43 +25,52 @@ from ..ability_registry import register_ability
 
 @register_ability
 class ElnehaFormeOurs(BaseAbility):
-    """P-1-1: Forme d'ours - Ignore les dégâts de la prochaine attaque"""
-    
+    """P-1-1: Forme d'ours - Transformation complète avec changement de stats"""
+
     hero_code = "P-1"
     ability_number = 1
     name = "Forme d'ours"
-    description = "Permet à Elneha de se métamorphoser en Ours."
-    
+    description = "Permet à Elneha de se métamorphoser en Ours (Stats: Pré 4, Dég 2, Par 2, PV 12)."
+
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
-        self.uses_per_combat = 1
-        self.uses_remaining_combat = 1
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en ours - ignore la prochaine attaque subie"""
+        """Transforme Elneha en ours OU revient en forme humaine"""
         try:
             spell_manager = context.get('spell_manager')
+
+            # Si déjà en forme d'ours → revenir en forme humaine
+            if caster.current_form == "bear":
+                caster.revert_to_human()
+                log.append(f"👤 {caster.name} reprend forme humaine")
+                log.append(f"   Stats restaurées : Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
+                return True
+
+            # Consommer le coût en sorts pour la transformation
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
-            # CORRECTION: Utiliser le système temporary_buffs existant
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
-            caster.temporary_buffs['ignore_next_attack'] = True
-            
-            log.append(f"🐻 {caster.name} se transforme en ours !")
-            log.append(f"   Pourra ignorer la prochaine attaque subie")
-            
-            self.uses_remaining_combat -= 1
+
+            # Transformer en ours
+            success = caster.transform_to_bear()
+
+            if success:
+                log.append(f"🐻 {caster.name} se transforme en ours !")
+                log.append(f"   Nouvelles stats : Précision 4, Dégâts 2, Parade 2, PV 12")
+                log.append(f"   Capacité exclusive : Résistance d'ours (1/combat)")
+            else:
+                log.append(f"❌ Transformation échouée")
+                return False
+
             return True
-            
+
         except Exception as e:
             log.append(f"❌ Erreur transformation ours: {str(e)}")
             return False
 
     def get_preview(self) -> str:
-        return f"🐻 {self.name}: Ignore prochaine attaque (Coût: {self.spell_cost} sort, 1/combat)"
+        return f"🐻 {self.name}: Transformation ours (Coût: {self.spell_cost} sort)"
 
 
 @register_ability
@@ -124,43 +133,60 @@ class ElnehaSoinMineur(BaseAbility):
 
 @register_ability
 class ElnehaFormeLoup(BaseAbility):
-    """P-1-3: Forme de loup - Double les dégâts 2 fois selon Sorts.xlsx"""
-    
+    """P-1-3: Forme de loup - Transformation complète avec changement de stats"""
+
     hero_code = "P-1"
     ability_number = 3
     name = "Forme de loup"
-    description = "Permet à Elneha de se métamorphoser en Loup."
-    
+    description = "Permet à Elneha de se métamorphoser en Loup (Stats: Pré 6, Dég 4, Par 0, PV 8)."
+
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
-    
+
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en loup - active 2 utilisations de double dégâts"""
+        """Transforme Elneha en loup OU revient en forme humaine"""
         try:
             spell_manager = context.get('spell_manager')
+
+            # DEBUG - Afficher état actuel
+            current_form_value = getattr(caster, 'current_form', 'UNDEFINED')
+            log.append(f"🔍 DEBUG: current_form = '{current_form_value}'")
+            log.append(f"🔍 DEBUG: Stats actuelles = Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
+
+            # Si déjà en forme de loup → revenir en forme humaine
+            if caster.current_form == "wolf":
+                log.append(f"🔍 DEBUG: Condition current_form == 'wolf' est VRAIE → Retour humain")
+                caster.revert_to_human()
+                log.append(f"👤 {caster.name} reprend forme humaine")
+                log.append(f"   Stats restaurées : Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
+                return True
+
+            # Consommer le coût en sorts pour la transformation
+            log.append(f"🔍 DEBUG: Condition current_form == 'wolf' est FAUSSE → Transformation")
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
-            # CORRECTION: Utiliser double_next_attack avec compteur personnalisé
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
-            
-            # Système hybride : utiliser l'API principale avec compteur Elneha
-            caster.temporary_buffs['double_next_attack'] = True
-            caster.temporary_buffs['elneha_wolf_remaining'] = 2  # Compteur interne
-            
-            log.append(f"🐺 {caster.name} se transforme en loup !")
-            log.append(f"   Peut doubler les dégâts de 2 attaques ce combat")
-            
+
+            # Transformer en loup
+            success = caster.transform_to_wolf()
+
+            if success:
+                log.append(f"🐺 {caster.name} se transforme en loup !")
+                log.append(f"   Nouvelles stats : Précision 6, Dégâts 4, Parade 0, PV 8")
+                log.append(f"   Capacité exclusive : Férocité du loup (2/combat)")
+                log.append(f"🔍 DEBUG: Après transformation = Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
+            else:
+                log.append(f"❌ Transformation échouée")
+                return False
+
             return True
-            
+
         except Exception as e:
             log.append(f"❌ Erreur transformation loup: {str(e)}")
             return False
 
     def get_preview(self) -> str:
-        return f"🐺 {self.name}: Double dégâts 2 attaques (Coût: {self.spell_cost} sort)"
+        return f"🐺 {self.name}: Transformation loup (Coût: {self.spell_cost} sort)"
 
 
 @register_ability
@@ -359,6 +385,127 @@ class ElnehaResurrection(BaseAbility):
 
     def get_preview(self) -> str:
         return f"✨ {self.name}: Ressuscite un inconscient à PV max (Coût: {self.spell_cost} sorts)"
+
+
+# ========================================
+# CAPACITÉS EXCLUSIVES DES FORMES ANIMALES
+# ========================================
+
+@register_ability
+class ElnehaBearResistance(BaseAbility):
+    """Capacité exclusive Ours : Résistance d'ours - Ignore les dégâts d'une attaque (1/combat)"""
+
+    hero_code = "P-1"
+    ability_number = 101  # Numéro spécial hors 1-6
+    name = "Résistance d'ours"
+    description = "Ignore les dégâts d'une attaque (Uniquement en forme d'ours)."
+
+    def __init__(self):
+        super().__init__(self.hero_code, self.ability_number, self.name, self.description)
+        self.spell_cost = 0  # Coût 0 selon Sorts.xlsx
+        self.uses_per_combat = 1  # Limitation 1/combat
+        self.uses_remaining_combat = 1
+        self.prevents_attack = False  # N'empêche pas d'attaquer
+
+    def can_use_ability(self, caster) -> bool:
+        """Vérifie si la capacité peut être utilisée (seulement en forme d'ours)"""
+        if not hasattr(caster, 'current_form'):
+            return False
+        return caster.current_form == "bear"
+
+    def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
+        """Active la résistance : ignore la prochaine attaque subie"""
+        try:
+            # Vérifier que c'est bien en forme d'ours
+            if not self.can_use_ability(caster):
+                log.append(f"⚠️ {self.name} nécessite la forme d'ours")
+                return False
+
+            # Vérifier utilisations restantes
+            if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+                if self.uses_remaining_combat <= 0:
+                    log.append(f"⚠️ {self.name} déjà utilisé ce combat")
+                    return False
+
+            # Activer le buff d'ignorance de dégâts
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['ignore_next_attack'] = True
+
+            log.append(f"🐻 {caster.name} active {self.name} !")
+            log.append(f"   Ignorera la prochaine attaque subie")
+
+            # Décompter les utilisations
+            if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+                self.uses_remaining_combat -= 1
+
+            return True
+
+        except Exception as e:
+            log.append(f"❌ Erreur {self.name}: {str(e)}")
+            return False
+
+    def get_preview(self) -> str:
+        return f"🐻 {self.name}: Ignore prochaine attaque (1/combat, forme ours uniquement)"
+
+
+@register_ability
+class ElnehaWolfFerocity(BaseAbility):
+    """Capacité exclusive Loup : Férocité du loup - Double les dégâts d'une attaque réussie (2/combat)"""
+
+    hero_code = "P-1"
+    ability_number = 102  # Numéro spécial hors 1-6
+    name = "Férocité du loup"
+    description = "Double les dégâts d'une attaque réussie (Uniquement en forme de loup)."
+
+    def __init__(self):
+        super().__init__(self.hero_code, self.ability_number, self.name, self.description)
+        self.spell_cost = 0  # Coût 0 selon Sorts.xlsx
+        self.uses_per_combat = 2  # Limitation 2/combat
+        self.uses_remaining_combat = 2
+        self.prevents_attack = False  # N'empêche pas d'attaquer
+
+    def can_use_ability(self, caster) -> bool:
+        """Vérifie si la capacité peut être utilisée (seulement en forme de loup)"""
+        if not hasattr(caster, 'current_form'):
+            return False
+        return caster.current_form == "wolf"
+
+    def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
+        """Active la férocité : double les dégâts de la prochaine attaque"""
+        try:
+            # Vérifier que c'est bien en forme de loup
+            if not self.can_use_ability(caster):
+                log.append(f"⚠️ {self.name} nécessite la forme de loup")
+                return False
+
+            # Vérifier utilisations restantes
+            if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+                if self.uses_remaining_combat <= 0:
+                    log.append(f"⚠️ {self.name} déjà utilisé 2 fois ce combat")
+                    return False
+
+            # Activer le buff de double dégâts
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
+            caster.temporary_buffs['double_next_attack'] = True
+
+            log.append(f"🐺 {caster.name} active {self.name} !")
+            log.append(f"   Doublera les dégâts de la prochaine attaque réussie")
+
+            # Décompter les utilisations
+            if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
+                self.uses_remaining_combat -= 1
+
+            return True
+
+        except Exception as e:
+            log.append(f"❌ Erreur {self.name}: {str(e)}")
+            return False
+
+    def get_preview(self) -> str:
+        return f"🐺 {self.name}: Double prochaine attaque (2/combat, forme loup uniquement)"
+
 
 # ========================================
 # FONCTIONS UTILITAIRES ET STATISTIQUES

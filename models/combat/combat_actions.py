@@ -37,21 +37,30 @@ class CombatActions:
         damage_value = base_damage
         if attack_modifiers['damage_multiplier'] > 1.0:
             damage_value = int(base_damage * attack_modifiers['damage_multiplier'])
+            print(f"🔍 [DAMAGE DEBUG] base_damage={base_damage}, multiplier={attack_modifiers['damage_multiplier']}, damage_value APRÈS multiplier={damage_value}")
         damage_value += attack_modifiers['damage_bonus']
         damage_value += self._get_mark_bonus_for_target(hero, target)
-        
-        # 🐺 CORRIGÉ: FORME DE LOUP - Système hybride compatible app principale
+        print(f"🔍 [DAMAGE DEBUG] damage_value FINAL (avant apply_damage)={damage_value}")
+
+        # 🐺 NOUVEAU: Elneha Férocité du loup - Consommer le buff après utilisation
         elneha_wolf_used = False
-        if (hasattr(hero, 'temporary_buffs') and 
-            attack_modifiers['damage_multiplier'] > 1.0 and
-            hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0):
-            # Double dégâts déjà appliqué par check_attack_modifiers
-            hero.temporary_buffs['elneha_wolf_remaining'] -= 1
-            elneha_wolf_used = True
-            
-            # Réactiver pour prochaine attaque si compteur > 0
-            if hero.temporary_buffs['elneha_wolf_remaining'] > 0:
-                hero.temporary_buffs['double_next_attack'] = True
+        if hasattr(hero, 'temporary_buffs') and attack_modifiers['damage_multiplier'] > 1.0:
+            # Système ancien (avec compteur elneha_wolf_remaining)
+            if hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
+                hero.temporary_buffs['elneha_wolf_remaining'] -= 1
+                elneha_wolf_used = True
+                # Réactiver pour prochaine attaque si compteur > 0
+                if hero.temporary_buffs['elneha_wolf_remaining'] > 0:
+                    hero.temporary_buffs['double_next_attack'] = True
+                else:
+                    # Plus d'utilisations, retirer le flag
+                    hero.temporary_buffs.pop('double_next_attack', None)
+
+            # Système nouveau (Férocité du loup - individual ability)
+            elif hero.temporary_buffs.get('double_next_attack', False):
+                # Consommer le buff après l'attaque
+                hero.temporary_buffs.pop('double_next_attack', None)
+                elneha_wolf_used = True
         
         combatant_name = getattr(hero, 'display_name', hero.name)
 
@@ -97,6 +106,10 @@ class CombatActions:
 
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
+
+            # NOUVEAU - Elneha formes animales : Log retour forme humaine si santé à 0
+            if damage_result.get('form_reverted', False):
+                log.append(f"  💫 {target.name} perd sa forme animale et reprend forme humaine ({target.current_health}/{target.health} PV)")
 
             # NOUVEAU - Châtiment divin : 2e frappe magique après attaque critique réussie
             if hasattr(hero, 'temporary_buffs') and 'chatiment_divin_active' in hero.temporary_buffs:
@@ -188,6 +201,10 @@ class CombatActions:
                     log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
                 else:
                     log.append(f"  💥 {damage_result['health_damage']} aux PV")
+
+                # NOUVEAU - Elneha formes animales : Log retour forme humaine si santé à 0
+                if damage_result.get('form_reverted', False):
+                    log.append(f"  💫 {target.name} perd sa forme animale et reprend forme humaine ({target.current_health}/{target.health} PV)")
 
                 # NOUVEAU - Châtiment divin : 2e frappe magique après attaque réussie
                 if hasattr(hero, 'temporary_buffs') and 'chatiment_divin_active' in hero.temporary_buffs:

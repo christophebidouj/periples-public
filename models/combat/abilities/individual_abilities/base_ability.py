@@ -25,7 +25,12 @@ class BaseAbility(ABC):
         self.ability_number = ability_number
         self.name = name
         self.description = description
-    
+
+    @property
+    def unique_id(self) -> str:
+        """Identifiant unique de la capacité"""
+        return f"{self.hero_code}_ability_{self.ability_number}"
+
     @abstractmethod
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """

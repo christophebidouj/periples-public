@@ -85,18 +85,28 @@ class AbilityRegistry:
     def get_hero_abilities(self, hero_code: str) -> List[BaseAbility]:
         """
         Récupère toutes les capacités d'un héros
-        
+
         Args:
             hero_code: Code du héros (P-1, P-2, etc.)
-            
+
         Returns:
             Liste des instances de capacités du héros
         """
         abilities = []
-        for ability_number in range(1, 7):  # 1 à 6
+
+        # Capacités normales (1-6)
+        for ability_number in range(1, 7):
             ability = self.get_ability_instance(hero_code, ability_number)
             if ability:
                 abilities.append(ability)
+
+        # NOUVEAU - Elneha capacités exclusives formes (101, 102)
+        if hero_code == "P-1":
+            for ability_number in [101, 102]:
+                ability = self.get_ability_instance(hero_code, ability_number)
+                if ability:
+                    abilities.append(ability)
+
         return abilities
     
     def get_all_abilities(self) -> Dict[str, BaseAbility]:

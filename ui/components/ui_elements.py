@@ -61,12 +61,29 @@ def get_equipment_icon(equipment_type: str, equipment_name: str) -> str:
     # Fallback sur le type
     return type_icons.get(equipment_type.lower(), '💍')
 
-def get_hero_image_path(hero_name: str) -> Optional[str]:
-    """Retourne le chemin vers l'image du héros - VERSION JPG DIRECT"""
+def get_hero_image_path(hero_name: str, current_form: Optional[str] = None) -> Optional[str]:
+    """
+    Retourne le chemin vers l'image du héros - VERSION JPG DIRECT
+
+    Args:
+        hero_name: Nom du héros
+        current_form: Forme actuelle (pour Elneha uniquement) : "bear", "wolf", "human"
+
+    Returns:
+        Chemin vers l'image appropriée
+    """
+    # CAS SPÉCIAL ELNEHA : Images selon forme de transformation
+    if hero_name == "Elneha" and current_form:
+        if current_form == "bear":
+            return "data/images/Ours.jpg"
+        elif current_form == "wolf":
+            return "data/images/Loup.jpg"
+        # Si current_form == "human" ou autre, utiliser l'image par défaut
+
     # Mapping direct vers les fichiers JPG - SANS ACCENT pour éviter les erreurs
     image_mapping = {
         "Elneha": "data/images/Elneha_-_Druidesse.jpg",
-        "Liarie": "data/images/Liarie_-_Mage.jpg", 
+        "Liarie": "data/images/Liarie_-_Mage.jpg",
         "Atucan": "data/images/Atucan_-_Paladin.jpg",
         "Kraor": "data/images/Kraor_-_Rodeur.jpg",
         "Thordius": "data/images/Thordius_-_Barbare.jpg",
@@ -74,7 +91,7 @@ def get_hero_image_path(hero_name: str) -> Optional[str]:
         "Lame": "data/images/Lame_-_Roublarde.jpg",
         "Raishi": "data/images/Raishi_-_Pugiliste.jpg"
     }
-    
+
     return image_mapping.get(hero_name)
 
 def load_hero_image_base64(image_path: str) -> Optional[str]:
