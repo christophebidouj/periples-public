@@ -49,7 +49,15 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         font-weight: bold !important;
     }}
 
+    .stExpander summary span, .stExpander summary p, .stExpander summary div {{
+        color: {theme.text_primary} !important;
+    }}
+
     .stExpander > div {{
+        color: {theme.text_primary} !important;
+    }}
+
+    .stExpander [data-testid="stMarkdownContainer"] {{
         color: {theme.text_primary} !important;
     }}
 
