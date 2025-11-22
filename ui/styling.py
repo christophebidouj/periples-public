@@ -5,102 +5,110 @@ Version flexible avec système de classes pour boutons
 
 import streamlit as st
 from typing import Dict
+from models.theme_manager import ThemeManager
 
-def apply_fantasy_theme():
-    """Applique le thème fantasy avec système de boutons flexible"""
-    st.markdown("""
+def apply_fantasy_theme(theme_name: str = "Parchemin"):
+    """
+    Applique le thème fantasy avec système de thèmes dynamique
+
+    Args:
+        theme_name: Nom du thème à appliquer ("Parchemin" ou "Professionnel")
+    """
+    theme = ThemeManager.get_theme(theme_name)
+
+    st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
-    
+
     /* === FOND GÉNÉRAL === */
-    .stApp > header { background-color: transparent; }
-    .stApp { background: #f4e4bc; }
+    .stApp > header {{ background-color: transparent; }}
+    .stApp {{ background: {theme.background}; }}
     
     /* === TYPOGRAPHIE === */
-    h1, h2, h3 { 
-        font-family: 'Cinzel', serif !important; 
-        color: #3b2f1c !important; 
-    }
-    
-    h1 { 
-        text-align: center; 
-        font-size: 2.5rem !important; 
-        color: #4a4a4a !important; 
-    }
+    h1, h2, h3 {{
+        font-family: 'Cinzel', serif !important;
+        color: {theme.text_primary} !important;
+    }}
+
+    h1 {{
+        text-align: center;
+        font-size: 2.5rem !important;
+        color: {theme.title_color} !important;
+    }}
     
     /* === ONGLETS SOBRES === */
-    .stTabs [data-baseweb="tab-list"] { 
-        background: #6b7280;
+    .stTabs [data-baseweb="tab-list"] {{
+        background: {theme.tab_background};
         border-radius: 10px;
         padding: 4px;
-    }
-    
-    .stTabs [data-baseweb="tab"] { 
-        color: #ffffff !important; 
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        color: #ffffff !important;
         font-weight: 600;
         font-family: 'Cinzel', serif;
         border-radius: 6px;
         margin: 2px;
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] { 
-        background: #d97706;
+    }}
+
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {{
+        background: {theme.tab_active};
         color: #ffffff !important;
         font-weight: 700;
-    }
+    }}
     
     /* === CONTENEURS === */
-    .main-container { 
-        background: rgba(255,255,255,0.1); 
-        border-radius: 15px; 
-        padding: 20px; 
+    .main-container {{
+        background: rgba(255,255,255,0.1);
+        border-radius: 15px;
+        padding: 20px;
         margin: 10px 0;
-    }
-    
+    }}
+
     /* === SYSTÈME DE BOUTONS FLEXIBLE === */
 
     /* Bouton bordeaux par défaut (conservation de l'existant) */
-    .stButton > button:not([class*="btn-"]) {
-        background: linear-gradient(135deg, #800020, #5d0015);
-        color: #f4e4bc;
-        border: 2px solid #4d0012;
+    .stButton > button:not([class*="btn-"]) {{
+        background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary});
+        color: {theme.background};
+        border: 2px solid {theme.button_secondary};
         border-radius: 8px;
         font-weight: bold;
         font-family: 'Cinzel', serif;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
         box-shadow: 0 4px 8px rgba(128,0,32,0.4);
         transition: all 0.3s ease;
-    }
+    }}
 
-    .stButton > button:not([class*="btn-"]):hover {
-        background: linear-gradient(135deg, #a0002a, #800020);
+    .stButton > button:not([class*="btn-"]):hover {{
+        background: linear-gradient(135deg, {theme.button_primary_hover}, {theme.button_primary});
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(128,0,32,0.6);
-    }
+    }}
     
     /* Classes spécifiques pour différents types de boutons */
-    
+
     /* Boutons verts (succès/validation) */
-    .btn-success {
-        background: linear-gradient(135deg, #228b22, #006400) !important;
+    .btn-success {{
+        background: linear-gradient(135deg, {theme.button_success}, {theme.hero_color}) !important;
         color: #ffffff !important;
-        border: 2px solid #004d00 !important;
+        border: 2px solid {theme.hero_color_light} !important;
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
         box-shadow: 0 4px 8px rgba(34,139,34,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-success:hover {
-        background: linear-gradient(135deg, #32cd32, #228b22) !important;
+    }}
+
+    .btn-success:hover {{
+        background: linear-gradient(135deg, {theme.button_success_hover}, {theme.button_success}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(34,139,34,0.6) !important;
-    }
-    
+    }}
+
     /* Boutons bleus (info/neutre) */
-    .btn-info {
-        background: linear-gradient(135deg, #4169e1, #1e3a8a) !important;
+    .btn-info {{
+        background: linear-gradient(135deg, {theme.button_info}, #1e3a8a) !important;
         color: #ffffff !important;
         border: 2px solid #1e40af !important;
         border-radius: 8px !important;
@@ -108,17 +116,17 @@ def apply_fantasy_theme():
         font-family: 'Cinzel', serif !important;
         box-shadow: 0 4px 8px rgba(65,105,225,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-info:hover {
-        background: linear-gradient(135deg, #6495ed, #4169e1) !important;
+    }}
+
+    .btn-info:hover {{
+        background: linear-gradient(135deg, {theme.button_info_hover}, {theme.button_info}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(65,105,225,0.6) !important;
-    }
-    
+    }}
+
     /* Boutons orange (avertissement) */
-    .btn-warning {
-        background: linear-gradient(135deg, #ff8c00, #ff7f50) !important;
+    .btn-warning {{
+        background: linear-gradient(135deg, {theme.button_warning}, #ff7f50) !important;
         color: #ffffff !important;
         border: 2px solid #ff6347 !important;
         border-radius: 8px !important;
@@ -126,17 +134,17 @@ def apply_fantasy_theme():
         font-family: 'Cinzel', serif !important;
         box-shadow: 0 4px 8px rgba(255,140,0,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-warning:hover {
-        background: linear-gradient(135deg, #ffa500, #ff8c00) !important;
+    }}
+
+    .btn-warning:hover {{
+        background: linear-gradient(135deg, {theme.button_warning_hover}, {theme.button_warning}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(255,140,0,0.6) !important;
-    }
-    
+    }}
+
     /* Boutons rouges (danger/suppression) */
-    .btn-danger {
-        background: linear-gradient(135deg, #dc143c, #8b0000) !important;
+    .btn-danger {{
+        background: linear-gradient(135deg, {theme.button_danger}, {theme.enemy_color}) !important;
         color: #ffffff !important;
         border: 2px solid #660000 !important;
         border-radius: 8px !important;
@@ -144,17 +152,17 @@ def apply_fantasy_theme():
         font-family: 'Cinzel', serif !important;
         box-shadow: 0 4px 8px rgba(220,20,60,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-danger:hover {
-        background: linear-gradient(135deg, #ff1493, #dc143c) !important;
+    }}
+
+    .btn-danger:hover {{
+        background: linear-gradient(135deg, {theme.button_danger_hover}, {theme.button_danger}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(220,20,60,0.6) !important;
-    }
-    
+    }}
+
     /* Boutons violets (capacités magiques) */
-    .btn-magic {
-        background: linear-gradient(135deg, #8a2be2, #4b0082) !important;
+    .btn-magic {{
+        background: linear-gradient(135deg, {theme.button_magic}, #4b0082) !important;
         color: #ffffff !important;
         border: 2px solid #2e0054 !important;
         border-radius: 8px !important;
@@ -162,17 +170,17 @@ def apply_fantasy_theme():
         font-family: 'Cinzel', serif !important;
         box-shadow: 0 4px 8px rgba(138,43,226,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-magic:hover {
-        background: linear-gradient(135deg, #9370db, #8a2be2) !important;
+    }}
+
+    .btn-magic:hover {{
+        background: linear-gradient(135deg, {theme.button_magic_hover}, {theme.button_magic}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(138,43,226,0.6) !important;
-    }
-    
+    }}
+
     /* Boutons gris (désactivé/neutre) */
-    .btn-neutral {
-        background: linear-gradient(135deg, #708090, #2f4f4f) !important;
+    .btn-neutral {{
+        background: linear-gradient(135deg, {theme.button_neutral}, #2f4f4f) !important;
         color: #ffffff !important;
         border: 2px solid #1c3333 !important;
         border-radius: 8px !important;
@@ -180,17 +188,17 @@ def apply_fantasy_theme():
         font-family: 'Cinzel', serif !important;
         box-shadow: 0 4px 8px rgba(112,128,144,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-neutral:hover {
-        background: linear-gradient(135deg, #778899, #708090) !important;
+    }}
+
+    .btn-neutral:hover {{
+        background: linear-gradient(135deg, {theme.button_neutral_hover}, {theme.button_neutral}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(112,128,144,0.6) !important;
-    }
-    
+    }}
+
     /* Boutons dorés (premium/spécial) */
-    .btn-gold {
-        background: linear-gradient(135deg, #ffd700, #b8860b) !important;
+    .btn-gold {{
+        background: linear-gradient(135deg, {theme.button_gold}, #b8860b) !important;
         color: #000000 !important;
         border: 2px solid #8b7500 !important;
         border-radius: 8px !important;
@@ -199,36 +207,36 @@ def apply_fantasy_theme():
         text-shadow: 1px 1px 2px rgba(255,255,255,0.3) !important;
         box-shadow: 0 4px 8px rgba(255,215,0,0.4) !important;
         transition: all 0.3s ease !important;
-    }
-    
-    .btn-gold:hover {
-        background: linear-gradient(135deg, #ffec8c, #ffd700) !important;
+    }}
+
+    .btn-gold:hover {{
+        background: linear-gradient(135deg, {theme.button_gold_hover}, {theme.button_gold}) !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 12px rgba(255,215,0,0.6) !important;
-    }
+    }}
     
     /* Application des classes aux boutons Streamlit selon leur type */
-    button[kind="primary"] {
-        background: linear-gradient(135deg, #800020, #5d0015) !important;
-        border: 2px solid #4d0012 !important;
-    }
-    
-    button[kind="secondary"] {
-        background: linear-gradient(135deg, #6d001a, #4d0012) !important;
+    button[kind="primary"] {{
+        background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary}) !important;
+        border: 2px solid {theme.button_secondary} !important;
+    }}
+
+    button[kind="secondary"] {{
+        background: linear-gradient(135deg, {theme.button_secondary}, {theme.button_secondary_hover}) !important;
         border: 2px solid #330009 !important;
-    }
-    
-    button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #a0002a, #800020) !important;
-    }
-    
-    button[kind="secondary"]:hover {
-        background: linear-gradient(135deg, #800020, #5d0015) !important;
-    }
-    
+    }}
+
+    button[kind="primary"]:hover {{
+        background: linear-gradient(135deg, {theme.button_primary_hover}, {theme.button_primary}) !important;
+    }}
+
+    button[kind="secondary"]:hover {{
+        background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary}) !important;
+    }}
+
     /* Gestion des boutons désactivés */
     button:disabled,
-    .stButton > button:disabled {
+    .stButton > button:disabled {{
         background: linear-gradient(135deg, #cccccc, #999999) !important;
         color: #666666 !important;
         border: 2px solid #888888 !important;
@@ -236,7 +244,7 @@ def apply_fantasy_theme():
         cursor: not-allowed !important;
         transform: none !important;
         box-shadow: none !important;
-    }
+    }}
 
     /* === BOUTONS DE CARTES (responsive, harmonisé avec les cartes) === */
 

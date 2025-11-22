@@ -273,10 +273,11 @@ def init_app():
     
     # Variables session avec valeurs par défaut
     defaults = {
-        'selected_heroes': [], 
-        'selected_enemies': [], 
+        'selected_heroes': [],
+        'selected_enemies': [],
         'custom_builds': {},
         'hero_difficulties': {},
+        'selected_theme': 'Parchemin',  # Thème par défaut
         'ui_state': {'needs_rerun': False}
     }
     
@@ -327,6 +328,10 @@ def tab_selection(data):
         if 'criticals_setting' not in st.session_state:
             st.session_state.criticals_setting = True
 
+        # Initialiser la valeur du thème si elle n'existe pas
+        if 'selected_theme' not in st.session_state:
+            st.session_state.selected_theme = 'Parchemin'
+
         # Callback pour sauvegarder immédiatement la valeur de l'initiative
         def on_initiative_change():
             st.session_state.initiative_setting = st.session_state.combat_initiative
@@ -335,7 +340,30 @@ def tab_selection(data):
         def on_criticals_change():
             st.session_state.criticals_setting = st.session_state.combat_criticals
 
+        # Callback pour sauvegarder immédiatement la valeur du thème
+        def on_theme_change():
+            st.session_state.selected_theme = st.session_state.theme_selector
+
         st.caption("⚙️ Configuration")
+
+        # Sélecteur de thème
+        from models.theme_manager import ThemeManager
+        theme_display_names = ThemeManager.get_theme_display_names()
+        available_themes = ThemeManager.get_available_themes()
+
+        # Trouver l'index du thème actuel
+        current_theme = st.session_state.get('selected_theme', 'Parchemin')
+        current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
+
+        st.selectbox(
+            "🎨 Thème",
+            options=available_themes,
+            index=current_index,
+            format_func=lambda x: theme_display_names.get(x, x),
+            key='theme_selector',
+            on_change=on_theme_change
+        )
+
         st.checkbox(
             "🎯 Critiques",
             value=st.session_state.criticals_setting,
@@ -657,7 +685,10 @@ def display_about():
 def main():
     """Application principale MIGRÉE"""
     init_app()
-    apply_fantasy_theme()
+
+    # Appliquer le thème sélectionné
+    selected_theme = st.session_state.get('selected_theme', 'Parchemin')
+    apply_fantasy_theme(selected_theme)
     
     # Titre natif Streamlit
     st.title("⚔️ Périples – Atelier d'Équilibrage ⚔️")
