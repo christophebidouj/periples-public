@@ -935,11 +935,13 @@ def display_hero_interface(combatant: Dict):
     if is_animal_form:
         # Stats de la forme animale (brutes, sans équipements)
         max_hp = char.health
+        precision = char.precision
         attack = char.damage
         magic = char.spells
     else:
         # Stats normales (avec équipements)
         max_hp = char.get_total_health()
+        precision = char.get_total_precision()
         attack = char.get_total_damage()
         magic = char.get_total_spells()
 
@@ -955,6 +957,10 @@ def display_hero_interface(combatant: Dict):
             <div class="stat-badge health">
                 <div style="font-size: 0.8rem;">❤️ PV</div>
                 <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+            </div>
+            <div class="stat-badge precision">
+                <div style="font-size: 0.8rem;">🎯 PRÉ</div>
+                <div style="font-weight: bold;">{precision}</div>
             </div>
             <div class="stat-badge attack">
                 <div style="font-size: 0.8rem;">⚔️ ATT</div>
@@ -995,6 +1001,7 @@ def display_enemy_interface(combatant: Dict):
     stats = char.get_stats_for_players(player_count)
     attack = stats['damage']
     defense = stats.get('defense', char.defense)
+    parade_tokens = char.current_parade_tokens
 
     st.markdown(f"""
     <div class="enemy-header">
@@ -1011,9 +1018,13 @@ def display_enemy_interface(combatant: Dict):
                 <div style="font-size: 0.8rem;">⚔️ ATT</div>
                 <div style="font-weight: bold;">{attack}</div>
             </div>
-            <div class="stat-badge defense">
-                <div style="font-size: 0.8rem;">🛡️ DEF</div>
+            <div class="stat-badge precision">
+                <div style="font-size: 0.8rem;">🎯 DEF</div>
                 <div style="font-weight: bold;">{defense}</div>
+            </div>
+            <div class="stat-badge defense">
+                <div style="font-size: 0.8rem;">🛡️ PAR</div>
+                <div style="font-weight: bold;">{parade_tokens}</div>
             </div>
         </div>
     </div>
@@ -1746,11 +1757,13 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     if is_animal_form:
         # Stats de la forme animale (brutes, sans équipements)
         max_hp = hero.health
+        precision = hero.precision
         attack = hero.damage
         magic = hero.spells  # FIX BUG 1: Sorts bruts de la forme (sans équipements)
     else:
         # Stats normales (avec équipements)
         max_hp = hero.get_total_health()
+        precision = hero.get_total_precision()
         attack = hero.get_total_damage()
         magic = hero.get_total_spells()  # FIX BUG 1: Déplacé dans le else
 
@@ -1782,7 +1795,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # Préparer stats_content (même format que premier onglet)
     stats_content = f"""
     <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • ⚔️ {attack} • 🛡️ {defense} • ✨ {magic}
+        ❤️ {current_hp}/{max_hp} • 🎯 {precision} • ⚔️ {attack} • 🛡️ {defense} • ✨ {magic}
     </div>"""
 
     # NOUVEAU - Vérifier buff Forme de loup (RÉUTILISE temporary_buffs API)
