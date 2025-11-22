@@ -227,12 +227,11 @@ def display_equipment_selection_expanders(equipment_list: List, category_name: s
                     # Toggle de la sélection
                     new_state = not is_selected
                     st.session_state[checkbox_key] = new_state
-
+                    
                     if new_state:
                         selected_equipment.append(equipment.code)
-
-                    # SUPPRIMÉ : st.rerun() causait retour au premier onglet
-                    # Streamlit rerun automatiquement lors du prochain cycle
+                    
+                    st.rerun()
                 
                 # Si déjà sélectionné, l'ajouter à la liste
                 if is_selected:

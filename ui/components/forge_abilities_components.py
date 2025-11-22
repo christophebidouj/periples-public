@@ -244,16 +244,16 @@ def display_potions_selection_section(hero_code: str) -> Dict[str, int]:
                 new_count = current_small + 1
             else:
                 new_count = 0
-
+            
             st.session_state[key_small] = new_count
-            # SUPPRIMÉ : st.rerun() causait retour au premier onglet
-
+            st.rerun()
+    
     with col2:
         if display_potion_card("large", current_large, hero_code):
             # Logique Grande : 0→1→0
             new_count = 1 if current_large == 0 else 0
             st.session_state[key_large] = new_count
-            # SUPPRIMÉ : st.rerun() causait retour au premier onglet
+            st.rerun()
     
     # Récapitulatif
     total = current_small + current_large
