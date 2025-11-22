@@ -946,10 +946,24 @@ def display_hero_interface(combatant: Dict):
 
     # Header héros style Arène
     current_hp = char.current_health
-    max_hp = char.get_total_health()
-    attack = char.get_total_damage()
+
+    # FIX BUG 1 (bis): En forme animale, utiliser stats brutes (même logique que display_hero_combat_card)
+    is_animal_form = (char.code == "P-1" and
+                      hasattr(char, 'current_form') and
+                      char.current_form in ["bear", "wolf"])
+
+    if is_animal_form:
+        # Stats de la forme animale (brutes, sans équipements)
+        max_hp = char.health
+        attack = char.damage
+        magic = char.spells
+    else:
+        # Stats normales (avec équipements)
+        max_hp = char.get_total_health()
+        attack = char.get_total_damage()
+        magic = char.get_total_spells()
+
     defense = char.get_total_parade()
-    magic = char.get_total_spells()
 
     st.markdown(f"""
     <div class="hero-header">
@@ -1179,7 +1193,19 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     current_spells = getattr(char, 'current_spells', None)
     if current_spells is None:
         current_spells = char.get_total_spells() if hasattr(char, 'get_total_spells') else 0
-    has_spells = ability.spell_cost <= current_spells
+
+    # FIX BUG 2: Retour forme humaine ne coûte PAS de sorts
+    is_transformation = (char.code == "P-1" and ability.ability_number in [1, 3])
+    current_form = getattr(char, 'current_form', 'human') if is_transformation else None
+    is_reverting_to_human = (
+        is_transformation and (
+            (ability.ability_number == 1 and current_form == "bear") or
+            (ability.ability_number == 3 and current_form == "wolf")
+        )
+    )
+
+    # Ne pas vérifier le coût en sorts pour le retour en forme humaine
+    has_spells = is_reverting_to_human or (ability.spell_cost <= current_spells)
 
     # Vérifier si une capacité magique a déjà été utilisée ce tour (règle p.24)
     prevents_attack = getattr(ability, 'prevents_attack', False)
@@ -1757,13 +1783,14 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         # Stats de la forme animale (brutes, sans équipements)
         max_hp = hero.health
         attack = hero.damage
+        magic = hero.spells  # FIX BUG 1: Sorts bruts de la forme (sans équipements)
     else:
         # Stats normales (avec équipements)
         max_hp = hero.get_total_health()
         attack = hero.get_total_damage()
+        magic = hero.get_total_spells()  # FIX BUG 1: Déplacé dans le else
 
     defense = hero.current_parade_tokens  # CORRIGÉ: Afficher jetons actuels, pas maximum
-    magic = hero.get_total_spells()
     is_alive = hero.is_alive()
 
     # Détermination border color selon l'état
