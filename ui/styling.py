@@ -35,6 +35,41 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         font-size: 2.5rem !important;
         color: {theme.title_color} !important;
     }}
+
+    /* Textes généraux Streamlit */
+    .stMarkdown, .stText {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Paragraphes et spans dans le contenu principal */
+    .main p, .main span, .main label {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Captions et petits textes */
+    .stCaption {{
+        color: {theme.title_color} !important;
+    }}
+
+    /* Labels de formulaires */
+    .stSelectbox label, .stCheckbox label, .stTextInput label {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Texte dans les widgets */
+    .stSelectbox > div > div, .stCheckbox > label > div {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Métriques */
+    .stMetric {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Messages d'info/warning/success */
+    .stAlert {{
+        color: {theme.text_primary} !important;
+    }}
     
     /* === ONGLETS SOBRES === */
     .stTabs [data-baseweb="tab-list"] {{
