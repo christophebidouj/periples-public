@@ -959,7 +959,7 @@ def display_hero_interface(combatant: Dict):
                 <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
             </div>
             <div class="stat-badge precision">
-                <div style="font-size: 0.8rem;">🎯 HIT</div>
+                <div style="font-size: 0.8rem;">🎯 PRE</div>
                 <div style="font-weight: bold;">{precision}</div>
             </div>
             <div class="stat-badge attack">
@@ -1795,7 +1795,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # Préparer stats_content (même format que premier onglet)
     stats_content = f"""
     <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • 🎯 {precision} HIT • ⚔️ {attack} • 🛡️ {defense} DEF • ✨ {magic}
+        ❤️ {current_hp}/{max_hp} • 🎯 {precision} PRE • ⚔️ {attack} • 🛡️ {defense} DEF • ✨ {magic}
     </div>"""
 
     # NOUVEAU - Vérifier buff Forme de loup (RÉUTILISE temporary_buffs API)
