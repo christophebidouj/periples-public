@@ -249,19 +249,19 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     /* === BOUTONS DE CARTES (responsive, harmonisé avec les cartes) === */
 
     /* Conteneur pour harmoniser largeur boutons avec cartes (max 260px, responsive) */
-    .card-width-button-container {
+    .card-width-button-container {{
         width: 100%;
         max-width: 260px;
         margin: 0 auto;
         display: block;
-    }
+    }}
 
     /* Boutons prennent 100% du conteneur (donc max 260px comme les cartes) */
-    .card-width-button-container .stButton > button {
+    .card-width-button-container .stButton > button {{
         width: 100% !important;
         margin: 0 !important;
         display: block !important;
-    }
+    }}
     </style>
     """, unsafe_allow_html=True)
 
