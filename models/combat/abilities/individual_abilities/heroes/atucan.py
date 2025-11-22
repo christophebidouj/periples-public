@@ -751,8 +751,3 @@ def _validate_on_import():
 
 # Exécuter la validation automatique
 _validation_success = _validate_on_import()
-
-# Message de fin de module
-if _validation_success:
-else:
-    print("⚠️ ATUCAN (P-3) - Module chargé avec erreurs")

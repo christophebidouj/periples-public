@@ -959,7 +959,7 @@ def display_hero_interface(combatant: Dict):
                 <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
             </div>
             <div class="stat-badge precision">
-                <div style="font-size: 0.8rem;">🎯 PRÉ</div>
+                <div style="font-size: 0.8rem;">🎯 HIT</div>
                 <div style="font-weight: bold;">{precision}</div>
             </div>
             <div class="stat-badge attack">
@@ -1019,11 +1019,11 @@ def display_enemy_interface(combatant: Dict):
                 <div style="font-weight: bold;">{attack}</div>
             </div>
             <div class="stat-badge precision">
-                <div style="font-size: 0.8rem;">🎯 DEF</div>
+                <div style="font-size: 0.8rem;">🎯 HIT</div>
                 <div style="font-weight: bold;">{defense}</div>
             </div>
             <div class="stat-badge defense">
-                <div style="font-size: 0.8rem;">🛡️ PAR</div>
+                <div style="font-size: 0.8rem;">🛡️ DEF</div>
                 <div style="font-weight: bold;">{parade_tokens}</div>
             </div>
         </div>
@@ -1795,7 +1795,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # Préparer stats_content (même format que premier onglet)
     stats_content = f"""
     <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • 🎯 {precision} • ⚔️ {attack} • 🛡️ {defense} • ✨ {magic}
+        ❤️ {current_hp}/{max_hp} • 🎯 {precision} HIT • ⚔️ {attack} • 🛡️ {defense} DEF • ✨ {magic}
     </div>"""
 
     # NOUVEAU - Vérifier buff Forme de loup (RÉUTILISE temporary_buffs API)
@@ -1891,11 +1891,11 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         # Fallback: gradient rouge si image non disponible
         background_style = "background: linear-gradient(135deg, #8b0000, #4a0000);"
 
-    # Préparer stats_content (CORRIGÉ : défense avec cible, parade avec bouclier)
+    # Préparer stats_content (CORRIGÉ : HIT pour seuil, DEF pour jetons)
     magic_indicator = " ✨" if enemy.is_magical else ""
     stats_content = f"""
     <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🎯 {defense} • 🛡️ {parade_tokens}{magic_indicator}
+        ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🎯 {defense} HIT • 🛡️ {parade_tokens} DEF{magic_indicator}
     </div>"""
 
     # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
