@@ -288,7 +288,7 @@ class Character(BaseModel):
     def transform_to_bear(self) -> bool:
         """
         Transforme Elneha en ours (P-9)
-        Stats officielles : Précision 4, Dégâts 2, Sorts 2, Santé 12, Parade 2
+        Stats officielles : Précision 4, Dégâts 2, Sorts 2, Santé 12, Parade 0
 
         Returns:
             bool: True si transformation réussie
@@ -306,8 +306,8 @@ class Character(BaseModel):
         self.spells = 2  # FIX: Stats officielles P-9
         self.health = 12
         self.current_health = 12  # Santé = max de la forme (pas de ratio)
-        self.max_parade_tokens = 2
-        self.current_parade_tokens = 2
+        self.max_parade_tokens = 0  # FIX: Formes animales n'ont PAS de jetons parade
+        self.current_parade_tokens = 0
 
         # Marquer la transformation
         self.current_form = "bear"
