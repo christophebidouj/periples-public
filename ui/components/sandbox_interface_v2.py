@@ -994,13 +994,13 @@ def display_enemy_interface(combatant: Dict):
     # CRITIQUE : Vérifier stun AVANT d'afficher les actions (fonction centralisée)
     is_stunned, stunned_turns = is_enemy_stunned(char)
 
-    # Stats ennemis
+    # Stats ennemis (RÉUTILISE APIs Enemy)
     current_hp = char.current_health
     max_hp = char.max_health
     player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
     stats = char.get_stats_for_players(player_count)
     attack = stats['damage']
-    defense = stats.get('defense', char.defense)
+    defense = char.defense  # Seuil HIT (à battre pour toucher) - TOUJOURS utiliser l'attribut direct
     parade_tokens = char.current_parade_tokens
 
     st.markdown(f"""
