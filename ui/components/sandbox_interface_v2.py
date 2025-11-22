@@ -1792,11 +1792,12 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     if not background_style:
         background_style = f"background: linear-gradient(135deg, {border_color}33, {border_color}11);"
 
-    # Préparer stats_content (même format que premier onglet)
+    # Préparer stats_content (2 stats par ligne pour meilleure lisibilité)
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 0.95rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.4;">
-        ❤️ {current_hp}/{max_hp} • 🎯 {precision} PRE • ⚔️ {attack} ATT<br/>
-        🛡️ {defense} DEF • ✨ {magic} MAG
+    <div style="font-family: monospace; font-size: 0.95rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
+        ❤️ {current_hp}/{max_hp} PV • 🎯 {precision} PRE<br/>
+        ⚔️ {attack} ATT • 🛡️ {defense} DEF<br/>
+        ✨ {magic} MAG
     </div>"""
 
     # NOUVEAU - Vérifier buff Forme de loup (RÉUTILISE temporary_buffs API)
@@ -1892,11 +1893,12 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         # Fallback: gradient rouge si image non disponible
         background_style = "background: linear-gradient(135deg, #8b0000, #4a0000);"
 
-    # Préparer stats_content (CORRIGÉ : HIT pour seuil, DEF pour jetons)
-    magic_indicator = " ✨" if enemy.is_magical else ""
+    # Préparer stats_content (2 stats par ligne pour meilleure lisibilité)
+    magic_line = "<br/>        ✨ MAG" if enemy.is_magical else ""
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
-        ❤️ {current_hp}/{max_hp} • ⚔️ {damage} • 🎯 {defense} HIT • 🛡️ {parade_tokens} DEF{magic_indicator}
+    <div style="font-family: monospace; font-size: 0.95rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
+        ❤️ {current_hp}/{max_hp} PV • ⚔️ {damage} ATT<br/>
+        🎯 {defense} HIT • 🛡️ {parade_tokens} DEF{magic_line}
     </div>"""
 
     # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
