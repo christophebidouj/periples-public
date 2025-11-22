@@ -19,6 +19,8 @@ from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
 from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon
 from ui.styling import get_hero_card_style
+from ui.components.combat_stats_analyzer import CombatStatsTracker, analyze_combat_results, generate_balance_recommendations
+from ui.components.combat_results_display import display_combat_results_panel
 
 # === CSS STYLE ARÈNE ===
 # ===tour par tour guidé ===
