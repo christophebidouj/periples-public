@@ -622,6 +622,17 @@ def configure_combat():
                 # DEEPCOPY pour avoir une instance unique par ennemi
                 enemy = deepcopy(enemy_template)
                 enemy.initialize_for_combat(player_count)
+
+                # NOUVEAU : Appliquer les overrides de stats si présents
+                if 'enemy_overrides' in st.session_state:
+                    if enemy_code in st.session_state.enemy_overrides:
+                        overrides = st.session_state.enemy_overrides[enemy_code]
+                        if 'max_health' in overrides:
+                            enemy.max_health = overrides['max_health']
+                            enemy.current_health = overrides['max_health']
+                        if 'base_damage' in overrides:
+                            enemy.base_damage = overrides['base_damage']
+
                 combatants.append({
                     'character': enemy,
                     'faction': 'enemy',
@@ -2353,6 +2364,11 @@ def main_sandbox_v2():
     # Bannière de guidance
     display_guidance_banner()
 
+    # NOUVEAU : Avertissement si overrides actifs
+    if st.session_state.get('enemy_overrides'):
+        modified_count = len(st.session_state.enemy_overrides)
+        st.warning(f"⚙️ {modified_count} ennemi(s) avec stats modifiées (recommandations d'équilibrage appliquées)")
+
     # === PHASE CONFIG ===
     if phase == 'CONFIG':
         if configure_combat():
@@ -2398,6 +2414,60 @@ def main_sandbox_v2():
 
         return
 
+    # === PHASES VICTORY / DEFEAT ===
+    elif phase in ['VICTORY', 'DEFEAT']:
+        # Afficher résultats du combat
+        if 'sandbox_v2_combat_result' in st.session_state:
+            result = st.session_state.sandbox_v2_combat_result
+
+            # Collecter stats simplifiées depuis le résultat final
+            from ui.components.combat_stats_analyzer import CombatStatsTracker
+
+            tracker = CombatStatsTracker()
+            tracker.stats['start_round'] = 1
+            tracker.stats['end_round'] = result['end_round']
+            tracker.stats['victory'] = result['victory']
+
+            # Initialiser stats des personnages
+            for hero in result['heroes']:
+                tracker.initialize_hero(hero)
+                # Stats finales
+                hero_stats = tracker.stats['heroes'][hero.code]
+                hero_stats['final_health'] = hero.current_health
+                hero_stats['survived'] = hero.is_alive()
+
+            for enemy in result['enemies']:
+                tracker.initialize_enemy(enemy)
+                # Stats finales
+                enemy_stats = tracker.stats['enemies'][enemy.code]
+                enemy_stats['final_health'] = enemy.current_health
+                enemy_stats['survived'] = enemy.is_alive()
+
+            # Analyser et afficher
+            analysis = analyze_combat_results(tracker.stats)
+
+            # Générer recommandations
+            player_count = len(result['heroes'])
+            recommendations = generate_balance_recommendations(
+                analysis, result['enemies'], player_count
+            )
+
+            # Afficher panneau complet
+            display_combat_results_panel(
+                tracker.stats, analysis, recommendations,
+                result['heroes'], result['enemies']
+            )
+
+            st.markdown("---")
+
+            # Bouton pour nouveau combat
+            if st.button("🔄 Nouveau Combat", type="primary", use_container_width=True):
+                st.session_state.sandbox_v2_phase = 'CONFIG'
+                st.rerun()
+
+        # Note : Le log sera affiché en bas (section commune)
+        return
+
     # === PHASE COMBAT ===
     elif phase == 'COMBAT':
         # Lire directement depuis initiative_setting (source unique de vérité)
@@ -2423,19 +2493,28 @@ def main_sandbox_v2():
         alive_heroes = [c['character'] for c in hero_combatants if c['character'].is_alive()]
         alive_enemies = [c['character'] for c in enemy_combatants if c['character'].is_alive()]
 
+        # Détection fin de combat
         if not alive_heroes:
-            st.error("💀 DÉFAITE - Tous les héros sont tombés !")
-            if st.button("🔄 Recommencer", type="primary"):
-                st.session_state.sandbox_v2_phase = 'CONFIG'
-                st.rerun()
-            return
+            st.session_state.sandbox_v2_phase = 'DEFEAT'
+            # Sauvegarder infos pour analyse
+            st.session_state.sandbox_v2_combat_result = {
+                'victory': False,
+                'end_round': st.session_state.sandbox_v2_round_number,
+                'heroes': [c['character'] for c in hero_combatants],
+                'enemies': [c['character'] for c in enemy_combatants],
+            }
+            st.rerun()
 
         if not alive_enemies:
-            st.success("🎉 VICTOIRE - Tous les ennemis sont vaincus !")
-            if st.button("🔄 Nouveau Combat", type="primary"):
-                st.session_state.sandbox_v2_phase = 'CONFIG'
-                st.rerun()
-            return
+            st.session_state.sandbox_v2_phase = 'VICTORY'
+            # Sauvegarder infos pour analyse
+            st.session_state.sandbox_v2_combat_result = {
+                'victory': True,
+                'end_round': st.session_state.sandbox_v2_round_number,
+                'heroes': [c['character'] for c in hero_combatants],
+                'enemies': [c['character'] for c in enemy_combatants],
+            }
+            st.rerun()
 
         # Tour actuel
         current = get_current_combatant()
@@ -2474,8 +2553,10 @@ def main_sandbox_v2():
     display_recent_actions()
 
     # === JOURNAL DE COMBAT (historique complet) ===
-    if st.session_state.sandbox_v2_log and phase == 'COMBAT':
-        with st.expander("📜 Journal de Combat (Historique complet)", expanded=False):
+    if st.session_state.sandbox_v2_log and phase in ['COMBAT', 'VICTORY', 'DEFEAT']:
+        # Expanded par défaut si combat terminé pour garder le log visible
+        is_expanded = (phase in ['VICTORY', 'DEFEAT'])
+        with st.expander("📜 Journal de Combat (Historique complet)", expanded=is_expanded):
             display_combat_log_colored()
 
     # === BOUTON NOUVEAU ROUND (MODE MANUEL) ===
@@ -2591,6 +2672,14 @@ def main_sandbox_v2():
                 st.session_state.sandbox_v2_action_state = None
                 st.session_state.sandbox_v2_current_actor = None
                 st.session_state.sandbox_v2_combatants = []
+
+                # NOUVEAU : Réinitialiser les stats modifiées des ennemis
+                if 'enemy_overrides' in st.session_state:
+                    del st.session_state.enemy_overrides
+
+                # NOUVEAU : Supprimer résultat du combat précédent
+                if 'sandbox_v2_combat_result' in st.session_state:
+                    del st.session_state.sandbox_v2_combat_result
 
                 # CRITIQUE : Réinitialiser les compteurs des individual abilities (singleton cache)
                 from models.combat.abilities.individual_abilities import reset_all_combat_uses
