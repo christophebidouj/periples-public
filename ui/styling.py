@@ -161,6 +161,17 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
     }}
 
+    /* Selectbox - Chevron (icône dropdown) */
+    .stSelectbox svg {{
+        color: {theme.text_primary} !important;
+        fill: {theme.text_primary} !important;
+    }}
+
+    /* Selectbox - Conteneur du chevron */
+    .stSelectbox [data-baseweb="select"] > div {{
+        color: {theme.text_primary} !important;
+    }}
+
     /* Selectbox - Menu déroulant (options) */
     [data-baseweb="select"] {{
         color: {theme.text_primary} !important;
