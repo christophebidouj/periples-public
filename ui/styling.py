@@ -58,11 +58,11 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         tooltip_border = "none"
         tooltip_shadow = "0 2px 8px rgba(0, 0, 0, 0.15)"
     elif theme_name == "Parchemin V2":
-        # Tooltips adaptés au fond beige avec les couleurs du thème V2
+        # Tooltips adaptés au fond beige avec cadre jaune subtil
         tooltip_bg = "#d4c4a4"  # Beige plus foncé pour contraste
         tooltip_text = theme.text_primary
-        tooltip_border = f"2px solid {theme.title_color}"
-        tooltip_shadow = f"0 2px 8px {hex_to_rgba(theme.title_color, 0.3)}"
+        tooltip_border = "2px solid #d4a017"  # Cadre jaune or subtil
+        tooltip_shadow = "0 2px 8px rgba(212, 160, 23, 0.3)"  # Ombre jaune subtile
     else:
         # Fond distinct basé sur tab_background pour meilleure visibilité
         tooltip_bg = theme.tab_background
