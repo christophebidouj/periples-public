@@ -562,6 +562,13 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
             color: #3b2f1c !important;
             font-weight: 500 !important;
         }
+
+        /* Texte des boutons BLANC pour Parchemin */
+        .stButton > button,
+        button[kind="primary"],
+        button[kind="secondary"] {
+            color: #ffffff !important;
+        }
         </style>
         """, unsafe_allow_html=True)
 
