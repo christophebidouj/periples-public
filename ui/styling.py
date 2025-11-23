@@ -43,21 +43,30 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* === OVERRIDE GLOBAL STYLES INLINE === */
     /* Force TOUS les textes à être visibles (override même styles inline) */
-    .main span[style*="color"] {{
+    /* SAUF dans le log de combat qui a ses propres couleurs */
+    .main span[style*="color"]:not(.combat-log-container *) {{
         color: {theme.text_primary} !important;
     }}
 
-    .main p[style*="color"] {{
+    .main p[style*="color"]:not(.combat-log-container *) {{
         color: {theme.text_primary} !important;
     }}
 
-    .main div[style*="color"] {{
+    .main div[style*="color"]:not(.combat-log-container *) {{
         color: {theme.text_primary} !important;
     }}
 
     /* Headers avec styles inline (h3, h4, etc.) */
-    .main h3[style*="color"], .main h4[style*="color"], .main h5[style*="color"] {{
+    .main h3[style*="color"]:not(.combat-log-container *),
+    .main h4[style*="color"]:not(.combat-log-container *),
+    .main h5[style*="color"]:not(.combat-log-container *) {{
         color: {theme.text_primary} !important;
+    }}
+
+    /* Log de combat : Préserver TOUTES les couleurs inline */
+    .combat-log-container,
+    .combat-log-container * {{
+        /* Ne pas override les couleurs définies dans le HTML du log */
     }}
 
     /* === COMPOSANTS STREAMLIT NATIFS === */

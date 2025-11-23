@@ -247,10 +247,10 @@ def display_combat_log(log_lines: List[str]):
     
     # Construction du conteneur HTML avec scroll
     log_html = """
-    <div style='max-height: 600px; overflow-y: auto; padding: 15px; 
-                background: rgba(244,228,188,0.3); 
+    <div class='combat-log-container' style='max-height: 600px; overflow-y: auto; padding: 15px;
+                background: rgba(244,228,188,0.3);
                 border: 1px solid rgba(139,69,19,0.2);
-                border-radius: 10px; 
+                border-radius: 10px;
                 font-family: monospace;'>
     """
     log_html += "".join(formatted_lines)
