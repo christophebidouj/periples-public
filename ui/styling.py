@@ -61,8 +61,9 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         # Fond distinct basé sur tab_background pour meilleure visibilité
         tooltip_bg = theme.tab_background
         tooltip_text = theme.text_primary
-        tooltip_border = f"3px solid {theme.gold}"
-        tooltip_shadow = f"0 4px 12px {hex_to_rgba(theme.gold, 0.3)}"
+        # Bordure subtile avec la couleur du thème
+        tooltip_border = f"2px solid {theme.title_color}"
+        tooltip_shadow = f"0 2px 8px {hex_to_rgba(theme.title_color, 0.4)}"
 
     st.markdown(f"""
     <style>
@@ -217,30 +218,28 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Tooltip container */
+    /* Tooltip container - bordure uniquement sur le conteneur principal */
     [role="tooltip"] {{
         background-color: {tooltip_bg} !important;
         color: {tooltip_text} !important;
         border: {tooltip_border} !important;
         padding: 8px 12px !important;
         box-shadow: {tooltip_shadow} !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
     }}
 
-    /* Tout le contenu du tooltip */
+    /* Tout le contenu du tooltip - pas de bordure pour éviter les doublons */
     [role="tooltip"] * {{
         color: {tooltip_text} !important;
         background-color: transparent !important;
         border: none !important;
     }}
 
-    /* Tooltips Streamlit natifs */
+    /* Tooltips Streamlit natifs - fond et texte seulement */
     .stTooltipContent, .stTooltipInner {{
-        background-color: {tooltip_bg} !important;
+        background-color: transparent !important;
         color: {tooltip_text} !important;
-        border: {tooltip_border} !important;
-        box-shadow: {tooltip_shadow} !important;
-        border-radius: 8px !important;
+        border: none !important;
     }}
 
     /* Force tous les éléments dans les tooltips */
@@ -249,11 +248,12 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {tooltip_text} !important;
         border: {tooltip_border} !important;
         box-shadow: {tooltip_shadow} !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
     }}
 
     [data-baseweb="tooltip"] * {{
         color: {tooltip_text} !important;
+        background-color: transparent !important;
         border: none !important;
     }}
 
