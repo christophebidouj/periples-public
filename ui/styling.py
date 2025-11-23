@@ -287,10 +287,21 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     /* États focus et active - utilise couleurs du thème */
     .stButton > button:focus,
     .stButton > button:active,
+    .stButton > button:focus-visible,
     button:focus,
-    button:active {{
+    button:active,
+    button:focus-visible,
+    button[kind="primary"]:focus,
+    button[kind="primary"]:active,
+    button[kind="primary"]:focus-visible,
+    button[kind="secondary"]:focus,
+    button[kind="secondary"]:active,
+    button[kind="secondary"]:focus-visible {{
         outline: none !important;
+        outline-color: transparent !important;
+        outline-width: 0 !important;
         border-color: {theme.title_color} !important;
+        box-shadow: none !important;
     }}
 
     /* Classes spécifiques pour différents types de boutons */
