@@ -187,7 +187,10 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Tooltips (help text au survol) - OVERRIDE COMPLET */
+    /* === TOOLTIPS (help text au survol) - OVERRIDE UNIVERSEL === */
+    /* Applique fond noir + texte blanc sur TOUS les thèmes pour lisibilité */
+
+    /* Icône du tooltip */
     .stTooltipIcon {{
         color: {theme.text_primary} !important;
     }}
@@ -196,37 +199,38 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Tooltip container */
-    [role="tooltip"] {{
+    /* Tooltip container - tous les sélecteurs possibles */
+    [role="tooltip"],
+    [data-baseweb="tooltip"],
+    .stTooltip,
+    .stTooltipContent,
+    .stTooltipInner,
+    div[data-baseweb="popover"] > div[role="tooltip"] {{
         background-color: rgba(0, 0, 0, 0.95) !important;
         color: #ffffff !important;
-        border: 2px solid {theme.title_color} !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
         padding: 8px 12px !important;
     }}
 
-    /* Tout le contenu du tooltip en blanc */
-    [role="tooltip"] * {{
+    /* Force TOUT le contenu des tooltips en blanc (très agressif) */
+    [role="tooltip"] *,
+    [role="tooltip"] span,
+    [role="tooltip"] div,
+    [role="tooltip"] p,
+    [data-baseweb="tooltip"] *,
+    [data-baseweb="tooltip"] span,
+    [data-baseweb="tooltip"] div,
+    [data-baseweb="tooltip"] p,
+    .stTooltipContent *,
+    .stTooltipInner * {{
         color: #ffffff !important;
         background-color: transparent !important;
     }}
 
-    [role="tooltip"] > div {{
-        color: #ffffff !important;
-    }}
-
-    /* Tooltips Streamlit natifs */
-    .stTooltipContent, .stTooltipInner {{
+    /* Tooltips des boutons spécifiquement */
+    button[title]:hover::after,
+    .stButton button[data-testid]:hover + [role="tooltip"] {{
         background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
-    }}
-
-    /* Force tous les éléments dans les tooltips */
-    [data-baseweb="tooltip"] {{
-        background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
-    }}
-
-    [data-baseweb="tooltip"] * {{
         color: #ffffff !important;
     }}
     
