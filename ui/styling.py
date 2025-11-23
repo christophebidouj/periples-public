@@ -230,8 +230,21 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: #ffffff !important;
     }}
 
-    /* OVERRIDE FINAL - Force blanc pour Parchemin (où text_primary est foncé) */
-    [role="tooltip"], [role="tooltip"] *, [data-baseweb="tooltip"], [data-baseweb="tooltip"] * {{
+    /* OVERRIDE FINAL - Force blanc pour Parchemin (spécificité maximale) */
+    body [role="tooltip"],
+    body [role="tooltip"] *,
+    body [role="tooltip"] span,
+    body [role="tooltip"] div,
+    body [role="tooltip"] p,
+    body [data-baseweb="tooltip"],
+    body [data-baseweb="tooltip"] *,
+    body [data-baseweb="tooltip"] span,
+    body [data-baseweb="tooltip"] div,
+    body [data-baseweb="tooltip"] p,
+    .stApp [role="tooltip"],
+    .stApp [role="tooltip"] *,
+    .stApp [data-baseweb="tooltip"],
+    .stApp [data-baseweb="tooltip"] * {{
         color: #ffffff !important;
     }}
 
@@ -464,10 +477,12 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* === HARMONISATION HAUTEUR BOUTON RESET === */
     /* Augmente la hauteur des boutons use_container_width pour harmoniser avec bandeau */
-    .stButton > button[style*="width"] {{
-        min-height: 65px !important;
-        padding-top: 18px !important;
-        padding-bottom: 18px !important;
+    .stButton > button[style*="width"],
+    button[style*="width: 100%"],
+    button[data-testid*="baseButton"][style*="width"] {{
+        min-height: 72px !important;
+        padding-top: 20px !important;
+        padding-bottom: 20px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
