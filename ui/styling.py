@@ -476,7 +476,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
-    # FIX SPÉCIFIQUE PARCHEMIN - Inputs visibles (text_primary est foncé sur ce thème)
+    # FIX SPÉCIFIQUE PARCHEMIN - Inputs + Tooltips visibles (text_primary est foncé sur ce thème)
     if theme_name == "Parchemin":
         st.markdown("""
         <style>
@@ -487,6 +487,21 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
             background-color: rgba(139, 0, 26, 0.15) !important;
             color: #3b2f1c !important;
             font-weight: 500 !important;
+        }
+
+        /* Tooltips fond blanc pour Parchemin (texte foncé lisible) */
+        [role="tooltip"],
+        [data-baseweb="tooltip"],
+        .stTooltipContent,
+        .stTooltipInner {
+            background-color: #ffffff !important;
+            color: #3b2f1c !important;
+            border: 2px solid #4a4a4a !important;
+        }
+
+        [role="tooltip"] *,
+        [data-baseweb="tooltip"] * {
+            color: #3b2f1c !important;
         }
         </style>
         """, unsafe_allow_html=True)
