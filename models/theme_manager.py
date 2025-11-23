@@ -244,6 +244,54 @@ class ThemeManager:
             bronze="#cd7f32",
             selected_border="#27ae60",
             available_border="#4a9b5f"
+        ),
+
+        "Azur": Theme(
+            name="Azur",
+            # Couleurs principales (tons bleus clairs et cyan)
+            background="#0a1628",
+            text_primary="#e6f4ff",
+            title_color="#a3d5ff",
+            button_text_color="#ffffff",  # Blanc sur bleu
+
+            # Boutons principaux (bleu azure)
+            button_primary="#1e5a8e",
+            button_primary_hover="#2674b3",
+            button_secondary="#134074",
+            button_secondary_hover="#1e5a8e",
+
+            # Équipes (cyan vif / orange corail)
+            hero_color="#00b4d8",
+            hero_color_light="#48cae4",
+            enemy_color="#ff6b35",
+            enemy_color_light="#ff8c61",
+
+            # Onglets (bleu marine)
+            tab_background="#1a2f4a",
+            tab_active="#00b4d8",
+
+            # Boutons spécialisés (palette bleu harmonieuse)
+            button_success="#06d6a0",
+            button_success_hover="#1ae5b0",
+            button_info="#00b4d8",
+            button_info_hover="#48cae4",
+            button_warning="#ffa500",
+            button_warning_hover="#ffb733",
+            button_danger="#ef476f",
+            button_danger_hover="#f77593",
+            button_magic="#a78bfa",
+            button_magic_hover="#c4b5fd",
+            button_neutral="#64748b",
+            button_neutral_hover="#94a3b8",
+            button_gold="#fbbf24",
+            button_gold_hover="#fcd34d",
+
+            # Utilitaires
+            gold="#fbbf24",
+            silver="#cbd5e1",
+            bronze="#fb923c",
+            selected_border="#00b4d8",
+            available_border="#06d6a0"
         )
     }
 
@@ -282,5 +330,6 @@ class ThemeManager:
             "Parchemin": "🎲 Parchemin",
             "Professionnel": "💼 Professionnel",
             "Fantasy": "✨ Fantasy",
-            "Nature": "🌿 Nature"
+            "Nature": "🌿 Nature",
+            "Azur": "🌊 Azur"
         }
