@@ -106,6 +106,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     .stExpander {{
         border: 1px solid {theme.title_color} !important;
         background-color: rgba(255,255,255,0.05) !important;
+        border-radius: 12px !important;
     }}
 
     .stExpander summary {{
@@ -144,6 +145,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         font-weight: 500 !important;
         padding: 0.25rem 0.5rem !important;
         min-height: 2rem !important;
+        border-radius: 8px !important;
     }}
 
     /* Largeur réduite des zones de saisie */
@@ -156,6 +158,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         background-color: rgba(255,255,255,0.1) !important;
         color: {theme.text_primary} !important;
         border: 1px solid {theme.title_color} !important;
+        border-radius: 8px !important;
     }}
 
     /* Selectbox - Menu déroulant (options) */
@@ -172,12 +175,15 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     ul[role="listbox"] {{
         background-color: {theme.background} !important;
         border: 2px solid {theme.title_color} !important;
+        border-radius: 10px !important;
     }}
 
     /* Selectbox - Options individuelles */
     [role="option"] {{
         background-color: {theme.background} !important;
         color: {theme.text_primary} !important;
+        border-radius: 6px !important;
+        margin: 2px 4px !important;
     }}
 
     /* Selectbox - Option survolée */
@@ -261,6 +267,32 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {tooltip_text} !important;
         background-color: transparent !important;
         border: none !important;
+    }}
+
+    /* === ARRONDIS POUR TOUS LES ÉLÉMENTS === */
+    /* Containers et blocs */
+    [data-testid="stVerticalBlock"] > div[data-testid="element-container"] {{
+        border-radius: 10px;
+    }}
+
+    /* Colonnes */
+    [data-testid="column"] {{
+        border-radius: 10px;
+    }}
+
+    /* Containers généraux */
+    .stContainer {{
+        border-radius: 10px !important;
+    }}
+
+    /* Checkboxes et radio buttons */
+    [data-testid="stCheckbox"], [data-testid="stRadio"] {{
+        border-radius: 8px;
+    }}
+
+    /* Sliders */
+    [data-testid="stSlider"] {{
+        border-radius: 8px;
     }}
 
     /* === ONGLETS SOBRES === */
