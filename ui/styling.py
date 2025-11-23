@@ -195,13 +195,13 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Tooltips (help text au survol) */
+    /* Tooltips (help text au survol) - toujours blanc pour lisibilité sur fond noir */
     .stTooltipIcon {{
-        color: {theme.text_primary} !important;
+        color: #ffffff !important;
     }}
 
     [data-testid="stTooltipHoverTarget"] {{
-        color: {theme.text_primary} !important;
+        color: #ffffff !important;
     }}
 
     /* Tooltip container */
@@ -283,7 +283,17 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         transform: translateY(-2px);
         box-shadow: 0 6px 12px {shadow_primary_hover};
     }}
-    
+
+    /* Désactive outline navigateur sur focus/active (tous boutons, tous thèmes) */
+    button:focus,
+    button:active,
+    button:focus-visible,
+    .stButton > button:focus,
+    .stButton > button:active,
+    .stButton > button:focus-visible {{
+        outline: none !important;
+    }}
+
     /* Classes spécifiques pour différents types de boutons */
 
     /* Boutons verts (succès/validation) */
