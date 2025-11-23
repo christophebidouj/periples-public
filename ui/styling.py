@@ -7,6 +7,23 @@ import streamlit as st
 from typing import Dict
 from models.theme_manager import ThemeManager
 
+def hex_to_rgba(hex_color: str, alpha: float) -> str:
+    """
+    Convertit une couleur hexadécimale en rgba avec transparence
+
+    Args:
+        hex_color: Couleur au format #RRGGBB
+        alpha: Valeur de transparence (0.0 à 1.0)
+
+    Returns:
+        str: Couleur au format rgba(r, g, b, alpha)
+    """
+    hex_color = hex_color.lstrip('#')
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
 def apply_fantasy_theme(theme_name: str = "Parchemin"):
     """
     Applique le thème fantasy avec système de thèmes dynamique
@@ -15,6 +32,24 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         theme_name: Nom du thème à appliquer ("Parchemin" ou "Professionnel")
     """
     theme = ThemeManager.get_theme(theme_name)
+
+    # Générer les ombres basées sur les couleurs du thème
+    shadow_primary = hex_to_rgba(theme.button_primary, 0.4)
+    shadow_primary_hover = hex_to_rgba(theme.button_primary, 0.6)
+    shadow_success = hex_to_rgba(theme.button_success, 0.4)
+    shadow_success_hover = hex_to_rgba(theme.button_success, 0.6)
+    shadow_info = hex_to_rgba(theme.button_info, 0.4)
+    shadow_info_hover = hex_to_rgba(theme.button_info, 0.6)
+    shadow_warning = hex_to_rgba(theme.button_warning, 0.4)
+    shadow_warning_hover = hex_to_rgba(theme.button_warning, 0.6)
+    shadow_danger = hex_to_rgba(theme.button_danger, 0.4)
+    shadow_danger_hover = hex_to_rgba(theme.button_danger, 0.6)
+    shadow_magic = hex_to_rgba(theme.button_magic, 0.4)
+    shadow_magic_hover = hex_to_rgba(theme.button_magic, 0.6)
+    shadow_neutral = hex_to_rgba(theme.button_neutral, 0.4)
+    shadow_neutral_hover = hex_to_rgba(theme.button_neutral, 0.6)
+    shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
+    shadow_gold_hover = hex_to_rgba(theme.button_gold, 0.6)
 
     st.markdown(f"""
     <style>
@@ -226,7 +261,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* === SYSTÈME DE BOUTONS FLEXIBLE === */
 
-    /* Bouton bordeaux par défaut (conservation de l'existant) */
+    /* Bouton par défaut (ombre adaptée au thème) */
     .stButton > button:not([class*="btn-"]) {{
         background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary});
         color: {theme.button_text_color};
@@ -235,14 +270,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         font-weight: bold;
         font-family: 'Cinzel', serif;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-        box-shadow: 0 4px 8px rgba(128,0,32,0.4);
+        box-shadow: 0 4px 8px {shadow_primary};
         transition: all 0.3s ease;
     }}
 
     .stButton > button:not([class*="btn-"]):hover {{
         background: linear-gradient(135deg, {theme.button_primary_hover}, {theme.button_primary});
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(128,0,32,0.6);
+        box-shadow: 0 6px 12px {shadow_primary_hover};
     }}
     
     /* Classes spécifiques pour différents types de boutons */
@@ -255,14 +290,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
-        box-shadow: 0 4px 8px rgba(34,139,34,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_success} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-success:hover {{
         background: linear-gradient(135deg, {theme.button_success_hover}, {theme.button_success}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(34,139,34,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_success_hover} !important;
     }}
 
     /* Boutons bleus (info/neutre) */
@@ -273,14 +308,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
-        box-shadow: 0 4px 8px rgba(65,105,225,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_info} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-info:hover {{
         background: linear-gradient(135deg, {theme.button_info_hover}, {theme.button_info}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(65,105,225,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_info_hover} !important;
     }}
 
     /* Boutons orange (avertissement) */
@@ -291,14 +326,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
-        box-shadow: 0 4px 8px rgba(255,140,0,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_warning} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-warning:hover {{
         background: linear-gradient(135deg, {theme.button_warning_hover}, {theme.button_warning}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(255,140,0,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_warning_hover} !important;
     }}
 
     /* Boutons rouges (danger/suppression) */
@@ -309,14 +344,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
-        box-shadow: 0 4px 8px rgba(220,20,60,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_danger} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-danger:hover {{
         background: linear-gradient(135deg, {theme.button_danger_hover}, {theme.button_danger}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(220,20,60,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_danger_hover} !important;
     }}
 
     /* Boutons violets (capacités magiques) */
@@ -327,14 +362,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
-        box-shadow: 0 4px 8px rgba(138,43,226,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_magic} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-magic:hover {{
         background: linear-gradient(135deg, {theme.button_magic_hover}, {theme.button_magic}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(138,43,226,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_magic_hover} !important;
     }}
 
     /* Boutons gris (désactivé/neutre) */
@@ -345,14 +380,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
-        box-shadow: 0 4px 8px rgba(112,128,144,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_neutral} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-neutral:hover {{
         background: linear-gradient(135deg, {theme.button_neutral_hover}, {theme.button_neutral}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(112,128,144,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_neutral_hover} !important;
     }}
 
     /* Boutons dorés (premium/spécial) */
@@ -364,14 +399,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         font-weight: bold !important;
         font-family: 'Cinzel', serif !important;
         text-shadow: 1px 1px 2px rgba(255,255,255,0.3) !important;
-        box-shadow: 0 4px 8px rgba(255,215,0,0.4) !important;
+        box-shadow: 0 4px 8px {shadow_gold} !important;
         transition: all 0.3s ease !important;
     }}
 
     .btn-gold:hover {{
         background: linear-gradient(135deg, {theme.button_gold_hover}, {theme.button_gold}) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 12px rgba(255,215,0,0.6) !important;
+        box-shadow: 0 6px 12px {shadow_gold_hover} !important;
     }}
     
     /* Application des classes aux boutons Streamlit selon leur type */
