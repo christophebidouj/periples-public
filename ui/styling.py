@@ -124,7 +124,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Tooltips (help text au survol) */
+    /* Tooltips (help text au survol) - OVERRIDE COMPLET */
     .stTooltipIcon {{
         color: {theme.text_primary} !important;
     }}
@@ -133,14 +133,38 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
+    /* Tooltip container */
     [role="tooltip"] {{
-        background-color: rgba(0, 0, 0, 0.9) !important;
-        color: {theme.text_primary} !important;
-        border: 1px solid {theme.title_color} !important;
+        background-color: rgba(0, 0, 0, 0.95) !important;
+        color: #ffffff !important;
+        border: 2px solid {theme.title_color} !important;
+        padding: 8px 12px !important;
+    }}
+
+    /* Tout le contenu du tooltip en blanc */
+    [role="tooltip"] * {{
+        color: #ffffff !important;
+        background-color: transparent !important;
     }}
 
     [role="tooltip"] > div {{
-        color: {theme.text_primary} !important;
+        color: #ffffff !important;
+    }}
+
+    /* Tooltips Streamlit natifs */
+    .stTooltipContent, .stTooltipInner {{
+        background-color: rgba(0, 0, 0, 0.95) !important;
+        color: #ffffff !important;
+    }}
+
+    /* Force tous les éléments dans les tooltips */
+    [data-baseweb="tooltip"] {{
+        background-color: rgba(0, 0, 0, 0.95) !important;
+        color: #ffffff !important;
+    }}
+
+    [data-baseweb="tooltip"] * {{
+        color: #ffffff !important;
     }}
     
     /* === ONGLETS SOBRES === */
