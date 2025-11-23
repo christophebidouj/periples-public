@@ -19,7 +19,6 @@
 2. project_knowledge_search "APIs classe_concernée"
 3. project_knowledge_search "gestionnaire nom_fonctionnalité"
 4. Lire documentation_architecture_périples.md
-5. Vérifier Plan-d-action.md pour règles
 ```
 
 ### **Étape 2 : Checklist Vérification**
