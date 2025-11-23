@@ -102,6 +102,54 @@ class ThemeManager:
             available_border="#5a9f5a"
         ),
 
+        "Parchemin Nuit": Theme(
+            name="Parchemin Nuit",
+            # Couleurs principales (fond sombre avec palette parchemin)
+            background="#2a2418",  # Brun très foncé (inverse du beige clair)
+            text_primary="#f4e4bc",  # Beige clair (l'ancien background devient le texte)
+            title_color="#d4af37",  # Or (du gold de Parchemin)
+            button_text_color="#ffffff",  # Blanc pour contraste
+
+            # Boutons principaux (bordeaux de Parchemin - gardés identiques)
+            button_primary="#a0002a",
+            button_primary_hover="#c00035",
+            button_secondary="#8b001f",
+            button_secondary_hover="#a0002a",
+
+            # Équipes (gardées de Parchemin)
+            hero_color="#228b22",
+            hero_color_light="#006400",
+            enemy_color="#8b0000",
+            enemy_color_light="#dc143c",
+
+            # Onglets (tons brun moyen)
+            tab_background="#3a2f1e",
+            tab_active="#d4af37",
+
+            # Boutons spécialisés (tons chauds parchemin)
+            button_success="#228b22",
+            button_success_hover="#32cd32",
+            button_info="#4169e1",
+            button_info_hover="#6495ed",
+            button_warning="#ff8c00",
+            button_warning_hover="#ffa500",
+            button_danger="#dc143c",
+            button_danger_hover="#ff1493",
+            button_magic="#7b2cbf",
+            button_magic_hover="#8e44ad",
+            button_neutral="#708090",
+            button_neutral_hover="#778899",
+            button_gold="#ffd700",
+            button_gold_hover="#ffec8c",
+
+            # Utilitaires
+            gold="#d4af37",
+            silver="#c0c0c0",
+            bronze="#cd7f32",
+            selected_border="#d4af37",
+            available_border="#228b22"
+        ),
+
         "Professionnel": Theme(
             name="Professionnel",
             # Couleurs principales (tons sombres professionnels)
