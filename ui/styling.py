@@ -24,12 +24,12 @@ def hex_to_rgba(hex_color: str, alpha: float) -> str:
     b = int(hex_color[4:6], 16)
     return f"rgba({r}, {g}, {b}, {alpha})"
 
-def apply_fantasy_theme(theme_name: str = "Parchemin"):
+def apply_fantasy_theme(theme_name: str = "Professionnel"):
     """
     Applique le thème fantasy avec système de thèmes dynamique
 
     Args:
-        theme_name: Nom du thème à appliquer ("Parchemin" ou "Professionnel")
+        theme_name: Nom du thème à appliquer ("Professionnel", "Parchemin V2", etc.)
     """
     theme = ThemeManager.get_theme(theme_name)
 
@@ -51,13 +51,8 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
     shadow_gold_hover = hex_to_rgba(theme.button_gold, 0.6)
 
-    # Couleurs tooltips - Thèmes à fond clair (Parchemin, Parchemin V2) vs thèmes sombres
-    if theme_name == "Parchemin":
-        tooltip_bg = "#f5ead6"
-        tooltip_text = "#3b2f1c"
-        tooltip_border = "none"
-        tooltip_shadow = "0 2px 8px rgba(0, 0, 0, 0.15)"
-    elif theme_name == "Parchemin V2":
+    # Couleurs tooltips - Thème Parchemin V2 (fond clair) vs thèmes sombres
+    if theme_name == "Parchemin V2":
         # Tooltips adaptés au fond beige avec cadre jaune subtil
         tooltip_bg = "#d4c4a4"  # Beige plus foncé pour contraste
         tooltip_text = theme.text_primary
@@ -613,28 +608,6 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
-    # FIX SPÉCIFIQUE PARCHEMIN - Inputs visibles (text_primary est foncé sur ce thème)
-    if theme_name == "Parchemin":
-        st.markdown("""
-        <style>
-        /* Inputs lisibles sur fond clair Parchemin */
-        .stTextInput input,
-        .stNumberInput input,
-        .stTextArea textarea {
-            background-color: rgba(139, 0, 26, 0.15) !important;
-            color: #3b2f1c !important;
-            font-weight: 500 !important;
-        }
-
-        /* Texte des boutons BLANC pour Parchemin */
-        .stButton > button,
-        button[kind="primary"],
-        button[kind="secondary"] {
-            color: #ffffff !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
 def create_button_with_class(label: str, button_class: str = "", key: str = None, **kwargs) -> bool:
     """
     Crée un bouton avec une classe CSS spécifique
@@ -846,7 +819,7 @@ def get_combat_button_styles() -> Dict[str, str]:
         'close_div': "</div></div>"
     }
 
-def get_forge_styles(theme_name: str = "Parchemin") -> Dict[str, str]:
+def get_forge_styles(theme_name: str = "Professionnel") -> Dict[str, str]:
     """
     Retourne les styles pour l'onglet forge adaptés au thème
 

@@ -54,54 +54,6 @@ class ThemeManager:
     """Gestionnaire des thèmes disponibles - Business logic pure sans dépendance Streamlit"""
 
     THEMES: Dict[str, Theme] = {
-        "Parchemin": Theme(
-            name="Parchemin",
-            # Couleurs principales (thème actuel - inchangé)
-            background="#f4e4bc",
-            text_primary="#3b2f1c",
-            title_color="#4a4a4a",
-            button_text_color="#ffffff",  # Blanc pour contraste sur bordeaux
-
-            # Boutons principaux (bordeaux éclairci pour meilleur contraste)
-            button_primary="#a0002a",
-            button_primary_hover="#c00035",
-            button_secondary="#8b001f",
-            button_secondary_hover="#a0002a",
-
-            # Équipes
-            hero_color="#228b22",
-            hero_color_light="#006400",
-            enemy_color="#8b0000",
-            enemy_color_light="#dc143c",
-
-            # Onglets
-            tab_background="#6b7280",
-            tab_active="#d97706",
-
-            # Boutons spécialisés (tons chauds et vifs)
-            button_success="#228b22",
-            button_success_hover="#32cd32",
-            button_info="#4169e1",
-            button_info_hover="#6495ed",
-            button_warning="#ff8c00",
-            button_warning_hover="#ffa500",
-            button_danger="#dc143c",
-            button_danger_hover="#ff1493",
-            button_magic="#7b2cbf",
-            button_magic_hover="#8e44ad",
-            button_neutral="#708090",
-            button_neutral_hover="#778899",
-            button_gold="#ffd700",
-            button_gold_hover="#ffec8c",
-
-            # Utilitaires
-            gold="#d4af37",
-            silver="#c0c0c0",
-            bronze="#cd7f32",
-            selected_border="#4a90e2",
-            available_border="#5a9f5a"
-        ),
-
         "Parchemin V2": Theme(
             name="Parchemin V2",
             # Palette harmonisée avec fond beige - AUCUNE valeur de Parchemin V1
@@ -397,12 +349,12 @@ class ThemeManager:
         Récupère un thème par son nom
 
         Args:
-            theme_name: Nom du thème ("Parchemin" ou "Professionnel")
+            theme_name: Nom du thème ("Professionnel", "Parchemin V2", etc.)
 
         Returns:
-            Theme: Instance du thème demandé, ou "Parchemin" par défaut
+            Theme: Instance du thème demandé, ou "Professionnel" par défaut
         """
-        return ThemeManager.THEMES.get(theme_name, ThemeManager.THEMES["Parchemin"])
+        return ThemeManager.THEMES.get(theme_name, ThemeManager.THEMES["Professionnel"])
 
     @staticmethod
     def get_available_themes() -> list:
@@ -410,7 +362,7 @@ class ThemeManager:
         Retourne la liste des noms de thèmes disponibles
 
         Returns:
-            list: Liste des noms de thèmes ["Parchemin", "Professionnel"]
+            list: Liste des noms de thèmes ["Professionnel", "Parchemin V2", etc.]
         """
         return list(ThemeManager.THEMES.keys())
 
@@ -420,10 +372,9 @@ class ThemeManager:
         Retourne un mapping nom -> nom avec emoji pour affichage UI
 
         Returns:
-            Dict[str, str]: {"Parchemin": "🎲 Parchemin", "Professionnel": "💼 Professionnel", ...}
+            Dict[str, str]: {"Professionnel": "💼 Professionnel", "Parchemin V2": "📜 Parchemin V2", ...}
         """
         return {
-            "Parchemin": "🎲 Parchemin",
             "Parchemin V2": "📜 Parchemin V2",
             "Professionnel": "💼 Professionnel",
             "Fantasy": "✨ Fantasy",

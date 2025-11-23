@@ -78,7 +78,7 @@ def display_abilities_selection_section(hero_code: str, abilities: List, current
     """
     # Récupération du thème actuel
     from models.theme_manager import ThemeManager
-    current_theme_name = st.session_state.get('selected_theme', 'Parchemin')
+    current_theme_name = st.session_state.get('selected_theme', 'Professionnel')
     theme = ThemeManager.get_theme(current_theme_name)
 
     # Header avec couleurs du thème (or pour capacités magiques précieuses)

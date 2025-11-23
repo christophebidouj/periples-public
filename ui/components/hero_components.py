@@ -548,7 +548,7 @@ def display_hero_base_stats(hero: Character):
     Args:
         hero: Objet Character
     """
-    current_theme = st.session_state.get('selected_theme', 'Parchemin')
+    current_theme = st.session_state.get('selected_theme', 'Professionnel')
     forge_styles = get_forge_styles(current_theme)
 
     hero_stats_html = forge_styles['hero_base_stats'].format(
@@ -565,7 +565,7 @@ def display_current_build_info(build_info: Dict):
     Args:
         build_info: Dictionnaire avec les infos du build
     """
-    current_theme = st.session_state.get('selected_theme', 'Parchemin')
+    current_theme = st.session_state.get('selected_theme', 'Professionnel')
     forge_styles = get_forge_styles(current_theme)
 
     build_icon = "🔧" if build_info['is_custom'] else "📋"
@@ -582,7 +582,7 @@ def display_new_stats_preview(temp_stats: Dict[str, int]):
     Args:
         temp_stats: Dictionnaire des stats temporaires calculées
     """
-    current_theme = st.session_state.get('selected_theme', 'Parchemin')
+    current_theme = st.session_state.get('selected_theme', 'Professionnel')
     forge_styles = get_forge_styles(current_theme)
 
     # Construction de l'affichage des stats

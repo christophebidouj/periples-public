@@ -196,7 +196,7 @@ def display_equipment_selection_expanders(equipment_list: List, category_name: s
 
     # Récupération du thème actuel
     from models.theme_manager import ThemeManager
-    current_theme_name = st.session_state.get('selected_theme', 'Parchemin')
+    current_theme_name = st.session_state.get('selected_theme', 'Professionnel')
     theme = ThemeManager.get_theme(current_theme_name)
 
     # Couleur selon le type
