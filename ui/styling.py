@@ -501,12 +501,8 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         }
 
         [role="tooltip"] *,
-        [data-baseweb="tooltip"] *,
-        [role="tooltip"] div,
-        [data-baseweb="tooltip"] div {
+        [data-baseweb="tooltip"] * {
             color: #3b2f1c !important;
-            border: none !important;
-            outline: none !important;
         }
         </style>
         """, unsafe_allow_html=True)
