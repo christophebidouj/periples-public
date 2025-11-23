@@ -336,10 +336,10 @@ def tab_selection(data):
     def on_theme_change():
         st.session_state.selected_theme = st.session_state.theme_selector
 
-    # Expander pour la configuration (1/4 de la largeur)
-    col_config, col_spacer = st.columns([1, 3])
+    # Configuration en 2 colonnes compactes à gauche
+    col_theme, col_options, col_spacer = st.columns([1, 1, 6])
 
-    with col_config:
+    with col_theme:
         with st.expander("⚙️ Configuration", expanded=True):
             from models.theme_manager import ThemeManager
             theme_display_names = ThemeManager.get_theme_display_names()
@@ -356,19 +356,21 @@ def tab_selection(data):
                 on_change=on_theme_change
             )
 
-            st.checkbox(
-                "🎯 Critiques",
-                value=st.session_state.criticals_setting,
-                key='combat_criticals',
-                on_change=on_criticals_change
-            )
+    with col_options:
+        st.markdown("&nbsp;")  # Espace pour aligner avec l'expander
+        st.checkbox(
+            "🎯 Critiques",
+            value=st.session_state.criticals_setting,
+            key='combat_criticals',
+            on_change=on_criticals_change
+        )
 
-            st.checkbox(
-                "🎲 Initiative",
-                value=st.session_state.initiative_setting,
-                key='combat_initiative',
-                on_change=on_initiative_change
-            )
+        st.checkbox(
+            "🎲 Initiative",
+            value=st.session_state.initiative_setting,
+            key='combat_initiative',
+            on_change=on_initiative_change
+        )
 
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     nb_heroes = len(st.session_state.selected_heroes)
