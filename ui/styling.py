@@ -508,6 +508,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         <style>
         /* Override ultra-spécifique pour thèmes clairs */
 
+        /* Override Tooltip Hover Target (qui utilise text_primary) */
+        html body [data-testid="stTooltipHoverTarget"],
+        html body [data-testid="stTooltipHoverTarget"] *,
+        .stApp [data-testid="stTooltipHoverTarget"],
+        .stApp [data-testid="stTooltipHoverTarget"] * {{
+            color: #ffffff !important;
+        }}
+
         /* Tooltips lisibles - texte blanc sur fond noir, sans cadre */
         html body div[role="tooltip"],
         html body div[data-baseweb="tooltip"],
