@@ -296,11 +296,11 @@ class ThemeManager:
 
         "Médiéval": Theme(
             name="Médiéval",
-            # Couleurs principales (parchemin clair)
-            background="#f8f4e8",
-            text_primary="#2c1810",
-            title_color="#5a4a3a",
-            button_text_color="#f8f4e8",  # Parchemin clair sur tons sombres
+            # Couleurs principales (fond sombre médiéval - parchemin ancien brûlé)
+            background="#1a1410",
+            text_primary="#e8dcc8",
+            title_color="#c9b896",
+            button_text_color="#f5ead6",
 
             # Boutons principaux (bordeaux médiéval)
             button_primary="#6b2737",
@@ -309,18 +309,18 @@ class ThemeManager:
             button_secondary_hover="#6b2737",
 
             # Équipes (bleu royal / rouge brique)
-            hero_color="#2c5aa0",
-            hero_color_light="#4a7bc8",
+            hero_color="#4a7bc8",
+            hero_color_light="#6a9be8",
             enemy_color="#a83832",
             enemy_color_light="#c85850",
 
             # Onglets (brun médiéval)
-            tab_background="#6b5d4f",
-            tab_active="#d4a574",
+            tab_background="#3a2f1e",
+            tab_active="#8b6f47",
 
             # Boutons spécialisés (palette médiévale chaleureuse)
-            button_success="#3a7a2e",
-            button_success_hover="#4a9a3e",
+            button_success="#4a7a3e",
+            button_success_hover="#5a9a4e",
             button_info="#4169a3",
             button_info_hover="#5589c3",
             button_warning="#d4a017",
@@ -338,8 +338,8 @@ class ThemeManager:
             gold="#d4a017",
             silver="#b8b8b8",
             bronze="#b87333",
-            selected_border="#4169a3",
-            available_border="#3a7a2e"
+            selected_border="#8b6f47",
+            available_border="#4a7a3e"
         )
     }
 
