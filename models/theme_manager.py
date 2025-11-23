@@ -108,13 +108,13 @@ class ThemeManager:
             background="#f4e4bc",
             text_primary="#2a1f12",  # Brun très foncé pour lisibilité sur fond clair
             title_color="#5a4a3a",  # Brun moyen pour titres
-            button_text_color="#f5ead6",  # Beige clair sur boutons bordeaux foncés
+            button_text_color="#2a1f12",  # Brun foncé sur boutons jaunes
 
-            # Boutons principaux (bordeaux vif)
-            button_primary="#a0002a",
-            button_primary_hover="#c00035",
-            button_secondary="#8b001f",
-            button_secondary_hover="#a0002a",
+            # Boutons principaux (tons jaune/or harmonieux avec fond beige)
+            button_primary="#d4a017",
+            button_primary_hover="#e8b830",
+            button_secondary="#b8860b",
+            button_secondary_hover="#d4a017",
 
             # Équipes (couleurs adaptées au fond clair)
             hero_color="#1a6b1a",  # Vert forêt foncé
