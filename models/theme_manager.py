@@ -292,6 +292,54 @@ class ThemeManager:
             bronze="#fb923c",
             selected_border="#00b4d8",
             available_border="#06d6a0"
+        ),
+
+        "Médiéval": Theme(
+            name="Médiéval",
+            # Couleurs principales (parchemin clair)
+            background="#f8f4e8",
+            text_primary="#2c1810",
+            title_color="#5a4a3a",
+            button_text_color="#f8f4e8",  # Parchemin clair sur tons sombres
+
+            # Boutons principaux (bordeaux médiéval)
+            button_primary="#6b2737",
+            button_primary_hover="#8b3347",
+            button_secondary="#4a1a27",
+            button_secondary_hover="#6b2737",
+
+            # Équipes (bleu royal / rouge brique)
+            hero_color="#2c5aa0",
+            hero_color_light="#4a7bc8",
+            enemy_color="#a83832",
+            enemy_color_light="#c85850",
+
+            # Onglets (brun médiéval)
+            tab_background="#6b5d4f",
+            tab_active="#d4a574",
+
+            # Boutons spécialisés (palette médiévale chaleureuse)
+            button_success="#3a7a2e",
+            button_success_hover="#4a9a3e",
+            button_info="#4169a3",
+            button_info_hover="#5589c3",
+            button_warning="#d4a017",
+            button_warning_hover="#e8b830",
+            button_danger="#a83832",
+            button_danger_hover="#c85850",
+            button_magic="#6b4a8e",
+            button_magic_hover="#8b6aae",
+            button_neutral="#6b5d4f",
+            button_neutral_hover="#8b7d6f",
+            button_gold="#d4a017",
+            button_gold_hover="#e8b830",
+
+            # Utilitaires
+            gold="#d4a017",
+            silver="#b8b8b8",
+            bronze="#b87333",
+            selected_border="#4169a3",
+            available_border="#3a7a2e"
         )
     }
 
@@ -331,5 +379,6 @@ class ThemeManager:
             "Professionnel": "💼 Professionnel",
             "Fantasy": "✨ Fantasy",
             "Nature": "🌿 Nature",
-            "Azur": "🌊 Azur"
+            "Azur": "🌊 Azur",
+            "Médiéval": "⚔️ Médiéval"
         }

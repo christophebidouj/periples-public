@@ -498,11 +498,15 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
-    # FIX SPÉCIFIQUE PARCHEMIN - Force tooltips blancs + inputs visibles (text_primary est foncé sur ce thème)
-    if theme_name == "Parchemin":
-        st.markdown("""
+    # FIX SPÉCIFIQUE THÈMES CLAIRS - Force tooltips blancs + inputs visibles (text_primary est foncé sur ces thèmes)
+    if theme_name in ["Parchemin", "Médiéval"]:
+        # Couleur du texte selon le thème
+        input_text_color = "#3b2f1c" if theme_name == "Parchemin" else "#2c1810"
+        input_bg_color = "rgba(139, 0, 26, 0.15)" if theme_name == "Parchemin" else "rgba(107, 39, 55, 0.15)"
+
+        st.markdown(f"""
         <style>
-        /* Override ultra-spécifique pour Parchemin uniquement */
+        /* Override ultra-spécifique pour thèmes clairs */
 
         /* Tooltips blancs */
         html [role="tooltip"],
@@ -512,18 +516,18 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         .stApp [role="tooltip"],
         .stApp [role="tooltip"] *,
         .stApp [data-baseweb="tooltip"],
-        .stApp [data-baseweb="tooltip"] * {
+        .stApp [data-baseweb="tooltip"] * {{
             color: #ffffff !important;
-        }
+        }}
 
-        /* Inputs lisibles - fond plus foncé + texte marron foncé */
+        /* Inputs lisibles - fond plus foncé + texte foncé */
         .stTextInput input,
         .stNumberInput input,
-        .stTextArea textarea {
-            background-color: rgba(139, 0, 26, 0.15) !important;
-            color: #3b2f1c !important;
+        .stTextArea textarea {{
+            background-color: {input_bg_color} !important;
+            color: {input_text_color} !important;
             font-weight: 500 !important;
-        }
+        }}
         </style>
         """, unsafe_allow_html=True)
 
