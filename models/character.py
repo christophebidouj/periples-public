@@ -266,7 +266,8 @@ class Character(BaseModel):
         self.human_stats = {
             'precision': self.precision,
             'damage': self.damage,
-            'spells': self.spells,  # FIX: Sauvegarder les sorts
+            'spells': self.spells,  # MAX sorts
+            'current_spells': self.current_spells,  # FIX BUG: Sauvegarder les sorts ACTUELS
             'health': self.health,
             'current_health': self.current_health,
             'max_parade_tokens': self.max_parade_tokens
@@ -279,7 +280,8 @@ class Character(BaseModel):
 
         self.precision = self.human_stats['precision']
         self.damage = self.human_stats['damage']
-        self.spells = self.human_stats['spells']  # FIX: Restaurer les sorts
+        self.spells = self.human_stats['spells']  # MAX sorts
+        self.current_spells = self.human_stats.get('current_spells', self.spells)  # FIX BUG: Restaurer les sorts ACTUELS
         self.health = self.human_stats['health']
         self.current_health = self.human_stats['current_health']
         self.max_parade_tokens = self.human_stats['max_parade_tokens']
@@ -304,6 +306,7 @@ class Character(BaseModel):
         self.precision = 4
         self.damage = 2
         self.spells = 2  # FIX: Stats officielles P-9
+        self.current_spells = 2  # FIX BUG: Initialiser les sorts ACTUELS de la forme ours
         self.health = 12
         self.current_health = 12  # Santé = max de la forme (pas de ratio)
         self.max_parade_tokens = 0  # FIX: Formes animales n'ont PAS de jetons parade
@@ -334,6 +337,7 @@ class Character(BaseModel):
         self.precision = 6
         self.damage = 4
         self.spells = 0  # FIX: Stats officielles P-10
+        self.current_spells = 0  # FIX BUG: Initialiser les sorts ACTUELS de la forme loup (aucun sort)
         self.health = 8
         self.current_health = 8  # Santé = max de la forme (pas de ratio)
         self.max_parade_tokens = 0

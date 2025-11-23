@@ -44,8 +44,13 @@ class ElnehaFormeOurs(BaseAbility):
             # Si déjà en forme d'ours → revenir en forme humaine
             if caster.current_form == "bear":
                 caster.revert_to_human()
+                # FIX BUG: Synchroniser le SpellManager avec les sorts restaurés
+                if spell_manager:
+                    combatant_id = spell_manager.get_combatant_id(caster)
+                    spell_manager.combatant_spells[combatant_id] = caster.current_spells
                 log.append(f"👤 {caster.name} reprend forme humaine")
                 log.append(f"   Stats restaurées : Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
+                log.append(f"   Sorts restaurés : {caster.current_spells}")
                 return True
 
             # Consommer le coût en sorts pour la transformation
@@ -56,8 +61,13 @@ class ElnehaFormeOurs(BaseAbility):
             success = caster.transform_to_bear()
 
             if success:
+                # FIX BUG: Synchroniser le SpellManager avec les nouveaux sorts de la forme
+                if spell_manager:
+                    combatant_id = spell_manager.get_combatant_id(caster)
+                    spell_manager.combatant_spells[combatant_id] = caster.current_spells
                 log.append(f"🐻 {caster.name} se transforme en ours !")
                 log.append(f"   Nouvelles stats : Précision 4, Dégâts 2, Parade 0, PV 12")
+                log.append(f"   Sorts disponibles : {caster.current_spells}")
                 log.append(f"   Capacité exclusive : Résistance d'ours (1/combat)")
             else:
                 log.append(f"❌ Transformation échouée")
@@ -152,8 +162,13 @@ class ElnehaFormeLoup(BaseAbility):
             # Si déjà en forme de loup → revenir en forme humaine
             if caster.current_form == "wolf":
                 caster.revert_to_human()
+                # FIX BUG: Synchroniser le SpellManager avec les sorts restaurés
+                if spell_manager:
+                    combatant_id = spell_manager.get_combatant_id(caster)
+                    spell_manager.combatant_spells[combatant_id] = caster.current_spells
                 log.append(f"👤 {caster.name} reprend forme humaine")
                 log.append(f"   Stats restaurées : Pré {caster.precision}, Dég {caster.damage}, PV {caster.current_health}/{caster.health}")
+                log.append(f"   Sorts restaurés : {caster.current_spells}")
                 return True
 
             # Consommer le coût en sorts pour la transformation
@@ -164,8 +179,13 @@ class ElnehaFormeLoup(BaseAbility):
             success = caster.transform_to_wolf()
 
             if success:
+                # FIX BUG: Synchroniser le SpellManager avec les nouveaux sorts de la forme
+                if spell_manager:
+                    combatant_id = spell_manager.get_combatant_id(caster)
+                    spell_manager.combatant_spells[combatant_id] = caster.current_spells
                 log.append(f"🐺 {caster.name} se transforme en loup !")
                 log.append(f"   Nouvelles stats : Précision 6, Dégâts 4, Parade 0, PV 8")
+                log.append(f"   Sorts disponibles : {caster.current_spells}")
                 log.append(f"   Capacité exclusive : Férocité du loup (2/combat)")
             else:
                 log.append(f"❌ Transformation échouée")
