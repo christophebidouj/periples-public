@@ -317,7 +317,7 @@ def tab_selection(data):
     # Header pleine largeur
     st.header("🏰 Sélection des Équipes")
 
-    # Configuration en ligne horizontale
+    # Configuration dans un expander
     # Initialiser les valeurs si elles n'existent pas
     if 'initiative_setting' not in st.session_state:
         st.session_state.initiative_setting = True
@@ -336,43 +336,41 @@ def tab_selection(data):
     def on_theme_change():
         st.session_state.selected_theme = st.session_state.theme_selector
 
-    # Configuration en colonnes horizontales
-    st.caption("⚙️ Configuration")
-    col_theme, col_criticals, col_initiative = st.columns([1.5, 1, 1])
+    # Expander pour la configuration
+    with st.expander("⚙️ Configuration", expanded=True):
+        col_theme, col_criticals, col_initiative = st.columns(3)
 
-    with col_theme:
-        from models.theme_manager import ThemeManager
-        theme_display_names = ThemeManager.get_theme_display_names()
-        available_themes = ThemeManager.get_available_themes()
-        current_theme = st.session_state.get('selected_theme', 'Parchemin')
-        current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
+        with col_theme:
+            from models.theme_manager import ThemeManager
+            theme_display_names = ThemeManager.get_theme_display_names()
+            available_themes = ThemeManager.get_available_themes()
+            current_theme = st.session_state.get('selected_theme', 'Parchemin')
+            current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
 
-        st.selectbox(
-            "🎨 Thème",
-            options=available_themes,
-            index=current_index,
-            format_func=lambda x: theme_display_names.get(x, x),
-            key='theme_selector',
-            on_change=on_theme_change
-        )
+            st.selectbox(
+                "🎨 Thème",
+                options=available_themes,
+                index=current_index,
+                format_func=lambda x: theme_display_names.get(x, x),
+                key='theme_selector',
+                on_change=on_theme_change
+            )
 
-    with col_criticals:
-        st.checkbox(
-            "🎯 Critiques",
-            value=st.session_state.criticals_setting,
-            key='combat_criticals',
-            on_change=on_criticals_change
-        )
+        with col_criticals:
+            st.checkbox(
+                "🎯 Critiques",
+                value=st.session_state.criticals_setting,
+                key='combat_criticals',
+                on_change=on_criticals_change
+            )
 
-    with col_initiative:
-        st.checkbox(
-            "🎲 Initiative",
-            value=st.session_state.initiative_setting,
-            key='combat_initiative',
-            on_change=on_initiative_change
-        )
-
-    st.divider()  # Séparateur visuel
+        with col_initiative:
+            st.checkbox(
+                "🎲 Initiative",
+                value=st.session_state.initiative_setting,
+                key='combat_initiative',
+                on_change=on_initiative_change
+            )
 
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     nb_heroes = len(st.session_state.selected_heroes)
