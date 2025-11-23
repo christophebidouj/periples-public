@@ -60,7 +60,7 @@ class ThemeManager:
             background="#f4e4bc",
             text_primary="#3b2f1c",
             title_color="#4a4a4a",
-            button_text_color="#f4e4bc",  # Beige sur bordeaux
+            button_text_color="#ffffff",  # Blanc pour contraste sur bordeaux
 
             # Boutons principaux (bordeaux vif)
             button_primary="#800020",
