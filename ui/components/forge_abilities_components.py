@@ -81,12 +81,12 @@ def display_abilities_selection_section(hero_code: str, abilities: List, current
     current_theme_name = st.session_state.get('selected_theme', 'Parchemin')
     theme = ThemeManager.get_theme(current_theme_name)
 
-    # Header avec couleurs du thème
+    # Header avec couleurs du thème (bleu info plus net que violet)
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, rgba(123,44,191,0.1), rgba(244,228,188,0.6));
+    <div style="background: linear-gradient(135deg, rgba(65,105,225,0.1), rgba(244,228,188,0.6));
                 border-radius: 12px; padding: 12px; margin: 15px 0; text-align: center;
-                border: 2px solid {theme.button_magic};">
-        <h4 style="margin: 0; color: {theme.button_magic};">🔮 Capacités Séquentielles</h4>
+                border: 2px solid {theme.button_info};">
+        <h4 style="margin: 0; color: {theme.button_info};">🔮 Capacités Séquentielles</h4>
     </div>
     """, unsafe_allow_html=True)
     
