@@ -234,6 +234,21 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: #ffffff !important;
     }}
 
+    /* Override ULTRA-AGRESSIF pour tooltips qui héritent de body */
+    html body [role="tooltip"],
+    html body [role="tooltip"] div,
+    html body [role="tooltip"] span,
+    html body [role="tooltip"] p,
+    html body [data-baseweb="tooltip"],
+    html body [data-baseweb="tooltip"] div,
+    html body [data-baseweb="tooltip"] span,
+    html body [data-baseweb="tooltip"] p,
+    html body div[role="tooltip"],
+    html body div[data-baseweb="tooltip"] {{
+        color: #ffffff !important;
+        background-color: rgba(0, 0, 0, 0.95) !important;
+    }}
+
     /* === ONGLETS SOBRES === */
     .stTabs [data-baseweb="tab-list"] {{
         background: {theme.tab_background};
