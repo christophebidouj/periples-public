@@ -161,15 +161,29 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border-radius: 8px !important;
     }}
 
-    /* Selectbox - Chevron (icône dropdown) */
-    .stSelectbox svg {{
+    /* Selectbox - Chevron (icône dropdown) - tous les SVG */
+    .stSelectbox svg,
+    .stSelectbox svg path,
+    [data-baseweb="select"] svg,
+    [data-baseweb="select"] svg path {{
         color: {theme.text_primary} !important;
         fill: {theme.text_primary} !important;
+        opacity: 1 !important;
     }}
 
     /* Selectbox - Conteneur du chevron */
     .stSelectbox [data-baseweb="select"] > div {{
         color: {theme.text_primary} !important;
+    }}
+
+    /* Selectbox désactivé - chevron toujours visible */
+    .stSelectbox[disabled] svg,
+    .stSelectbox[disabled] svg path,
+    .stSelectbox:disabled svg,
+    .stSelectbox:disabled svg path {{
+        color: {theme.text_primary} !important;
+        fill: {theme.text_primary} !important;
+        opacity: 0.7 !important;
     }}
 
     /* Selectbox - Menu déroulant (options) */
