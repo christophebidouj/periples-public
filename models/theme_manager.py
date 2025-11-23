@@ -102,31 +102,31 @@ class ThemeManager:
             available_border="#5a9f5a"
         ),
 
-        "Parchemin Nuit": Theme(
-            name="Parchemin Nuit",
-            # Couleurs principales (fond sombre avec palette parchemin)
-            background="#2a2418",  # Brun très foncé (inverse du beige clair)
-            text_primary="#f4e4bc",  # Beige clair (l'ancien background devient le texte)
-            title_color="#d4af37",  # Or (du gold de Parchemin)
-            button_text_color="#ffffff",  # Blanc pour contraste
+        "Parchemin V2": Theme(
+            name="Parchemin V2",
+            # MÊMES couleurs que Parchemin original, structuré comme Pro/Nature
+            background="#f4e4bc",
+            text_primary="#3b2f1c",
+            title_color="#4a4a4a",
+            button_text_color="#ffffff",
 
-            # Boutons principaux (bordeaux de Parchemin - gardés identiques)
+            # Boutons principaux (bordeaux éclaircis)
             button_primary="#a0002a",
             button_primary_hover="#c00035",
             button_secondary="#8b001f",
             button_secondary_hover="#a0002a",
 
-            # Équipes (gardées de Parchemin)
+            # Équipes
             hero_color="#228b22",
             hero_color_light="#006400",
             enemy_color="#8b0000",
             enemy_color_light="#dc143c",
 
-            # Onglets (tons brun moyen)
-            tab_background="#3a2f1e",
-            tab_active="#d4af37",
+            # Onglets
+            tab_background="#6b7280",
+            tab_active="#d97706",
 
-            # Boutons spécialisés (tons chauds parchemin)
+            # Boutons spécialisés (tons chauds et vifs)
             button_success="#228b22",
             button_success_hover="#32cd32",
             button_info="#4169e1",
@@ -146,8 +146,8 @@ class ThemeManager:
             gold="#d4af37",
             silver="#c0c0c0",
             bronze="#cd7f32",
-            selected_border="#d4af37",
-            available_border="#228b22"
+            selected_border="#4a90e2",
+            available_border="#5a9f5a"
         ),
 
         "Professionnel": Theme(
