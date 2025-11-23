@@ -489,14 +489,15 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
             font-weight: 500 !important;
         }
 
-        /* Tooltips fond blanc pour Parchemin (texte foncé lisible) */
+        /* Tooltips fond parchemin clair (texte foncé lisible) */
         [role="tooltip"],
         [data-baseweb="tooltip"],
         .stTooltipContent,
         .stTooltipInner {
-            background-color: #ffffff !important;
+            background-color: #f5ead6 !important;
             color: #3b2f1c !important;
-            border: 2px solid #4a4a4a !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
         }
 
         [role="tooltip"] *,
