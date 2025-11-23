@@ -333,8 +333,12 @@ def tab_selection(data):
     def on_theme_change():
         st.session_state.selected_theme = st.session_state.theme_selector
 
-    # Configuration en 2 colonnes compactes à gauche
-    col_theme, col_options, col_spacer = st.columns([1, 1, 6])
+    heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
+    nb_heroes = len(st.session_state.selected_heroes)
+    nb_enemies = len(st.session_state.selected_enemies)
+
+    # Tout sur une seule ligne : Config + Header + Reset + Progression
+    col_theme, col_options, col_header, col_reset, col_progress = st.columns([1, 1, 2, 1, 2])
 
     with col_theme:
         with st.expander("⚙️ Configuration", expanded=True):
@@ -369,26 +373,14 @@ def tab_selection(data):
             on_change=on_initiative_change
         )
 
-    # Header après la configuration
-    st.header("🏰 Sélection des Équipes")
+    with col_header:
+        st.markdown("&nbsp;")  # Alignement vertical
+        st.markdown("### 🏰 Sélection des Équipes")
 
-    heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
-    nb_heroes = len(st.session_state.selected_heroes)
-    nb_enemies = len(st.session_state.selected_enemies)
-    
-    # Reset avec indicateurs - Layout compact
-    col_progress, col_reset = st.columns([4, 1])
-    with col_progress:
-        if nb_heroes < 2:
-            st.warning(f"🎯 Sélectionnez au moins 2 héros ({nb_heroes}/2)")
-        elif nb_enemies == 0:
-            st.info("🎯 Maintenant sélectionnez vos ennemis")
-        else:
-            st.success(f"🎯 Prêt ! {nb_heroes} héros et {nb_enemies} ennemis")
-    
     with col_reset:
+        st.markdown("&nbsp;")  # Alignement vertical
         if nb_heroes > 0 or nb_enemies > 0:
-            if st.button("🗑️ Reset", 
+            if st.button("🗑️ Reset",
                         key=f"reset_btn_{nb_heroes}_{nb_enemies}",
                         help=f"Effacer {nb_heroes} héros et {nb_enemies} ennemis sélectionnés",
                         use_container_width=True):
@@ -397,6 +389,15 @@ def tab_selection(data):
                 safe_session_update('hero_difficulties', {})
                 st.success("✅ Sélections effacées !")
                 st.rerun()
+
+    with col_progress:
+        st.markdown("&nbsp;")  # Alignement vertical
+        if nb_heroes < 2:
+            st.warning(f"🎯 Sélectionnez au moins 2 héros ({nb_heroes}/2)")
+        elif nb_enemies == 0:
+            st.info("🎯 Maintenant sélectionnez vos ennemis")
+        else:
+            st.success(f"🎯 Prêt ! {nb_heroes} héros et {nb_enemies} ennemis")
     
     # === HÉROS - Layout optimisé ===
     st.subheader("🛡️ Héros Disponibles")
