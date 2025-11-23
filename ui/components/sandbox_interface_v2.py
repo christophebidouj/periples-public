@@ -2108,15 +2108,12 @@ def display_combat_log_colored():
         # Ligne par défaut (blanc/gris clair)
         return f'<div style="color: #e0e0e0;">{line_stripped}</div>'
 
-    # INVERSION DE L'ORDRE : Actions les plus récentes en HAUT (pas besoin de scroll !)
-    reversed_log = list(reversed(st.session_state.sandbox_v2_log))
-
-    # Construction du HTML colorisé
+    # Construction du HTML colorisé (ordre chronologique normal)
     log_html = ""
-    for line in reversed_log:
+    for line in st.session_state.sandbox_v2_log:
         log_html += colorize_line(line)
 
-    # Container scrollable avec style Arène + indicateur "Récent en haut"
+    # Container scrollable avec style Arène
     scrollable_log = f"""
     <div style="
         background: linear-gradient(135deg, #1a1a2e, #16213e);
@@ -2130,9 +2127,6 @@ def display_combat_log_colored():
         line-height: 1.6;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     ">
-        <div style="color: #f1c40f; font-weight: bold; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid #0f3460; text-align: center;">
-            ⏬ ACTIONS LES PLUS RÉCENTES EN HAUT ⏬
-        </div>
         {log_html}
     </div>
     """
