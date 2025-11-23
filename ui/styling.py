@@ -70,13 +70,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Force tous les spans dans les expanders (override styles inline) */
-    .stExpander span {{
+    /* Force tous les spans dans les expanders (SAUF ceux avec couleur inline) */
+    .stExpander span:not([style*="color"]) {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Force tous les paragraphes et divs dans les expanders */
-    .stExpander p, .stExpander div {{
+    /* Force tous les paragraphes et divs dans les expanders (SAUF ceux avec couleur inline) */
+    .stExpander p:not([style*="color"]),
+    .stExpander div:not([style*="color"]) {{
         color: {theme.text_primary} !important;
     }}
 
@@ -130,13 +131,14 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         font-weight: bold !important;
     }}
 
-    /* Containers et colonnes */
-    .stContainer, [data-testid="stVerticalBlock"] > div {{
+    /* Containers et colonnes (SAUF éléments avec couleur inline) */
+    .stContainer:not([style*="color"]),
+    [data-testid="stVerticalBlock"] > div:not([style*="color"]) {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Divs de contenu */
-    [data-testid="stMarkdownContainer"] p {{
+    /* Divs de contenu (SAUF éléments avec couleur inline) */
+    [data-testid="stMarkdownContainer"] p:not([style*="color"]) {{
         color: {theme.text_primary} !important;
     }}
 
@@ -418,20 +420,6 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         width: 100% !important;
         margin: 0 !important;
         display: block !important;
-    }}
-
-    /* === COMBAT LOG - PRÉSERVATION COULEURS (RÈGLE FINALE PRIORITAIRE) === */
-    /* Cette section DOIT être à la fin pour override tous les autres styles */
-
-    /* Force la préservation UNIQUEMENT des couleurs inline du log de combat */
-    .combat-log-container div[style*="color"],
-    .combat-log-container span[style*="color"],
-    .combat-log-container p[style*="color"],
-    .combat-log-container h3[style*="color"],
-    .combat-log-container h4[style*="color"],
-    .combat-log-container h5[style*="color"] {{
-        color: revert !important;
-        /* revert annule les styles CSS et revient à la valeur inline */
     }}
     </style>
     """, unsafe_allow_html=True)
