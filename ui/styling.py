@@ -33,7 +33,12 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     h1 {{
         text-align: center;
         font-size: 2.5rem !important;
-        color: {theme.title_color} !important;
+        color: {theme.text_primary} !important;  /* Utilise text_primary au lieu de title_color */
+    }}
+
+    /* Force le titre principal Streamlit */
+    [data-testid="stHeader"] h1 {{
+        color: {theme.text_primary} !important;
     }}
 
     /* === OVERRIDE GLOBAL STYLES INLINE === */
