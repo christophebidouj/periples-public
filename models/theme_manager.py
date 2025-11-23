@@ -108,7 +108,7 @@ class ThemeManager:
             background="#f4e4bc",
             text_primary="#2a1f12",  # Brun très foncé pour lisibilité sur fond clair
             title_color="#5a4a3a",  # Brun moyen pour titres
-            button_text_color="#ffffff",  # Blanc sur boutons bordeaux foncés
+            button_text_color="#f5ead6",  # Beige clair sur boutons bordeaux foncés
 
             # Boutons principaux (bordeaux vif)
             button_primary="#a0002a",
