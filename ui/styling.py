@@ -46,6 +46,9 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     shadow_danger_hover = hex_to_rgba(theme.button_danger, 0.6)
     shadow_magic = hex_to_rgba(theme.button_magic, 0.4)
     shadow_magic_hover = hex_to_rgba(theme.button_magic, 0.6)
+
+    # Couleur de texte pour tooltips - blanc pour thèmes clairs, text_primary pour thèmes sombres
+    tooltip_text_color = "#ffffff" if theme_name in ["Parchemin", "Médiéval"] else theme.text_primary
     shadow_neutral = hex_to_rgba(theme.button_neutral, 0.4)
     shadow_neutral_hover = hex_to_rgba(theme.button_neutral, 0.6)
     shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
@@ -197,11 +200,11 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* Tooltips (help text au survol) - OVERRIDE COMPLET */
     .stTooltipIcon {{
-        color: {theme.text_primary} !important;
+        color: {tooltip_text_color} !important;
     }}
 
     [data-testid="stTooltipHoverTarget"] {{
-        color: {theme.text_primary} !important;
+        color: {tooltip_text_color} !important;
     }}
 
     /* Tooltip container */
@@ -498,7 +501,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
-    # FIX SPÉCIFIQUE THÈMES CLAIRS - Force tooltips blancs + inputs visibles (text_primary est foncé sur ces thèmes)
+    # FIX SPÉCIFIQUE THÈMES CLAIRS - Inputs visibles (text_primary est foncé sur ces thèmes)
     if theme_name in ["Parchemin", "Médiéval"]:
         # Couleur du texte selon le thème
         input_text_color = "#3b2f1c" if theme_name == "Parchemin" else "#2c1810"
@@ -506,38 +509,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
         st.markdown(f"""
         <style>
-        /* Override ultra-spécifique pour thèmes clairs */
-
-        /* Override Tooltip Hover Target (qui utilise text_primary) */
-        html body [data-testid="stTooltipHoverTarget"],
-        html body [data-testid="stTooltipHoverTarget"] *,
-        .stApp [data-testid="stTooltipHoverTarget"],
-        .stApp [data-testid="stTooltipHoverTarget"] * {{
-            color: #ffffff !important;
-        }}
-
-        /* Tooltips lisibles - texte blanc sur fond noir, sans cadre */
-        html body div[role="tooltip"],
-        html body div[data-baseweb="tooltip"],
-        html body [role="tooltip"],
-        html body [data-baseweb="tooltip"] {{
-            background-color: #1a1a1a !important;
-            border: none !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-        }}
-
-        html body div[role="tooltip"] *,
-        html body div[data-baseweb="tooltip"] *,
-        html body [role="tooltip"] *,
-        html body [data-baseweb="tooltip"] *,
-        html body div[role="tooltip"] div,
-        html body div[data-baseweb="tooltip"] div {{
-            color: #ffffff !important;
-            background-color: transparent !important;
-            border: none !important;
-        }}
-
-        /* Inputs lisibles - fond plus foncé + texte foncé */
+        /* Inputs lisibles sur fond clair - fond plus foncé + texte foncé */
         .stTextInput input,
         .stNumberInput input,
         .stTextArea textarea {{
