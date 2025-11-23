@@ -105,16 +105,16 @@ class ThemeManager:
         "Parchemin V2": Theme(
             name="Parchemin V2",
             # Palette harmonisée avec fond beige - AUCUNE valeur de Parchemin V1
-            background="#f4e4bc",
+            background="#e8d4a8",
             text_primary="#2a1f12",  # Brun très foncé pour lisibilité sur fond clair
             title_color="#5a4a3a",  # Brun moyen pour titres
             button_text_color="#2a1f12",  # Brun foncé sur boutons jaunes
 
-            # Boutons principaux (tons jaune/or harmonieux avec fond beige)
-            button_primary="#d4a017",
-            button_primary_hover="#e8b830",
-            button_secondary="#b8860b",
-            button_secondary_hover="#d4a017",
+            # Boutons principaux (tons jaune/or plus clairs)
+            button_primary="#e8b830",
+            button_primary_hover="#f5c84d",
+            button_secondary="#d4a017",
+            button_secondary_hover="#e8b830",
 
             # Équipes (couleurs adaptées au fond clair)
             hero_color="#1a6b1a",  # Vert forêt foncé
