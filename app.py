@@ -341,24 +341,22 @@ def tab_selection(data):
     col_theme, col_options, col_header, col_progress, col_reset = st.columns([1, 1, 2, 2, 1])
 
     with col_theme:
-        with st.expander("⚙️ Configuration", expanded=True):
-            from models.theme_manager import ThemeManager
-            theme_display_names = ThemeManager.get_theme_display_names()
-            available_themes = ThemeManager.get_available_themes()
-            current_theme = st.session_state.get('selected_theme', 'Professionnel')
-            current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
+        from models.theme_manager import ThemeManager
+        theme_display_names = ThemeManager.get_theme_display_names()
+        available_themes = ThemeManager.get_available_themes()
+        current_theme = st.session_state.get('selected_theme', 'Professionnel')
+        current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
 
-            st.selectbox(
-                "🎨 Thème",
-                options=available_themes,
-                index=current_index,
-                format_func=lambda x: theme_display_names.get(x, x),
-                key='theme_selector',
-                on_change=on_theme_change
-            )
+        st.selectbox(
+            "🎨 Thème",
+            options=available_themes,
+            index=current_index,
+            format_func=lambda x: theme_display_names.get(x, x),
+            key='theme_selector',
+            on_change=on_theme_change
+        )
 
     with col_options:
-        st.markdown("&nbsp;")  # Espace pour aligner avec l'expander
         st.checkbox(
             "🎯 Critiques",
             value=st.session_state.criticals_setting,
