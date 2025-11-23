@@ -340,6 +340,54 @@ class ThemeManager:
             bronze="#b87333",
             selected_border="#8b6f47",
             available_border="#4a7a3e"
+        ),
+
+        "Moderne": Theme(
+            name="Moderne",
+            # Couleurs principales (fond Parchemin + palette moderne)
+            background="#f4e4bc",
+            text_primary="#2c3e50",
+            title_color="#34495e",
+            button_text_color="#ffffff",
+
+            # Boutons principaux (bleu moderne)
+            button_primary="#3498db",
+            button_primary_hover="#5dade2",
+            button_secondary="#2980b9",
+            button_secondary_hover="#3498db",
+
+            # Équipes (vert moderne / orange moderne)
+            hero_color="#27ae60",
+            hero_color_light="#2ecc71",
+            enemy_color="#e67e22",
+            enemy_color_light="#f39c12",
+
+            # Onglets (gris moderne)
+            tab_background="#7f8c8d",
+            tab_active="#3498db",
+
+            # Boutons spécialisés (palette moderne harmonieuse)
+            button_success="#27ae60",
+            button_success_hover="#2ecc71",
+            button_info="#3498db",
+            button_info_hover="#5dade2",
+            button_warning="#f39c12",
+            button_warning_hover="#f8c471",
+            button_danger="#e74c3c",
+            button_danger_hover="#ec7063",
+            button_magic="#9b59b6",
+            button_magic_hover="#bb8fce",
+            button_neutral="#95a5a6",
+            button_neutral_hover="#b2babb",
+            button_gold="#f1c40f",
+            button_gold_hover="#f4d03f",
+
+            # Utilitaires
+            gold="#f1c40f",
+            silver="#bdc3c7",
+            bronze="#e67e22",
+            selected_border="#3498db",
+            available_border="#27ae60"
         )
     }
 
@@ -380,5 +428,6 @@ class ThemeManager:
             "Fantasy": "✨ Fantasy",
             "Nature": "🌿 Nature",
             "Azur": "🌊 Azur",
-            "Médiéval": "⚔️ Médiéval"
+            "Médiéval": "⚔️ Médiéval",
+            "Moderne": "🎨 Moderne"
         }
