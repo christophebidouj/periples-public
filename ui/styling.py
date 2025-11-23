@@ -50,6 +50,11 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
+    /* Headers avec styles inline (h3, h4, etc.) */
+    .main h3[style*="color"], .main h4[style*="color"], .main h5[style*="color"] {{
+        color: {theme.text_primary} !important;
+    }}
+
     /* === COMPOSANTS STREAMLIT NATIFS === */
 
     /* Expanders (expandables) */
