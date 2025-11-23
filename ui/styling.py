@@ -51,6 +51,16 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
     shadow_gold_hover = hex_to_rgba(theme.button_gold, 0.6)
 
+    # Couleurs tooltips - Parchemin a fond clair, autres thèmes ont fond noir
+    if theme_name == "Parchemin":
+        tooltip_bg = "#f5ead6"
+        tooltip_text = "#3b2f1c"
+        tooltip_border = "none"
+    else:
+        tooltip_bg = "rgba(0, 0, 0, 0.95)"
+        tooltip_text = "#ffffff"
+        tooltip_border = f"2px solid {theme.title_color}"
+
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
@@ -206,32 +216,37 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* Tooltip container */
     [role="tooltip"] {{
-        background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
-        border: 2px solid {theme.title_color} !important;
+        background-color: {tooltip_bg} !important;
+        color: {tooltip_text} !important;
+        border: {tooltip_border} !important;
         padding: 8px 12px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     }}
 
-    /* Tout le contenu du tooltip en blanc */
+    /* Tout le contenu du tooltip */
     [role="tooltip"] * {{
-        color: #ffffff !important;
+        color: {tooltip_text} !important;
         background-color: transparent !important;
+        border: none !important;
     }}
 
     /* Tooltips Streamlit natifs */
     .stTooltipContent, .stTooltipInner {{
-        background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
+        background-color: {tooltip_bg} !important;
+        color: {tooltip_text} !important;
+        border: none !important;
     }}
 
     /* Force tous les éléments dans les tooltips */
     [data-baseweb="tooltip"] {{
-        background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
+        background-color: {tooltip_bg} !important;
+        color: {tooltip_text} !important;
+        border: none !important;
     }}
 
     [data-baseweb="tooltip"] * {{
-        color: #ffffff !important;
+        color: {tooltip_text} !important;
+        border: none !important;
     }}
 
     /* === ONGLETS SOBRES === */
@@ -476,7 +491,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
-    # FIX SPÉCIFIQUE PARCHEMIN - Inputs + Tooltips visibles (text_primary est foncé sur ce thème)
+    # FIX SPÉCIFIQUE PARCHEMIN - Inputs visibles (text_primary est foncé sur ce thème)
     if theme_name == "Parchemin":
         st.markdown("""
         <style>
@@ -487,22 +502,6 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
             background-color: rgba(139, 0, 26, 0.15) !important;
             color: #3b2f1c !important;
             font-weight: 500 !important;
-        }
-
-        /* Tooltips fond parchemin clair (texte foncé lisible) */
-        [role="tooltip"],
-        [data-baseweb="tooltip"],
-        .stTooltipContent,
-        .stTooltipInner {
-            background-color: #f5ead6 !important;
-            color: #3b2f1c !important;
-            border: none !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        [role="tooltip"] *,
-        [data-baseweb="tooltip"] * {
-            color: #3b2f1c !important;
         }
         </style>
         """, unsafe_allow_html=True)
