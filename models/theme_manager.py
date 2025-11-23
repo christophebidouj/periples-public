@@ -148,6 +148,102 @@ class ThemeManager:
             bronze="#d68910",
             selected_border="#3498db",
             available_border="#2ecc71"
+        ),
+
+        "Fantasy": Theme(
+            name="Fantasy",
+            # Couleurs principales (tons violets mystiques)
+            background="#1a1225",
+            text_primary="#e8e6f0",
+            title_color="#b8a3d9",
+            button_text_color="#ffffff",  # Blanc sur violet
+
+            # Boutons principaux (violet magenta)
+            button_primary="#6b2e8a",
+            button_primary_hover="#8b3eaa",
+            button_secondary="#4a1d5f",
+            button_secondary_hover="#6b2e8a",
+
+            # Équipes (bleu électrique / magenta)
+            hero_color="#5b7bdb",
+            hero_color_light="#7b9aed",
+            enemy_color="#c74375",
+            enemy_color_light="#d76395",
+
+            # Onglets (violet profond)
+            tab_background="#2d1b3d",
+            tab_active="#9b59b6",
+
+            # Boutons spécialisés (palette fantasy vibrante)
+            button_success="#8e44ad",
+            button_success_hover="#a569bd",
+            button_info="#5b7bdb",
+            button_info_hover="#7b9aed",
+            button_warning="#e67e22",
+            button_warning_hover="#f39c12",
+            button_danger="#c74375",
+            button_danger_hover="#d76395",
+            button_magic="#9b59b6",
+            button_magic_hover="#bb8fce",
+            button_neutral="#7f8c8d",
+            button_neutral_hover="#95a5a6",
+            button_gold="#f1c40f",
+            button_gold_hover="#f4d03f",
+
+            # Utilitaires
+            gold="#f1c40f",
+            silver="#bdc3c7",
+            bronze="#cd7f32",
+            selected_border="#9b59b6",
+            available_border="#8e44ad"
+        ),
+
+        "Nature": Theme(
+            name="Nature",
+            # Couleurs principales (tons verts forestiers)
+            background="#1a2618",
+            text_primary="#e8f0e6",
+            title_color="#a3c9a0",
+            button_text_color="#ffffff",  # Blanc sur vert
+
+            # Boutons principaux (vert forêt)
+            button_primary="#2d5a3d",
+            button_primary_hover="#3a7a4d",
+            button_secondary="#1e3a27",
+            button_secondary_hover="#2d5a3d",
+
+            # Équipes (vert vif / orange terreux)
+            hero_color="#4a9b5f",
+            hero_color_light="#5ebc75",
+            enemy_color="#c76e3a",
+            enemy_color_light="#d98850",
+
+            # Onglets (vert sombre)
+            tab_background="#2d4a2d",
+            tab_active="#27ae60",
+
+            # Boutons spécialisés (palette nature harmonieuse)
+            button_success="#27ae60",
+            button_success_hover="#2ecc71",
+            button_info="#16a085",
+            button_info_hover="#1abc9c",
+            button_warning="#d68910",
+            button_warning_hover="#f39c12",
+            button_danger="#c0392b",
+            button_danger_hover="#e74c3c",
+            button_magic="#8e44ad",
+            button_magic_hover="#9b59b6",
+            button_neutral="#7f8c8d",
+            button_neutral_hover="#95a5a6",
+            button_gold="#f39c12",
+            button_gold_hover="#f8c471",
+
+            # Utilitaires
+            gold="#d4af37",
+            silver="#95a5a6",
+            bronze="#cd7f32",
+            selected_border="#27ae60",
+            available_border="#4a9b5f"
         )
     }
 
@@ -180,9 +276,11 @@ class ThemeManager:
         Retourne un mapping nom -> nom avec emoji pour affichage UI
 
         Returns:
-            Dict[str, str]: {"Parchemin": "🎲 Parchemin", "Professionnel": "💼 Professionnel"}
+            Dict[str, str]: {"Parchemin": "🎲 Parchemin", "Professionnel": "💼 Professionnel", ...}
         """
         return {
             "Parchemin": "🎲 Parchemin",
-            "Professionnel": "💼 Professionnel"
+            "Professionnel": "💼 Professionnel",
+            "Fantasy": "✨ Fantasy",
+            "Nature": "🌿 Nature"
         }
