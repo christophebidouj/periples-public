@@ -104,50 +104,50 @@ class ThemeManager:
 
         "Parchemin V2": Theme(
             name="Parchemin V2",
-            # MÊMES couleurs que Parchemin original, structuré comme Pro/Nature
-            background="#f4e4bc",
-            text_primary="#3b2f1c",
-            title_color="#4a4a4a",
-            button_text_color="#f5ead6",  # Beige clair harmonieux avec bordeaux
+            # COPIE EXACTE de Pro, SEULS les boutons bordeaux changés
+            background="#1a1d2e",
+            text_primary="#e8eaed",
+            title_color="#b0b3b8",
+            button_text_color="#ffffff",
 
-            # Boutons principaux (bordeaux éclaircis)
+            # Boutons principaux (bordeaux de Parchemin - SEUL CHANGEMENT)
             button_primary="#a0002a",
             button_primary_hover="#c00035",
             button_secondary="#8b001f",
             button_secondary_hover="#a0002a",
 
-            # Équipes
-            hero_color="#228b22",
-            hero_color_light="#006400",
-            enemy_color="#8b0000",
-            enemy_color_light="#dc143c",
+            # Équipes (bleu corporate / rouge brique - COPIE PRO)
+            hero_color="#3a7ca5",
+            hero_color_light="#5499c7",
+            enemy_color="#c1666b",
+            enemy_color_light="#d98880",
 
-            # Onglets
-            tab_background="#6b7280",
-            tab_active="#d97706",
+            # Onglets (gris bleuté professionnel - COPIE PRO)
+            tab_background="#2c3e50",
+            tab_active="#3498db",
 
-            # Boutons spécialisés (tons chauds et vifs)
-            button_success="#228b22",
-            button_success_hover="#32cd32",
-            button_info="#4169e1",
-            button_info_hover="#6495ed",
-            button_warning="#ff8c00",
-            button_warning_hover="#ffa500",
-            button_danger="#dc143c",
-            button_danger_hover="#ff1493",
-            button_magic="#7b2cbf",
-            button_magic_hover="#8e44ad",
-            button_neutral="#708090",
-            button_neutral_hover="#778899",
-            button_gold="#ffd700",
-            button_gold_hover="#ffec8c",
+            # Boutons spécialisés (palette corporate moderne - COPIE PRO)
+            button_success="#2ecc71",
+            button_success_hover="#58d68d",
+            button_info="#3498db",
+            button_info_hover="#5dade2",
+            button_warning="#f39c12",
+            button_warning_hover="#f8c471",
+            button_danger="#e74c3c",
+            button_danger_hover="#ec7063",
+            button_magic="#9b59b6",
+            button_magic_hover="#bb8fce",
+            button_neutral="#95a5a6",
+            button_neutral_hover="#b2babb",
+            button_gold="#f1c40f",
+            button_gold_hover="#f4d03f",
 
-            # Utilitaires
-            gold="#d4af37",
-            silver="#c0c0c0",
-            bronze="#cd7f32",
-            selected_border="#4a90e2",
-            available_border="#5a9f5a"
+            # Utilitaires (COPIE PRO)
+            gold="#f39c12",
+            silver="#bdc3c7",
+            bronze="#d68910",
+            selected_border="#3498db",
+            available_border="#2ecc71"
         ),
 
         "Professionnel": Theme(

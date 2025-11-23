@@ -550,28 +550,25 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
-    # FIX SPÉCIFIQUE THÈMES CLAIRS - Inputs et boutons visibles (text_primary est foncé sur ces thèmes)
-    if theme_name in ["Parchemin", "Parchemin V2"]:
-        # Récupérer la couleur du thème
-        theme = ThemeManager.get_theme(theme_name)
-
-        st.markdown(f"""
+    # FIX SPÉCIFIQUE PARCHEMIN - Inputs visibles (text_primary est foncé sur ce thème)
+    if theme_name == "Parchemin":
+        st.markdown("""
         <style>
-        /* Inputs lisibles sur fond clair */
+        /* Inputs lisibles sur fond clair Parchemin */
         .stTextInput input,
         .stNumberInput input,
-        .stTextArea textarea {{
+        .stTextArea textarea {
             background-color: rgba(139, 0, 26, 0.15) !important;
             color: #3b2f1c !important;
             font-weight: 500 !important;
-        }}
+        }
 
-        /* Texte des boutons avec couleur du thème */
+        /* Texte des boutons BLANC pour Parchemin */
         .stButton > button,
         button[kind="primary"],
-        button[kind="secondary"] {{
-            color: {theme.button_text_color} !important;
-        }}
+        button[kind="secondary"] {
+            color: #ffffff !important;
+        }
         </style>
         """, unsafe_allow_html=True)
 
