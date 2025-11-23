@@ -277,7 +277,7 @@ def init_app():
         'selected_enemies': [],
         'custom_builds': {},
         'hero_difficulties': {},
-        'selected_theme': 'Parchemin',  # Thème par défaut
+        'selected_theme': 'Professionnel',  # Thème par défaut
         'ui_state': {'needs_rerun': False}
     }
     
@@ -324,7 +324,7 @@ def tab_selection(data):
     if 'criticals_setting' not in st.session_state:
         st.session_state.criticals_setting = True
     if 'selected_theme' not in st.session_state:
-        st.session_state.selected_theme = 'Parchemin'
+        st.session_state.selected_theme = 'Professionnel'
 
     # Callbacks
     def on_initiative_change():
@@ -344,7 +344,7 @@ def tab_selection(data):
             from models.theme_manager import ThemeManager
             theme_display_names = ThemeManager.get_theme_display_names()
             available_themes = ThemeManager.get_available_themes()
-            current_theme = st.session_state.get('selected_theme', 'Parchemin')
+            current_theme = st.session_state.get('selected_theme', 'Professionnel')
             current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
 
             st.selectbox(
@@ -682,7 +682,7 @@ def main():
     init_app()
 
     # Appliquer le thème sélectionné
-    selected_theme = st.session_state.get('selected_theme', 'Parchemin')
+    selected_theme = st.session_state.get('selected_theme', 'Professionnel')
     apply_fantasy_theme(selected_theme)
     
     # Titre natif Streamlit

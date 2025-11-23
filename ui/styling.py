@@ -43,30 +43,29 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* === OVERRIDE GLOBAL STYLES INLINE === */
     /* Force TOUS les textes à être visibles (override même styles inline) */
-    /* SAUF dans le log de combat qui a ses propres couleurs */
-    .main span[style*="color"]:not(.combat-log-container *) {{
+    .main span[style*="color"] {{
         color: {theme.text_primary} !important;
     }}
 
-    .main p[style*="color"]:not(.combat-log-container *) {{
+    .main p[style*="color"] {{
         color: {theme.text_primary} !important;
     }}
 
-    .main div[style*="color"]:not(.combat-log-container *) {{
+    .main div[style*="color"] {{
         color: {theme.text_primary} !important;
     }}
 
     /* Headers avec styles inline (h3, h4, etc.) */
-    .main h3[style*="color"]:not(.combat-log-container *),
-    .main h4[style*="color"]:not(.combat-log-container *),
-    .main h5[style*="color"]:not(.combat-log-container *) {{
+    .main h3[style*="color"], .main h4[style*="color"], .main h5[style*="color"] {{
         color: {theme.text_primary} !important;
     }}
 
-    /* Log de combat : Préserver TOUTES les couleurs inline */
-    .combat-log-container,
-    .combat-log-container * {{
-        /* Ne pas override les couleurs définies dans le HTML du log */
+    /* === LOG DE COMBAT : EXCEPTION COMPLÈTE === */
+    /* Réinitialise TOUS les overrides pour préserver les couleurs inline du log */
+    .combat-log-container div[style*="color"],
+    .combat-log-container span[style*="color"],
+    .combat-log-container p[style*="color"] {{
+        all: revert !important;
     }}
 
     /* === COMPOSANTS STREAMLIT NATIFS === */
@@ -142,14 +141,15 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* Selectbox - Option survolée */
     [role="option"]:hover {{
-        background-color: {theme.button_primary} !important;
-        color: {theme.button_text_color} !important;
+        background: linear-gradient(135deg, rgba(100, 100, 100, 0.2), rgba(120, 120, 120, 0.15)) !important;
+        color: {theme.text_primary} !important;
+        font-weight: 600 !important;
     }}
 
     /* Selectbox - Option sélectionnée */
     [aria-selected="true"] {{
-        background-color: {theme.button_secondary} !important;
-        color: {theme.button_text_color} !important;
+        background: linear-gradient(135deg, rgba(80, 80, 80, 0.25), rgba(100, 100, 100, 0.2)) !important;
+        color: {theme.text_primary} !important;
         font-weight: bold !important;
     }}
 
