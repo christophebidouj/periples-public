@@ -56,11 +56,13 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         tooltip_bg = "#f5ead6"
         tooltip_text = "#3b2f1c"
         tooltip_border = "none"
+        tooltip_shadow = "0 2px 8px rgba(0, 0, 0, 0.15)"
     else:
-        # Fond avec transparence basé sur le background du thème
-        tooltip_bg = hex_to_rgba(theme.background, 0.95)
+        # Fond distinct basé sur tab_background pour meilleure visibilité
+        tooltip_bg = theme.tab_background
         tooltip_text = theme.text_primary
-        tooltip_border = f"2px solid {theme.gold}"
+        tooltip_border = f"3px solid {theme.gold}"
+        tooltip_shadow = f"0 4px 12px {hex_to_rgba(theme.gold, 0.3)}"
 
     st.markdown(f"""
     <style>
@@ -221,7 +223,8 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {tooltip_text} !important;
         border: {tooltip_border} !important;
         padding: 8px 12px !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        box-shadow: {tooltip_shadow} !important;
+        border-radius: 8px !important;
     }}
 
     /* Tout le contenu du tooltip */
@@ -235,14 +238,18 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     .stTooltipContent, .stTooltipInner {{
         background-color: {tooltip_bg} !important;
         color: {tooltip_text} !important;
-        border: none !important;
+        border: {tooltip_border} !important;
+        box-shadow: {tooltip_shadow} !important;
+        border-radius: 8px !important;
     }}
 
     /* Force tous les éléments dans les tooltips */
     [data-baseweb="tooltip"] {{
         background-color: {tooltip_bg} !important;
         color: {tooltip_text} !important;
-        border: none !important;
+        border: {tooltip_border} !important;
+        box-shadow: {tooltip_shadow} !important;
+        border-radius: 8px !important;
     }}
 
     [data-baseweb="tooltip"] * {{
