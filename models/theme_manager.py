@@ -104,50 +104,50 @@ class ThemeManager:
 
         "Parchemin V2": Theme(
             name="Parchemin V2",
-            # COPIE EXACTE de Pro, SEULS les boutons bordeaux changés + fond beige
+            # Palette harmonisée avec fond beige - AUCUNE valeur de Parchemin V1
             background="#f4e4bc",
-            text_primary="#e8eaed",
-            title_color="#b0b3b8",
-            button_text_color="#ffffff",
+            text_primary="#2a1f12",  # Brun très foncé pour lisibilité sur fond clair
+            title_color="#5a4a3a",  # Brun moyen pour titres
+            button_text_color="#ffffff",  # Blanc sur boutons bordeaux foncés
 
-            # Boutons principaux (bordeaux de Parchemin - SEUL CHANGEMENT)
+            # Boutons principaux (bordeaux vif)
             button_primary="#a0002a",
             button_primary_hover="#c00035",
             button_secondary="#8b001f",
             button_secondary_hover="#a0002a",
 
-            # Équipes (bleu corporate / rouge brique - COPIE PRO)
-            hero_color="#3a7ca5",
-            hero_color_light="#5499c7",
-            enemy_color="#c1666b",
-            enemy_color_light="#d98880",
+            # Équipes (couleurs adaptées au fond clair)
+            hero_color="#1a6b1a",  # Vert forêt foncé
+            hero_color_light="#228b22",  # Vert plus vif
+            enemy_color="#8b0000",  # Rouge foncé
+            enemy_color_light="#b22222",  # Rouge vif
 
-            # Onglets (gris bleuté professionnel - COPIE PRO)
-            tab_background="#2c3e50",
-            tab_active="#3498db",
+            # Onglets (tons chauds pour harmonie avec beige)
+            tab_background="#8b7355",  # Brun clair
+            tab_active="#d97706",  # Orange/or vif
 
-            # Boutons spécialisés (palette corporate moderne - COPIE PRO)
-            button_success="#2ecc71",
-            button_success_hover="#58d68d",
-            button_info="#3498db",
-            button_info_hover="#5dade2",
-            button_warning="#f39c12",
-            button_warning_hover="#f8c471",
-            button_danger="#e74c3c",
-            button_danger_hover="#ec7063",
-            button_magic="#9b59b6",
-            button_magic_hover="#bb8fce",
-            button_neutral="#95a5a6",
-            button_neutral_hover="#b2babb",
-            button_gold="#f1c40f",
-            button_gold_hover="#f4d03f",
+            # Boutons spécialisés (palette chaude adaptée au fond clair)
+            button_success="#1a7a1a",  # Vert foncé
+            button_success_hover="#228b22",
+            button_info="#1e5a8e",  # Bleu foncé
+            button_info_hover="#2674b3",
+            button_warning="#cc7000",  # Orange foncé
+            button_warning_hover="#e67e00",
+            button_danger="#b30000",  # Rouge vif foncé
+            button_danger_hover="#cc0000",
+            button_magic="#6b2e8a",  # Violet foncé
+            button_magic_hover="#8b3eaa",
+            button_neutral="#5a5a5a",  # Gris foncé
+            button_neutral_hover="#707070",
+            button_gold="#b8860b",  # Or foncé
+            button_gold_hover="#daa520",
 
-            # Utilitaires (COPIE PRO)
-            gold="#f39c12",
-            silver="#bdc3c7",
-            bronze="#d68910",
-            selected_border="#3498db",
-            available_border="#2ecc71"
+            # Utilitaires (adaptés au fond clair)
+            gold="#b8860b",  # Or foncé
+            silver="#708090",  # Gris ardoise
+            bronze="#8b4513",  # Brun cuivré
+            selected_border="#1e5a8e",  # Bleu foncé
+            available_border="#1a7a1a"  # Vert foncé
         ),
 
         "Professionnel": Theme(
@@ -424,6 +424,7 @@ class ThemeManager:
         """
         return {
             "Parchemin": "🎲 Parchemin",
+            "Parchemin V2": "📜 Parchemin V2",
             "Professionnel": "💼 Professionnel",
             "Fantasy": "✨ Fantasy",
             "Nature": "🌿 Nature",
