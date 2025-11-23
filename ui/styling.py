@@ -122,6 +122,13 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
         border: 1px solid {theme.title_color} !important;
         font-weight: 500 !important;
+        padding: 0.25rem 0.5rem !important;
+        min-height: 2rem !important;
+    }}
+
+    /* Largeur réduite des zones de saisie */
+    .stTextInput, .stNumberInput {{
+        max-width: 400px !important;
     }}
 
     /* Selectbox - Conteneur */
