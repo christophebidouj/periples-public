@@ -314,9 +314,6 @@ def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
 
 def tab_selection(data):
     """Onglet sélection des équipes avec layout optimisé pour cartes héros"""
-    # Header pleine largeur
-    st.header("🏰 Sélection des Équipes")
-
     # Configuration dans un expander
     # Initialiser les valeurs si elles n'existent pas
     if 'initiative_setting' not in st.session_state:
@@ -371,6 +368,9 @@ def tab_selection(data):
             key='combat_initiative',
             on_change=on_initiative_change
         )
+
+    # Header après la configuration
+    st.header("🏰 Sélection des Équipes")
 
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     nb_heroes = len(st.session_state.selected_heroes)
