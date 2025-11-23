@@ -544,12 +544,13 @@ def display_team_recap(heroes_details, enemies_details, player_count):
 def display_hero_base_stats(hero: Character):
     """
     Affiche les statistiques de base d'un héros pour la forge
-    
+
     Args:
         hero: Objet Character
     """
-    forge_styles = get_forge_styles()
-    
+    current_theme = st.session_state.get('selected_theme', 'Parchemin')
+    forge_styles = get_forge_styles(current_theme)
+
     hero_stats_html = forge_styles['hero_base_stats'].format(
         icon=get_hero_icon(hero.name),
         name=hero.name,
@@ -560,12 +561,13 @@ def display_hero_base_stats(hero: Character):
 def display_current_build_info(build_info: Dict):
     """
     Affiche les informations du build actuellement équipé
-    
+
     Args:
         build_info: Dictionnaire avec les infos du build
     """
-    forge_styles = get_forge_styles()
-    
+    current_theme = st.session_state.get('selected_theme', 'Parchemin')
+    forge_styles = get_forge_styles(current_theme)
+
     build_icon = "🔧" if build_info['is_custom'] else "📋"
     current_build_html = forge_styles['current_build'].format(
         icon=build_icon,
@@ -576,19 +578,20 @@ def display_current_build_info(build_info: Dict):
 def display_new_stats_preview(temp_stats: Dict[str, int]):
     """
     Affiche l'aperçu des nouvelles statistiques avec équipements
-    
+
     Args:
         temp_stats: Dictionnaire des stats temporaires calculées
     """
-    forge_styles = get_forge_styles()
-    
+    current_theme = st.session_state.get('selected_theme', 'Parchemin')
+    forge_styles = get_forge_styles(current_theme)
+
     # Construction de l'affichage des stats
     parade_text = f" • 🛡️ Parade: {temp_stats['parade']}" if temp_stats['parade'] > 0 else ""
     spells_text = f" • ✨ Sorts: {temp_stats['spells']}" if temp_stats['spells'] > 0 else ""
-    
+
     stats_display = (f"🎯 Précision: {temp_stats['precision']} • "
                      f"⚔️ Dégâts: {temp_stats['damage']} • "
                      f"❤️ PV: {temp_stats['health']}{parade_text}{spells_text}")
-    
+
     new_stats_html = forge_styles['new_stats_preview'].format(stats=stats_display)
     st.markdown(new_stats_html, unsafe_allow_html=True)

@@ -764,34 +764,52 @@ def get_combat_button_styles() -> Dict[str, str]:
         'close_div': "</div></div>"
     }
 
-def get_forge_styles() -> Dict[str, str]:
-    """Retourne les styles pour l'onglet forge"""
+def get_forge_styles(theme_name: str = "Parchemin") -> Dict[str, str]:
+    """
+    Retourne les styles pour l'onglet forge adaptés au thème
+
+    Args:
+        theme_name: Nom du thème à utiliser
+
+    Returns:
+        Dict[str, str]: Templates HTML stylisés
+    """
+    theme = ThemeManager.get_theme(theme_name)
+
+    # Générer les couleurs rgba avec transparence
+    gold_bg1 = hex_to_rgba(theme.gold, 0.1)
+    gold_bg2 = hex_to_rgba(theme.gold, 0.05)
+    info_bg1 = hex_to_rgba(theme.button_info, 0.1)
+    info_bg2 = hex_to_rgba(theme.button_info, 0.05)
+    success_bg1 = hex_to_rgba(theme.button_success, 0.15)
+    success_bg2 = hex_to_rgba(theme.button_success, 0.1)
+
     return {
-        'hero_base_stats': """
-        <div style="background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(139,69,19,0.1));
-                    border: 2px solid #d4af37; border-radius: 10px; padding: 15px; margin: 10px 0;">
-            <h4 style="color: #8b4513; margin: 0;">{icon} {name}</h4>
-            <p style="font-family: monospace; font-size: 1.1rem; margin: 5px 0; color: #3b2f1c;">
-                {stats}
+        'hero_base_stats': f"""
+        <div style="background: linear-gradient(135deg, {gold_bg1}, {gold_bg2});
+                    border: 2px solid {theme.gold}; border-radius: 10px; padding: 15px; margin: 10px 0;">
+            <h4 style="color: {theme.title_color}; margin: 0;">{{icon}} {{name}}</h4>
+            <p style="font-family: monospace; font-size: 1.1rem; margin: 5px 0; color: {theme.text_primary};">
+                {{stats}}
             </p>
         </div>
         """,
-        
-        'current_build': """
-        <div style="background: linear-gradient(135deg, rgba(70,130,180,0.1), rgba(30,144,255,0.1));
-                    border: 2px solid #4682b4; border-radius: 10px; padding: 12px; margin: 10px 0;">
-            <p style="margin: 0; color: #2c5aa0; font-weight: bold;">
-                {icon} Build actuel: {name}
+
+        'current_build': f"""
+        <div style="background: linear-gradient(135deg, {info_bg1}, {info_bg2});
+                    border: 2px solid {theme.button_info}; border-radius: 10px; padding: 12px; margin: 10px 0;">
+            <p style="margin: 0; color: {theme.button_info}; font-weight: bold;">
+                {{icon}} Build actuel: {{name}}
             </p>
         </div>
         """,
-        
-        'new_stats_preview': """
-        <div style="background: linear-gradient(135deg, rgba(34,139,34,0.15), rgba(0,100,0,0.15));
-                    border: 3px solid #228b22; border-radius: 12px; padding: 20px; margin: 15px 0;">
-            <h4 style="color: #006400; margin: 0 0 10px 0;">⚡ Nouvelles Statistiques</h4>
-            <div style="font-family: monospace; font-size: 1.2rem; margin: 0; color: #2e8b57; font-weight: bold;">
-                {stats}
+
+        'new_stats_preview': f"""
+        <div style="background: linear-gradient(135deg, {success_bg1}, {success_bg2});
+                    border: 3px solid {theme.button_success}; border-radius: 12px; padding: 20px; margin: 15px 0;">
+            <h4 style="color: {theme.button_success}; margin: 0 0 10px 0;">⚡ Nouvelles Statistiques</h4>
+            <div style="font-family: monospace; font-size: 1.2rem; margin: 0; color: {theme.text_primary}; font-weight: bold;">
+                {{stats}}
             </div>
         </div>
         """
