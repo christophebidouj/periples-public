@@ -36,6 +36,20 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.title_color} !important;
     }}
 
+    /* === OVERRIDE GLOBAL STYLES INLINE === */
+    /* Force TOUS les textes à être visibles (override même styles inline) */
+    .main span[style*="color"] {{
+        color: {theme.text_primary} !important;
+    }}
+
+    .main p[style*="color"] {{
+        color: {theme.text_primary} !important;
+    }}
+
+    .main div[style*="color"] {{
+        color: {theme.text_primary} !important;
+    }}
+
     /* === COMPOSANTS STREAMLIT NATIFS === */
 
     /* Expanders (expandables) */
@@ -58,6 +72,16 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     }}
 
     .stExpander [data-testid="stMarkdownContainer"] {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Force tous les spans dans les expanders (override styles inline) */
+    .stExpander span {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Force tous les paragraphes et divs dans les expanders */
+    .stExpander p, .stExpander div {{
         color: {theme.text_primary} !important;
     }}
 
