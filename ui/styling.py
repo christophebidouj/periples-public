@@ -118,9 +118,10 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* Inputs (text, number, etc.) */
     .stTextInput input, .stNumberInput input, .stTextArea textarea {{
-        background-color: rgba(255,255,255,0.1) !important;
+        background-color: rgba(0,0,0,0.3) !important;
         color: {theme.text_primary} !important;
         border: 1px solid {theme.title_color} !important;
+        font-weight: 500 !important;
     }}
 
     /* Selectbox - Conteneur */
