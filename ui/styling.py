@@ -456,6 +456,17 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         margin: 0 !important;
         display: block !important;
     }}
+
+    /* === HARMONISATION HAUTEUR BOUTON RESET === */
+    /* Augmente la hauteur des boutons use_container_width pour harmoniser avec bandeau */
+    .stButton > button[style*="width"] {{
+        min-height: 65px !important;
+        padding-top: 18px !important;
+        padding-bottom: 18px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
 

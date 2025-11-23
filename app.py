@@ -338,7 +338,7 @@ def tab_selection(data):
     nb_enemies = len(st.session_state.selected_enemies)
 
     # Tout sur une seule ligne : Config + Header + Progression + Reset
-    col_theme, col_options, col_header, col_progress, col_reset = st.columns([1, 1, 2, 2, 2])
+    col_theme, col_options, col_header, col_progress, col_reset = st.columns([1, 1, 2, 2, 1])
 
     with col_theme:
         with st.expander("⚙️ Configuration", expanded=True):
