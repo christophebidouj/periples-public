@@ -283,7 +283,16 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         transform: translateY(-2px);
         box-shadow: 0 6px 12px {shadow_primary_hover};
     }}
-    
+
+    /* États focus et active - utilise couleurs du thème */
+    .stButton > button:focus,
+    .stButton > button:active,
+    button:focus,
+    button:active {{
+        outline: none !important;
+        border-color: {theme.title_color} !important;
+    }}
+
     /* Classes spécifiques pour différents types de boutons */
 
     /* Boutons verts (succès/validation) */
