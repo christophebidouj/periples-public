@@ -336,11 +336,11 @@ def tab_selection(data):
     def on_theme_change():
         st.session_state.selected_theme = st.session_state.theme_selector
 
-    # Expander pour la configuration
-    with st.expander("⚙️ Configuration", expanded=True):
-        col_theme, col_criticals, col_initiative = st.columns(3)
+    # Expander pour la configuration (1/4 de la largeur)
+    col_config, col_spacer = st.columns([1, 3])
 
-        with col_theme:
+    with col_config:
+        with st.expander("⚙️ Configuration", expanded=True):
             from models.theme_manager import ThemeManager
             theme_display_names = ThemeManager.get_theme_display_names()
             available_themes = ThemeManager.get_available_themes()
@@ -356,7 +356,6 @@ def tab_selection(data):
                 on_change=on_theme_change
             )
 
-        with col_criticals:
             st.checkbox(
                 "🎯 Critiques",
                 value=st.session_state.criticals_setting,
@@ -364,7 +363,6 @@ def tab_selection(data):
                 on_change=on_criticals_change
             )
 
-        with col_initiative:
             st.checkbox(
                 "🎲 Initiative",
                 value=st.session_state.initiative_setting,
