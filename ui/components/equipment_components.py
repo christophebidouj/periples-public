@@ -191,16 +191,21 @@ def display_equipment_selection_expanders(equipment_list: List, category_name: s
     """
     # Application du thème CSS minimal
     apply_expander_theme()
-    
+
     selected_equipment = []
-    
+
+    # Récupération du thème actuel
+    from models.theme_manager import ThemeManager
+    current_theme_name = st.session_state.get('selected_theme', 'Parchemin')
+    theme = ThemeManager.get_theme(current_theme_name)
+
     # Couleur selon le type
     if "Armes" in category_name:
         header_color = "#d2691e"
     elif "Armures" in category_name:
         header_color = "#1e90ff"
     elif "Accessoires" in category_name:
-        header_color = "#8a2be2"
+        header_color = theme.button_magic
     else:
         header_color = "#8b4513"
     

@@ -62,11 +62,11 @@ class ThemeManager:
             title_color="#4a4a4a",
             button_text_color="#ffffff",  # Blanc pour contraste sur bordeaux
 
-            # Boutons principaux (bordeaux vif)
-            button_primary="#800020",
-            button_primary_hover="#a0002a",
-            button_secondary="#6d001a",
-            button_secondary_hover="#800020",
+            # Boutons principaux (bordeaux éclairci pour meilleur contraste)
+            button_primary="#a0002a",
+            button_primary_hover="#c00035",
+            button_secondary="#8b001f",
+            button_secondary_hover="#a0002a",
 
             # Équipes
             hero_color="#228b22",
@@ -87,8 +87,8 @@ class ThemeManager:
             button_warning_hover="#ffa500",
             button_danger="#dc143c",
             button_danger_hover="#ff1493",
-            button_magic="#8a2be2",
-            button_magic_hover="#9370db",
+            button_magic="#7b2cbf",
+            button_magic_hover="#8e44ad",
             button_neutral="#708090",
             button_neutral_hover="#778899",
             button_gold="#ffd700",
@@ -279,8 +279,8 @@ class ThemeManager:
             button_warning_hover="#ffb733",
             button_danger="#ef476f",
             button_danger_hover="#f77593",
-            button_magic="#a78bfa",
-            button_magic_hover="#c4b5fd",
+            button_magic="#8b7fb8",
+            button_magic_hover="#9d91c7",
             button_neutral="#64748b",
             button_neutral_hover="#94a3b8",
             button_gold="#fbbf24",

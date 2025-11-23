@@ -76,12 +76,17 @@ def display_abilities_selection_section(hero_code: str, abilities: List, current
     NOUVEAU - Interface capacités séquentielle avec slider 0-6
     Remplace le système de checkboxes individuelles
     """
-    # Header
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, rgba(138,43,226,0.1), rgba(244,228,188,0.6));
+    # Récupération du thème actuel
+    from models.theme_manager import ThemeManager
+    current_theme_name = st.session_state.get('selected_theme', 'Parchemin')
+    theme = ThemeManager.get_theme(current_theme_name)
+
+    # Header avec couleurs du thème
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, rgba(123,44,191,0.1), rgba(244,228,188,0.6));
                 border-radius: 12px; padding: 12px; margin: 15px 0; text-align: center;
-                border: 2px solid rgba(138,43,226,0.3);">
-        <h4 style="margin: 0; color: #8a2be2;">🔮 Capacités Séquentielles</h4>
+                border: 2px solid {theme.button_magic};">
+        <h4 style="margin: 0; color: {theme.button_magic};">🔮 Capacités Séquentielles</h4>
     </div>
     """, unsafe_allow_html=True)
     
