@@ -51,15 +51,16 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
     shadow_gold_hover = hex_to_rgba(theme.button_gold, 0.6)
 
-    # Couleurs tooltips - Parchemin a fond clair, autres thèmes ont fond noir
+    # Couleurs tooltips - Parchemin a fond clair, autres thèmes utilisent les couleurs du thème
     if theme_name == "Parchemin":
         tooltip_bg = "#f5ead6"
         tooltip_text = "#3b2f1c"
         tooltip_border = "none"
     else:
-        tooltip_bg = "rgba(0, 0, 0, 0.95)"
-        tooltip_text = "#ffffff"
-        tooltip_border = f"2px solid {theme.title_color}"
+        # Fond avec transparence basé sur le background du thème
+        tooltip_bg = hex_to_rgba(theme.background, 0.95)
+        tooltip_text = theme.text_primary
+        tooltip_border = f"2px solid {theme.gold}"
 
     st.markdown(f"""
     <style>
