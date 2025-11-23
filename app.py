@@ -338,7 +338,7 @@ def tab_selection(data):
 
     # Configuration en colonnes horizontales
     st.caption("⚙️ Configuration")
-    col_theme, col_criticals, col_initiative = st.columns(3)
+    col_theme, col_criticals, col_initiative = st.columns([1.5, 1, 1])
 
     with col_theme:
         from models.theme_manager import ThemeManager
