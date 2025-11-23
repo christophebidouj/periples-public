@@ -314,44 +314,36 @@ def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
 
 def tab_selection(data):
     """Onglet sélection des équipes avec layout optimisé pour cartes héros"""
-    col_title, col_config = st.columns([4, 1])
+    # Header pleine largeur
+    st.header("🏰 Sélection des Équipes")
 
-    with col_title:
-        st.header("🏰 Sélection des Équipes")
+    # Configuration en ligne horizontale
+    # Initialiser les valeurs si elles n'existent pas
+    if 'initiative_setting' not in st.session_state:
+        st.session_state.initiative_setting = True
+    if 'criticals_setting' not in st.session_state:
+        st.session_state.criticals_setting = True
+    if 'selected_theme' not in st.session_state:
+        st.session_state.selected_theme = 'Parchemin'
 
-    with col_config:
-        # Initialiser la valeur d'initiative si elle n'existe pas
-        if 'initiative_setting' not in st.session_state:
-            st.session_state.initiative_setting = True
+    # Callbacks
+    def on_initiative_change():
+        st.session_state.initiative_setting = st.session_state.combat_initiative
 
-        # Initialiser la valeur de critiques si elle n'existe pas
-        if 'criticals_setting' not in st.session_state:
-            st.session_state.criticals_setting = True
+    def on_criticals_change():
+        st.session_state.criticals_setting = st.session_state.combat_criticals
 
-        # Initialiser la valeur du thème si elle n'existe pas
-        if 'selected_theme' not in st.session_state:
-            st.session_state.selected_theme = 'Parchemin'
+    def on_theme_change():
+        st.session_state.selected_theme = st.session_state.theme_selector
 
-        # Callback pour sauvegarder immédiatement la valeur de l'initiative
-        def on_initiative_change():
-            st.session_state.initiative_setting = st.session_state.combat_initiative
+    # Configuration en colonnes horizontales
+    st.caption("⚙️ Configuration")
+    col_theme, col_criticals, col_initiative = st.columns(3)
 
-        # Callback pour sauvegarder immédiatement la valeur des critiques
-        def on_criticals_change():
-            st.session_state.criticals_setting = st.session_state.combat_criticals
-
-        # Callback pour sauvegarder immédiatement la valeur du thème
-        def on_theme_change():
-            st.session_state.selected_theme = st.session_state.theme_selector
-
-        st.caption("⚙️ Configuration")
-
-        # Sélecteur de thème
+    with col_theme:
         from models.theme_manager import ThemeManager
         theme_display_names = ThemeManager.get_theme_display_names()
         available_themes = ThemeManager.get_available_themes()
-
-        # Trouver l'index du thème actuel
         current_theme = st.session_state.get('selected_theme', 'Parchemin')
         current_index = available_themes.index(current_theme) if current_theme in available_themes else 0
 
@@ -364,18 +356,23 @@ def tab_selection(data):
             on_change=on_theme_change
         )
 
+    with col_criticals:
         st.checkbox(
             "🎯 Critiques",
             value=st.session_state.criticals_setting,
             key='combat_criticals',
             on_change=on_criticals_change
         )
+
+    with col_initiative:
         st.checkbox(
             "🎲 Initiative",
             value=st.session_state.initiative_setting,
             key='combat_initiative',
             on_change=on_initiative_change
         )
+
+    st.divider()  # Séparateur visuel
 
     heroes, enemies, loader = data['heroes'], data['enemies'], data['loader']
     nb_heroes = len(st.session_state.selected_heroes)

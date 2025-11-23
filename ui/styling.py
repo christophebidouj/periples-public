@@ -123,6 +123,25 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     .stSuccess, .stInfo, .stWarning, .stError {{
         color: {theme.text_primary} !important;
     }}
+
+    /* Tooltips (help text au survol) */
+    .stTooltipIcon {{
+        color: {theme.text_primary} !important;
+    }}
+
+    [data-testid="stTooltipHoverTarget"] {{
+        color: {theme.text_primary} !important;
+    }}
+
+    [role="tooltip"] {{
+        background-color: rgba(0, 0, 0, 0.9) !important;
+        color: {theme.text_primary} !important;
+        border: 1px solid {theme.title_color} !important;
+    }}
+
+    [role="tooltip"] > div {{
+        color: {theme.text_primary} !important;
+    }}
     
     /* === ONGLETS SOBRES === */
     .stTabs [data-baseweb="tab-list"] {{
