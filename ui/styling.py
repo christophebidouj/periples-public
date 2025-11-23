@@ -280,6 +280,24 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* === SYSTÈME DE BOUTONS FLEXIBLE === */
 
+    /* Désactive outline/focus navigateur sur TOUS les boutons */
+    button:focus,
+    button:active,
+    button:focus-visible,
+    .stButton button:focus,
+    .stButton button:active,
+    .stButton button:focus-visible,
+    [class*="st-emotion-cache"] button:focus,
+    [class*="st-emotion-cache"] button:active,
+    [class*="st-emotion-cache"] button:focus-visible,
+    button[class*="st-emotion-cache"]:focus,
+    button[class*="st-emotion-cache"]:active,
+    button[class*="st-emotion-cache"]:focus-visible {{
+        outline: none !important;
+        outline-width: 0 !important;
+        outline-color: transparent !important;
+    }}
+
     /* Bouton par défaut (ombre adaptée au thème) */
     .stButton > button:not([class*="btn-"]) {{
         background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary});
