@@ -490,6 +490,24 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     </style>
     """, unsafe_allow_html=True)
 
+    # FIX SPÉCIFIQUE PARCHEMIN - Force tooltips blancs (text_primary est foncé sur ce thème)
+    if theme_name == "Parchemin":
+        st.markdown("""
+        <style>
+        /* Override ultra-spécifique pour Parchemin uniquement */
+        html [role="tooltip"],
+        html [role="tooltip"] *,
+        html [data-baseweb="tooltip"],
+        html [data-baseweb="tooltip"] *,
+        .stApp [role="tooltip"],
+        .stApp [role="tooltip"] *,
+        .stApp [data-baseweb="tooltip"],
+        .stApp [data-baseweb="tooltip"] * {
+            color: #ffffff !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
 def create_button_with_class(label: str, button_class: str = "", key: str = None, **kwargs) -> bool:
     """
     Crée un bouton avec une classe CSS spécifique
