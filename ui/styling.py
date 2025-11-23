@@ -283,7 +283,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     /* Bouton par défaut (ombre adaptée au thème) */
     .stButton > button:not([class*="btn-"]) {{
         background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary});
-        color: {theme.button_text_color};
+        color: {theme.button_text_color} !important;
         border: 2px solid {theme.button_secondary};
         border-radius: 8px;
         font-weight: bold;
@@ -457,6 +457,53 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         cursor: not-allowed !important;
         transform: none !important;
         box-shadow: none !important;
+    }}
+
+    /* Désactivation de la bordure de focus sur tous les boutons */
+    button:focus,
+    button:active,
+    .stButton > button:focus,
+    .stButton > button:active,
+    button:focus-visible,
+    .stButton > button:focus-visible {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_primary} !important;
+    }}
+
+    /* Override spécifique pour les boutons avec classes */
+    .btn-success:focus, .btn-success:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_success} !important;
+    }}
+
+    .btn-info:focus, .btn-info:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_info} !important;
+    }}
+
+    .btn-warning:focus, .btn-warning:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_warning} !important;
+    }}
+
+    .btn-danger:focus, .btn-danger:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_danger} !important;
+    }}
+
+    .btn-magic:focus, .btn-magic:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_magic} !important;
+    }}
+
+    .btn-neutral:focus, .btn-neutral:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_neutral} !important;
+    }}
+
+    .btn-gold:focus, .btn-gold:active {{
+        outline: none !important;
+        box-shadow: 0 4px 8px {shadow_gold} !important;
     }}
 
     /* === BOUTONS DE CARTES (responsive, harmonisé avec les cartes) === */
