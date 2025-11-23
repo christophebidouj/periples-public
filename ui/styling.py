@@ -49,6 +49,8 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     # Couleur de texte pour tooltips - blanc pour thèmes clairs, text_primary pour thèmes sombres
     tooltip_text_color = "#ffffff" if theme_name in ["Parchemin", "Médiéval"] else theme.text_primary
+    # Cadre des tooltips - pas de cadre pour thèmes clairs (juste ombre), cadre thème pour thèmes sombres
+    tooltip_border = "none" if theme_name in ["Parchemin", "Médiéval"] else f"2px solid {theme.title_color}"
     shadow_neutral = hex_to_rgba(theme.button_neutral, 0.4)
     shadow_neutral_hover = hex_to_rgba(theme.button_neutral, 0.6)
     shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
@@ -210,38 +212,36 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     /* Tooltip container */
     [role="tooltip"] {{
         background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
-        border: 2px solid {theme.title_color} !important;
+        color: {tooltip_text_color} !important;
+        border: {tooltip_border} !important;
         padding: 8px 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
     }}
 
-    /* Tout le contenu du tooltip en blanc */
-    [role="tooltip"] * {{
-        color: #ffffff !important;
+    /* Tout le contenu du tooltip */
+    [role="tooltip"] *,
+    [role="tooltip"] > div,
+    [role="tooltip"] span,
+    [role="tooltip"] p {{
+        color: {tooltip_text_color} !important;
         background-color: transparent !important;
     }}
 
-    [role="tooltip"] > div {{
-        color: #ffffff !important;
-    }}
-
     /* Tooltips Streamlit natifs */
-    .stTooltipContent, .stTooltipInner {{
+    .stTooltipContent,
+    .stTooltipInner {{
         background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
+        color: {tooltip_text_color} !important;
     }}
 
     /* Force tous les éléments dans les tooltips */
-    [data-baseweb="tooltip"] {{
-        background-color: rgba(0, 0, 0, 0.95) !important;
-        color: #ffffff !important;
-    }}
-
+    [data-baseweb="tooltip"],
     [data-baseweb="tooltip"] * {{
-        color: #ffffff !important;
+        background-color: rgba(0, 0, 0, 0.95) !important;
+        color: {tooltip_text_color} !important;
     }}
 
-    /* OVERRIDE FINAL - Force blanc pour Parchemin (spécificité maximale) */
+    /* OVERRIDE FINAL - Spécificité maximale pour tous les éléments tooltip */
     body [role="tooltip"],
     body [role="tooltip"] *,
     body [role="tooltip"] span,
@@ -255,8 +255,12 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     .stApp [role="tooltip"],
     .stApp [role="tooltip"] *,
     .stApp [data-baseweb="tooltip"],
-    .stApp [data-baseweb="tooltip"] * {{
-        color: #ffffff !important;
+    .stApp [data-baseweb="tooltip"] *,
+    html body [role="tooltip"],
+    html body [role="tooltip"] *,
+    html body [data-baseweb="tooltip"],
+    html body [data-baseweb="tooltip"] * {{
+        color: {tooltip_text_color} !important;
     }}
 
     /* === ONGLETS SOBRES === */
@@ -467,6 +471,20 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         cursor: not-allowed !important;
         transform: none !important;
         box-shadow: none !important;
+    }}
+
+    /* États focus et active pour TOUS les boutons - utilise couleurs du thème */
+    button:focus,
+    button:active,
+    .stButton > button:focus,
+    .stButton > button:active,
+    button[kind="primary"]:focus,
+    button[kind="primary"]:active,
+    button[kind="secondary"]:focus,
+    button[kind="secondary"]:active {{
+        outline: none !important;
+        border-color: {theme.title_color} !important;
+        box-shadow: 0 0 0 2px {theme.title_color} !important;
     }}
 
     /* === BOUTONS DE CARTES (responsive, harmonisé avec les cartes) === */
