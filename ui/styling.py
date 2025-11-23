@@ -508,14 +508,18 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         <style>
         /* Override ultra-spécifique pour thèmes clairs */
 
-        /* Tooltips blancs */
+        /* Tooltips lisibles - texte blanc sur fond noir */
         html [role="tooltip"],
-        html [role="tooltip"] *,
         html [data-baseweb="tooltip"],
-        html [data-baseweb="tooltip"] *,
         .stApp [role="tooltip"],
+        .stApp [data-baseweb="tooltip"] {{
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+        }}
+
+        html [role="tooltip"] *,
+        html [data-baseweb="tooltip"] *,
         .stApp [role="tooltip"] *,
-        .stApp [data-baseweb="tooltip"],
         .stApp [data-baseweb="tooltip"] * {{
             color: #ffffff !important;
         }}
