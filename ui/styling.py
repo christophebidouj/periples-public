@@ -51,8 +51,8 @@ def apply_fantasy_theme(theme_name: str = "Professionnel"):
     shadow_gold = hex_to_rgba(theme.button_gold, 0.4)
     shadow_gold_hover = hex_to_rgba(theme.button_gold, 0.6)
 
-    # Couleurs tooltips - Thème Parchemin V2 (fond clair) vs thèmes sombres
-    if theme_name == "Parchemin V2":
+    # Couleurs tooltips - Thème Parchemin (fond clair) vs thèmes sombres
+    if theme_name == "Parchemin":
         # Tooltips adaptés au fond beige avec cadre jaune subtil
         tooltip_bg = "#d4c4a4"  # Beige plus foncé pour contraste
         tooltip_text = theme.text_primary

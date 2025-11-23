@@ -274,89 +274,98 @@ def display_build_details_expander(hero: Character, current_build_info: Dict):
             expander_color = "#4169e1"
     
     with st.expander(expander_title, expanded=False):
-        # Style du contenu
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, {expander_color}15, {expander_color}05);
-                    border-radius: 8px; padding: 12px; margin: 8px 0;">
-        """, unsafe_allow_html=True)
-        
-        # === ÉQUIPEMENTS ===
-        if build_details['equipment']:
-            st.markdown("**⚔️ Équipements :**")
+        # Conteneur avec fond coloré
+        with st.container():
+            # Style du conteneur avec fond coloré
+            st.markdown(f"""
+            <style>
+            .expander-content {{
+                background: linear-gradient(135deg, {expander_color}15, {expander_color}05);
+                border-radius: 8px;
+                padding: 12px;
+                margin: 8px 0;
+            }}
+            </style>
+            <div class="expander-content">
+            """, unsafe_allow_html=True)
 
-            equipment_by_type = {'arme': [], 'armure': [], 'accessoire': []}
-            for eq in build_details['equipment']:
-                eq_type = eq['type'].lower()
-                if eq_type not in equipment_by_type:
-                    eq_type = 'accessoire'
-                equipment_by_type[eq_type].append(eq)
+            # === ÉQUIPEMENTS ===
+            if build_details['equipment']:
+                st.markdown("**⚔️ Équipements :**")
 
-            type_icons = {'arme': '⚔️', 'armure': '🛡️', 'accessoire': '💍'}
-            type_names = {'arme': 'Armes', 'armure': 'Armures', 'accessoire': 'Accessoires'}
+                equipment_by_type = {'arme': [], 'armure': [], 'accessoire': []}
+                for eq in build_details['equipment']:
+                    eq_type = eq['type'].lower()
+                    if eq_type not in equipment_by_type:
+                        eq_type = 'accessoire'
+                    equipment_by_type[eq_type].append(eq)
 
-            # Affichage vertical (une seule colonne)
-            for eq_type, equipment in equipment_by_type.items():
-                if equipment:
-                    st.markdown(f"**{type_icons[eq_type]} {type_names[eq_type]}**")
-                    for eq in equipment:
-                        # Stats non-nulles
-                        stats_parts = []
-                        if eq['precision'] > 0:
-                            stats_parts.append(f"🎯{eq['precision']}")
-                        if eq['physical_damage'] > 0:
-                            stats_parts.append(f"⚔️{eq['physical_damage']}")
-                        if eq['magical_damage'] > 0:
-                            stats_parts.append(f"✨{eq['magical_damage']}")
-                        if eq['defense'] > 0:
-                            stats_parts.append(f"🛡️{eq['defense']}")
-                        if eq['spells'] > 0:
-                            stats_parts.append(f"🔮{eq['spells']}")
-                        if eq['health'] > 0:
-                            stats_parts.append(f"❤️{eq['health']}")
+                type_icons = {'arme': '⚔️', 'armure': '🛡️', 'accessoire': '💍'}
+                type_names = {'arme': 'Armes', 'armure': 'Armures', 'accessoire': 'Accessoires'}
 
-                        stats_text = " • ".join(stats_parts) if stats_parts else "Pas de bonus"
-                        st.caption(f"• **{eq['name']}**")
-                        st.caption(f"  {stats_text}")
-        else:
-            st.info("🎒 Aucun équipement")
-        
-        st.markdown("---")
-        
-        # === CAPACITÉS ===
-        if build_details['abilities']:
-            st.markdown("**🔮 Capacités Spéciales :**")
-            
-            # Affichage en grille 2 colonnes
-            cols = st.columns(2)
-            for i, ability in enumerate(build_details['abilities']):
-                with cols[i % 2]:
-                    cost_text = f"({ability['cost']} 🔮)" if ability['cost'] > 0 else "(Gratuit)"
-                    st.caption(f"• **{ability['name']}** {cost_text}")
-        else:
-            st.info("🔮 Aucune capacité spéciale")
-        
-        st.markdown("---")
-        
-        # === POTIONS ===
-        potions = build_details['potions']
-        total_potions = potions['small'] + potions['large']
-        
-        if total_potions > 0:
-            st.markdown("**🧪 Potions de Santé :**")
-            
-            potion_parts = []
-            if potions['small'] > 0:
-                plural_s = "s" if potions['small'] > 1 else ""
-                potion_parts.append(f"🩸 {potions['small']} Petite{plural_s} (4 PV chacune)")
-            if potions['large'] > 0:
-                potion_parts.append(f"❤️‍🩹 {potions['large']} Grande (PV max)")
-            
-            for part in potion_parts:
-                st.caption(f"• {part}")
-        else:
-            st.info("🧪 Aucune potion")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
+                # Affichage vertical (une seule colonne)
+                for eq_type, equipment in equipment_by_type.items():
+                    if equipment:
+                        st.markdown(f"**{type_icons[eq_type]} {type_names[eq_type]}**")
+                        for eq in equipment:
+                            # Stats non-nulles
+                            stats_parts = []
+                            if eq['precision'] > 0:
+                                stats_parts.append(f"🎯{eq['precision']}")
+                            if eq['physical_damage'] > 0:
+                                stats_parts.append(f"⚔️{eq['physical_damage']}")
+                            if eq['magical_damage'] > 0:
+                                stats_parts.append(f"✨{eq['magical_damage']}")
+                            if eq['defense'] > 0:
+                                stats_parts.append(f"🛡️{eq['defense']}")
+                            if eq['spells'] > 0:
+                                stats_parts.append(f"🔮{eq['spells']}")
+                            if eq['health'] > 0:
+                                stats_parts.append(f"❤️{eq['health']}")
+
+                            stats_text = " • ".join(stats_parts) if stats_parts else "Pas de bonus"
+                            st.caption(f"• **{eq['name']}**")
+                            st.caption(f"  {stats_text}")
+            else:
+                st.info("🎒 Aucun équipement")
+
+            st.markdown("---")
+
+            # === CAPACITÉS ===
+            if build_details['abilities']:
+                st.markdown("**🔮 Capacités Spéciales :**")
+
+                # Affichage en grille 2 colonnes
+                cols = st.columns(2)
+                for i, ability in enumerate(build_details['abilities']):
+                    with cols[i % 2]:
+                        cost_text = f"({ability['cost']} 🔮)" if ability['cost'] > 0 else "(Gratuit)"
+                        st.caption(f"• **{ability['name']}** {cost_text}")
+            else:
+                st.info("🔮 Aucune capacité spéciale")
+
+            st.markdown("---")
+
+            # === POTIONS ===
+            potions = build_details['potions']
+            total_potions = potions['small'] + potions['large']
+
+            if total_potions > 0:
+                st.markdown("**🧪 Potions de Santé :**")
+
+                potion_parts = []
+                if potions['small'] > 0:
+                    plural_s = "s" if potions['small'] > 1 else ""
+                    potion_parts.append(f"🩸 {potions['small']} Petite{plural_s} (4 PV chacune)")
+                if potions['large'] > 0:
+                    potion_parts.append(f"❤️‍🩹 {potions['large']} Grande (PV max)")
+
+                for part in potion_parts:
+                    st.caption(f"• {part}")
+            else:
+                st.info("🧪 Aucune potion")
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
 def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict, custom_builds_dict: Dict = None, enable_images: bool = True, show_button: bool = True):
     """

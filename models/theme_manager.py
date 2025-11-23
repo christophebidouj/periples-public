@@ -54,9 +54,9 @@ class ThemeManager:
     """Gestionnaire des thèmes disponibles - Business logic pure sans dépendance Streamlit"""
 
     THEMES: Dict[str, Theme] = {
-        "Parchemin V2": Theme(
-            name="Parchemin V2",
-            # Palette harmonisée avec fond beige - AUCUNE valeur de Parchemin V1
+        "Parchemin": Theme(
+            name="Parchemin",
+            # Palette harmonisée avec fond beige
             background="#e8d4a8",
             text_primary="#2a1f12",  # Brun très foncé pour lisibilité sur fond clair
             title_color="#5a4a3a",  # Brun moyen pour titres
@@ -359,12 +359,12 @@ class ThemeManager:
     @staticmethod
     def get_available_themes() -> list:
         """
-        Retourne la liste des noms de thèmes disponibles
+        Retourne la liste des noms de thèmes disponibles (triée alphabétiquement)
 
         Returns:
-            list: Liste des noms de thèmes ["Professionnel", "Parchemin V2", etc.]
+            list: Liste des noms de thèmes ["Azur", "Fantasy", "Médiéval", ...]
         """
-        return list(ThemeManager.THEMES.keys())
+        return sorted(list(ThemeManager.THEMES.keys()))
 
     @staticmethod
     def get_theme_display_names() -> Dict[str, str]:
@@ -372,13 +372,13 @@ class ThemeManager:
         Retourne un mapping nom -> nom avec emoji pour affichage UI
 
         Returns:
-            Dict[str, str]: {"Professionnel": "💼 Professionnel", "Parchemin V2": "📜 Parchemin V2", ...}
+            Dict[str, str]: {"Azur": "🌊 Azur", "Fantasy": "✨ Fantasy", ...}
         """
         return {
-            "Parchemin V2": "📜 Parchemin V2",
-            "Professionnel": "💼 Professionnel",
-            "Fantasy": "✨ Fantasy",
-            "Nature": "🌿 Nature",
             "Azur": "🌊 Azur",
-            "Médiéval": "⚔️ Médiéval"
+            "Fantasy": "✨ Fantasy",
+            "Médiéval": "⚔️ Médiéval",
+            "Nature": "🌿 Nature",
+            "Parchemin": "📜 Parchemin",
+            "Professionnel": "💼 Professionnel"
         }
