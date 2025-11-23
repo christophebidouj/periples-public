@@ -102,11 +102,46 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         border: 1px solid {theme.title_color} !important;
     }}
 
-    /* Selectbox */
+    /* Selectbox - Conteneur */
     .stSelectbox > div > div {{
         background-color: rgba(255,255,255,0.1) !important;
         color: {theme.text_primary} !important;
         border: 1px solid {theme.title_color} !important;
+    }}
+
+    /* Selectbox - Menu déroulant (options) */
+    [data-baseweb="select"] {{
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Selectbox - Popover du menu */
+    [data-baseweb="popover"] {{
+        background-color: {theme.background} !important;
+    }}
+
+    /* Selectbox - Liste des options */
+    ul[role="listbox"] {{
+        background-color: {theme.background} !important;
+        border: 2px solid {theme.title_color} !important;
+    }}
+
+    /* Selectbox - Options individuelles */
+    [role="option"] {{
+        background-color: {theme.background} !important;
+        color: {theme.text_primary} !important;
+    }}
+
+    /* Selectbox - Option survolée */
+    [role="option"]:hover {{
+        background-color: {theme.button_primary} !important;
+        color: {theme.button_text_color} !important;
+    }}
+
+    /* Selectbox - Option sélectionnée */
+    [aria-selected="true"] {{
+        background-color: {theme.button_secondary} !important;
+        color: {theme.button_text_color} !important;
+        font-weight: bold !important;
     }}
 
     /* Containers et colonnes */
