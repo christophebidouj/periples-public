@@ -108,7 +108,7 @@ class ThemeManager:
             background="#f4e4bc",
             text_primary="#3b2f1c",
             title_color="#4a4a4a",
-            button_text_color="#ffffff",
+            button_text_color="#f5ead6",  # Beige clair harmonieux avec bordeaux
 
             # Boutons principaux (bordeaux éclaircis)
             button_primary="#a0002a",
