@@ -205,7 +205,7 @@ def display_equipment_selection_expanders(equipment_list: List, category_name: s
     elif "Armures" in category_name:
         header_color = "#1e90ff"
     elif "Accessoires" in category_name:
-        header_color = theme.button_info  # Bleu info plus net que violet
+        header_color = theme.gold  # Or pour accessoires précieux
     else:
         header_color = "#8b4513"
     
