@@ -187,10 +187,7 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* === TOOLTIPS (help text au survol) - OVERRIDE UNIVERSEL === */
-    /* Applique fond noir + texte blanc sur TOUS les thèmes pour lisibilité */
-
-    /* Icône du tooltip */
+    /* Tooltips (help text au survol) - OVERRIDE COMPLET */
     .stTooltipIcon {{
         color: {theme.text_primary} !important;
     }}
@@ -199,41 +196,45 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* Tooltip container - tous les sélecteurs possibles */
-    [role="tooltip"],
-    [data-baseweb="tooltip"],
-    .stTooltip,
-    .stTooltipContent,
-    .stTooltipInner,
-    div[data-baseweb="popover"] > div[role="tooltip"] {{
+    /* Tooltip container */
+    [role="tooltip"] {{
         background-color: rgba(0, 0, 0, 0.95) !important;
         color: #ffffff !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        border: 2px solid {theme.title_color} !important;
         padding: 8px 12px !important;
     }}
 
-    /* Force TOUT le contenu des tooltips en blanc (très agressif) */
-    [role="tooltip"] *,
-    [role="tooltip"] span,
-    [role="tooltip"] div,
-    [role="tooltip"] p,
-    [data-baseweb="tooltip"] *,
-    [data-baseweb="tooltip"] span,
-    [data-baseweb="tooltip"] div,
-    [data-baseweb="tooltip"] p,
-    .stTooltipContent *,
-    .stTooltipInner * {{
+    /* Tout le contenu du tooltip en blanc */
+    [role="tooltip"] * {{
         color: #ffffff !important;
         background-color: transparent !important;
     }}
 
-    /* Tooltips des boutons spécifiquement */
-    button[title]:hover::after,
-    .stButton button[data-testid]:hover + [role="tooltip"] {{
+    [role="tooltip"] > div {{
+        color: #ffffff !important;
+    }}
+
+    /* Tooltips Streamlit natifs */
+    .stTooltipContent, .stTooltipInner {{
         background-color: rgba(0, 0, 0, 0.95) !important;
         color: #ffffff !important;
     }}
-    
+
+    /* Force tous les éléments dans les tooltips */
+    [data-baseweb="tooltip"] {{
+        background-color: rgba(0, 0, 0, 0.95) !important;
+        color: #ffffff !important;
+    }}
+
+    [data-baseweb="tooltip"] * {{
+        color: #ffffff !important;
+    }}
+
+    /* OVERRIDE FINAL - Force blanc pour Parchemin (où text_primary est foncé) */
+    [role="tooltip"], [role="tooltip"] *, [data-baseweb="tooltip"], [data-baseweb="tooltip"] * {{
+        color: #ffffff !important;
+    }}
+
     /* === ONGLETS SOBRES === */
     .stTabs [data-baseweb="tab-list"] {{
         background: {theme.tab_background};
