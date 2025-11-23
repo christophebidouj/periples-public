@@ -104,8 +104,8 @@ class ThemeManager:
 
         "Parchemin V2": Theme(
             name="Parchemin V2",
-            # COPIE EXACTE de Pro, SEULS les boutons bordeaux changés
-            background="#1a1d2e",
+            # COPIE EXACTE de Pro, SEULS les boutons bordeaux changés + fond beige
+            background="#f4e4bc",
             text_primary="#e8eaed",
             title_color="#b0b3b8",
             button_text_color="#ffffff",
