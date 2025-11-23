@@ -41,32 +41,9 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: {theme.text_primary} !important;
     }}
 
-    /* === OVERRIDE GLOBAL STYLES INLINE === */
-    /* Force TOUS les textes à être visibles (override même styles inline) */
-    .main span[style*="color"] {{
-        color: {theme.text_primary} !important;
-    }}
-
-    .main p[style*="color"] {{
-        color: {theme.text_primary} !important;
-    }}
-
-    .main div[style*="color"] {{
-        color: {theme.text_primary} !important;
-    }}
-
-    /* Headers avec styles inline (h3, h4, etc.) */
-    .main h3[style*="color"], .main h4[style*="color"], .main h5[style*="color"] {{
-        color: {theme.text_primary} !important;
-    }}
-
-    /* === LOG DE COMBAT : EXCEPTION COMPLÈTE === */
-    /* Réinitialise TOUS les overrides pour préserver les couleurs inline du log */
-    .combat-log-container div[style*="color"],
-    .combat-log-container span[style*="color"],
-    .combat-log-container p[style*="color"] {{
-        all: revert !important;
-    }}
+    /* === OVERRIDE CIBLÉ (sans écraser les couleurs inline du log) === */
+    /* On ne force PAS les couleurs pour les éléments avec style inline */
+    /* Les composants Streamlit spécifiques sont ciblés plus bas */
 
     /* === COMPOSANTS STREAMLIT NATIFS === */
 
@@ -141,15 +118,15 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
 
     /* Selectbox - Option survolée */
     [role="option"]:hover {{
-        background: linear-gradient(135deg, rgba(100, 100, 100, 0.2), rgba(120, 120, 120, 0.15)) !important;
-        color: {theme.text_primary} !important;
+        background: linear-gradient(135deg, rgba(70, 70, 70, 0.5), rgba(50, 50, 50, 0.4)) !important;
+        color: #ffffff !important;
         font-weight: 600 !important;
     }}
 
     /* Selectbox - Option sélectionnée */
     [aria-selected="true"] {{
-        background: linear-gradient(135deg, rgba(80, 80, 80, 0.25), rgba(100, 100, 100, 0.2)) !important;
-        color: {theme.text_primary} !important;
+        background: linear-gradient(135deg, rgba(90, 90, 90, 0.6), rgba(70, 70, 70, 0.5)) !important;
+        color: #ffffff !important;
         font-weight: bold !important;
     }}
 
