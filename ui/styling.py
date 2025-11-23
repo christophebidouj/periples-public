@@ -234,21 +234,6 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         color: #ffffff !important;
     }}
 
-    /* Override ULTRA-AGRESSIF pour tooltips qui héritent de body */
-    html body [role="tooltip"],
-    html body [role="tooltip"] div,
-    html body [role="tooltip"] span,
-    html body [role="tooltip"] p,
-    html body [data-baseweb="tooltip"],
-    html body [data-baseweb="tooltip"] div,
-    html body [data-baseweb="tooltip"] span,
-    html body [data-baseweb="tooltip"] p,
-    html body div[role="tooltip"],
-    html body div[data-baseweb="tooltip"] {{
-        color: #ffffff !important;
-        background-color: rgba(0, 0, 0, 0.95) !important;
-    }}
-
     /* === ONGLETS SOBRES === */
     .stTabs [data-baseweb="tab-list"] {{
         background: {theme.tab_background};
@@ -279,24 +264,6 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     }}
 
     /* === SYSTÈME DE BOUTONS FLEXIBLE === */
-
-    /* Désactive outline/focus navigateur sur TOUS les boutons */
-    button:focus,
-    button:active,
-    button:focus-visible,
-    .stButton button:focus,
-    .stButton button:active,
-    .stButton button:focus-visible,
-    [class*="st-emotion-cache"] button:focus,
-    [class*="st-emotion-cache"] button:active,
-    [class*="st-emotion-cache"] button:focus-visible,
-    button[class*="st-emotion-cache"]:focus,
-    button[class*="st-emotion-cache"]:active,
-    button[class*="st-emotion-cache"]:focus-visible {{
-        outline: none !important;
-        outline-width: 0 !important;
-        outline-color: transparent !important;
-    }}
 
     /* Bouton par défaut (ombre adaptée au thème) */
     .stButton > button:not([class*="btn-"]) {{
