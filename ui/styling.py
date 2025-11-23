@@ -419,6 +419,20 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
         margin: 0 !important;
         display: block !important;
     }}
+
+    /* === COMBAT LOG - PRÉSERVATION COULEURS (RÈGLE FINALE PRIORITAIRE) === */
+    /* Cette section DOIT être à la fin pour override tous les autres styles */
+
+    /* Force la préservation UNIQUEMENT des couleurs inline du log de combat */
+    .combat-log-container div[style*="color"],
+    .combat-log-container span[style*="color"],
+    .combat-log-container p[style*="color"],
+    .combat-log-container h3[style*="color"],
+    .combat-log-container h4[style*="color"],
+    .combat-log-container h5[style*="color"] {{
+        color: revert !important;
+        /* revert annule les styles CSS et revient à la valeur inline */
+    }}
     </style>
     """, unsafe_allow_html=True)
 
