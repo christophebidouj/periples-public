@@ -439,20 +439,24 @@ def apply_fantasy_theme(theme_name: str = "Parchemin"):
     /* Application des classes aux boutons Streamlit selon leur type */
     button[kind="primary"] {{
         background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary}) !important;
+        color: {theme.button_text_color} !important;
         border: 2px solid {theme.button_secondary} !important;
     }}
 
     button[kind="secondary"] {{
         background: linear-gradient(135deg, {theme.button_secondary}, {theme.button_secondary_hover}) !important;
-        border: 2px solid #330009 !important;
+        color: {theme.button_text_color} !important;
+        border: 2px solid {theme.button_secondary_hover} !important;
     }}
 
     button[kind="primary"]:hover {{
         background: linear-gradient(135deg, {theme.button_primary_hover}, {theme.button_primary}) !important;
+        color: {theme.button_text_color} !important;
     }}
 
     button[kind="secondary"]:hover {{
         background: linear-gradient(135deg, {theme.button_primary}, {theme.button_secondary}) !important;
+        color: {theme.button_text_color} !important;
     }}
 
     /* Gestion des boutons désactivés */
