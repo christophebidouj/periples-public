@@ -133,13 +133,13 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
                 warnings_found.append(f"⚠️ **Ennemi surévalué** : {enemy['Ennemi']} (Danger: {enemy['Danger Rating']}) - Trop résistant ou trop de dégâts")
 
     # 4. COMBAT TROP COURT OU TROP LONG
-    if duration < 3:
-        warnings_found.append(f"⚠️ **Combat trop court** ({duration} tours) - Ennemis peut-être trop faibles")
-    elif duration > 15:
+    if duration < 2:
+        warnings_found.append(f"⚠️ **Combat trop court** ({duration} tour) - Ennemis peut-être trop faibles")
+    elif duration > 6:
         warnings_found.append(f"⚠️ **Combat trop long** ({duration} tours) - Manque de dégâts ou ennemis trop résistants")
 
     # 5. SUCCÈS : Combat équilibré
-    if not dead_heroes and victory and 3 <= duration <= 10:
+    if not dead_heroes and victory and 2 <= duration <= 6:
         successes_found.append(f"✅ **Combat équilibré** : Victoire sans pertes en {duration} tours")
     if max_contribution < 50 and len(heroes_data) > 1:
         successes_found.append(f"✅ **Bonne répartition** : Aucun héros ne domine (max {max_contribution:.0f}%)")
