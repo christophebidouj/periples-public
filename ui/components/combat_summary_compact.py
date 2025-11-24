@@ -29,19 +29,6 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
 
     st.markdown("---")
 
-    # === MÉTRIQUES CLÉS (2 colonnes) ===
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("💪 Héros survivants",
-                 f"{analysis['heroes']['surviving']}/{analysis['heroes']['total']}")
-
-    with col2:
-        st.metric("❤️ PV moyens finaux",
-                 f"{analysis['heroes']['avg_hp_percent']:.0f}%")
-
-    st.markdown("---")
-
     # === LOG DE COMBAT (TOUJOURS ACCESSIBLE) ===
     with st.expander("📜 Log de Combat", expanded=False):
         for line in log:
@@ -67,16 +54,19 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
 
         # Calculs
         precision = (attacks_hit / attacks_made * 100) if attacks_made > 0 else 0
-        dps = (damage_dealt / turns_played) if turns_played > 0 else 0
+        dpt = (damage_dealt / turns_played) if turns_played > 0 else 0
         contribution = (damage_dealt / total_hero_damage * 100) if total_hero_damage > 0 else 0
         tank_ratio = (damage_taken / total_hero_damage_received * 100) if total_hero_damage_received > 0 else 0
+
+        # Précision : N/A si aucune attaque physique
+        precision_display = f"{precision:.0f}%" if attacks_made > 0 else "N/A"
 
         heroes_data.append({
             'Héros': hero_stats['name'],
             'Dégâts': damage_dealt,
             'Reçus': damage_taken,
-            'Précision': f"{precision:.0f}%",
-            'DPS': f"{dps:.1f}",
+            'Précision': precision_display,
+            'DPT': f"{dpt:.1f}",
             'Contribution': f"{contribution:.0f}%",
             'Tank': f"{tank_ratio:.0f}%",
             'Tours': turns_played,
@@ -86,7 +76,7 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
     df_heroes = pd.DataFrame(heroes_data)
     st.dataframe(df_heroes, use_container_width=True, hide_index=True)
 
-    st.caption("**Légendes**: Dégâts=infligés | Reçus=encaissés | DPS=dégâts/tour | Contribution=% dégâts équipe | Tank=% dégâts absorbés")
+    st.caption("**Légendes**: Dégâts=infligés | Reçus=encaissés | **DPT**=Dégâts Par Tour (physiques + capacités) | Précision=% réussite attaques physiques (N/A si que capacités) | Contribution=% dégâts équipe | Tank=% dégâts absorbés")
 
     # ENNEMIS - Tableau compact
     st.markdown("### 👹 **Ennemis - Analyse de Dangerosité**")
@@ -98,14 +88,14 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
         turns_played = enemy_stats.get('turns_played', 0)
 
         # Calculs
-        dps = (damage_dealt / turns_played) if turns_played > 0 else 0
+        dpt = (damage_dealt / turns_played) if turns_played > 0 else 0
         danger_rating = (damage_dealt / max(damage_taken, 1)) * turns_played
 
         enemies_data.append({
             'Ennemi': enemy_stats['name'],
             'Dégâts': damage_dealt,
             'Reçus': damage_taken,
-            'DPS': f"{dps:.1f}",
+            'DPT': f"{dpt:.1f}",
             'Danger Rating': f"{danger_rating:.1f}",
             'Tours survécus': turns_played,
             'Éliminé': '✅' if not enemy_stats.get('survived', True) else '⚠️ Vivant'
@@ -118,33 +108,56 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
 
     st.markdown("---")
 
-    # === ANALYSE RAPIDE ===
-    st.markdown("## 🎯 **Analyse Rapide**")
+    # === ANALYSE D'ÉQUILIBRAGE ===
+    st.markdown("## 🎯 **Détection de Déséquilibres**")
 
-    # Identifier le meilleur DPS héros
-    best_dps_hero = max(heroes_data, key=lambda x: float(x['DPS'].replace(',', '.')))
-    st.info(f"⚔️ **Meilleur DPS**: {best_dps_hero['Héros']} ({best_dps_hero['DPS']} dégâts/tour)")
+    warnings_found = []
+    successes_found = []
 
-    # Identifier le tank principal
-    main_tank = max(heroes_data, key=lambda x: float(x['Tank'].replace('%', '')))
-    st.info(f"🛡️ **Tank principal**: {main_tank['Héros']} ({main_tank['Tank']} des dégâts encaissés)")
+    # 1. HÉROS MORTS = Problème grave
+    dead_heroes = [h for h in heroes_data if h['Vivant'] == '💀']
+    if dead_heroes and victory:
+        warnings_found.append(f"⚠️ **Victoire coûteuse** : {len(dead_heroes)} héros mort(s) - Combat trop difficile")
+    elif dead_heroes and not victory:
+        warnings_found.append(f"⚠️ **Défaite avec pertes** : Ennemis probablement trop forts")
 
-    # Identifier l'ennemi le plus dangereux
+    # 2. CONTRIBUTION DÉSÉQUILIBRÉE (un héros fait tout)
+    contributions = [float(h['Contribution'].replace('%', '')) for h in heroes_data]
+    max_contribution = max(contributions) if contributions else 0
+    if max_contribution > 60 and len(heroes_data) > 1:
+        dominant_hero = max(heroes_data, key=lambda x: float(x['Contribution'].replace('%', '')))
+        warnings_found.append(f"⚠️ **Déséquilibre de puissance** : {dominant_hero['Héros']} fait {dominant_hero['Contribution']} des dégâts (>60%) - Autres héros sous-utilisés")
+
+    # 3. ENNEMIS TROP DANGEREUX
     if enemies_data:
-        most_dangerous = max(enemies_data, key=lambda x: float(x['Danger Rating'].replace(',', '.')))
-        danger_value = float(most_dangerous['Danger Rating'].replace(',', '.'))
+        dangerous_enemies = [e for e in enemies_data if float(e['Danger Rating'].replace(',', '.')) > 3.0]
+        if dangerous_enemies:
+            for enemy in dangerous_enemies:
+                warnings_found.append(f"⚠️ **Ennemi surévalué** : {enemy['Ennemi']} (Danger: {enemy['Danger Rating']}) - Trop résistant ou trop de dégâts")
 
-        if danger_value > 3.0:
-            st.warning(f"⚠️ **Ennemi trop fort**: {most_dangerous['Ennemi']} (Danger Rating: {most_dangerous['Danger Rating']}) - Réduire ses stats")
-        elif danger_value < 1.0:
-            st.success(f"✅ **Ennemi équilibré**: {most_dangerous['Ennemi']} (Danger Rating: {most_dangerous['Danger Rating']})")
+    # 4. COMBAT TROP COURT OU TROP LONG
+    if duration < 3:
+        warnings_found.append(f"⚠️ **Combat trop court** ({duration} tours) - Ennemis peut-être trop faibles")
+    elif duration > 15:
+        warnings_found.append(f"⚠️ **Combat trop long** ({duration} tours) - Manque de dégâts ou ennemis trop résistants")
 
-    # Utilisation des ressources
-    spells_used = analysis['heroes'].get('spells_usage_percent', 0)
-    if spells_used < 30:
-        st.info(f"✨ **Sorts peu utilisés** ({spells_used:.0f}%) - Combat peut-être trop court ou facile")
-    elif spells_used > 80:
-        st.warning(f"✨ **Sorts très utilisés** ({spells_used:.0f}%) - Combat intense, héros en difficulté")
+    # 5. SUCCÈS : Combat équilibré
+    if not dead_heroes and victory and 3 <= duration <= 10:
+        successes_found.append(f"✅ **Combat équilibré** : Victoire sans pertes en {duration} tours")
+    if max_contribution < 50 and len(heroes_data) > 1:
+        successes_found.append(f"✅ **Bonne répartition** : Aucun héros ne domine (max {max_contribution:.0f}%)")
+
+    # Affichage
+    if warnings_found:
+        for warning in warnings_found:
+            st.warning(warning)
+
+    if successes_found:
+        for success in successes_found:
+            st.success(success)
+
+    if not warnings_found and not successes_found:
+        st.info("ℹ️ Pas de déséquilibre majeur détecté - Analysez les tableaux pour affiner")
 
     st.markdown("---")
 
