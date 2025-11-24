@@ -178,6 +178,11 @@ class BaseAbility(ABC):
                 if actual_damage > 0:
                     emoji = "⚡" if damage_type == "magical" else "💥"
                     log.append(f"{emoji} {target.name} subit {actual_damage} blessure(s)")
+
+                # NOUVEAU : Accumuler dans compteur si présent
+                if hasattr(self, '_damage_counter') and isinstance(self._damage_counter, dict):
+                    self._damage_counter['total'] += actual_damage
+
                 return actual_damage
 
         # Système de PV classique (fallback) - PV diminuent avec les dégâts
@@ -191,6 +196,11 @@ class BaseAbility(ABC):
             if actual_damage > 0:
                 emoji = "⚡" if damage_type == "magical" else "💥"
                 log.append(f"{emoji} {target.name} subit {actual_damage} dégâts")
+
+            # NOUVEAU : Accumuler dans compteur si présent
+            if hasattr(self, '_damage_counter') and isinstance(self._damage_counter, dict):
+                self._damage_counter['total'] += actual_damage
+
             return actual_damage
 
         return 0

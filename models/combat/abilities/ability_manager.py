@@ -87,9 +87,15 @@ class AbilityEffectsManager:
                 # TODO: Améliorer le système de ciblage dans les prochaines versions
                 targets = [hero]
 
+                # Initialiser le compteur de dégâts pour cette exécution
+                individual_ability._damage_counter = {'total': 0}
+
                 # Exécuter la capacité individuelle
                 log.append(f"🔧 Utilisation de capacité individuelle: {individual_ability.name}")
                 result = individual_ability.execute(hero, targets, context, log)
+
+                # Récupérer les dégâts accumulés automatiquement par _apply_damage()
+                damage_from_counter = individual_ability._damage_counter.get('total', 0)
 
                 # SYNC OUTPUT: Copier le compteur décrémenté vers l'objet CSV pour l'affichage UI
                 # L'instance individual est la source de vérité (elle décrémente dans execute())
@@ -100,13 +106,16 @@ class AbilityEffectsManager:
 
                 # Normaliser le résultat (gérer bool ET dict)
                 if isinstance(result, dict):
-                    # Nouveau format avec dégâts
+                    # Nouveau format avec dégâts explicites
                     success = result.get('success', False)
                     damage_dealt = result.get('damage_dealt', 0)
+                    # Si pas de dégâts dans le dict, utiliser le compteur automatique
+                    if damage_dealt == 0 and damage_from_counter > 0:
+                        damage_dealt = damage_from_counter
                 elif isinstance(result, bool):
-                    # Format legacy (bool seulement)
+                    # Format legacy (bool seulement) - utiliser compteur automatique
                     success = result
-                    damage_dealt = 0
+                    damage_dealt = damage_from_counter
                 else:
                     # Fallback sécurité
                     success = False
