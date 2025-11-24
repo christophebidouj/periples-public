@@ -1744,15 +1744,28 @@ def use_ability_action(char: Character, ability):
                 char, ability, st.session_state.sandbox_v2_log, context
             )
 
-            # Track ability usage
+            # Track ability usage (gérer format dict ET bool)
             if 'sandbox_v2_stats_tracker' in st.session_state:
                 spell_cost = getattr(ability, 'spell_cost', 0)
+
+                # Normaliser result (peut être dict ou bool)
+                if isinstance(result, dict):
+                    success = result.get('success', False)
+                    damage_dealt = result.get('damage_dealt', 0)
+                elif isinstance(result, bool):
+                    success = result
+                    damage_dealt = 0
+                else:
+                    success = False
+                    damage_dealt = 0
+
                 st.session_state.sandbox_v2_stats_tracker.record_ability_used(
-                    char, ability.name, result, spell_cost
+                    char, ability.name, success, spell_cost, damage_dealt
                 )
 
-            # 4. Feedback utilisateur
-            if result:
+            # 4. Feedback utilisateur (gérer format dict ET bool)
+            success_flag = result.get('success', False) if isinstance(result, dict) else result
+            if success_flag:
                 st.success(f"✅ {ability.name} utilisée avec succès !")
             else:
                 st.warning(f"⚠️ {ability.name} utilisée (vérifiez les logs pour détails)")

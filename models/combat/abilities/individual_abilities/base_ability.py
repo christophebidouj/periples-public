@@ -32,18 +32,23 @@ class BaseAbility(ABC):
         return f"{self.hero_code}_ability_{self.ability_number}"
 
     @abstractmethod
-    def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
+    def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]):
         """
-        ExÃ©cute la capacitÃ© avec ses effets mÃ©caniques rÃ©els
-        
+        Exécute la capacité avec ses effets mécaniques réels
+
         Args:
-            caster: Personnage qui lance la capacitÃ©
-            targets: Liste des cibles (hÃ©ros/ennemis selon le type)
+            caster: Personnage qui lance la capacité
+            targets: Liste des cibles (héros/ennemis selon le type)
             context: Contexte du combat (spell_manager, rules, etc.)
             log: Liste pour ajouter les messages de log
-            
+
         Returns:
-            bool: True si la capacitÃ© a eu un effet mÃ©canique, False sinon
+            bool OU dict:
+            - bool (legacy): True si succès, False sinon
+            - dict (nouveau): {'success': bool, 'damage_dealt': int}
+
+            Les capacités qui font des dégâts directs doivent retourner le dict
+            Les capacités de buff/soin peuvent continuer à retourner bool
         """
         pass
     

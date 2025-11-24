@@ -32,17 +32,24 @@ class AbilityEffectsManager:
         self.individual_abilities_used = 0
         self.legacy_abilities_used = 0
 
-    def apply_ability_effects(self, hero, ability, log: List[str], context: Dict[str, Any] = None) -> bool:
-        """Point d'entrée principal pour l'application des effets de capacités"""
-        
+    def apply_ability_effects(self, hero, ability, log: List[str], context: Dict[str, Any] = None):
+        """
+        Point d'entrée principal pour l'application des effets de capacités
+
+        Returns:
+            bool OU dict:
+            - bool (legacy): True si succès, False sinon
+            - dict (nouveau): {'success': bool, 'damage_dealt': int}
+        """
+
         # Étape 1: Vérifier si une capacité individuelle existe
         if INDIVIDUAL_ABILITIES_AVAILABLE and hasattr(ability, 'ability_number'):
             individual_result = self._try_individual_ability(hero, ability, log, context)
             if individual_result is not None:
                 return individual_result
-        
+
         # Ancien système désactivé
-        return False
+        return {'success': False, 'damage_dealt': 0}
         
     def _try_individual_ability(self, hero, ability, log: List[str], context: Dict[str, Any] = None):
         """
@@ -82,7 +89,7 @@ class AbilityEffectsManager:
 
                 # Exécuter la capacité individuelle
                 log.append(f"🔧 Utilisation de capacité individuelle: {individual_ability.name}")
-                success = individual_ability.execute(hero, targets, context, log)
+                result = individual_ability.execute(hero, targets, context, log)
 
                 # SYNC OUTPUT: Copier le compteur décrémenté vers l'objet CSV pour l'affichage UI
                 # L'instance individual est la source de vérité (elle décrémente dans execute())
@@ -91,13 +98,27 @@ class AbilityEffectsManager:
                 if hasattr(ability, 'uses_per_combat') and hasattr(individual_ability, 'uses_per_combat'):
                     ability.uses_per_combat = individual_ability.uses_per_combat
 
+                # Normaliser le résultat (gérer bool ET dict)
+                if isinstance(result, dict):
+                    # Nouveau format avec dégâts
+                    success = result.get('success', False)
+                    damage_dealt = result.get('damage_dealt', 0)
+                elif isinstance(result, bool):
+                    # Format legacy (bool seulement)
+                    success = result
+                    damage_dealt = 0
+                else:
+                    # Fallback sécurité
+                    success = False
+                    damage_dealt = 0
+
                 if success:
                     self.individual_abilities_used += 1
                     log.append(f"✅ Capacité individuelle {individual_ability.name} exécutée avec succès")
                 else:
                     log.append(f"⚠️ Capacité individuelle {individual_ability.name} a échoué")
 
-                return success
+                return {'success': success, 'damage_dealt': damage_dealt}
             
         except Exception as e:
             log.append(f"❌ Erreur capacité individuelle {hero.code}-{ability.ability_number}: {str(e)}")

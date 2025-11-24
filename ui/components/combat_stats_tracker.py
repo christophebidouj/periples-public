@@ -173,7 +173,7 @@ class CombatStatsTracker:
                 targets[target.code] = targets.get(target.code, 0) + 1
 
     def record_ability_used(self, caster: Character, ability_name: str,
-                           success: bool, spell_cost: int = 0):
+                           success: bool, spell_cost: int = 0, damage_dealt: int = 0):
         """
         Enregistre l'utilisation d'une capacité
 
@@ -182,6 +182,7 @@ class CombatStatsTracker:
             ability_name: Nom de la capacité
             success: True si la capacité a réussi
             spell_cost: Coût en sorts de la capacité
+            damage_dealt: Dégâts directs infligés par la capacité (0 pour buffs/soins)
         """
         if caster.code in self.stats['heroes']:
             hero_stats = self.stats['heroes'][caster.code]
@@ -202,6 +203,10 @@ class CombatStatsTracker:
 
             # Coût en sorts
             hero_stats['spells_spent'] += spell_cost
+
+            # NOUVEAU : Dégâts des capacités (attaques magiques directes uniquement)
+            if damage_dealt > 0:
+                hero_stats['damage_dealt'] += damage_dealt
 
     def record_damage_taken(self, target: Character, damage: int, parade_used: int = 0):
         """
