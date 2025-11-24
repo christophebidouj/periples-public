@@ -1395,7 +1395,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                     st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche une attaque multi-cible !")
 
                 for enemy in alive_enemies:
-                    adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+                    attack_result = adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+
+                    # Track attack stats
+                    if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                        st.session_state.sandbox_v2_stats_tracker.record_attack(
+                            char, enemy, attack_result['hit'], attack_result['damage'],
+                            attack_result['critical'], attack_result['critical_fail']
+                        )
 
                 # Consommer les buffs multi-cibles
                 if hasattr(char, 'temporary_buffs'):
@@ -1408,7 +1415,15 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                 # Attaque normale (cible unique)
                 # NOTE: Méditation (Raishi P-8-2) gérée automatiquement par combat_actions.py
                 # La 2e frappe (dégâts / 2) est déclenchée automatiquement après l'attaque réussie
-                adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+                attack_result = adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
+
+                # Track attack stats
+                if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                    st.session_state.sandbox_v2_stats_tracker.record_attack(
+                        char, target, attack_result['hit'], attack_result['damage'],
+                        attack_result['critical'], attack_result['critical_fail']
+                    )
+
                 save_game_state(f"{char.name} attaque {target.name}")
 
             # Marquer qu'une attaque a été effectuée
@@ -1470,7 +1485,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                     alive_enemies = [e for e in enemies_list if e.is_alive()]
                     st.session_state.sandbox_v2_log.append(f"💥 {char.name} déclenche une attaque ciblant TOUS les ennemis !")
                     for enemy in alive_enemies:
-                        adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+                        attack_result = adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+
+                        # Track attack stats
+                        if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                            st.session_state.sandbox_v2_stats_tracker.record_attack(
+                                char, enemy, attack_result['hit'], attack_result['damage'],
+                                attack_result['critical'], attack_result['critical_fail']
+                            )
 
                     # Consommer le buff
                     char.temporary_buffs.pop('attack_all_enemies', None)

@@ -21,9 +21,13 @@ class CombatActions:
         self._current_heroes = []
     
     def hero_attack(self, hero, enemies: list, player_count: int, log: list):
-        """Attaque héros avec objets spéciaux + système d'effets modulaire + FORME DE LOUP via temporary_buffs"""
+        """Attaque héros avec objets spéciaux + système d'effets modulaire + FORME DE LOUP via temporary_buffs
+
+        Returns:
+            dict: {'hit': bool, 'damage': int, 'critical': bool, 'critical_fail': bool, 'target': Character}
+        """
         if not enemies:
-            return
+            return {'hit': False, 'damage': 0, 'critical': False, 'critical_fail': False, 'target': None}
             
         target = enemies[0]
         attack_modifiers = CharacterAbilitiesIntegration.check_attack_modifiers(hero)
@@ -155,7 +159,15 @@ class CombatActions:
             self._remove_stealth_on_damage(hero, log)
 
             CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
-            return
+
+            # Return attack result for stats tracking
+            return {
+                'hit': True,
+                'damage': damage_result['health_damage'],
+                'critical': True,
+                'critical_fail': False,
+                'target': target
+            }
         
         # Échec critique
         elif self.rules.criticals and attack_roll == 1:
@@ -167,6 +179,15 @@ class CombatActions:
             if elneha_wolf_used:
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
             self._handle_critical_failure(hero, target, log)
+
+            # Return attack result for stats tracking
+            return {
+                'hit': False,
+                'damage': 0,
+                'critical': False,
+                'critical_fail': True,
+                'target': target
+            }
         
         # Attaque normale
         else:
@@ -250,6 +271,17 @@ class CombatActions:
                 self._remove_stealth_on_damage(hero, log)
 
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
+
+                hero.action_taken_this_turn = True
+
+                # Return attack result for stats tracking
+                return {
+                    'hit': True,
+                    'damage': damage_result['health_damage'],
+                    'critical': False,
+                    'critical_fail': False,
+                    'target': target
+                }
             else:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 precision_bonus = hero.get_total_precision()
@@ -258,8 +290,17 @@ class CombatActions:
                 if elneha_wolf_used:
                     log.append(f"  🐺 Forme de loup gaspillée par l'échec...")
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
-        
-        hero.action_taken_this_turn = True
+
+                hero.action_taken_this_turn = True
+
+                # Return attack result for stats tracking
+                return {
+                    'hit': False,
+                    'damage': 0,
+                    'critical': False,
+                    'critical_fail': False,
+                    'target': target
+                }
 
     def _get_mark_bonus_for_target(self, hero, target) -> int:
         """
