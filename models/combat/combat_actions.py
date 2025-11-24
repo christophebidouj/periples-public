@@ -667,12 +667,15 @@ class CombatActions:
 
         Args:
             manual_target: Si fourni, cible spécifique (bypass sélection automatique IA)
+
+        Returns:
+            dict: {'hit': bool, 'damage': int, 'target': Character} ou None si pas de cible
         """
         all_targets = heroes + active_pets
         alive_targets = [t for t in all_targets if t.is_alive()]
 
         if not alive_targets:
-            return
+            return None
 
         enemy_stats = enemy.get_stats_for_players(player_count)
         damage = enemy_stats['damage']
@@ -688,18 +691,18 @@ class CombatActions:
             enemy_name = getattr(enemy, 'display_name', enemy.name)
             log.append(f"👹 {enemy_name} cherche une cible...")
             log.append(f"  👻 Aucune cible visible ! L'attaque échoue (tous les héros sont invisibles)")
-            return
+            return {'hit': False, 'damage': 0, 'target': None}
 
         enemy_name = getattr(enemy, 'display_name', enemy.name)
         target_name = getattr(target, 'display_name', target.name)
         
         # 🐻 NOUVELLE MÉCANIQUE: FORME D'OURS - IGNORE PROCHAINE ATTAQUE via temporary_buffs
-        if (hasattr(target, 'temporary_buffs') and 
+        if (hasattr(target, 'temporary_buffs') and
             target.temporary_buffs.get('ignore_next_attack', False)):
             target.temporary_buffs['ignore_next_attack'] = False
             log.append(f"👹 {enemy_name} attaque {target_name}")
             log.append(f"  🐻 {target_name} ignore l'attaque grâce à sa forme d'ours !")
-            return
+            return {'hit': False, 'damage': 0, 'target': target}
         
         # Attaque normale
         # Dégâts magiques des ennemis ignorent la parade (règles officielles p.26)
@@ -723,9 +726,16 @@ class CombatActions:
             log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués par parade, {damage_result['health_damage']} aux PV")
         else:
             log.append(f"  💥 {damage_result['health_damage']} aux PV")
-        
+
         if not target.is_alive():
             log.append(f"  💀 {target_name} vaincu !")
+
+        # Return attack result for stats tracking
+        return {
+            'hit': True,
+            'damage': damage_result['health_damage'],
+            'target': target
+        }
 
     def _select_enemy_target(self, enemy, alive_targets: list):
         """Sélection de cible selon les règles d'IA tactique (exclut héros invisibles)"""

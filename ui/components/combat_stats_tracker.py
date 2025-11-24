@@ -298,14 +298,23 @@ class CombatStatsTracker:
         Enregistre la fin du tour d'un combattant
 
         Args:
-            combatant_id: ID du combattant (ex: 'hero_P-1', 'enemy_E-12')
+            combatant_id: ID du combattant (ex: 'hero_P-1', 'enemy_E-12_0')
             turn_number: Numéro du tour actuel
         """
         # Extraire code du combattant
         parts = combatant_id.split('_')
         if len(parts) >= 2:
             faction = parts[0]  # 'hero' ou 'enemy'
-            code = '_'.join(parts[1:])  # Code peut contenir des underscores
+
+            # Pour les ennemis, l'ID est au format "enemy_CODE_INDEX"
+            # Pour les héros, c'est "hero_CODE"
+            # On doit extraire CODE sans l'index
+            if faction == 'enemy' and len(parts) >= 3:
+                # Enlever le dernier élément (index) pour les ennemis
+                code = '_'.join(parts[1:-1])
+            else:
+                # Pour les héros ou format legacy
+                code = '_'.join(parts[1:])
 
             stats_dict = self.stats['heroes'] if faction == 'hero' else self.stats['enemies']
 

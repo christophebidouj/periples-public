@@ -1108,7 +1108,7 @@ def display_enemy_interface(combatant: Dict):
 
         if target:
             # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
-            adapter.combat_actions.enemy_attack(
+            attack_result = adapter.combat_actions.enemy_attack(
                 enemy=char,
                 heroes=heroes_list,
                 player_count=player_count,
@@ -1116,6 +1116,18 @@ def display_enemy_interface(combatant: Dict):
                 active_pets=[],  # Pas de pets dans Sandbox V2 pour l'instant
                 manual_target=target
             )
+
+            # Track enemy attack stats
+            if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                tracker = st.session_state.sandbox_v2_stats_tracker
+                tracker.record_attack(
+                    char, target, attack_result['hit'], attack_result['damage'],
+                    is_critical=False, is_fail=False
+                )
+                # Track damage taken by hero
+                if attack_result['hit'] and attack_result['damage'] > 0:
+                    tracker.record_damage_taken(target, attack_result['damage'])
+
             st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")
             next_turn()
