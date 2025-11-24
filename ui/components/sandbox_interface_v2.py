@@ -2582,8 +2582,13 @@ def main_sandbox_v2():
 
         # Détection fin de combat
         if not alive_heroes:
-            # Finaliser le tracker
+            # IMPORTANT : Enregistrer le tour du combattant actuel avant de finaliser
+            current = get_current_combatant()
             tracker = st.session_state.get('sandbox_v2_stats_tracker')
+            if tracker and current:
+                tracker.record_turn_end(current['id'], st.session_state.sandbox_v2_round_number)
+
+            # Finaliser le tracker
             if tracker:
                 tracker.finalize_combat(
                     victory=False,
@@ -2596,8 +2601,13 @@ def main_sandbox_v2():
             st.rerun()
 
         if not alive_enemies:
-            # Finaliser le tracker
+            # IMPORTANT : Enregistrer le tour du combattant actuel avant de finaliser
+            current = get_current_combatant()
             tracker = st.session_state.get('sandbox_v2_stats_tracker')
+            if tracker and current:
+                tracker.record_turn_end(current['id'], st.session_state.sandbox_v2_round_number)
+
+            # Finaliser le tracker
             if tracker:
                 tracker.finalize_combat(
                     victory=True,

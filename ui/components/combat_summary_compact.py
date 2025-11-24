@@ -58,14 +58,11 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
         contribution = (damage_dealt / total_hero_damage * 100) if total_hero_damage > 0 else 0
         tank_ratio = (damage_taken / total_hero_damage_received * 100) if total_hero_damage_received > 0 else 0
 
-        # Précision : N/A si aucune attaque physique
-        precision_display = f"{precision:.0f}%" if attacks_made > 0 else "N/A"
-
         heroes_data.append({
             'Héros': hero_stats['name'],
             'Dégâts': damage_dealt,
             'Reçus': damage_taken,
-            'Précision': precision_display,
+            'Précision': f"{precision:.0f}%",
             'DPT': f"{dpt:.1f}",
             'Contribution': f"{contribution:.0f}%",
             'Tank': f"{tank_ratio:.0f}%",
@@ -76,7 +73,7 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
     df_heroes = pd.DataFrame(heroes_data)
     st.dataframe(df_heroes, use_container_width=True, hide_index=True)
 
-    st.caption("**Légendes**: Dégâts=infligés | Reçus=encaissés | **DPT**=Dégâts Par Tour (physiques + capacités) | Précision=% réussite attaques physiques (N/A si que capacités) | Contribution=% dégâts équipe | Tank=% dégâts absorbés")
+    st.caption("**Légendes**: Dégâts=infligés | Reçus=encaissés | **DPT**=Dégâts Par Tour (physiques + capacités) | Précision=% réussite attaques PHYSIQUES de base (0% = aucune attaque physique) | Contribution=% dégâts équipe | Tank=% dégâts absorbés")
 
     # ENNEMIS - Tableau compact
     st.markdown("### 👹 **Ennemis - Analyse de Dangerosité**")
