@@ -48,8 +48,7 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
     st.markdown("---")
 
     # === LOG DE COMBAT (TOUJOURS ACCESSIBLE) ===
-    with st.expander("📜 **Log de Combat** (Essentiel pour analyse)", expanded=True):
-        st.markdown("*Conseil : Gardez le log ouvert pour analyser le déroulement du combat*")
+    with st.expander("📜 Log de Combat", expanded=False):
         for line in log:
             st.text(line)
 

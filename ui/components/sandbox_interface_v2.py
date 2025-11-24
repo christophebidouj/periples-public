@@ -840,6 +840,18 @@ def next_turn():
     if not st.session_state.sandbox_v2_combatants:
         return
 
+    # Enregistrer la fin du tour du combattant actuel (pour stats)
+    current_turn_index = st.session_state.get('sandbox_v2_current_turn_index', -1)
+    if current_turn_index >= 0 and current_turn_index < len(st.session_state.sandbox_v2_combatants):
+        current = st.session_state.sandbox_v2_combatants[current_turn_index]
+        combatant_id = current['id']
+        turn_number = st.session_state.get('sandbox_v2_round_number', 1)
+
+        # Tracker stats
+        tracker = st.session_state.get('sandbox_v2_stats_tracker')
+        if tracker:
+            tracker.record_turn_end(combatant_id, turn_number)
+
     # Vérifier le mode (lire directement depuis initiative_setting)
     initiative_enabled = st.session_state.get('initiative_setting', True)
 
@@ -1399,10 +1411,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
                     # Track attack stats
                     if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                        st.session_state.sandbox_v2_stats_tracker.record_attack(
+                        tracker = st.session_state.sandbox_v2_stats_tracker
+                        tracker.record_attack(
                             char, enemy, attack_result['hit'], attack_result['damage'],
                             attack_result['critical'], attack_result['critical_fail']
                         )
+                        # Track damage taken by enemy
+                        if attack_result['hit'] and attack_result['damage'] > 0:
+                            tracker.record_damage_taken(enemy, attack_result['damage'])
 
                 # Consommer les buffs multi-cibles
                 if hasattr(char, 'temporary_buffs'):
@@ -1419,10 +1435,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
                 # Track attack stats
                 if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                    st.session_state.sandbox_v2_stats_tracker.record_attack(
+                    tracker = st.session_state.sandbox_v2_stats_tracker
+                    tracker.record_attack(
                         char, target, attack_result['hit'], attack_result['damage'],
                         attack_result['critical'], attack_result['critical_fail']
                     )
+                    # Track damage taken by target
+                    if attack_result['hit'] and attack_result['damage'] > 0:
+                        tracker.record_damage_taken(target, attack_result['damage'])
 
                 save_game_state(f"{char.name} attaque {target.name}")
 
@@ -1489,10 +1509,14 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
                         # Track attack stats
                         if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                            st.session_state.sandbox_v2_stats_tracker.record_attack(
+                            tracker = st.session_state.sandbox_v2_stats_tracker
+                            tracker.record_attack(
                                 char, enemy, attack_result['hit'], attack_result['damage'],
                                 attack_result['critical'], attack_result['critical_fail']
                             )
+                            # Track damage taken by enemy
+                            if attack_result['hit'] and attack_result['damage'] > 0:
+                                tracker.record_damage_taken(enemy, attack_result['damage'])
 
                     # Consommer le buff
                     char.temporary_buffs.pop('attack_all_enemies', None)
