@@ -107,6 +107,7 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
 
     # === ANALYSE D'ÉQUILIBRAGE ===
     st.markdown("## 🎯 **Détection de Déséquilibres**")
+    st.caption("ℹ️ _Indicateur automatique, pas vérité absolue. Alertes sur anomalies potentielles - à vous de décider si elles sont problématiques._")
 
     warnings_found = []
     successes_found = []
