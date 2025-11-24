@@ -1708,6 +1708,13 @@ def use_ability_action(char: Character, ability):
                 char, ability, st.session_state.sandbox_v2_log, context
             )
 
+            # Track ability usage
+            if 'sandbox_v2_stats_tracker' in st.session_state:
+                spell_cost = getattr(ability, 'spell_cost', 0)
+                st.session_state.sandbox_v2_stats_tracker.record_ability_used(
+                    char, ability.name, result, spell_cost
+                )
+
             # 4. Feedback utilisateur
             if result:
                 st.success(f"✅ {ability.name} utilisée avec succès !")
@@ -1741,6 +1748,13 @@ def use_small_potion_action(char: Character):
         result = char.use_specific_potion(PotionType.SMALL)
         if result['success']:
             st.session_state.sandbox_v2_log.append(f"🩸 {char.name} boit une Petite Potion : +{result['healing_done']} PV")
+
+            # Track potion usage
+            if 'sandbox_v2_stats_tracker' in st.session_state:
+                st.session_state.sandbox_v2_stats_tracker.record_potion_used(
+                    char, 'small', result['healing_done']
+                )
+
             save_game_state(f"{char.name} utilise Petite Potion")
             # NE PAS appeler next_turn() - le héros peut encore agir
             st.rerun()  # Rafraîchir l'interface pour montrer les changements
@@ -1753,6 +1767,13 @@ def use_large_potion_action(char: Character):
         result = char.use_specific_potion(PotionType.LARGE)
         if result['success']:
             st.session_state.sandbox_v2_log.append(f"❤️‍🩹 {char.name} boit une Grande Potion : +{result['healing_done']} PV")
+
+            # Track potion usage
+            if 'sandbox_v2_stats_tracker' in st.session_state:
+                st.session_state.sandbox_v2_stats_tracker.record_potion_used(
+                    char, 'large', result['healing_done']
+                )
+
             save_game_state(f"{char.name} utilise Grande Potion")
             # NE PAS appeler next_turn() - le héros peut encore agir
             st.rerun()  # Rafraîchir l'interface pour montrer les changements
@@ -2448,47 +2469,27 @@ def main_sandbox_v2():
 
     # === PHASES VICTORY / DEFEAT ===
     elif phase in ['VICTORY', 'DEFEAT']:
-        # Afficher résultats du combat
-        if 'sandbox_v2_combat_result' in st.session_state:
-            result = st.session_state.sandbox_v2_combat_result
+        # Utiliser le vrai tracker qui a collecté les stats pendant le combat
+        tracker = st.session_state.get('sandbox_v2_stats_tracker')
 
-            # Collecter stats simplifiées depuis le résultat final
-            from ui.components.combat_stats_analyzer import CombatStatsTracker
+        if tracker:
+            # Analyser les stats collectées
+            analysis = analyze_combat_results(tracker.get_stats())
 
-            tracker = CombatStatsTracker()
-            tracker.stats['start_round'] = 1
-            tracker.stats['end_round'] = result['end_round']
-            tracker.stats['victory'] = result['victory']
-
-            # Initialiser stats des personnages
-            for hero in result['heroes']:
-                tracker.initialize_hero(hero)
-                # Stats finales
-                hero_stats = tracker.stats['heroes'][hero.code]
-                hero_stats['final_health'] = hero.current_health
-                hero_stats['survived'] = hero.is_alive()
-
-            for enemy in result['enemies']:
-                tracker.initialize_enemy(enemy)
-                # Stats finales
-                enemy_stats = tracker.stats['enemies'][enemy.code]
-                enemy_stats['final_health'] = enemy.current_health
-                enemy_stats['survived'] = enemy.is_alive()
-
-            # Analyser et afficher
-            analysis = analyze_combat_results(tracker.stats)
-
-            # Générer recommandations
-            player_count = len(result['heroes'])
-            recommendations = generate_balance_recommendations(
-                analysis, result['enemies'], player_count
+            # Afficher récapitulatif compact et utile
+            from ui.components.combat_summary_compact import display_compact_combat_summary
+            display_compact_combat_summary(
+                tracker.get_stats(),
+                analysis,
+                st.session_state.sandbox_v2_log
             )
-
-            # Afficher panneau complet
-            display_combat_results_panel(
-                tracker.stats, analysis, recommendations,
-                result['heroes'], result['enemies']
-            )
+        else:
+            # Fallback si pas de tracker (ne devrait pas arriver)
+            if phase == 'VICTORY':
+                st.success("🏆 **VICTOIRE !**")
+            else:
+                st.error("💀 **DÉFAITE**")
+            st.warning("⚠️ Statistiques de combat non disponibles")
 
             st.markdown("---")
 
@@ -2527,25 +2528,31 @@ def main_sandbox_v2():
 
         # Détection fin de combat
         if not alive_heroes:
+            # Finaliser le tracker
+            tracker = st.session_state.get('sandbox_v2_stats_tracker')
+            if tracker:
+                tracker.finalize_combat(
+                    victory=False,
+                    end_round=st.session_state.sandbox_v2_round_number,
+                    heroes=[c['character'] for c in hero_combatants],
+                    enemies=[c['character'] for c in enemy_combatants]
+                )
+
             st.session_state.sandbox_v2_phase = 'DEFEAT'
-            # Sauvegarder infos pour analyse
-            st.session_state.sandbox_v2_combat_result = {
-                'victory': False,
-                'end_round': st.session_state.sandbox_v2_round_number,
-                'heroes': [c['character'] for c in hero_combatants],
-                'enemies': [c['character'] for c in enemy_combatants],
-            }
             st.rerun()
 
         if not alive_enemies:
+            # Finaliser le tracker
+            tracker = st.session_state.get('sandbox_v2_stats_tracker')
+            if tracker:
+                tracker.finalize_combat(
+                    victory=True,
+                    end_round=st.session_state.sandbox_v2_round_number,
+                    heroes=[c['character'] for c in hero_combatants],
+                    enemies=[c['character'] for c in enemy_combatants]
+                )
+
             st.session_state.sandbox_v2_phase = 'VICTORY'
-            # Sauvegarder infos pour analyse
-            st.session_state.sandbox_v2_combat_result = {
-                'victory': True,
-                'end_round': st.session_state.sandbox_v2_round_number,
-                'heroes': [c['character'] for c in hero_combatants],
-                'enemies': [c['character'] for c in enemy_combatants],
-            }
             st.rerun()
 
         # Tour actuel
