@@ -1126,7 +1126,11 @@ def display_enemy_interface(combatant: Dict):
                 )
                 # Track damage taken by hero
                 if attack_result['hit'] and attack_result['damage'] > 0:
-                    tracker.record_damage_taken(target, attack_result['damage'])
+                    tracker.record_damage_taken(
+                        target,
+                        attack_result['damage'],
+                        parade_used=attack_result.get('parade_used', 0)
+                    )
 
             st.session_state.sandbox_v2_action_state = None
             save_game_state(f"{char.name} attaque {target.name}")
@@ -1430,7 +1434,11 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                         )
                         # Track damage taken by enemy
                         if attack_result['hit'] and attack_result['damage'] > 0:
-                            tracker.record_damage_taken(enemy, attack_result['damage'])
+                            tracker.record_damage_taken(
+                                enemy,
+                                attack_result['damage'],
+                                parade_used=attack_result.get('parade_used', 0)
+                            )
 
                 # Consommer les buffs multi-cibles
                 if hasattr(char, 'temporary_buffs'):
@@ -1454,7 +1462,11 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                     )
                     # Track damage taken by target
                     if attack_result['hit'] and attack_result['damage'] > 0:
-                        tracker.record_damage_taken(target, attack_result['damage'])
+                        tracker.record_damage_taken(
+                            target,
+                            attack_result['damage'],
+                            parade_used=attack_result.get('parade_used', 0)
+                        )
 
                 save_game_state(f"{char.name} attaque {target.name}")
 
@@ -1528,7 +1540,11 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                             )
                             # Track damage taken by enemy
                             if attack_result['hit'] and attack_result['damage'] > 0:
-                                tracker.record_damage_taken(enemy, attack_result['damage'])
+                                tracker.record_damage_taken(
+                                    enemy,
+                                    attack_result['damage'],
+                                    parade_used=attack_result.get('parade_used', 0)
+                                )
 
                     # Consommer le buff
                     char.temporary_buffs.pop('attack_all_enemies', None)
@@ -1766,7 +1782,12 @@ def use_ability_action(char: Character, ability):
                 # Track damage taken by targets (pour capacités offensives)
                 if isinstance(result, dict) and 'targets_hit' in result:
                     for target, damage in result['targets_hit']:
-                        st.session_state.sandbox_v2_stats_tracker.record_damage_taken(target, damage)
+                        # Les capacités magiques ignorent la parade (règles officielles)
+                        st.session_state.sandbox_v2_stats_tracker.record_damage_taken(
+                            target,
+                            damage,
+                            parade_used=0
+                        )
 
             # 4. Feedback utilisateur (gérer format dict ET bool)
             success_flag = result.get('success', False) if isinstance(result, dict) else result

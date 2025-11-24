@@ -223,8 +223,9 @@ class CombatStatsTracker:
         if target.code in stats_dict:
             stats_dict[target.code]['damage_taken'] += damage
 
+            # Enregistrer le nombre EXACT de jetons de parade utilisés
             if is_hero and parade_used > 0:
-                stats_dict[target.code]['parade_tokens_used'] += 1
+                stats_dict[target.code]['parade_tokens_used'] += parade_used
 
     def record_effect_applied(self, caster: Character, effect_type: str, target: Character = None):
         """

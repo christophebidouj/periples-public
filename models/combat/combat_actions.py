@@ -278,6 +278,7 @@ class CombatActions:
                 return {
                     'hit': True,
                     'damage': damage_result['health_damage'],
+                    'parade_used': damage_result.get('parade_tokens_used', 0),
                     'critical': False,
                     'critical_fail': False,
                     'target': target
@@ -297,6 +298,7 @@ class CombatActions:
                 return {
                     'hit': False,
                     'damage': 0,
+                    'parade_used': 0,
                     'critical': False,
                     'critical_fail': False,
                     'target': target
@@ -691,7 +693,7 @@ class CombatActions:
             enemy_name = getattr(enemy, 'display_name', enemy.name)
             log.append(f"👹 {enemy_name} cherche une cible...")
             log.append(f"  👻 Aucune cible visible ! L'attaque échoue (tous les héros sont invisibles)")
-            return {'hit': False, 'damage': 0, 'target': None}
+            return {'hit': False, 'damage': 0, 'parade_used': 0, 'target': None}
 
         enemy_name = getattr(enemy, 'display_name', enemy.name)
         target_name = getattr(target, 'display_name', target.name)
@@ -702,7 +704,7 @@ class CombatActions:
             target.temporary_buffs['ignore_next_attack'] = False
             log.append(f"👹 {enemy_name} attaque {target_name}")
             log.append(f"  🐻 {target_name} ignore l'attaque grâce à sa forme d'ours !")
-            return {'hit': False, 'damage': 0, 'target': target}
+            return {'hit': False, 'damage': 0, 'parade_used': 0, 'target': target}
         
         # Attaque normale
         # Dégâts magiques des ennemis ignorent la parade (règles officielles p.26)
@@ -734,6 +736,7 @@ class CombatActions:
         return {
             'hit': True,
             'damage': damage_result['health_damage'],
+            'parade_used': damage_result.get('parade_tokens_used', 0),
             'target': target
         }
 
