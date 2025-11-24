@@ -1763,6 +1763,11 @@ def use_ability_action(char: Character, ability):
                     char, ability.name, success, spell_cost, damage_dealt
                 )
 
+                # Track damage taken by targets (pour capacités offensives)
+                if isinstance(result, dict) and 'targets_hit' in result:
+                    for target, damage in result['targets_hit']:
+                        st.session_state.sandbox_v2_stats_tracker.record_damage_taken(target, damage)
+
             # 4. Feedback utilisateur (gérer format dict ET bool)
             success_flag = result.get('success', False) if isinstance(result, dict) else result
             if success_flag:

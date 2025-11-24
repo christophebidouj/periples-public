@@ -182,6 +182,10 @@ class BaseAbility(ABC):
                 # NOUVEAU : Accumuler dans compteur si présent
                 if hasattr(self, '_damage_counter') and isinstance(self._damage_counter, dict):
                     self._damage_counter['total'] += actual_damage
+                    # Aussi tracker la cible et ses dégâts pour record_damage_taken()
+                    if 'targets' not in self._damage_counter:
+                        self._damage_counter['targets'] = []
+                    self._damage_counter['targets'].append((target, actual_damage))
 
                 return actual_damage
 
@@ -200,6 +204,10 @@ class BaseAbility(ABC):
             # NOUVEAU : Accumuler dans compteur si présent
             if hasattr(self, '_damage_counter') and isinstance(self._damage_counter, dict):
                 self._damage_counter['total'] += actual_damage
+                # Aussi tracker la cible et ses dégâts pour record_damage_taken()
+                if 'targets' not in self._damage_counter:
+                    self._damage_counter['targets'] = []
+                self._damage_counter['targets'].append((target, actual_damage))
 
             return actual_damage
 

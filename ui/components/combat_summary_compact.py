@@ -20,7 +20,6 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
     """
     victory = analysis['victory']
     duration = analysis['duration_rounds']
-    balance_score = analysis.get('balance_score', 5.0)
 
     # === BANNIÈRE RÉSULTAT ===
     if victory:
@@ -30,18 +29,14 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
 
     st.markdown("---")
 
-    # === MÉTRIQUES CLÉS (3 colonnes) ===
-    col1, col2, col3 = st.columns(3)
+    # === MÉTRIQUES CLÉS (2 colonnes) ===
+    col1, col2 = st.columns(2)
 
     with col1:
-        score_emoji = "🟢" if balance_score >= 7 else "🟡" if balance_score >= 5 else "🔴"
-        st.metric("⚖️ Score Équilibrage", f"{score_emoji} {balance_score:.1f}/10")
-
-    with col2:
         st.metric("💪 Héros survivants",
                  f"{analysis['heroes']['surviving']}/{analysis['heroes']['total']}")
 
-    with col3:
+    with col2:
         st.metric("❤️ PV moyens finaux",
                  f"{analysis['heroes']['avg_hp_percent']:.0f}%")
 
@@ -152,11 +147,5 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
         st.warning(f"✨ **Sorts très utilisés** ({spells_used:.0f}%) - Combat intense, héros en difficulté")
 
     st.markdown("---")
-
-    # === RECOMMANDATIONS ===
-    if balance_score < 6:
-        st.warning("⚠️ **Combat déséquilibré** - Ajustements recommandés (voir onglet Résultats pour détails)")
-    elif balance_score >= 8:
-        st.success("✅ **Combat bien équilibré** - Bon niveau de difficulté")
 
     st.info("📊 **Pour analyse détaillée, visualisations et export CSV** → Allez dans l'onglet **'Résultats'**")

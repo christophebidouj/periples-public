@@ -96,6 +96,7 @@ class AbilityEffectsManager:
 
                 # Récupérer les dégâts accumulés automatiquement par _apply_damage()
                 damage_from_counter = individual_ability._damage_counter.get('total', 0)
+                targets_hit = individual_ability._damage_counter.get('targets', [])
 
                 # SYNC OUTPUT: Copier le compteur décrémenté vers l'objet CSV pour l'affichage UI
                 # L'instance individual est la source de vérité (elle décrémente dans execute())
@@ -127,7 +128,7 @@ class AbilityEffectsManager:
                 else:
                     log.append(f"⚠️ Capacité individuelle {individual_ability.name} a échoué")
 
-                return {'success': success, 'damage_dealt': damage_dealt}
+                return {'success': success, 'damage_dealt': damage_dealt, 'targets_hit': targets_hit}
             
         except Exception as e:
             log.append(f"❌ Erreur capacité individuelle {hero.code}-{ability.ability_number}: {str(e)}")
