@@ -149,21 +149,25 @@ def _display_creation_form(manager: EnemyManager):
             st.markdown("**4 Joueurs**")
             stats_4j = _render_stats_compact("4j")
 
-        # Propriétés spéciales (inline)
+        # Propriétés spéciales (alignées sous colonne 2 Joueurs)
         st.markdown("#### ⚡ Propriétés")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             is_magical = st.checkbox(
                 "🔵 Créature magique",
                 help="Réduit les dégâts physiques de moitié"
             )
-
-        with col2:
             has_magical_damage = st.checkbox(
                 "⚡ Dégâts magiques",
                 help="Ignore la parade des héros"
             )
+
+        with col2:
+            st.write("")  # Spacer
+
+        with col3:
+            st.write("")  # Spacer
 
         # Bouton de création
         submitted = st.form_submit_button("➕ Créer l'ennemi", use_container_width=True, type="primary")
@@ -276,9 +280,9 @@ def _display_edit_form(manager: EnemyManager):
                 default_defense=enemy.stats_by_players[4]['defense']
             )
 
-        # Propriétés spéciales (inline)
+        # Propriétés spéciales (alignées sous colonne 2 Joueurs)
         st.markdown("#### ⚡ Propriétés")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             is_magical = st.checkbox(
@@ -286,13 +290,17 @@ def _display_edit_form(manager: EnemyManager):
                 value=enemy.is_magical,
                 help="Réduit les dégâts physiques de moitié"
             )
-
-        with col2:
             has_magical_damage = st.checkbox(
                 "⚡ Dégâts magiques",
                 value=enemy.has_magical_damage,
                 help="Ignore la parade des héros"
             )
+
+        with col2:
+            st.write("")  # Spacer
+
+        with col3:
+            st.write("")  # Spacer
 
         # Bouton de sauvegarde
         submitted = st.form_submit_button("💾 Sauvegarder", use_container_width=True, type="primary")
