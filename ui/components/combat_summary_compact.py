@@ -231,6 +231,3 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
     if not warnings_found and not successes_found:
         st.info("ℹ️ Pas de déséquilibre majeur détecté - Analysez les tableaux pour affiner")
 
-    st.markdown("---")
-
-    st.info("📊 **Pour analyse détaillée, visualisations et export CSV** → Allez dans l'onglet **'Résultats'**")
