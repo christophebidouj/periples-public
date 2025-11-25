@@ -545,7 +545,7 @@ def _render_stats_compact(prefix: str,
         Dict avec les valeurs saisies {'damage': int, 'health': int, 'defense': int}
     """
     damage = st.number_input(
-        "⚔️ Dmg",
+        "⚔️ Damage",
         min_value=0,
         max_value=20,
         value=default_damage,
@@ -563,7 +563,7 @@ def _render_stats_compact(prefix: str,
     )
 
     defense_stat = st.number_input(
-        "🛡️ Par",
+        "🛡️ Parade",
         min_value=0,
         max_value=10,
         value=default_defense,
