@@ -197,6 +197,8 @@ def _display_creation_form(manager: EnemyManager):
                 st.success(message)
                 # NOUVEAU - Invalider le cache pour recharger les ennemis
                 st.cache_data.clear()
+                # Mémoriser l'onglet actif (Gestion Ennemis = index 2)
+                st.session_state.active_tab_index = 2
                 st.rerun()
             else:
                 st.error(message)
@@ -223,6 +225,8 @@ def _display_edit_form(manager: EnemyManager):
     # Bouton Annuler
     if st.button("❌ Annuler l'édition", use_container_width=True):
         st.session_state.editing_enemy_code = None
+        # Mémoriser l'onglet actif
+        st.session_state.active_tab_index = 2
         st.rerun()
 
     with st.form("enemy_edit_form"):
@@ -331,6 +335,8 @@ def _display_edit_form(manager: EnemyManager):
                 st.session_state.editing_enemy_code = None
                 # NOUVEAU - Invalider le cache pour recharger les ennemis
                 st.cache_data.clear()
+                # Mémoriser l'onglet actif
+                st.session_state.active_tab_index = 2
                 st.rerun()
             else:
                 st.error(message)
@@ -386,6 +392,8 @@ def _display_custom_enemies_list(manager: EnemyManager):
             with col1:
                 if st.button("✏️ Éditer", key=f"edit_{enemy.code}", use_container_width=True):
                     st.session_state.editing_enemy_code = enemy.code
+                    # Mémoriser l'onglet actif
+                    st.session_state.active_tab_index = 2
                     st.rerun()
 
             with col2:
@@ -411,6 +419,8 @@ def _display_custom_enemies_list(manager: EnemyManager):
                             st.session_state.pop(f'confirm_delete_{enemy.code}', None)
                             # NOUVEAU - Invalider le cache pour recharger les ennemis
                             st.cache_data.clear()
+                            # Mémoriser l'onglet actif
+                            st.session_state.active_tab_index = 2
                             st.rerun()
                         else:
                             st.error(message)
@@ -418,6 +428,8 @@ def _display_custom_enemies_list(manager: EnemyManager):
                 with col_cancel:
                     if st.button("❌ Annuler", key=f"confirm_no_{enemy.code}", use_container_width=True):
                         st.session_state.pop(f'confirm_delete_{enemy.code}', None)
+                        # Mémoriser l'onglet actif
+                        st.session_state.active_tab_index = 2
                         st.rerun()
 
             st.markdown("---")
