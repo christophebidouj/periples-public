@@ -75,7 +75,7 @@ def main_enemy_editor():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("⚔️ Gestion des Ennemis Personnalisés")
+    st.title("Gestion des Ennemis Personnalisés")
 
     # Initialisation du gestionnaire
     manager = EnemyManager()
@@ -148,7 +148,7 @@ def _display_creation_form(manager: EnemyManager):
             stats_4j = _render_stats_compact("4j")
 
         # Propriétés spéciales (alignées sous colonne 2 Joueurs)
-        st.markdown("#### ⚡ Propriétés")
+        st.markdown("#### ⚡ Propriétés magiques")
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -347,7 +347,7 @@ def _display_custom_enemies_list(manager: EnemyManager):
     Args:
         manager: Instance de EnemyManager
     """
-    st.subheader("📋 Mes ennemis personnalisés")
+    st.subheader("📋 Ennemis personnalisés")
 
     enemies = manager.load_custom_enemies()
 
