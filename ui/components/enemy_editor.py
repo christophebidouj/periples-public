@@ -354,6 +354,31 @@ def _display_custom_enemies_list(manager: EnemyManager):
     # Trier les ennemis par code (CE-1, CE-2, CE-3...)
     enemies.sort(key=lambda e: int(e.code.split('-')[1]) if e.code.startswith('CE-') else 0)
 
+    # Barre de recherche compacte
+    col_search, col_info = st.columns([1, 2])
+    with col_search:
+        search = st.text_input(
+            "Recherche",
+            placeholder="Ex: 5, Dragon...",
+            label_visibility="collapsed",
+            key="custom_enemy_search"
+        )
+    with col_info:
+        if search.strip():
+            st.success(f"🎯 Recherche active ({len(enemies)} total)")
+        else:
+            st.info(f"💡 {len(enemies)} ennemi(s) personnalisé(s)")
+
+    # Filtrage par recherche
+    if search.strip():
+        term = search.lower()
+        enemies = [e for e in enemies if term in e.code.split('-')[-1].lower() or term in e.name.lower()]
+
+    # Message si aucun résultat après filtrage
+    if not enemies and search.strip():
+        st.warning(f"Aucun ennemi trouvé pour '{search}'. Essayez un autre terme de recherche.")
+        return
+
     # Affichage en grille compacte - 6 cartes par ligne
     num_cols = 6
     num_enemies = len(enemies)
