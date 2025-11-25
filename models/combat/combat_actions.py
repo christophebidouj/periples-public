@@ -199,6 +199,11 @@ class CombatActions:
                 ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
                 is_magical_dmg = (damage_type == 'magical')
                 damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
+
+                # DEBUG: Log parade info
+                if damage_result.get('parade_tokens_used', 0) > 0:
+                    log.append(f"  [DEBUG] Parade utilisée: {damage_result['parade_tokens_used']} jetons")
+
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
 
                 log_parts = [f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] → {target.name}({damage_result['health_damage']})"]
@@ -712,6 +717,10 @@ class CombatActions:
         has_magical_dmg = getattr(enemy, 'has_magical_damage', False)
         ignore_parade = has_magical_dmg
         damage_result = target.apply_damage_with_parade(damage, ignore_parade=ignore_parade)
+
+        # DEBUG: Log parade info
+        if damage_result.get('parade_tokens_used', 0) > 0:
+            log.append(f"  [DEBUG] Parade utilisée: {damage_result['parade_tokens_used']} jetons, ignoré={ignore_parade}")
 
         damage_type_emoji = "✨" if ignore_parade else "👹"
         log.append(f"{damage_type_emoji} {enemy_name} attaque {target_name}: {damage} dégâts")
