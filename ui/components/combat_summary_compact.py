@@ -119,6 +119,66 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
 
     st.markdown("---")
 
+    # === VISUALISATIONS ===
+    st.markdown("## 📊 **Visualisations**")
+
+    # 1. COURBE D'ÉVOLUTION PV
+    st.markdown("### 💚 **Évolution des PV pendant le combat**")
+
+    # Transformer hp_history en DataFrame pour st.line_chart
+    hp_history = stats.get('hp_history', {})
+    if hp_history:
+        # Créer un DataFrame avec une colonne par combattant
+        hp_data = {}
+        for combatant_id, turns_data in hp_history.items():
+            # Extraire le nom du combattant depuis les stats
+            if combatant_id.startswith('hero_'):
+                code = combatant_id.replace('hero_', '')
+                name = stats['heroes'].get(code, {}).get('name', code)
+            elif combatant_id.startswith('enemy_'):
+                # Pour les ennemis, format est "enemy_CODE_INDEX"
+                parts = combatant_id.replace('enemy_', '').split('_')
+                code = '_'.join(parts[:-1]) if len(parts) > 1 else parts[0]
+                name = stats['enemies'].get(code, {}).get('name', code)
+                # Ajouter l'index si multiple ennemis identiques
+                if len(parts) > 1:
+                    name = f"{name} {int(parts[-1]) + 1}"
+            else:
+                name = combatant_id
+
+            hp_data[name] = turns_data
+
+        if hp_data:
+            df_hp = pd.DataFrame(hp_data)
+            st.line_chart(df_hp, height=300)
+            st.caption("📈 _Suivi des points de vie de tous les combattants tour par tour_")
+    else:
+        st.info("Aucune donnée d'historique PV disponible")
+
+    # 2. HISTOGRAMMES DÉGÂTS
+    st.markdown("### ⚔️ **Comparaison des dégâts**")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Dégâts infligés par héros**")
+        hero_damage_data = {h['Héros']: h['Dégâts'] for h in heroes_data}
+        df_hero_dmg = pd.DataFrame.from_dict(hero_damage_data, orient='index', columns=['Dégâts'])
+        st.bar_chart(df_hero_dmg, height=250)
+
+    with col2:
+        st.markdown("**Dégâts encaissés (PV + Parade)**")
+        hero_tanking_data = {
+            h['Héros']: h['Reçus'] + h['Parade Abs.']
+            for h in heroes_data
+        }
+        df_hero_tank = pd.DataFrame.from_dict(hero_tanking_data, orient='index', columns=['Tanking Total'])
+        st.bar_chart(df_hero_tank, height=250)
+
+    st.caption("📊 _Histogrammes comparatifs pour identifier déséquilibres de contribution et tanking_")
+
+    st.markdown("---")
+
     # === ANALYSE D'ÉQUILIBRAGE ===
     st.markdown("## 🎯 **Détection de Déséquilibres**")
     st.caption("ℹ️ _Indicateur automatique, pas vérité absolue. Alertes sur anomalies potentielles - à vous de décider si elles sont problématiques._")
