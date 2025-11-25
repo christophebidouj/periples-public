@@ -249,7 +249,10 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
     # Données ennemis (inchangées)
     enemies_data = []
     for code in enemy_codes:
-        enemy = next(e for e in data['enemies'] if e.code == code)
+        enemy = next((e for e in data['enemies'] if e.code == code), None)
+        if enemy is None:
+            # Ennemi supprimé - ignorer silencieusement
+            continue
         stats = enemy.get_stats_for_players(player_count)
         enemies_data.append({
             'name': enemy.name,
@@ -703,6 +706,11 @@ def main():
 
     # Remplacer data['enemies'] par session_state pour utilisation dynamique
     data['enemies'] = st.session_state.all_enemies
+
+    # NOUVEAU - Nettoyage automatique des ennemis supprimés
+    from utils.data_loader import cleanup_removed_enemies_from_session
+    valid_enemy_codes = [e.code for e in data['enemies']]
+    cleanup_removed_enemies_from_session(valid_enemy_codes)
 
     # Onglets
     tab1, tab2, tab3, tab4, tab5 = st.tabs([

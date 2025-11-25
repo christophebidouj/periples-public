@@ -603,3 +603,20 @@ def cleanup_removed_heroes_from_session():
                 build_name = st.session_state.custom_builds[code].get('name', 'Build Custom')
                 del st.session_state.custom_builds[code]
                 print(f"🧹 Session cleanup: Build custom '{build_name}' ({code}) supprimé")
+
+def cleanup_removed_enemies_from_session(valid_enemy_codes: List[str]):
+    """
+    Nettoie le session_state des codes ennemis supprimés
+    À appeler au démarrage de l'application pour éviter les erreurs
+
+    Args:
+        valid_enemy_codes: Liste des codes ennemis valides (E-X et CE-X)
+    """
+    # Nettoyage selected_enemies
+    if 'selected_enemies' in st.session_state:
+        old_selected = st.session_state.selected_enemies.copy()
+        st.session_state.selected_enemies = [code for code in old_selected if code in valid_enemy_codes]
+
+        removed_count = len(old_selected) - len(st.session_state.selected_enemies)
+        if removed_count > 0:
+            print(f"🧹 Session cleanup: {removed_count} ennemi(s) supprimé(s) de la sélection")
