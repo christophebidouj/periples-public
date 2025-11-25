@@ -178,7 +178,7 @@ class CombatActions:
             # 🐺 Forme de loup gaspillée en cas d'échec critique
             if elneha_wolf_used:
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
-            self._handle_critical_failure(hero, target, log)
+            self._handle_critical_failure(hero, target, log, player_count)
 
             # Return attack result for stats tracking
             return {
@@ -343,27 +343,22 @@ class CombatActions:
                     del hero.status_effects['invisible']
                     log.append(f"  🌑 Furtivité terminée - {hero.name} redevient visible (dégâts infligés)")
 
-    def _handle_critical_failure(self, attacker, target, log: list):
-        """Gère l'échec critique avec riposte de l'ennemi"""
+    def _handle_critical_failure(self, attacker, target, log: list, player_count: int):
+        """Gère l'échec critique avec riposte de l'ennemi (ignore la parade)"""
         try:
-            if hasattr(target, 'get_damage_info'):
-                player_count = len(st.session_state.get('current_heroes', []))
-                enemy_damage_info = target.get_damage_info(player_count)
-                counter_damage = enemy_damage_info['damage_value']
-            elif hasattr(target, 'get_attack_damage_info'):
-                counter_damage_info = target.get_attack_damage_info()
-                counter_damage = counter_damage_info['damage_value']
-            else:
-                counter_damage = getattr(target, 'damage', 1)
-            
-            if hasattr(attacker, 'current_health'):
-                old_health = attacker.current_health
-                attacker.current_health = max(0, attacker.current_health - counter_damage)
-                actual_damage = old_health - attacker.current_health
-                log.append(f"    ⚡ {target.name} riposte immédiatement ! {actual_damage} dégâts à {attacker.name}")
-                
-                if not attacker.is_alive():
-                    log.append(f"    💀 {attacker.name} vaincu par la riposte !")
+            # Récupérer les dégâts complets de l'ennemi selon le nombre de joueurs
+            enemy_stats = target.get_stats_for_players(player_count)
+            counter_damage = enemy_stats['damage']
+
+            # Appliquer les dégâts DIRECTEMENT aux PV (ignore parade selon règles p.26)
+            old_health = attacker.current_health
+            attacker.current_health = max(0, attacker.current_health - counter_damage)
+            actual_damage = old_health - attacker.current_health
+
+            log.append(f"    ⚡ {target.name} riposte immédiatement ! {actual_damage} dégâts (ignore parade)")
+
+            if not attacker.is_alive():
+                log.append(f"    💀 {attacker.name} vaincu par la riposte !")
         except Exception as e:
             log.append(f"    ⚠️ Erreur riposte échec critique: {str(e)}")
 
