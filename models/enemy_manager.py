@@ -362,7 +362,7 @@ class EnemyManager:
 
             return Enemy(
                 code=str(row['Code']),
-                name=str(row['Nom']),
+                name=str(row['Nom']).capitalize(),
                 defense=int(row['Defense']),
                 stats_by_players=stats_by_players,
                 is_magical=bool(row.get('Is_Magical', False)),
@@ -394,7 +394,7 @@ class EnemyManager:
 
         return Enemy(
             code=code,
-            name=data['name'].strip(),
+            name=data['name'].strip().capitalize(),
             defense=int(data['defense']),
             stats_by_players=stats_by_players,
             is_magical=bool(data.get('is_magical', False)),

@@ -351,6 +351,9 @@ def _display_custom_enemies_list(manager: EnemyManager):
         st.info("Aucun ennemi personnalisé créé. Utilisez le formulaire ci-dessus pour en créer un.")
         return
 
+    # Trier les ennemis par code (CE-1, CE-2, CE-3...)
+    enemies.sort(key=lambda e: int(e.code.split('-')[1]) if e.code.startswith('CE-') else 0)
+
     # Affichage en grille compacte - 6 cartes par ligne
     num_cols = 6
     num_enemies = len(enemies)
