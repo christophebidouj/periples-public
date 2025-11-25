@@ -110,27 +110,12 @@ def _display_creation_form(manager: EnemyManager):
     st.subheader("📝 Créer un nouvel ennemi")
 
     with st.form("enemy_creation_form", clear_on_submit=True):
-        # Informations générales (sur une seule ligne)
-        col1, col2, col3 = st.columns([3, 1, 1])
-
-        with col1:
-            name = st.text_input(
-                "Nom de l'ennemi",
-                placeholder="Ex: Golem de pierre",
-                help="Nom descriptif de l'ennemi"
-            )
-
-        with col2:
-            defense = st.number_input(
-                "Defense",
-                min_value=0,
-                max_value=20,
-                value=10,
-                help="Seuil de précision à dépasser"
-            )
-
-        with col3:
-            st.write("")  # Spacer pour aligner
+        # Nom de l'ennemi (ligne 1 - toute la largeur)
+        name = st.text_input(
+            "Nom de l'ennemi",
+            placeholder="Ex: Golem de pierre",
+            help="Nom descriptif de l'ennemi"
+        )
 
         # Stats groupées en un seul bloc compact
         st.markdown("#### 📊 Stats par nombre de joueurs")
@@ -144,6 +129,17 @@ def _display_creation_form(manager: EnemyManager):
         with col2:
             st.markdown("**3 Joueurs**")
             stats_3j = _render_stats_compact("3j")
+            # Defense alignée avec 3J
+            st.markdown("**Defense (seuil)**")
+            defense = st.number_input(
+                "Précision à dépasser",
+                min_value=0,
+                max_value=20,
+                value=10,
+                key="defense_main",
+                label_visibility="collapsed",
+                help="Seuil de précision à dépasser"
+            )
 
         with col3:
             st.markdown("**4 Joueurs**")
@@ -228,27 +224,12 @@ def _display_edit_form(manager: EnemyManager):
         st.rerun()
 
     with st.form("enemy_edit_form"):
-        # Informations générales (sur une seule ligne)
-        col1, col2, col3 = st.columns([3, 1, 1])
-
-        with col1:
-            name = st.text_input(
-                "Nom de l'ennemi",
-                value=enemy.name,
-                help="Nom descriptif de l'ennemi"
-            )
-
-        with col2:
-            defense = st.number_input(
-                "Defense",
-                min_value=0,
-                max_value=20,
-                value=enemy.defense,
-                help="Seuil de précision à dépasser"
-            )
-
-        with col3:
-            st.write("")  # Spacer
+        # Nom de l'ennemi (ligne 1 - toute la largeur)
+        name = st.text_input(
+            "Nom de l'ennemi",
+            value=enemy.name,
+            help="Nom descriptif de l'ennemi"
+        )
 
         # Stats groupées en un seul bloc compact
         st.markdown("#### 📊 Stats par nombre de joueurs")
@@ -271,6 +252,17 @@ def _display_edit_form(manager: EnemyManager):
                 default_damage=enemy.stats_by_players[3]['damage'],
                 default_health=enemy.stats_by_players[3]['health'],
                 default_defense=enemy.stats_by_players[3]['defense']
+            )
+            # Defense alignée avec 3J
+            st.markdown("**Defense (seuil)**")
+            defense = st.number_input(
+                "Précision à dépasser",
+                min_value=0,
+                max_value=20,
+                value=enemy.defense,
+                key="defense_edit",
+                label_visibility="collapsed",
+                help="Seuil de précision à dépasser"
             )
 
         with col3:
@@ -342,7 +334,7 @@ def _display_edit_form(manager: EnemyManager):
 
 def _display_custom_enemies_list(manager: EnemyManager):
     """
-    Affiche la liste des ennemis personnalisés avec actions
+    Affiche la liste des ennemis personnalisés en grille compacte (VERSION 2.0)
 
     Args:
         manager: Instance de EnemyManager
@@ -355,78 +347,93 @@ def _display_custom_enemies_list(manager: EnemyManager):
         st.info("Aucun ennemi personnalisé créé. Utilisez le formulaire ci-dessus pour en créer un.")
         return
 
-    # Afficher chaque ennemi
-    for enemy in enemies:
-        with st.container():
-            st.markdown(f"### {enemy.code} - {enemy.name}")
+    # Affichage en grille compacte - 3 cartes par ligne
+    num_cols = 3
+    num_enemies = len(enemies)
+    num_rows = (num_enemies + num_cols - 1) // num_cols
 
-            # Infos rapides
-            col1, col2, col3 = st.columns(3)
+    for row_idx in range(num_rows):
+        cols = st.columns(num_cols)
 
-            with col1:
-                st.write(f"**Defense:** {enemy.defense}")
+        for col_idx in range(num_cols):
+            enemy_idx = row_idx * num_cols + col_idx
 
-            with col2:
+            if enemy_idx >= num_enemies:
+                break
+
+            enemy = enemies[enemy_idx]
+
+            with cols[col_idx]:
+                # Carte compacte avec fond coloré
                 stats_2j = enemy.stats_by_players[2]
-                st.write(f"**2J:** {stats_2j['damage']}dmg / {stats_2j['health']}hp / {stats_2j['defense']}def")
-
-            with col3:
+                stats_3j = enemy.stats_by_players[3]
                 stats_4j = enemy.stats_by_players[4]
-                st.write(f"**4J:** {stats_4j['damage']}dmg / {stats_4j['health']}hp / {stats_4j['defense']}def")
 
-            # Propriétés spéciales
-            properties = []
-            if enemy.is_magical:
-                properties.append("🔵 Magique")
-            if enemy.has_magical_damage:
-                properties.append("⚡ Dégâts magiques")
+                # Propriétés pour badge
+                badges = []
+                if enemy.is_magical:
+                    badges.append("🔵")
+                if enemy.has_magical_damage:
+                    badges.append("⚡")
+                badges_str = " ".join(badges) if badges else ""
 
-            if properties:
-                st.write(" | ".join(properties))
+                # Carte HTML compacte
+                card_html = f"""
+                <div style="border: 2px solid #d4af37; border-radius: 10px; padding: 12px;
+                            background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(210, 180, 140, 0.1));
+                            margin-bottom: 10px; min-height: 200px;">
+                    <div style="font-weight: bold; font-size: 1.1rem; color: #d4af37; margin-bottom: 5px;">
+                        {enemy.code} {badges_str}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #3b2f1c; margin-bottom: 8px; font-weight: 600;">
+                        {enemy.name}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #5a4a2a; line-height: 1.4;">
+                        <strong>Def:</strong> {enemy.defense}<br/>
+                        <strong>2J:</strong> {stats_2j['damage']}d/{stats_2j['health']}h/{stats_2j['defense']}p<br/>
+                        <strong>3J:</strong> {stats_3j['damage']}d/{stats_3j['health']}h/{stats_3j['defense']}p<br/>
+                        <strong>4J:</strong> {stats_4j['damage']}d/{stats_4j['health']}h/{stats_4j['defense']}p
+                    </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
 
-            # Boutons d'action
-            col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
+                # Boutons d'action compacts (2 colonnes)
+                col_action1, col_action2 = st.columns(2)
 
-            with col1:
-                if st.button("✏️ Éditer", key=f"edit_{enemy.code}", use_container_width=True):
-                    st.session_state.editing_enemy_code = enemy.code
-                    st.rerun()
-
-            with col2:
-                if st.button("🗑️ Supprimer", key=f"delete_{enemy.code}", use_container_width=True):
-                    # Confirmation avant suppression
-                    st.session_state[f'confirm_delete_{enemy.code}'] = True
-
-            with col3:
-                if st.button("👁️ Voir détails", key=f"preview_{enemy.code}", use_container_width=True):
-                    _display_enemy_preview(enemy)
-
-            # Confirmation de suppression
-            if st.session_state.get(f'confirm_delete_{enemy.code}', False):
-                st.warning(f"⚠️ Confirmer la suppression de **{enemy.code} - {enemy.name}** ?")
-
-                col_confirm, col_cancel = st.columns(2)
-
-                with col_confirm:
-                    if st.button("✅ Oui, supprimer", key=f"confirm_yes_{enemy.code}", use_container_width=True):
-                        success, message = manager.delete_enemy(enemy.code)
-                        if success:
-                            st.success(message)
-                            st.session_state.pop(f'confirm_delete_{enemy.code}', None)
-                            # NOUVEAU - Recharger les ennemis dans session_state (sans cache clear)
-                            from utils.data_loader import DataLoader
-                            loader = DataLoader()
-                            st.session_state.all_enemies = loader.load_all_enemies()
-                            st.rerun()
-                        else:
-                            st.error(message)
-
-                with col_cancel:
-                    if st.button("❌ Annuler", key=f"confirm_no_{enemy.code}", use_container_width=True):
-                        st.session_state.pop(f'confirm_delete_{enemy.code}', None)
+                with col_action1:
+                    if st.button("✏️", key=f"edit_{enemy.code}", use_container_width=True, help="Éditer"):
+                        st.session_state.editing_enemy_code = enemy.code
                         st.rerun()
 
-            st.markdown("---")
+                with col_action2:
+                    if st.button("🗑️", key=f"delete_{enemy.code}", use_container_width=True, help="Supprimer"):
+                        st.session_state[f'confirm_delete_{enemy.code}'] = True
+                        st.rerun()
+
+                # Confirmation de suppression (pleine largeur sous les boutons)
+                if st.session_state.get(f'confirm_delete_{enemy.code}', False):
+                    st.warning("⚠️ Confirmer ?", icon="⚠️")
+
+                    col_confirm, col_cancel = st.columns(2)
+
+                    with col_confirm:
+                        if st.button("✅", key=f"confirm_yes_{enemy.code}", use_container_width=True, help="Oui"):
+                            success, message = manager.delete_enemy(enemy.code)
+                            if success:
+                                st.success(message)
+                                st.session_state.pop(f'confirm_delete_{enemy.code}', None)
+                                from utils.data_loader import DataLoader
+                                loader = DataLoader()
+                                st.session_state.all_enemies = loader.load_all_enemies()
+                                st.rerun()
+                            else:
+                                st.error(message)
+
+                    with col_cancel:
+                        if st.button("❌", key=f"confirm_no_{enemy.code}", use_container_width=True, help="Non"):
+                            st.session_state.pop(f'confirm_delete_{enemy.code}', None)
+                            st.rerun()
 
 
 def _display_enemy_preview(enemy: Enemy):
