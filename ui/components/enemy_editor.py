@@ -385,7 +385,7 @@ def _display_custom_enemies_list(manager: EnemyManager):
                 card_html = f"""
                 <div style="border: 2px solid #d4af37; border-radius: 10px; padding: 12px;
                             background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(210, 180, 140, 0.1));
-                            margin-bottom: 10px; min-height: 200px;">
+                            margin-bottom: 10px; min-height: 200px; text-align: center;">
                     <div style="font-weight: bold; font-size: 0.85rem; color: #8b6914; margin-bottom: 3px;">
                         {enemy.code} {badges_str}
                     </div>
