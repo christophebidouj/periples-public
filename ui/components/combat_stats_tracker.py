@@ -223,14 +223,9 @@ class CombatStatsTracker:
         if target.code in stats_dict:
             stats_dict[target.code]['damage_taken'] += damage
 
-            # DEBUG: Log parade tracking
-            if is_hero:
-                print(f"[DEBUG TRACKER] {target.code}: damage={damage}, parade_used={parade_used}, total_parade_so_far={stats_dict[target.code]['parade_tokens_used']}")
-
             # Enregistrer le nombre EXACT de jetons de parade utilisés
             if is_hero and parade_used > 0:
                 stats_dict[target.code]['parade_tokens_used'] += parade_used
-                print(f"[DEBUG TRACKER] Ajouté {parade_used} jetons, nouveau total: {stats_dict[target.code]['parade_tokens_used']}")
 
     def record_effect_applied(self, caster: Character, effect_type: str, target: Character = None):
         """
