@@ -198,6 +198,7 @@ class EnemyManager:
     def get_next_code(self) -> str:
         """
         Génère le prochain code CE-X disponible
+        Réutilise les codes supprimés (comble les trous) avant d'incrémenter
 
         Returns:
             Code au format CE-X (ex: CE-1, CE-2, CE-15)
@@ -217,9 +218,19 @@ class EnemyManager:
                 except (IndexError, ValueError):
                     continue
 
-        # Trouver le max et ajouter 1
-        max_num = max(numbers) if numbers else 0
-        return f"CE-{max_num + 1}"
+        if not numbers:
+            return "CE-1"
+
+        # Trier les numéros
+        numbers.sort()
+
+        # Chercher le premier trou dans la séquence (code supprimé à réutiliser)
+        for i in range(1, numbers[-1] + 1):
+            if i not in numbers:
+                return f"CE-{i}"
+
+        # Aucun trou trouvé, utiliser le max + 1
+        return f"CE-{numbers[-1] + 1}"
 
     # === VALIDATION ===
 
