@@ -700,6 +700,12 @@ def configure_combat():
         )
         st.session_state.sandbox_v2_stats_tracker = tracker
 
+        # Snapshot initial des PV (tour 0)
+        tracker.snapshot_hp(
+            turn_number=0,
+            combatants=st.session_state.sandbox_v2_combatants
+        )
+
         return True
 
     except Exception as e:
@@ -851,6 +857,12 @@ def next_turn():
         tracker = st.session_state.get('sandbox_v2_stats_tracker')
         if tracker:
             tracker.record_turn_end(combatant_id, turn_number)
+
+            # Snapshot des PV après chaque tour pour courbe d'évolution
+            tracker.snapshot_hp(
+                turn_number=turn_number,
+                combatants=st.session_state.sandbox_v2_combatants
+            )
 
     # Vérifier le mode (lire directement depuis initiative_setting)
     initiative_enabled = st.session_state.get('initiative_setting', True)
@@ -2612,6 +2624,13 @@ def main_sandbox_v2():
             if tracker and current:
                 tracker.record_turn_end(current['id'], st.session_state.sandbox_v2_round_number)
 
+            # Snapshot final des PV avant de finaliser
+            if tracker:
+                tracker.snapshot_hp(
+                    turn_number=st.session_state.sandbox_v2_round_number,
+                    combatants=st.session_state.sandbox_v2_combatants
+                )
+
             # Finaliser le tracker
             if tracker:
                 tracker.finalize_combat(
@@ -2630,6 +2649,13 @@ def main_sandbox_v2():
             tracker = st.session_state.get('sandbox_v2_stats_tracker')
             if tracker and current:
                 tracker.record_turn_end(current['id'], st.session_state.sandbox_v2_round_number)
+
+            # Snapshot final des PV avant de finaliser
+            if tracker:
+                tracker.snapshot_hp(
+                    turn_number=st.session_state.sandbox_v2_round_number,
+                    combatants=st.session_state.sandbox_v2_combatants
+                )
 
             # Finaliser le tracker
             if tracker:
