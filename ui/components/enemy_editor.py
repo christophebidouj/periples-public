@@ -195,8 +195,10 @@ def _display_creation_form(manager: EnemyManager):
 
             if success:
                 st.success(message)
-                # NOUVEAU - Invalider le cache pour recharger les ennemis
-                st.cache_data.clear()
+                # NOUVEAU - Recharger les ennemis dans session_state (sans cache clear)
+                from utils.data_loader import DataLoader
+                loader = DataLoader()
+                st.session_state.all_enemies = loader.load_all_enemies()
                 st.rerun()
             else:
                 st.error(message)
@@ -329,8 +331,10 @@ def _display_edit_form(manager: EnemyManager):
             if success:
                 st.success(message)
                 st.session_state.editing_enemy_code = None
-                # NOUVEAU - Invalider le cache pour recharger les ennemis
-                st.cache_data.clear()
+                # NOUVEAU - Recharger les ennemis dans session_state (sans cache clear)
+                from utils.data_loader import DataLoader
+                loader = DataLoader()
+                st.session_state.all_enemies = loader.load_all_enemies()
                 st.rerun()
             else:
                 st.error(message)
@@ -409,8 +413,10 @@ def _display_custom_enemies_list(manager: EnemyManager):
                         if success:
                             st.success(message)
                             st.session_state.pop(f'confirm_delete_{enemy.code}', None)
-                            # NOUVEAU - Invalider le cache pour recharger les ennemis
-                            st.cache_data.clear()
+                            # NOUVEAU - Recharger les ennemis dans session_state (sans cache clear)
+                            from utils.data_loader import DataLoader
+                            loader = DataLoader()
+                            st.session_state.all_enemies = loader.load_all_enemies()
                             st.rerun()
                         else:
                             st.error(message)

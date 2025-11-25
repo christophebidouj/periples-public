@@ -695,7 +695,15 @@ def main():
     except Exception as e:
         st.error(f"❌ Erreur: {e}")
         st.stop()
-    
+
+    # NOUVEAU - Stocker les ennemis dans session_state pour rechargement dynamique
+    # Initialisation au premier chargement
+    if 'all_enemies' not in st.session_state:
+        st.session_state.all_enemies = data['enemies']
+
+    # Remplacer data['enemies'] par session_state pour utilisation dynamique
+    data['enemies'] = st.session_state.all_enemies
+
     # Onglets
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🏰 Sélection",
