@@ -117,6 +117,19 @@ def _display_creation_form(manager: EnemyManager):
             help="Nom descriptif de l'ennemi"
         )
 
+        # Defense séparée (propriété commune)
+        st.markdown("#### 🎯 Propriété commune")
+        col_def, col_spacer = st.columns([1, 3])
+        with col_def:
+            defense = st.number_input(
+                "Defense (seuil de précision)",
+                min_value=0,
+                max_value=20,
+                value=10,
+                key="defense_main",
+                help="Seuil de précision à dépasser pour toucher l'ennemi (commun à tous les nombres de joueurs)"
+            )
+
         # Stats groupées en un seul bloc compact
         st.markdown("#### 📊 Stats par nombre de joueurs")
 
@@ -129,17 +142,6 @@ def _display_creation_form(manager: EnemyManager):
         with col2:
             st.markdown("**3 Joueurs**")
             stats_3j = _render_stats_compact("3j")
-            # Defense alignée avec 3J
-            st.markdown("**Defense (seuil)**")
-            defense = st.number_input(
-                "Précision à dépasser",
-                min_value=0,
-                max_value=20,
-                value=10,
-                key="defense_main",
-                label_visibility="collapsed",
-                help="Seuil de précision à dépasser"
-            )
 
         with col3:
             st.markdown("**4 Joueurs**")
@@ -231,6 +233,19 @@ def _display_edit_form(manager: EnemyManager):
             help="Nom descriptif de l'ennemi"
         )
 
+        # Defense séparée (propriété commune)
+        st.markdown("#### 🎯 Propriété commune")
+        col_def, col_spacer = st.columns([1, 3])
+        with col_def:
+            defense = st.number_input(
+                "Defense (seuil de précision)",
+                min_value=0,
+                max_value=20,
+                value=enemy.defense,
+                key="defense_edit",
+                help="Seuil de précision à dépasser pour toucher l'ennemi (commun à tous les nombres de joueurs)"
+            )
+
         # Stats groupées en un seul bloc compact
         st.markdown("#### 📊 Stats par nombre de joueurs")
 
@@ -252,17 +267,6 @@ def _display_edit_form(manager: EnemyManager):
                 default_damage=enemy.stats_by_players[3]['damage'],
                 default_health=enemy.stats_by_players[3]['health'],
                 default_defense=enemy.stats_by_players[3]['defense']
-            )
-            # Defense alignée avec 3J
-            st.markdown("**Defense (seuil)**")
-            defense = st.number_input(
-                "Précision à dépasser",
-                min_value=0,
-                max_value=20,
-                value=enemy.defense,
-                key="defense_edit",
-                label_visibility="collapsed",
-                help="Seuil de précision à dépasser"
             )
 
         with col3:
@@ -347,8 +351,8 @@ def _display_custom_enemies_list(manager: EnemyManager):
         st.info("Aucun ennemi personnalisé créé. Utilisez le formulaire ci-dessus pour en créer un.")
         return
 
-    # Affichage en grille compacte - 3 cartes par ligne
-    num_cols = 3
+    # Affichage en grille compacte - 6 cartes par ligne
+    num_cols = 6
     num_enemies = len(enemies)
     num_rows = (num_enemies + num_cols - 1) // num_cols
 
@@ -382,13 +386,14 @@ def _display_custom_enemies_list(manager: EnemyManager):
                 <div style="border: 2px solid #d4af37; border-radius: 10px; padding: 12px;
                             background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(210, 180, 140, 0.1));
                             margin-bottom: 10px; min-height: 200px;">
-                    <div style="font-weight: bold; font-size: 1.1rem; color: #d4af37; margin-bottom: 5px;">
+                    <div style="font-weight: bold; font-size: 0.85rem; color: #8b6914; margin-bottom: 3px;">
                         {enemy.code} {badges_str}
                     </div>
-                    <div style="font-size: 0.9rem; color: #3b2f1c; margin-bottom: 8px; font-weight: 600;">
+                    <div style="font-size: 1.1rem; color: #2c1810; margin-bottom: 10px; font-weight: 700;
+                                text-shadow: 0px 1px 2px rgba(212, 175, 55, 0.3);">
                         {enemy.name}
                     </div>
-                    <div style="font-size: 0.8rem; color: #5a4a2a; line-height: 1.4;">
+                    <div style="font-size: 0.9rem; color: #5a4a2a; line-height: 1.5;">
                         <strong>Def:</strong> {enemy.defense}<br/>
                         <strong>2J:</strong> {stats_2j['damage']}d/{stats_2j['health']}h/{stats_2j['defense']}p<br/>
                         <strong>3J:</strong> {stats_3j['damage']}d/{stats_3j['health']}h/{stats_3j['defense']}p<br/>
