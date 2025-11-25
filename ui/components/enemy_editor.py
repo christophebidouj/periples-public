@@ -1,12 +1,13 @@
 """
 Enemy Editor - Interface de gestion des ennemis personnalisés
-VERSION 1.0 - Composant Streamlit
+VERSION 2.0 - Formulaire compact + Couleurs adaptées au thème
 
 Responsabilités :
-- Formulaire de création d'ennemis
+- Formulaire de création d'ennemis (compact)
 - Formulaire d'édition d'ennemis
 - Liste des ennemis personnalisés
 - Gestion des actions (Créer/Éditer/Supprimer)
+- Invalidation du cache après modifications
 """
 
 import streamlit as st
@@ -20,8 +21,61 @@ def main_enemy_editor():
     Point d'entrée principal de l'éditeur d'ennemis
     Affiche l'interface complète de gestion
     """
+    # CSS personnalisé pour améliorer la lisibilité des inputs
+    st.markdown("""
+    <style>
+    /* Inputs spécifiques à l'éditeur d'ennemis - Fond clair et texte très contrasté */
+    [data-testid="stForm"] .stTextInput input,
+    [data-testid="stForm"] .stNumberInput input {
+        background-color: rgba(255, 255, 255, 0.25) !important;
+        color: #1a1a1a !important;
+        border: 2px solid #d4af37 !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        padding: 0.5rem !important;
+    }
+
+    /* Placeholder plus visible */
+    [data-testid="stForm"] .stTextInput input::placeholder {
+        color: rgba(26, 26, 26, 0.5) !important;
+        font-weight: 500 !important;
+    }
+
+    /* Focus state */
+    [data-testid="stForm"] .stTextInput input:focus,
+    [data-testid="stForm"] .stNumberInput input:focus {
+        background-color: rgba(255, 255, 255, 0.35) !important;
+        border-color: #ffd700 !important;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3) !important;
+    }
+
+    /* Labels plus visibles */
+    [data-testid="stForm"] label {
+        color: #3b2f1c !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* Checkboxes */
+    [data-testid="stForm"] [data-testid="stCheckbox"] label {
+        color: #3b2f1c !important;
+        font-weight: 600 !important;
+    }
+
+    /* Compact le formulaire */
+    [data-testid="stForm"] > div {
+        gap: 0.5rem !important;
+    }
+
+    /* Titres sections plus compacts */
+    [data-testid="stForm"] h4 {
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.title("⚔️ Gestion des Ennemis Personnalisés")
-    st.markdown("---")
 
     # Initialisation du gestionnaire
     manager = EnemyManager()
@@ -48,7 +102,7 @@ def main_enemy_editor():
 
 def _display_creation_form(manager: EnemyManager):
     """
-    Affiche le formulaire de création d'un nouvel ennemi
+    Affiche le formulaire de création d'un nouvel ennemi (VERSION COMPACTE)
 
     Args:
         manager: Instance de EnemyManager
@@ -56,9 +110,8 @@ def _display_creation_form(manager: EnemyManager):
     st.subheader("📝 Créer un nouvel ennemi")
 
     with st.form("enemy_creation_form", clear_on_submit=True):
-        # Informations générales
-        st.markdown("**Informations générales**")
-        col1, col2 = st.columns([2, 1])
+        # Informations générales (sur une seule ligne)
+        col1, col2, col3 = st.columns([3, 1, 1])
 
         with col1:
             name = st.text_input(
@@ -69,40 +122,51 @@ def _display_creation_form(manager: EnemyManager):
 
         with col2:
             defense = st.number_input(
-                "Defense (seuil)",
+                "Defense",
                 min_value=0,
                 max_value=20,
                 value=10,
-                help="Seuil de précision à dépasser pour toucher l'ennemi"
+                help="Seuil de précision à dépasser"
             )
 
-        st.markdown("---")
+        with col3:
+            st.write("")  # Spacer pour aligner
 
-        # Stats pour chaque nombre de joueurs
-        stats_2j = _render_stats_inputs("2 joueurs", "2j")
-        stats_3j = _render_stats_inputs("3 joueurs", "3j")
-        stats_4j = _render_stats_inputs("4 joueurs", "4j")
+        # Stats groupées en un seul bloc compact
+        st.markdown("#### 📊 Stats par nombre de joueurs")
 
-        st.markdown("---")
+        col1, col2, col3 = st.columns(3)
 
-        # Propriétés spéciales
-        st.markdown("**Propriétés spéciales**")
+        with col1:
+            st.markdown("**2 Joueurs**")
+            stats_2j = _render_stats_compact("2j")
+
+        with col2:
+            st.markdown("**3 Joueurs**")
+            stats_3j = _render_stats_compact("3j")
+
+        with col3:
+            st.markdown("**4 Joueurs**")
+            stats_4j = _render_stats_compact("4j")
+
+        # Propriétés spéciales (inline)
+        st.markdown("#### ⚡ Propriétés")
         col1, col2 = st.columns(2)
 
         with col1:
             is_magical = st.checkbox(
-                "Créature magique",
-                help="Les créatures magiques réduisent les dégâts physiques de moitié"
+                "🔵 Créature magique",
+                help="Réduit les dégâts physiques de moitié"
             )
 
         with col2:
             has_magical_damage = st.checkbox(
-                "Possède des dégâts magiques",
-                help="Cet ennemi inflige des dégâts magiques (ignorent la parade)"
+                "⚡ Dégâts magiques",
+                help="Ignore la parade des héros"
             )
 
         # Bouton de création
-        submitted = st.form_submit_button("➕ Créer l'ennemi personnalisé", use_container_width=True)
+        submitted = st.form_submit_button("➕ Créer l'ennemi", use_container_width=True, type="primary")
 
         if submitted:
             # Préparer les données
@@ -127,6 +191,8 @@ def _display_creation_form(manager: EnemyManager):
 
             if success:
                 st.success(message)
+                # NOUVEAU - Invalider le cache pour recharger les ennemis
+                st.cache_data.clear()
                 st.rerun()
             else:
                 st.error(message)
@@ -134,7 +200,7 @@ def _display_creation_form(manager: EnemyManager):
 
 def _display_edit_form(manager: EnemyManager):
     """
-    Affiche le formulaire d'édition d'un ennemi existant
+    Affiche le formulaire d'édition d'un ennemi existant (VERSION COMPACTE)
 
     Args:
         manager: Instance de EnemyManager
@@ -156,9 +222,8 @@ def _display_edit_form(manager: EnemyManager):
         st.rerun()
 
     with st.form("enemy_edit_form"):
-        # Informations générales
-        st.markdown("**Informations générales**")
-        col1, col2 = st.columns([2, 1])
+        # Informations générales (sur une seule ligne)
+        col1, col2, col3 = st.columns([3, 1, 1])
 
         with col1:
             name = st.text_input(
@@ -169,57 +234,68 @@ def _display_edit_form(manager: EnemyManager):
 
         with col2:
             defense = st.number_input(
-                "Defense (seuil)",
+                "Defense",
                 min_value=0,
                 max_value=20,
                 value=enemy.defense,
-                help="Seuil de précision à dépasser pour toucher l'ennemi"
+                help="Seuil de précision à dépasser"
             )
 
-        st.markdown("---")
+        with col3:
+            st.write("")  # Spacer
 
-        # Stats pour chaque nombre de joueurs
-        stats_2j = _render_stats_inputs(
-            "2 joueurs", "2j",
-            default_damage=enemy.stats_by_players[2]['damage'],
-            default_health=enemy.stats_by_players[2]['health'],
-            default_defense=enemy.stats_by_players[2]['defense']
-        )
-        stats_3j = _render_stats_inputs(
-            "3 joueurs", "3j",
-            default_damage=enemy.stats_by_players[3]['damage'],
-            default_health=enemy.stats_by_players[3]['health'],
-            default_defense=enemy.stats_by_players[3]['defense']
-        )
-        stats_4j = _render_stats_inputs(
-            "4 joueurs", "4j",
-            default_damage=enemy.stats_by_players[4]['damage'],
-            default_health=enemy.stats_by_players[4]['health'],
-            default_defense=enemy.stats_by_players[4]['defense']
-        )
+        # Stats groupées en un seul bloc compact
+        st.markdown("#### 📊 Stats par nombre de joueurs")
 
-        st.markdown("---")
+        col1, col2, col3 = st.columns(3)
 
-        # Propriétés spéciales
-        st.markdown("**Propriétés spéciales**")
+        with col1:
+            st.markdown("**2 Joueurs**")
+            stats_2j = _render_stats_compact(
+                "2j",
+                default_damage=enemy.stats_by_players[2]['damage'],
+                default_health=enemy.stats_by_players[2]['health'],
+                default_defense=enemy.stats_by_players[2]['defense']
+            )
+
+        with col2:
+            st.markdown("**3 Joueurs**")
+            stats_3j = _render_stats_compact(
+                "3j",
+                default_damage=enemy.stats_by_players[3]['damage'],
+                default_health=enemy.stats_by_players[3]['health'],
+                default_defense=enemy.stats_by_players[3]['defense']
+            )
+
+        with col3:
+            st.markdown("**4 Joueurs**")
+            stats_4j = _render_stats_compact(
+                "4j",
+                default_damage=enemy.stats_by_players[4]['damage'],
+                default_health=enemy.stats_by_players[4]['health'],
+                default_defense=enemy.stats_by_players[4]['defense']
+            )
+
+        # Propriétés spéciales (inline)
+        st.markdown("#### ⚡ Propriétés")
         col1, col2 = st.columns(2)
 
         with col1:
             is_magical = st.checkbox(
-                "Créature magique",
+                "🔵 Créature magique",
                 value=enemy.is_magical,
-                help="Les créatures magiques réduisent les dégâts physiques de moitié"
+                help="Réduit les dégâts physiques de moitié"
             )
 
         with col2:
             has_magical_damage = st.checkbox(
-                "Possède des dégâts magiques",
+                "⚡ Dégâts magiques",
                 value=enemy.has_magical_damage,
-                help="Cet ennemi inflige des dégâts magiques (ignorent la parade)"
+                help="Ignore la parade des héros"
             )
 
         # Bouton de sauvegarde
-        submitted = st.form_submit_button("💾 Sauvegarder les modifications", use_container_width=True)
+        submitted = st.form_submit_button("💾 Sauvegarder", use_container_width=True, type="primary")
 
         if submitted:
             # Préparer les données
@@ -245,6 +321,8 @@ def _display_edit_form(manager: EnemyManager):
             if success:
                 st.success(message)
                 st.session_state.editing_enemy_code = None
+                # NOUVEAU - Invalider le cache pour recharger les ennemis
+                st.cache_data.clear()
                 st.rerun()
             else:
                 st.error(message)
@@ -323,6 +401,8 @@ def _display_custom_enemies_list(manager: EnemyManager):
                         if success:
                             st.success(message)
                             st.session_state.pop(f'confirm_delete_{enemy.code}', None)
+                            # NOUVEAU - Invalider le cache pour recharger les ennemis
+                            st.cache_data.clear()
                             st.rerun()
                         else:
                             st.error(message)
@@ -390,15 +470,14 @@ def _display_enemy_preview(enemy: Enemy):
             st.info("Dégâts physiques - Bloqués par la parade")
 
 
-def _render_stats_inputs(label: str, prefix: str,
-                         default_damage: int = 2,
-                         default_health: int = 10,
-                         default_defense: int = 0) -> Dict[str, int]:
+def _render_stats_compact(prefix: str,
+                          default_damage: int = 2,
+                          default_health: int = 10,
+                          default_defense: int = 0) -> Dict[str, int]:
     """
-    Widget réutilisable pour saisir les stats d'un ennemi
+    Widget compact pour saisir les stats d'un ennemi (VERSION COMPACTE)
 
     Args:
-        label: Label à afficher (ex: "2 joueurs")
         prefix: Préfixe pour les clés (ex: "2j")
         default_damage: Valeur par défaut des dégâts
         default_health: Valeur par défaut de la santé
@@ -407,38 +486,32 @@ def _render_stats_inputs(label: str, prefix: str,
     Returns:
         Dict avec les valeurs saisies {'damage': int, 'health': int, 'defense': int}
     """
-    st.markdown(f"**Stats pour {label}**")
-    col1, col2, col3 = st.columns(3)
+    damage = st.number_input(
+        "⚔️ Dmg",
+        min_value=0,
+        max_value=20,
+        value=default_damage,
+        key=f"damage_{prefix}",
+        label_visibility="visible"
+    )
 
-    with col1:
-        damage = st.number_input(
-            "Dégâts",
-            min_value=0,
-            max_value=20,
-            value=default_damage,
-            key=f"damage_{prefix}",
-            help="Dégâts infligés aux héros"
-        )
+    health = st.number_input(
+        "❤️ HP",
+        min_value=1,
+        max_value=200,
+        value=default_health,
+        key=f"health_{prefix}",
+        label_visibility="visible"
+    )
 
-    with col2:
-        health = st.number_input(
-            "Santé",
-            min_value=1,
-            max_value=200,
-            value=default_health,
-            key=f"health_{prefix}",
-            help="Points de vie de l'ennemi"
-        )
-
-    with col3:
-        defense_stat = st.number_input(
-            "Parade",
-            min_value=0,
-            max_value=10,
-            value=default_defense,
-            key=f"defense_{prefix}",
-            help="Jetons de parade (bloquent les dégâts)"
-        )
+    defense_stat = st.number_input(
+        "🛡️ Par",
+        min_value=0,
+        max_value=10,
+        value=default_defense,
+        key=f"defense_{prefix}",
+        label_visibility="visible"
+    )
 
     return {
         'damage': damage,
