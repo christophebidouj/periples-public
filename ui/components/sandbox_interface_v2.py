@@ -1124,12 +1124,15 @@ def display_enemy_interface(combatant: Dict):
                     char, target, attack_result['hit'], attack_result['damage'],
                     is_critical=False, is_fail=False
                 )
-                # Track damage taken by hero
-                if attack_result['hit'] and attack_result['damage'] > 0:
+                # Track damage taken by hero (TOUJOURS si hit, même si parade bloque tout)
+                if attack_result['hit']:
+                    parade_used = attack_result.get('parade_used', 0)
+                    damage = attack_result['damage']
+                    # Appeler record_damage_taken même si damage=0 (parade peut avoir bloqué tout)
                     tracker.record_damage_taken(
                         target,
-                        attack_result['damage'],
-                        parade_used=attack_result.get('parade_used', 0)
+                        damage,
+                        parade_used=parade_used
                     )
 
             st.session_state.sandbox_v2_action_state = None
@@ -1432,8 +1435,8 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                             char, enemy, attack_result['hit'], attack_result['damage'],
                             attack_result['critical'], attack_result['critical_fail']
                         )
-                        # Track damage taken by enemy
-                        if attack_result['hit'] and attack_result['damage'] > 0:
+                        # Track damage taken by enemy (TOUJOURS si hit, même si parade bloque tout)
+                        if attack_result['hit']:
                             tracker.record_damage_taken(
                                 enemy,
                                 attack_result['damage'],
@@ -1460,8 +1463,8 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                         char, target, attack_result['hit'], attack_result['damage'],
                         attack_result['critical'], attack_result['critical_fail']
                     )
-                    # Track damage taken by target
-                    if attack_result['hit'] and attack_result['damage'] > 0:
+                    # Track damage taken by target (TOUJOURS si hit, même si parade bloque tout)
+                    if attack_result['hit']:
                         tracker.record_damage_taken(
                             target,
                             attack_result['damage'],
@@ -1538,8 +1541,8 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                                 char, enemy, attack_result['hit'], attack_result['damage'],
                                 attack_result['critical'], attack_result['critical_fail']
                             )
-                            # Track damage taken by enemy
-                            if attack_result['hit'] and attack_result['damage'] > 0:
+                            # Track damage taken by enemy (TOUJOURS si hit, même si parade bloque tout)
+                            if attack_result['hit']:
                                 tracker.record_damage_taken(
                                     enemy,
                                     attack_result['damage'],
