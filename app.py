@@ -687,7 +687,7 @@ def main():
     
     # Titre natif Streamlit
     st.title("⚔️ Périples – Atelier d'Équilibrage ⚔️")
-    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Dev Python : **Christophe Bidouj** | Simulateur d'équilibrage RPG avec système de builds basé sur équipements réels")
+    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Dev Python : **Christophe Bidouj** | Simulateur d'équilibrage du jeu de société Périples")
     
     # Données avec cache
     try:

@@ -525,7 +525,7 @@ def configure_combat():
 
         # Charger données
         heroes_data = loader.load_heroes()
-        enemies_data = loader.load_enemies()
+        enemies_data = loader.load_all_enemies()  # Charger tous les ennemis (officiels + personnalisés)
         equipment_data = loader.load_equipment()
 
         combatants = []
@@ -1997,7 +1997,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         # NOUVEAU : Badge Pluie de flèches (2 attaques par tour)
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #00CED1; text-shadow: 2px 2px 4px black;">🏹 PLUIE<br/>(2 ATK/tour)</div>'
     else:
-        build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #90EE90;">✓ Prêt</div>'
+        build_content = ''  # Pas de label par défaut - la bordure colorée suffit
 
     # RÉUTILISE le style existant (même format que premier onglet)
     card_html = get_hero_card_style(hero.name, border_color, background_style)
@@ -2083,7 +2083,7 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         # NOUVEAU : Badge visuel pour ennemi marqué par Kraor (Piège +2 dégâts groupe)
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF6347; text-shadow: 2px 2px 4px black;">🎯 MARQUÉ<br/>+2 dégâts groupe</div>'
     else:
-        build_content = '<div style="font-size: 0.9rem; font-style: italic; color: #ff6666;">✓ En attente</div>'
+        build_content = ''  # Pas de label par défaut - la bordure colorée suffit
 
     # RÉUTILISE le style existant (même format que cartes héros)
     card_html = get_hero_card_style(enemy.name, border_color, background_style)
