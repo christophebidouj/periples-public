@@ -666,11 +666,11 @@ def get_hero_card_style(hero_name: str, border_color: str, background_style: str
     <div style="width: 100%; height: 370px; border-radius: 15px; overflow: hidden;
                 box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 3px solid {border_color};
                 {background_style} background-size: cover; background-position: center top;
-                display: flex; flex-direction: column; justify-content: flex-end; color: white; margin: 10px auto;">
-        <div style="background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 70%); padding: 15px;">
-            <div style="background: rgba(0,0,0,0.6); border-radius: 5px; padding: 4px 8px; margin: 0 0 10px 0; text-align: center; display: inline-block;">
-                <strong style="font-size: 18px; color: yellow; text-shadow: 2px 2px black;">{hero_name}</strong>
-            </div>
+                position: relative; color: white; margin: 10px auto;">
+        <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); border-radius: 5px; padding: 4px 8px;">
+            <strong style="font-size: 16px; color: yellow; text-shadow: 2px 2px black;">{hero_name}</strong>
+        </div>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 70%); padding: 15px;">
             {{stats_content}}
             {{build_content}}
         </div>

@@ -1957,8 +1957,8 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # Préparer stats_content (2 stats par ligne pour meilleure lisibilité)
     stats_content = f"""
     <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
-        ❤️ {current_hp}/{max_hp} PV • 🎯 {precision} PRE<br/>
-        ⚔️ {attack} ATT • 🛡️ {defense} DEF<br/>
+        ❤️ {current_hp}/{max_hp} PV 🎯 {precision} PRE<br/>
+        ⚔️ {attack} ATT 🛡️ {defense} DEF<br/>
         ✨ {magic} MAG
     </div>"""
 
@@ -2059,8 +2059,8 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     magic_line = "<br/>        ✨ MAG" if enemy.is_magical else ""
     stats_content = f"""
     <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
-        ❤️ {current_hp}/{max_hp} PV • ⚔️ {damage} ATT<br/>
-        🎯 {defense} HIT • 🛡️ {parade_tokens} DEF{magic_line}
+        ❤️ {current_hp}/{max_hp} PV ⚔️ {damage} ATT<br/>
+        🎯 {defense} HIT 🛡️ {parade_tokens} DEF{magic_line}
     </div>"""
 
     # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
