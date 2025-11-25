@@ -21,6 +21,7 @@ from ui.components import *
 from ui.components.hero_components import preload_hero_builds_for_all_difficulties
 from hero_builds_data import get_abilities_for_level
 from ui.components.sandbox_interface_v2 import main_sandbox_v2
+from ui.components.enemy_editor import main_enemy_editor
 
 # Import des capacités et des potions
 try:
@@ -300,7 +301,7 @@ def load_data():
     
     return {
         'heroes': filter_heroes_to_main_8(loader.load_heroes()),  # NOUVEAU - Filtrage à 8 héros
-        'enemies': loader.load_enemies(), 
+        'enemies': loader.load_all_enemies(),  # MODIFIÉ - Charge officiels + personnalisés
         'equipment': loader.load_equipment(),
         'loader': loader
     }
@@ -696,15 +697,23 @@ def main():
         st.stop()
     
     # Onglets
-    tab1, tab2, tab3, tab4 = st.tabs(["🏰 Sélection", "⚙️ Forge", "🎮 Playtest Manuel", "ℹ️ À Propos"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "🏰 Sélection",
+        "⚙️ Forge",
+        "⚔️ Gestion Ennemis",  # NOUVEAU - 3ème position
+        "🎮 Playtest Manuel",
+        "ℹ️ À Propos"
+    ])
 
     with tab1:
         tab_selection(data)
     with tab2:
         tab_forge(data)
     with tab3:
-        main_sandbox_v2()
+        main_enemy_editor()  # NOUVEAU - Éditeur d'ennemis
     with tab4:
+        main_sandbox_v2()
+    with tab5:
         display_about()
 
 if __name__ == "__main__":

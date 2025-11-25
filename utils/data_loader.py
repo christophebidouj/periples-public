@@ -70,33 +70,67 @@ class DataLoader:
             return self._create_default_heroes()
     
     def load_enemies(self) -> List[Enemy]:
-        """Charge la liste des ennemis"""
+        """Charge la liste des ennemis officiels (E-X)"""
         csv_file = os.path.join(self.data_folder, "enemies.csv")
-        
+
         # Créer le CSV si absent
         if not os.path.exists(csv_file):
             self._create_csv_files()
-        
+
         # Lire le CSV
         enemies = []
         try:
             df = pd.read_csv(csv_file)
-            
+
             for _, row in df.iterrows():
                 enemy = self._create_enemy_from_row(row)
                 if enemy:
                     enemies.append(enemy)
-            
+
             if len(enemies) == 0:
                 return self._create_default_enemies()
-                
-            print(f"✅ {len(enemies)} ennemis chargés")
+
+            print(f"✅ {len(enemies)} ennemis officiels chargés")
             return enemies
-            
+
         except Exception as e:
             print(f"❌ Erreur chargement ennemis: {e}")
             return self._create_default_enemies()
-    
+
+    def load_custom_enemies(self) -> List[Enemy]:
+        """Charge la liste des ennemis personnalisés (CE-X)"""
+        from models.enemy_manager import EnemyManager
+
+        try:
+            manager = EnemyManager()
+            custom_enemies = manager.load_custom_enemies()
+
+            if custom_enemies:
+                print(f"✅ {len(custom_enemies)} ennemis personnalisés chargés")
+
+            return custom_enemies
+
+        except Exception as e:
+            print(f"❌ Erreur chargement ennemis personnalisés: {e}")
+            return []
+
+    def load_all_enemies(self) -> List[Enemy]:
+        """
+        Charge tous les ennemis (officiels + personnalisés)
+        Fusionne E-X (officiels) et CE-X (customs)
+
+        Returns:
+            Liste combinée de tous les ennemis
+        """
+        official = self.load_enemies()      # E-1 à E-72
+        custom = self.load_custom_enemies()  # CE-1, CE-2, etc.
+
+        all_enemies = official + custom
+
+        print(f"✅ Total: {len(all_enemies)} ennemis disponibles ({len(official)} officiels + {len(custom)} personnalisés)")
+
+        return all_enemies
+
     def load_equipment(self) -> List[Equipment]:
         """Charge la liste des équipements"""
         csv_file = os.path.join(self.data_folder, "equipment.csv")
