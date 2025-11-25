@@ -167,8 +167,10 @@ def _display_creation_form(manager: EnemyManager):
         with col3:
             st.write("")  # Spacer
 
-        # Bouton de création
-        submitted = st.form_submit_button("➕ Créer l'ennemi", use_container_width=True, type="primary")
+        # Bouton de création (centré)
+        col_spacer1, col_button, col_spacer2 = st.columns([1, 1, 1])
+        with col_button:
+            submitted = st.form_submit_button("➕ Créer l'ennemi", type="primary", use_container_width=True)
 
         if submitted:
             # Préparer les données
@@ -300,8 +302,10 @@ def _display_edit_form(manager: EnemyManager):
         with col3:
             st.write("")  # Spacer
 
-        # Bouton de sauvegarde
-        submitted = st.form_submit_button("💾 Sauvegarder", use_container_width=True, type="primary")
+        # Bouton de sauvegarde (centré)
+        col_spacer1, col_button, col_spacer2 = st.columns([1, 1, 1])
+        with col_button:
+            submitted = st.form_submit_button("💾 Sauvegarder", type="primary", use_container_width=True)
 
         if submitted:
             # Préparer les données
