@@ -696,24 +696,6 @@ def main():
         st.error(f"❌ Erreur: {e}")
         st.stop()
     
-    # Système de mémorisation de l'onglet actif (préserve l'index entre reruns)
-    if 'active_tab_index' not in st.session_state:
-        st.session_state.active_tab_index = 0
-
-    # JavaScript pour restaurer l'onglet actif après rerun
-    if st.session_state.active_tab_index > 0:
-        st.markdown(f"""
-        <script>
-        // Restaurer l'onglet actif après rerun
-        setTimeout(function() {{
-            const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-            if (tabs && tabs.length > {st.session_state.active_tab_index}) {{
-                tabs[{st.session_state.active_tab_index}].click();
-            }}
-        }}, 50);
-        </script>
-        """, unsafe_allow_html=True)
-
     # Onglets
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🏰 Sélection",
