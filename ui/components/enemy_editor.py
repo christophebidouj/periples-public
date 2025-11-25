@@ -389,8 +389,8 @@ def _display_custom_enemies_list(manager: EnemyManager):
                     <div style="font-weight: bold; font-size: 0.85rem; color: #8b6914; margin-bottom: 3px;">
                         {enemy.code} {badges_str}
                     </div>
-                    <div style="font-size: 1.1rem; color: #2c1810; margin-bottom: 10px; font-weight: 700;
-                                text-shadow: 0px 1px 2px rgba(212, 175, 55, 0.3);">
+                    <div style="font-size: 1.1rem; color: #d4af37; margin-bottom: 10px; font-weight: 700;
+                                text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);">
                         {enemy.name}
                     </div>
                     <div style="font-size: 0.9rem; color: #5a4a2a; line-height: 1.5;">
