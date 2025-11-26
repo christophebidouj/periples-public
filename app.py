@@ -713,16 +713,18 @@ def main():
 
     # FIX : Utiliser st.radio() au lieu de st.tabs() pour mémoriser l'onglet actif
     # st.tabs() ne garde pas en mémoire l'onglet actif entre les reruns (limitation Streamlit)
-    if 'active_tab' not in st.session_state:
-        st.session_state.active_tab = "🏰 Sélection"
 
     # Navigation par onglets avec mémorisation
     tabs_list = ["🏰 Sélection", "⚙️ Forge", "⚔️ Gestion Ennemis", "🎮 Playtest Manuel", "ℹ️ À Propos"]
 
-    st.session_state.active_tab = st.radio(
+    # Initialiser la navigation avec le premier onglet par défaut
+    if 'main_navigation' not in st.session_state:
+        st.session_state.main_navigation = tabs_list[0]
+
+    # Radio buttons pour la navigation (Streamlit gère automatiquement la valeur via la clé)
+    selected_tab = st.radio(
         "Navigation",
         tabs_list,
-        index=tabs_list.index(st.session_state.active_tab),
         horizontal=True,
         label_visibility="collapsed",
         key="main_navigation"
@@ -731,15 +733,15 @@ def main():
     st.markdown("---")  # Séparateur visuel
 
     # Affichage du contenu selon l'onglet actif
-    if st.session_state.active_tab == "🏰 Sélection":
+    if selected_tab == "🏰 Sélection":
         tab_selection(data)
-    elif st.session_state.active_tab == "⚙️ Forge":
+    elif selected_tab == "⚙️ Forge":
         tab_forge(data)
-    elif st.session_state.active_tab == "⚔️ Gestion Ennemis":
+    elif selected_tab == "⚔️ Gestion Ennemis":
         main_enemy_editor()
-    elif st.session_state.active_tab == "🎮 Playtest Manuel":
+    elif selected_tab == "🎮 Playtest Manuel":
         main_sandbox_v2()
-    elif st.session_state.active_tab == "ℹ️ À Propos":
+    elif selected_tab == "ℹ️ À Propos":
         display_about()
 
 if __name__ == "__main__":
