@@ -439,6 +439,18 @@ class ManualTargeting:
             parade = hero.current_parade_tokens
             damage_after_parade = max(0, stats['damage'] - parade)
 
+            # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+            is_animal_form = (hero.code == "P-1" and
+                              hasattr(hero, 'current_form') and
+                              hero.current_form in ["bear", "wolf"])
+
+            if is_animal_form:
+                # Stats de la forme animale (brutes, sans équipements)
+                max_hp = hero.health
+            else:
+                # Stats normales (avec équipements)
+                max_hp = hero.get_total_health()
+
             col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
 
             with col1:
@@ -447,7 +459,7 @@ class ManualTargeting:
                 else:
                     st.write(f"**{hero.name}**")
             with col2:
-                st.write(f"❤️ {hero.current_health}/{hero.get_total_health()}")
+                st.write(f"❤️ {hero.current_health}/{max_hp}")
             with col3:
                 st.write(f"🛡️ {parade}")
             with col4:
@@ -991,14 +1003,14 @@ def display_hero_interface(combatant: Dict):
         precision = char.precision
         attack = char.damage
         magic = char.spells
+        defense = char.max_parade_tokens  # FIX: Parade brute (sans équipements)
     else:
         # Stats normales (avec équipements)
         max_hp = char.get_total_health()
         precision = char.get_total_precision()
         attack = char.get_total_damage()
         magic = char.get_total_spells()
-
-    defense = char.get_total_parade()
+        defense = char.get_total_parade()
 
     st.markdown(f"""
     <div class="hero-header">
@@ -1247,7 +1259,15 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     can_use = ability.ability_number in getattr(char, 'unlocked_abilities', [])
     current_spells = getattr(char, 'current_spells', None)
     if current_spells is None:
-        current_spells = char.get_total_spells() if hasattr(char, 'get_total_spells') else 0
+        # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+        is_animal_form = (char.code == "P-1" and
+                          hasattr(char, 'current_form') and
+                          char.current_form in ["bear", "wolf"])
+
+        if is_animal_form:
+            current_spells = char.spells
+        else:
+            current_spells = char.get_total_spells() if hasattr(char, 'get_total_spells') else 0
 
     # FIX BUG 2: Retour forme humaine ne coûte PAS de sorts
     is_transformation = (char.code == "P-1" and ability.ability_number in [1, 3])
@@ -1666,10 +1686,23 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                 # Afficher boutons de sélection pour chaque héros
                 for target_data in available_heroes:
                     target = target_data['character']
-                    health_pct = round((target.current_health / target.get_total_health()) * 100, 1)
+
+                    # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+                    is_target_animal_form = (target.code == "P-1" and
+                                             hasattr(target, 'current_form') and
+                                             target.current_form in ["bear", "wolf"])
+
+                    if is_target_animal_form:
+                        # Stats de la forme animale (brutes, sans équipements)
+                        target_max_hp = target.health
+                    else:
+                        # Stats normales (avec équipements)
+                        target_max_hp = target.get_total_health()
+
+                    health_pct = round((target.current_health / target_max_hp) * 100, 1)
 
                     if st.button(
-                        f"🎯 {target.name} ({target.current_health}/{target.get_total_health()} PV - {health_pct}%)",
+                        f"🎯 {target.name} ({target.current_health}/{target_max_hp} PV - {health_pct}%)",
                         key=f"give_to_{target_data['id']}",
                         use_container_width=True
                     ):

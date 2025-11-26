@@ -71,17 +71,26 @@ def display_hero_abilities_detailed(hero: Character, key_suffix: str = "") -> No
         return
     
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, rgba(123,104,238,0.15), rgba(147,112,219,0.1)); 
+    <div style="background: linear-gradient(135deg, rgba(123,104,238,0.15), rgba(147,112,219,0.1));
                 border: 2px solid #7b68ee; border-radius: 15px; padding: 20px; margin: 15px 0;">
         <h3 style="color: #7b68ee; margin-top: 0; font-family: 'Cinzel', serif; text-align: center;">
             🔮 CAPACITÉS DE {hero.name.upper()}
         </h3>
     </div>
     """, unsafe_allow_html=True)
-    
+
+    # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+    is_animal_form = (hero.code == "P-1" and
+                      hasattr(hero, 'current_form') and
+                      hero.current_form in ["bear", "wolf"])
+
+    if is_animal_form:
+        max_spells = hero.spells
+    else:
+        max_spells = hero.get_total_spells()
+
     # État actuel du héros
-    current_spells = getattr(hero, 'current_spells', hero.get_total_spells())
-    max_spells = hero.get_total_spells()
+    current_spells = getattr(hero, 'current_spells', max_spells)
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -334,14 +343,28 @@ def display_combat_abilities_panel(heroes: List[Character]) -> Dict[str, Any]:
             continue
         
         st.markdown(f"#### 🧙‍♂️ {hero.name}")
-        
+
+        # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+        is_animal_form = (hero.code == "P-1" and
+                          hasattr(hero, 'current_form') and
+                          hero.current_form in ["bear", "wolf"])
+
+        if is_animal_form:
+            # Stats de la forme animale (brutes, sans équipements)
+            max_hp = hero.health
+            max_spells = hero.spells
+        else:
+            # Stats normales (avec équipements)
+            max_hp = hero.get_total_health()
+            max_spells = hero.get_total_spells()
+
         # État du héros
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("❤️ PV", f"{hero.current_health}/{hero.get_total_health()}")
+            st.metric("❤️ PV", f"{hero.current_health}/{max_hp}")
         with col2:
-            current_spells = getattr(hero, 'current_spells', hero.get_total_spells())
-            st.metric("🔮 Sorts", f"{current_spells}/{hero.get_total_spells()}")
+            current_spells = getattr(hero, 'current_spells', max_spells)
+            st.metric("🔮 Sorts", f"{current_spells}/{max_spells}")
         with col3:
             can_act = not getattr(hero, 'action_taken_this_turn', False)
             st.metric("⚡ Statut", "Actif" if can_act else "Action prise")
@@ -411,10 +434,19 @@ def display_abilities_status_sidebar(heroes: List[Character]) -> None:
         for hero in heroes:
             if not hasattr(hero, 'abilities') or not hero.abilities:
                 continue
-            
+
+            # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+            is_animal_form = (hero.code == "P-1" and
+                              hasattr(hero, 'current_form') and
+                              hero.current_form in ["bear", "wolf"])
+
+            if is_animal_form:
+                max_spells = hero.spells
+            else:
+                max_spells = hero.get_total_spells()
+
             # Statut compact
-            current_spells = getattr(hero, 'current_spells', hero.get_total_spells())
-            max_spells = hero.get_total_spells()
+            current_spells = getattr(hero, 'current_spells', max_spells)
             unlocked_count = len(hero.unlocked_abilities)
             
             spell_percentage = (current_spells / max_spells * 100) if max_spells > 0 else 0
@@ -558,13 +590,23 @@ def get_abilities_summary_for_ui(heroes: List[Character]) -> Dict[str, Any]:
     
     for hero in heroes:
         if hasattr(hero, 'abilities') and hero.abilities:
+            # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+            is_animal_form = (hero.code == "P-1" and
+                              hasattr(hero, 'current_form') and
+                              hero.current_form in ["bear", "wolf"])
+
+            if is_animal_form:
+                max_spells = hero.spells
+            else:
+                max_spells = hero.get_total_spells()
+
             hero_summary = {
                 'name': hero.name,
                 'code': hero.code,
                 'abilities_count': len(hero.abilities),
                 'unlocked_count': len(hero.unlocked_abilities) if hasattr(hero, 'unlocked_abilities') else 0,
-                'spells_current': getattr(hero, 'current_spells', hero.get_total_spells()),
-                'spells_max': hero.get_total_spells()
+                'spells_current': getattr(hero, 'current_spells', max_spells),
+                'spells_max': max_spells
             }
             
             summary['heroes_with_abilities'] += 1
