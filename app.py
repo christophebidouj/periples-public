@@ -282,6 +282,8 @@ def init_app():
         'custom_builds': {},
         'hero_difficulties': {},
         'selected_theme': 'Professionnel',  # Thème par défaut
+        'initiative_setting': True,  # Initiative D20 activée par défaut
+        'criticals_setting': True,  # Critiques activés par défaut
         'ui_state': {'needs_rerun': False}
     }
     
@@ -319,13 +321,7 @@ def get_preloaded_builds(_heroes_list, _equipment_list, _loader):
 def tab_selection(data):
     """Onglet sélection des équipes avec layout optimisé pour cartes héros"""
     # Configuration dans un expander
-    # Initialiser les valeurs si elles n'existent pas
-    if 'initiative_setting' not in st.session_state:
-        st.session_state.initiative_setting = True
-    if 'criticals_setting' not in st.session_state:
-        st.session_state.criticals_setting = True
-    if 'selected_theme' not in st.session_state:
-        st.session_state.selected_theme = 'Professionnel'
+    # NOTE: Les initialisations session_state sont faites dans main() avant la création des onglets
 
     # Callbacks
     def on_initiative_change():
@@ -713,24 +709,37 @@ def main():
     valid_enemy_codes = [e.code for e in data['enemies']]
     cleanup_removed_enemies_from_session(valid_enemy_codes)
 
-    # Onglets
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🏰 Sélection",
-        "⚙️ Forge",
-        "⚔️ Gestion Ennemis",  # NOUVEAU - 3ème position
-        "🎮 Playtest Manuel",
-        "ℹ️ À Propos"
-    ])
+    # NOTE: Toutes les initialisations session_state sont faites dans init_app()
 
-    with tab1:
+    # FIX : Utiliser st.radio() au lieu de st.tabs() pour mémoriser l'onglet actif
+    # st.tabs() ne garde pas en mémoire l'onglet actif entre les reruns (limitation Streamlit)
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = "🏰 Sélection"
+
+    # Navigation par onglets avec mémorisation
+    tabs_list = ["🏰 Sélection", "⚙️ Forge", "⚔️ Gestion Ennemis", "🎮 Playtest Manuel", "ℹ️ À Propos"]
+
+    st.session_state.active_tab = st.radio(
+        "Navigation",
+        tabs_list,
+        index=tabs_list.index(st.session_state.active_tab),
+        horizontal=True,
+        label_visibility="collapsed",
+        key="main_navigation"
+    )
+
+    st.markdown("---")  # Séparateur visuel
+
+    # Affichage du contenu selon l'onglet actif
+    if st.session_state.active_tab == "🏰 Sélection":
         tab_selection(data)
-    with tab2:
+    elif st.session_state.active_tab == "⚙️ Forge":
         tab_forge(data)
-    with tab3:
-        main_enemy_editor()  # NOUVEAU - Éditeur d'ennemis
-    with tab4:
+    elif st.session_state.active_tab == "⚔️ Gestion Ennemis":
+        main_enemy_editor()
+    elif st.session_state.active_tab == "🎮 Playtest Manuel":
         main_sandbox_v2()
-    with tab5:
+    elif st.session_state.active_tab == "ℹ️ À Propos":
         display_about()
 
 if __name__ == "__main__":
