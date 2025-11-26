@@ -852,7 +852,7 @@ def get_forge_styles(theme_name: str = "Professionnel") -> Dict[str, str]:
 
         'current_build': f"""
         <div style="background: linear-gradient(135deg, {info_bg1}, {info_bg2});
-                    border: 2px solid {theme.button_info}; border-radius: 10px; padding: 12px; margin: 10px 0;">
+                    border: 2px solid {theme.button_info}; border-radius: 10px; padding: 10px; margin: 0;">
             <p style="margin: 0; color: {theme.button_info}; font-weight: bold;">
                 {{icon}} Build actuel: {{name}}
             </p>
