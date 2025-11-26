@@ -483,33 +483,30 @@ def tab_selection(data):
 def tab_forge(data):
     """Onglet forge des équipements - Version 8 héros MIGRÉE"""
     st.header("⚙️ Forge des Équipements")
-    
+
     heroes, equipment = data['heroes'], data['equipment']
-    
-    # Sélection héros (8 héros uniquement) - LARGEUR RÉDUITE
+
+    # LIGNE COMPACTE : Héros + Build actuel + Reset
     hero_options = {h.code: f"{get_hero_icon(h.name)} {h.name}" for h in heroes}
-    
-    col_hero, col_spacer = st.columns([2, 3])
+
+    col_hero, col_build, col_reset = st.columns([2, 3, 1])
+
     with col_hero:
         selected_code = st.selectbox(
-            "Héros:", 
-            list(hero_options.keys()), 
+            "Héros:",
+            list(hero_options.keys()),
             format_func=lambda x: hero_options[x],
-            key="forge_hero_selector"
+            key="forge_hero_selector",
+            label_visibility="collapsed"
         )
-    
+
     selected_hero = next(h for h in heroes if h.code == selected_code)
-    
-    # Stats et build actuels MIGRÉS
-    st.subheader("📊 Statistiques")
-    display_hero_base_stats(selected_hero)
-    
     current_builds = st.session_state.get('custom_builds', {})
     current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
-    display_current_build_info(current_build)
-    
-    # Gestion builds - LARGEUR BOUTON RESET RÉDUITE
-    col_reset, col_spacer = st.columns([1, 4])
+
+    with col_build:
+        display_current_build_info(current_build)
+
     with col_reset:
         if st.button("🔄 Reset", key="forge_reset", use_container_width=True):
             if selected_code in st.session_state.custom_builds:
@@ -517,6 +514,10 @@ def tab_forge(data):
                 del builds[selected_code]
                 safe_session_update('custom_builds', builds)
                 st.rerun()
+
+    # Stats de base du héros
+    st.subheader("📊 Statistiques")
+    display_hero_base_stats(selected_hero)
     
     # === ÉQUIPEMENTS ===
     st.subheader("⚔️ Équipements")
