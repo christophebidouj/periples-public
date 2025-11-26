@@ -265,6 +265,46 @@ def reset_temporary_ui_flags():
 
     # Note: sandbox_v2_last_selection est conservé car il sert de mémorisation entre tours
 
+def prepare_new_combat():
+    """
+    Prépare un nouveau combat en réinitialisant les données du combat précédent
+    SANS réinitialiser la phase ni vider les combattants (ils seront recréés juste après)
+    À appeler AVANT de générer l'initiative ou d'organiser les équipes
+    """
+    # Réinitialiser l'historique et les logs
+    st.session_state.sandbox_v2_game_history = []
+    st.session_state.sandbox_v2_history_index = -1
+    st.session_state.sandbox_v2_log = []
+    st.session_state.sandbox_v2_round_number = 1
+    st.session_state.sandbox_v2_played_this_round = []
+    st.session_state.sandbox_v2_current_turn_index = 0
+    st.session_state.sandbox_v2_action_state = None
+    st.session_state.sandbox_v2_current_actor = None
+
+    # Réinitialiser les stats modifiées des ennemis
+    if 'enemy_overrides' in st.session_state:
+        del st.session_state.enemy_overrides
+
+    # Supprimer résultat du combat précédent
+    if 'sandbox_v2_combat_result' in st.session_state:
+        del st.session_state.sandbox_v2_combat_result
+
+    # Réinitialiser les compteurs des individual abilities (singleton cache)
+    from models.combat.abilities.individual_abilities import reset_all_combat_uses
+    reset_all_combat_uses()
+
+def reset_combat_state():
+    """
+    Réinitialise COMPLÈTEMENT tous les états du combat (retour à CONFIG)
+    À appeler uniquement pour le bouton "Reset Combat" ou "Nouveau Combat"
+    """
+    # Préparer un nouveau combat (reset partiel)
+    prepare_new_combat()
+
+    # Reset complet : retour à la phase CONFIG et vidage des combattants
+    st.session_state.sandbox_v2_phase = 'CONFIG'
+    st.session_state.sandbox_v2_combatants = []
+
 def save_game_state(description: str = "Action"):
     """Sauvegarde l'état pour Undo/Redo"""
     # Synchroniser les listes de héros/ennemis depuis les combattants avant de sauvegarder
@@ -2565,9 +2605,8 @@ def main_sandbox_v2():
 
             # Bouton génération initiative
             if st.button("🎲 Générer Initiative et Commencer", type="primary", use_container_width=True):
-                # CRITIQUE : Réinitialiser les compteurs des individual abilities avant nouveau combat
-                from models.combat.abilities.individual_abilities import reset_all_combat_uses
-                reset_all_combat_uses()
+                # FIX : Préparer nouveau combat (reset données précédentes sans vider les combattants)
+                prepare_new_combat()
 
                 generate_initiative()
                 st.session_state.sandbox_v2_phase = 'COMBAT'
@@ -2580,9 +2619,8 @@ def main_sandbox_v2():
 
             # Bouton pour commencer le combat en mode manuel
             if st.button("▶️ Commencer le Combat (Mode Manuel)", type="primary", use_container_width=True):
-                # CRITIQUE : Réinitialiser les compteurs des individual abilities avant nouveau combat
-                from models.combat.abilities.individual_abilities import reset_all_combat_uses
-                reset_all_combat_uses()
+                # FIX : Préparer nouveau combat (reset données précédentes sans vider les combattants)
+                prepare_new_combat()
 
                 organize_teams_without_initiative()
                 st.session_state.sandbox_v2_phase = 'COMBAT'
@@ -2618,7 +2656,8 @@ def main_sandbox_v2():
 
             # Bouton pour nouveau combat
             if st.button("🔄 Nouveau Combat", type="primary", use_container_width=True):
-                st.session_state.sandbox_v2_phase = 'CONFIG'
+                # FIX : Reset complet pour nouveau combat propre
+                reset_combat_state()
                 st.rerun()
 
         # Note : Le log sera affiché en bas (section commune)
@@ -2847,30 +2886,8 @@ def main_sandbox_v2():
 
         with col3:
             if st.button("🔄 Reset Combat", use_container_width=True):
-                # Réinitialiser TOUS les états du combat
-                st.session_state.sandbox_v2_phase = 'CONFIG'
-                st.session_state.sandbox_v2_game_history = []
-                st.session_state.sandbox_v2_history_index = -1
-                st.session_state.sandbox_v2_log = []
-                st.session_state.sandbox_v2_round_number = 1
-                st.session_state.sandbox_v2_played_this_round = []
-                st.session_state.sandbox_v2_current_turn_index = 0
-                st.session_state.sandbox_v2_action_state = None
-                st.session_state.sandbox_v2_current_actor = None
-                st.session_state.sandbox_v2_combatants = []
-
-                # NOUVEAU : Réinitialiser les stats modifiées des ennemis
-                if 'enemy_overrides' in st.session_state:
-                    del st.session_state.enemy_overrides
-
-                # NOUVEAU : Supprimer résultat du combat précédent
-                if 'sandbox_v2_combat_result' in st.session_state:
-                    del st.session_state.sandbox_v2_combat_result
-
-                # CRITIQUE : Réinitialiser les compteurs des individual abilities (singleton cache)
-                from models.combat.abilities.individual_abilities import reset_all_combat_uses
-                reset_all_combat_uses()
-
+                # Utilise la fonction centralisée de reset
+                reset_combat_state()
                 st.rerun()
 
 if __name__ == "__main__":
