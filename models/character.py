@@ -290,7 +290,7 @@ class Character(BaseModel):
     def transform_to_bear(self) -> bool:
         """
         Transforme Elneha en ours (P-9)
-        Stats officielles : Précision 4, Dégâts 2, Sorts 2, Santé 12, Parade 0
+        Stats officielles : Précision 4, Dégâts 2, Sorts 0, Santé 12, Parade 2
 
         Returns:
             bool: True si transformation réussie
@@ -305,12 +305,12 @@ class Character(BaseModel):
         # Appliquer stats d'ours (selon Sorts.xlsx P-9)
         self.precision = 4
         self.damage = 2
-        self.spells = 2  # FIX: Stats officielles P-9
-        self.current_spells = 2  # FIX BUG: Initialiser les sorts ACTUELS de la forme ours
+        self.spells = 0  # CORRIGÉ: 0 sorts (pas 2)
+        self.current_spells = 0  # CORRIGÉ: Forme ours n'a pas de sorts
         self.health = 12
         self.current_health = 12  # Santé = max de la forme (pas de ratio)
-        self.max_parade_tokens = 0  # FIX: Formes animales n'ont PAS de jetons parade
-        self.current_parade_tokens = 0
+        self.max_parade_tokens = 2  # CORRIGÉ: 2 jetons de parade (pas 0)
+        self.current_parade_tokens = 2
 
         # Marquer la transformation
         self.current_form = "bear"
@@ -1669,6 +1669,7 @@ class Enemy(BaseModel):
     stats_by_players: Dict[int, Dict[str, int]]  # Contient parade + santé + dégâts
     is_magical: bool = False
     has_magical_damage: bool = False
+    is_custom: bool = False  # NOUVEAU - Indique si l'ennemi est personnalisé (CE-X) ou officiel (E-X)
     current_health: Optional[int] = None
     max_health: Optional[int] = None
     

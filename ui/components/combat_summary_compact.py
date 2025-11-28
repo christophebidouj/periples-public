@@ -139,10 +139,8 @@ def display_compact_combat_summary(stats: Dict, analysis: Dict, log: List[str]):
                 # Pour les ennemis, format est "enemy_CODE_INDEX"
                 parts = combatant_id.replace('enemy_', '').split('_')
                 code = '_'.join(parts[:-1]) if len(parts) > 1 else parts[0]
+                # CORRIGÉ: Utiliser directement le nom sans ajouter l'index (déjà dans le nom)
                 name = stats['enemies'].get(code, {}).get('name', code)
-                # Ajouter l'index si multiple ennemis identiques
-                if len(parts) > 1:
-                    name = f"{name} {int(parts[-1]) + 1}"
             else:
                 name = combatant_id
 

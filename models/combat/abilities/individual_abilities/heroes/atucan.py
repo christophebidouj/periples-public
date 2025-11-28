@@ -609,6 +609,58 @@ def get_atucan_equipment_requirements() -> dict:
     }
 
 
+def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
+    """
+    Active automatiquement l'Aura sacrée si Atucan (P-3) est présent et vivant.
+    Appelé au début du combat par l'interface UI.
+
+    RÈGLE: L'Aura sacrée d'Atucan est une aura passive permanente qui s'active
+    automatiquement dès le début du combat et reste active tant qu'Atucan est vivant.
+
+    Args:
+        heroes: Liste des héros participant au combat
+        log: Liste de logs de combat (sera modifiée)
+
+    Returns:
+        bool: True si l'aura a été activée, False sinon
+
+    Effet:
+        Applique le buff 'aura_protection' à tous les héros vivants:
+        - damage_reduction: 1 (ignore 1 blessure par attaque)
+        - type: 'per_attack'
+        - source: 'aura_sacree'
+        - Permanent (pas de rounds_remaining)
+    """
+    # Chercher Atucan (P-3) parmi les héros vivants
+    atucan = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
+
+    if not atucan:
+        return False
+
+    # Appliquer l'aura à tous les héros vivants (y compris Atucan lui-même)
+    protected_count = 0
+    for hero in heroes:
+        if hero.is_alive():
+            # Initialiser temporary_buffs si nécessaire
+            if not hasattr(hero, 'temporary_buffs'):
+                hero.temporary_buffs = {}
+
+            # Appliquer le buff d'aura sacrée (permanent)
+            hero.temporary_buffs['aura_protection'] = {
+                'damage_reduction': 1,
+                'type': 'per_attack',
+                'source': 'aura_sacree'
+                # Pas de 'rounds_remaining' → effet permanent jusqu'à mort d'Atucan
+            }
+            protected_count += 1
+
+    # Logger l'activation
+    if protected_count > 0:
+        log.append(f"✨ Aura sacrée d'Atucan activée automatiquement ({protected_count} héros protégés, -1 blessure/attaque)")
+
+    return True
+
+
 def validate_atucan_implementation() -> dict:
     """Valide que toutes les capacités Atucan utilisent les DONNÉES OFFICIELLES"""
     return {
@@ -713,7 +765,7 @@ def get_atucan_vs_other_heroes() -> dict:
 # Export des capacités
 __all__ = [
     'AtucanImpositionDesMains',
-    'AtucanParade', 
+    'AtucanParade',
     'AtucanChatimentDivin',
     'AtucanAuraSacree',
     'AtucanSoinSuperieur',
@@ -724,6 +776,7 @@ __all__ = [
     'get_atucan_damage_output',
     'get_atucan_tactical_analysis',
     'get_atucan_equipment_requirements',
+    'auto_activate_aura_sacree',  # Fonction d'activation automatique
     'validate_atucan_implementation',
     'get_atucan_debug_info',
     'print_atucan_development_summary',

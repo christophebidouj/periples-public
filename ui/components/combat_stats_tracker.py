@@ -28,13 +28,14 @@ class CombatStatsTracker:
             'turn_order': []   # Liste chronologique des tours joués
         }
 
-    def initialize_combat(self, heroes: List[Character], enemies: List[Enemy]):
+    def initialize_combat(self, heroes: List[Character], enemies: List[Enemy], combatants: List[Dict] = None):
         """
         Initialise le tracking au début du combat
 
         Args:
             heroes: Liste des héros participant au combat
             enemies: Liste des ennemis participant au combat
+            combatants: Liste des combattants avec leurs IDs uniques (optionnel, pour compatibilité IDs)
         """
         self.stats['start_time'] = datetime.now()
         self.stats['start_round'] = 1
@@ -44,10 +45,25 @@ class CombatStatsTracker:
             self.stats['heroes'][hero.code] = self._create_hero_stats(hero)
             self.stats['hp_history'][f"hero_{hero.code}"] = {}
 
-        # Initialiser stats pour chaque ennemi
-        for enemy in enemies:
-            self.stats['enemies'][enemy.code] = self._create_enemy_stats(enemy)
-            self.stats['hp_history'][f"enemy_{enemy.code}"] = {}
+        # CORRIGÉ - Initialiser avec les IDs uniques des combattants si fournis
+        if combatants:
+            # Utiliser les IDs des combattants pour correspondre avec snapshot_hp()
+            for combatant in combatants:
+                if combatant['faction'] == 'enemy':
+                    enemy = combatant['character']
+                    combatant_id = combatant['id']  # Format: "enemy_E-12_0"
+
+                    # Initialiser stats uniquement si pas déjà fait (éviter doublons)
+                    if enemy.code not in self.stats['enemies']:
+                        self.stats['enemies'][enemy.code] = self._create_enemy_stats(enemy)
+
+                    # Initialiser l'historique HP avec l'ID unique
+                    self.stats['hp_history'][combatant_id] = {}
+        else:
+            # Mode legacy: initialiser avec enemy.code simple (peut causer le bug)
+            for enemy in enemies:
+                self.stats['enemies'][enemy.code] = self._create_enemy_stats(enemy)
+                self.stats['hp_history'][f"enemy_{enemy.code}"] = {}
 
     def _create_hero_stats(self, hero: Character) -> Dict[str, Any]:
         """Crée la structure de stats pour un héros"""

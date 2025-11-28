@@ -22,6 +22,7 @@ from ui.styling import get_hero_card_style
 from ui.components.combat_stats_tracker import CombatStatsTracker
 from ui.components.combat_stats_analyzer import analyze_combat_results, generate_balance_recommendations
 from ui.components.combat_results_display import display_combat_results_panel
+from models.combat.abilities.individual_abilities.heroes.atucan import auto_activate_aura_sacree
 
 # === CSS STYLE ARÈNE ===
 # ===tour par tour guidé ===
@@ -739,7 +740,12 @@ def configure_combat():
         for hero_data in hero_combatants:
             spell_manager.initialize_spells(hero_data['character'])
 
+        # Initialiser log
         st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
+
+        # NOUVEAU - Activation automatique Aura sacrée d'Atucan (BUSINESS LOGIC)
+        heroes = [c['character'] for c in hero_combatants]
+        auto_activate_aura_sacree(heroes, st.session_state.sandbox_v2_log)
 
         # Sauvegarder l'état initial
         save_game_state("Début du combat")
@@ -748,7 +754,8 @@ def configure_combat():
         tracker = CombatStatsTracker()
         tracker.initialize_combat(
             heroes=st.session_state.sandbox_v2_heroes,
-            enemies=st.session_state.sandbox_v2_enemies
+            enemies=st.session_state.sandbox_v2_enemies,
+            combatants=combatants  # CORRIGÉ: Passer les combattants pour IDs corrects
         )
         st.session_state.sandbox_v2_stats_tracker = tracker
 
@@ -786,8 +793,43 @@ def generate_initiative():
     st.session_state.sandbox_v2_log.append("")
     st.session_state.sandbox_v2_log.append("=== ROUND 1 ===")
 
+    # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
+    log_active_persistent_effects()
+
     # LOGIQUE UI : Sauvegarder l'état du jeu (système Undo/Redo)
     save_game_state("Initiative générée")
+
+def log_active_persistent_effects():
+    """
+    Log tous les effets persistants actifs au début du round.
+    Appelé juste après "=== ROUND X ===" pour afficher les auras/buffs permanents.
+
+    Structure attendue dans le log:
+        === ROUND X ===
+        ✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)
+        [autres effets persistants futurs...]
+        🛡️ Phase des Héros + Pets
+
+    Vérifie:
+        - Aura sacrée d'Atucan (tant qu'il est vivant)
+        - Autres effets persistants peuvent être ajoutés ici
+    """
+    combatants = st.session_state.sandbox_v2_combatants
+    heroes = [c['character'] for c in combatants if c['faction'] == 'hero' and c['character'].is_alive()]
+
+    # Vérifier Aura sacrée d'Atucan (P-3)
+    atucan = next((h for h in heroes if h.code == "P-3"), None)
+    if atucan and atucan.is_alive():
+        # Vérifier si l'aura est effectivement active sur au moins un héros
+        aura_active = any(
+            hasattr(h, 'temporary_buffs') and 'aura_protection' in h.temporary_buffs
+            for h in heroes
+        )
+        if aura_active:
+            st.session_state.sandbox_v2_log.append("✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)")
+
+    # Espace réservé pour d'autres effets persistants futurs
+    # Exemple: buffs de groupe, malédictions permanentes, etc.
 
 def organize_teams_without_initiative():
     """
@@ -814,6 +856,9 @@ def organize_teams_without_initiative():
     st.session_state.sandbox_v2_log.append("")
     st.session_state.sandbox_v2_log.append("=== MODE MANUEL - Sélectionnez qui joue ===")
     st.session_state.sandbox_v2_log.append("=== ROUND 1 ===")
+
+    # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
+    log_active_persistent_effects()
 
     # Pas de tour actuel défini au départ (l'utilisateur choisit)
     st.session_state.sandbox_v2_current_turn_index = -1
@@ -936,6 +981,9 @@ def next_turn():
             st.session_state.sandbox_v2_current_turn_index = 0
             st.session_state.sandbox_v2_round_number += 1
             st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+
+            # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
+            log_active_persistent_effects()
 
             # CRITIQUE : Décrémenter les compteurs stunned (même logique que mode manuel)
             for combatant in st.session_state.sandbox_v2_combatants:
@@ -1353,6 +1401,9 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         combat_uses_remaining = ability.uses_remaining_combat
         combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
 
+    # NOUVEAU - Aura sacrée d'Atucan : Capacité automatique (toujours désactivée)
+    is_aura_sacree = (ability.name == "Aura sacrée")
+
     # NOUVEAU - Désactiver capacités "Pas utile en combat"
     not_useful_in_combat = False
     if hasattr(ability, 'description') and ability.description:
@@ -1385,7 +1436,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
                 not getattr(char, 'can_attack_this_turn', True)
             )
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action and not is_aura_sacree
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
@@ -1416,7 +1467,9 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if is_form_active:
         button_label = f"{type_icon} {short_name}\n• Gratuit"
 
-    if not_useful_in_combat:
+    if is_aura_sacree:
+        button_label = f"✨ {short_name}\n⚡ Automatique - Active"
+    elif not_useful_in_combat:
         button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
     elif armure_mage_already_used:
         button_label = f"{type_icon} {short_name}\n✅ Active"
@@ -2861,6 +2914,10 @@ def main_sandbox_v2():
                 # Log
                 st.session_state.sandbox_v2_log.append("")
                 st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+
+                # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
+                log_active_persistent_effects()
+
                 # Sauvegarder
                 save_game_state(f"Nouveau round {st.session_state.sandbox_v2_round_number}")
                 st.rerun()

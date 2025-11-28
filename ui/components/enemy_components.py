@@ -86,19 +86,27 @@ def display_enemy_card_expander(enemy: Enemy, is_selected: bool, player_count: i
     
     # Nom avec troncature intelligente
     name_display = get_smart_enemy_name_display(enemy.name, 18)
-    
+
     # Badge de sélection dans le titre
     selection_badge = "✅ " if is_selected else ""
-    
+
+    # NOUVEAU - Badge Custom pour ennemis personnalisés
+    custom_badge = "🔧 " if getattr(enemy, 'is_custom', False) else ""
+
     # === EXPANDER NATIF STREAMLIT FERMÉ PAR DÉFAUT ===
-    with st.expander(f"{selection_badge}👹 #{number} {name_display}{magic_indicator}", expanded=False):
+    with st.expander(f"{selection_badge}{custom_badge}👹 #{number} {name_display}{magic_indicator}", expanded=False):
         
         # Type d'ennemi avec couleur
         enemy_type = "✨ Magique" if enemy.is_magical else "⚔️ Physique"
         type_color = "#8a2be2" if enemy.is_magical else "#dc143c"
-        st.markdown(f"<span style='color: {type_color}; font-weight: bold; font-size: 0.9rem;'>{enemy_type}</span>", 
+        st.markdown(f"<span style='color: {type_color}; font-weight: bold; font-size: 0.9rem;'>{enemy_type}</span>",
                    unsafe_allow_html=True)
-        
+
+        # NOUVEAU - Indication ennemi custom
+        if getattr(enemy, 'is_custom', False):
+            st.markdown("<span style='color: #ff8c00; font-weight: bold; font-size: 0.85rem;'>🔧 Ennemi personnalisé</span>",
+                       unsafe_allow_html=True)
+
         # Métriques des stats principales
         col1, col2 = st.columns(2)
         

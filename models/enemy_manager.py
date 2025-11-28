@@ -366,7 +366,8 @@ class EnemyManager:
                 defense=int(row['Defense']),
                 stats_by_players=stats_by_players,
                 is_magical=bool(row.get('Is_Magical', False)),
-                has_magical_damage=bool(row.get('Has_Magical_Damage', False))
+                has_magical_damage=bool(row.get('Has_Magical_Damage', False)),
+                is_custom=True  # Marquer comme ennemi personnalisé
             )
         except Exception as e:
             print(f"⚠️ Erreur création ennemi depuis row: {e}")
@@ -398,7 +399,8 @@ class EnemyManager:
             defense=int(data['defense']),
             stats_by_players=stats_by_players,
             is_magical=bool(data.get('is_magical', False)),
-            has_magical_damage=bool(data.get('has_magical_damage', False))
+            has_magical_damage=bool(data.get('has_magical_damage', False)),
+            is_custom=True  # Marquer comme ennemi personnalisé
         )
 
     def _save_enemies_to_csv(self, enemies: List[Enemy]):
