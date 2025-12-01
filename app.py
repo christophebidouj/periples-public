@@ -209,19 +209,99 @@ def get_hero_build_info(hero_code: str, heroes_list: List, equipment_list: List,
         }
     }
 
+def get_hero_build_info_from_data(hero_code: str, build_data: Dict, heroes_list: List, equipment_list: List, loader) -> Dict:
+    """
+    NOUVEAU - Construit un héros depuis un build custom (depuis CSV)
+
+    Args:
+        hero_code: Code du héros
+        build_data: {'name': '...', 'equipment': [...], 'abilities': [...], 'potions': {...}}
+        heroes_list: Liste des héros
+        equipment_list: Liste des équipements
+        loader: DataLoader instance
+
+    Returns:
+        Dict avec hero_equipped, stats, etc.
+    """
+    hero = next(h for h in heroes_list if h.code == hero_code)
+    hero_equipped = hero.model_copy()
+
+    # Équipements
+    equipment_items = [eq for eq in equipment_list if eq.code in build_data.get('equipment', [])]
+    hero_equipped.equip_items(equipment_items, build_data.get('name', 'Build Custom'))
+
+    # Capacités
+    abilities = build_data.get('abilities', [])
+    if abilities and build_data.get('abilities_custom'):
+        try:
+            hero_abilities = loader.get_hero_abilities(hero_code)
+            if hero_abilities:
+                selected_abilities = [a for a in hero_abilities if a.ability_number in abilities]
+                if hasattr(hero_equipped, 'add_abilities') and selected_abilities:
+                    hero_equipped.add_abilities(selected_abilities)
+                    hero_equipped.unlocked_abilities = abilities.copy()
+                    for ability in hero_equipped.abilities:
+                        if ability.ability_number in abilities:
+                            ability.is_unlocked = True
+        except Exception:
+            pass
+
+    # Potions
+    potions = build_data.get('potions', {})
+    if potions and hasattr(hero_equipped, 'set_potions_from_selection'):
+        hero_equipped.set_potions_from_selection(
+            potions.get('small', 0),
+            potions.get('large', 0)
+        )
+
+    return {
+        'hero_equipped': hero_equipped,
+        'equipment': equipment_items,
+        'build_name': build_data.get('name', 'Build Custom'),
+        'is_custom': True,
+        'stats': hero_equipped.get_stats_summary(),
+        'abilities_info': {
+            'has_custom_abilities': build_data.get('abilities_custom', False),
+            'abilities_level': len(abilities) if abilities else 0
+        }
+    }
+
 def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List, loader, custom_builds_dict: Dict = None) -> Dict:
     """
-    MIGRÉ - Calcule les stats finales selon la logique : Custom > Builds équipements réels
+    RÉVISÉ - Gère builds par défaut ET builds custom depuis CSV
+    Priorité : selected_build_name > hero_difficulties > Normal par défaut
     """
-    current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
-    
-    if hero_code in current_custom_builds:
-        # BUILD CUSTOM - Utiliser get_hero_build_info complet
-        return get_hero_build_info(hero_code, heroes_list, equipment_list, loader, current_custom_builds)
+    # Récupérer le build sélectionné pour ce héros
+    selected_build_name = st.session_state.get('selected_build_name', {}).get(hero_code)
+
+    # Détection du type de build
+    is_default_build = selected_build_name in ['🟢 Facile', '🔵 Normal', '🔴 Difficile', None]
+
+    if not is_default_build and selected_build_name:
+        # BUILD CUSTOM SÉLECTIONNÉ
+        # Retirer le préfixe 🛠️ si présent
+        build_name = selected_build_name.replace('🛠️ ', '')
+
+        custom_builds_list = st.session_state.custom_builds.get(hero_code, [])
+        build_data = next((b for b in custom_builds_list if b['name'] == build_name), None)
+
+        if build_data:
+            return get_hero_build_info_from_data(hero_code, build_data, heroes_list, equipment_list, loader)
+
+    # BUILD PAR DÉFAUT (Facile/Normal/Difficile)
+    if selected_build_name:
+        # Extraire le nom de difficulté (sans emoji)
+        if "Facile" in selected_build_name:
+            difficulty = "Facile"
+        elif "Difficile" in selected_build_name:
+            difficulty = "Difficile"
+        else:
+            difficulty = "Normal"
     else:
-        # BUILDS FIXES - NOUVEAU : Utiliser les équipements réels
+        # Fallback sur l'ancien système (hero_difficulties)
         difficulty = get_difficulty_level_name(hero_code)
-        return get_hero_build_from_equipment(hero_code, heroes_list, equipment_list, loader, difficulty)
+
+    return get_hero_build_from_equipment(hero_code, heroes_list, equipment_list, loader, difficulty)
 
 def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data, player_count: int):
     """Prépare données pour récapitulatif - MIGRÉ vers système équipements"""
@@ -279,14 +359,16 @@ def init_app():
     defaults = {
         'selected_heroes': [],
         'selected_enemies': [],
-        'custom_builds': {},
+        'custom_builds': {},  # NOUVEAU - Builds custom chargés depuis CSV (format: {hero_code: [build1, build2, ...]})
         'hero_difficulties': {},
+        'hero_starting_health': {},  # Pourcentage de santé initiale par héros
+        'selected_build_name': {},  # NOUVEAU - Build sélectionné par héros (défaut ou custom)
         'selected_theme': 'Professionnel',  # Thème par défaut
         'initiative_setting': True,  # Initiative D20 activée par défaut
         'criticals_setting': True,  # Critiques activés par défaut
         'ui_state': {'needs_rerun': False}
     }
-    
+
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -308,6 +390,7 @@ def load_data():
         'heroes': filter_heroes_to_main_8(loader.load_heroes()),  # NOUVEAU - Filtrage à 8 héros
         'enemies': loader.load_all_enemies(),  # MODIFIÉ - Charge officiels + personnalisés
         'equipment': loader.load_equipment(),
+        'custom_builds': loader.load_custom_builds(),  # NOUVEAU - Charge builds custom depuis CSV
         'loader': loader
     }
 
@@ -482,10 +565,10 @@ def tab_forge(data):
 
     heroes, equipment = data['heroes'], data['equipment']
 
-    # LIGNE COMPACTE : Héros + Build actuel + Reset
+    # LIGNE COMPACTE : Héros + Sélecteur Build + Supprimer
     hero_options = {h.code: f"{get_hero_icon(h.name)} {h.name}" for h in heroes}
 
-    col_hero, col_build, col_reset = st.columns([2, 3, 1])
+    col_hero, col_build, col_delete = st.columns([2, 3, 1])
 
     with col_hero:
         selected_code = st.selectbox(
@@ -497,19 +580,31 @@ def tab_forge(data):
         )
 
     selected_hero = next(h for h in heroes if h.code == selected_code)
-    current_builds = st.session_state.get('custom_builds', {})
-    current_build = get_hero_final_stats(selected_code, heroes, equipment, data['loader'], current_builds)
+
+    # Liste des builds custom pour ce héros
+    hero_custom_builds = st.session_state.custom_builds.get(selected_code, [])
+    build_options = ["➕ Nouveau build"] + [b['name'] for b in hero_custom_builds]
 
     with col_build:
-        display_current_build_info(current_build)
+        selected_build = st.selectbox(
+            "Build:",
+            options=build_options,
+            key=f"forge_build_selector_{selected_code}",
+            label_visibility="collapsed"
+        )
 
-    with col_reset:
-        if st.button("🔄 Reset", key="forge_reset", use_container_width=True):
-            if selected_code in st.session_state.custom_builds:
-                builds = st.session_state.custom_builds.copy()
-                del builds[selected_code]
-                safe_session_update('custom_builds', builds)
+    with col_delete:
+        # Bouton supprimer uniquement si un build existant est sélectionné
+        if selected_build != "➕ Nouveau build":
+            if st.button("🗑️", key="forge_delete", use_container_width=True, help="Supprimer ce build"):
+                data['loader'].delete_custom_build(selected_code, selected_build)
+                # Recharger les builds
+                st.session_state.custom_builds = data['loader'].load_custom_builds()
+                st.success(f"✅ Build '{selected_build}' supprimé !")
+                time.sleep(0.5)
                 st.rerun()
+
+    st.markdown("💡 *Les builds par défaut (Facile/Normal/Difficile) ne peuvent pas être modifiés.*")
 
     # Stats de base du héros
     st.subheader("📊 Statistiques")
@@ -531,16 +626,12 @@ def tab_forge(data):
     
     if FORGE_ABILITIES_AVAILABLE:
         hero_abilities = get_abilities_for_hero(selected_code, data['loader'])
-        
+
         if hero_abilities:
-            current_abilities = []
-            if selected_code in st.session_state.get('custom_builds', {}):
-                current_abilities = st.session_state.custom_builds[selected_code].get('abilities', [])
-            
             selected_abilities = display_abilities_selection_section(
-                selected_code, 
-                hero_abilities, 
-                current_abilities
+                selected_code,
+                hero_abilities,
+                []  # Formulaire toujours vierge (pas de pré-remplissage)
             )
         else:
             st.warning(f"🔮 Aucune capacité trouvée pour {selected_hero.name}")
@@ -592,26 +683,38 @@ def tab_forge(data):
                     use_container_width=True,
                     disabled=not has_selection):
             
+            build_name = name.strip() or 'Build Custom'
+
+            # Validation du nom
+            reserved_names = ['Facile', 'Normal', 'Difficile', '🟢 Facile', '🔵 Normal', '🔴 Difficile']
+            if build_name in reserved_names:
+                st.error("❌ Ce nom est réservé aux builds par défaut")
+                st.stop()
+
+            # Vérifier duplicata
+            existing_builds = st.session_state.custom_builds.get(selected_code, [])
+            if any(b['name'] == build_name for b in existing_builds):
+                st.error(f"❌ Un build nommé '{build_name}' existe déjà")
+                st.stop()
+
             build_data = {
+                'name': build_name,
                 'equipment': selected_eq,
-                'name': name.strip() or 'Build Custom'
+                'abilities': selected_abilities if selected_abilities else [],
+                'abilities_custom': len(selected_abilities) > 0,
+                'potions': selected_potions
             }
-            
-            if selected_abilities:
-                build_data['abilities'] = selected_abilities
-                build_data['abilities_custom'] = True
-            
-            if selected_potions['small'] > 0 or selected_potions['large'] > 0:
-                build_data['potions'] = selected_potions
-            
-            # Sauvegarde
-            builds = st.session_state.custom_builds.copy()
-            builds[selected_code] = build_data
-            safe_session_update('custom_builds', builds)
-            
-            st.success(f"✅ Build '{build_data['name']}' sauvegardé !")
-            time.sleep(0.5)
-            st.rerun()
+
+            # Sauvegarde dans CSV
+            try:
+                data['loader'].save_custom_build(selected_code, build_data)
+                # Recharger les builds
+                st.session_state.custom_builds = data['loader'].load_custom_builds()
+                st.success(f"✅ Build '{build_name}' sauvegardé !")
+                time.sleep(0.5)
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Erreur lors de la sauvegarde: {e}")
 
 def display_about():
     """Section À Propos - Version 8 héros MIGRÉE"""
@@ -708,6 +811,10 @@ def main():
     from utils.data_loader import cleanup_removed_enemies_from_session
     valid_enemy_codes = [e.code for e in data['enemies']]
     cleanup_removed_enemies_from_session(valid_enemy_codes)
+
+    # NOUVEAU - Charger les builds custom depuis CSV dans session_state
+    if 'custom_builds' not in st.session_state or not st.session_state.custom_builds:
+        st.session_state.custom_builds = data['custom_builds']
 
     # NOTE: Toutes les initialisations session_state sont faites dans init_app()
 

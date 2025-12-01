@@ -657,8 +657,13 @@ def configure_combat():
                             for num in range(1, min(abilities_level + 1, 7)):  # Max 6 capacités
                                 hero.unlock_ability(num)
 
-            # Initialisation combat
-            hero.reset_health()
+            # Initialisation combat - Application santé initiale
+            starting_health_percent = st.session_state.get('hero_starting_health', {}).get(hero_code, 100)
+            hero.reset_health()  # Réinitialise à la santé max
+            if starting_health_percent < 100:
+                # Appliquer le pourcentage de santé défini par l'utilisateur
+                max_health = hero.get_total_health()
+                hero.current_health = max(1, int((starting_health_percent / 100) * max_health))  # Min 1 PV
             if hasattr(hero, 'start_new_combat'):
                 hero.start_new_combat()
 

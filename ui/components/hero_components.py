@@ -237,18 +237,9 @@ def display_build_details_expander(hero: Character, current_build_info: Dict):
     
     # Récupération des détails selon le type de build
     if current_build_info['is_custom']:
-        # Build custom - calcul à la volée avec caches
-        custom_builds = st.session_state.get('custom_builds', {})
-        if hero.code in custom_builds:
-            equipment_cache = load_equipment_details_cache()
-            abilities_cache = load_abilities_details_cache(st.session_state.get('data_loader'))
-            
-            build_details = get_custom_build_details(
-                hero.code, 
-                custom_builds[hero.code], 
-                equipment_cache, 
-                abilities_cache
-            )
+        # Build custom - utiliser les détails déjà calculés dans build_info
+        if 'build_details' in current_build_info:
+            build_details = current_build_info['build_details']
         else:
             build_details = {'equipment': [], 'abilities': [], 'potions': {'small': 0, 'large': 0}, 'has_custom_abilities': False}
     else:
@@ -384,65 +375,113 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     """
     current_custom_builds = custom_builds_dict or st.session_state.get('custom_builds', {})
     
-    # Callback pour mise à jour immédiate de la difficulté
-    def on_difficulty_change():
-        """Callback exécuté immédiatement lors du changement de difficulté"""
-        new_difficulty = st.session_state[f"difficulty_{hero.code}"]
-        if 'hero_difficulties' not in st.session_state:
-            st.session_state.hero_difficulties = {}
-        st.session_state.hero_difficulties[hero.code] = new_difficulty
-    
-    # Variables communes
-    difficulty_levels = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
-    current_difficulty = st.session_state.get('hero_difficulties', {}).get(hero.code, "🔵 Normal")
-    has_custom_build = hero.code in current_custom_builds
-    
-    # Selectbox TOUJOURS présente - désactivée si build custom
-    selectbox_key = f"difficulty_{hero.code}"
-    selected_difficulty = st.selectbox(
-        "Niveau :",
-        options=difficulty_levels,
-        index=difficulty_levels.index(current_difficulty),
+    # Callback pour mise à jour du build sélectionné
+    def on_build_change():
+        """Callback pour mise à jour immédiate du build sélectionné"""
+        new_build = st.session_state[f"build_{hero.code}"]
+        if 'selected_build_name' not in st.session_state:
+            st.session_state.selected_build_name = {}
+        st.session_state.selected_build_name[hero.code] = new_build
+
+    # Options de builds: Par défaut + Custom
+    build_options = ["🟢 Facile", "🔵 Normal", "🔴 Difficile", "─────────────"]
+
+    # Ajouter builds custom pour ce héros
+    hero_custom_builds = st.session_state.get('custom_builds', {}).get(hero.code, [])
+    for build in hero_custom_builds:
+        build_options.append(f"🛠️ {build['name']}")
+
+    # Build actuellement sélectionné
+    current_build = st.session_state.get('selected_build_name', {}).get(hero.code, "🔵 Normal")
+
+    # Selectbox des builds
+    selectbox_key = f"build_{hero.code}"
+    try:
+        current_index = build_options.index(current_build)
+    except ValueError:
+        current_index = 1  # Par défaut : Normal
+
+    selected_build = st.selectbox(
+        "Build :",
+        options=build_options,
+        index=current_index,
         key=selectbox_key,
-        on_change=on_difficulty_change,
-        disabled=has_custom_build,  # ✅ Désactivée si custom
+        on_change=on_build_change,
         label_visibility="collapsed"
     )
-    
-    # Détermination du build selon le type
-    if has_custom_build:
-        # BUILD CUSTOM - Créer build_info avec détails custom
-        custom = current_custom_builds[hero.code]
-        
-        # Calcul détails custom avec caches
-        equipment_cache = load_equipment_details_cache()
-        abilities_cache = load_abilities_details_cache(st.session_state.get('data_loader'))
-        custom_build_details = get_custom_build_details(hero.code, custom, equipment_cache, abilities_cache)
-        
-        # NOUVEAU - Calcul stats custom depuis équipements
-        equipment_codes = custom.get('equipment', [])
-        custom_stats = calculate_stats_from_equipment(hero, equipment_codes, equipment_cache)
-        
-        build_info = {
-            'build_name': custom.get('name', 'Build Custom'),
-            'is_custom': True,
-            'stats': {'total': custom_stats},
-            'difficulty_level': 'Custom',
-            'build_details': custom_build_details
-        }
-    else:
-        # BUILDS FIXES - Utiliser difficulté sélectionnée
-        # Utiliser la valeur mise à jour par le callback
-        updated_difficulty = st.session_state.get('hero_difficulties', {}).get(hero.code, "🔵 Normal")
-        difficulty_index = difficulty_levels.index(updated_difficulty)
-        
-        # Récupération du build pré-calculé avec détails complets
+
+    # Empêcher la sélection du séparateur
+    if selected_build == "─────────────":
+        st.session_state.selected_build_name[hero.code] = current_build
+        st.rerun()
+
+    # Détermination du build selon le type (par défaut ou custom)
+    is_default_build = selected_build in ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
+
+    if is_default_build:
+        # BUILD PAR DÉFAUT
+        difficulty_index = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"].index(selected_build)
         build_info = preloaded_builds[hero.code][difficulty_index]
+    else:
+        # BUILD CUSTOM
+        build_name = selected_build.replace('🛠️ ', '')
+        custom_builds_list = st.session_state.get('custom_builds', {}).get(hero.code, [])
+        build_data = next((b for b in custom_builds_list if b['name'] == build_name), None)
+
+        if build_data:
+            # Calcul détails custom avec caches
+            equipment_cache = load_equipment_details_cache()
+            abilities_cache = load_abilities_details_cache(st.session_state.get('data_loader'))
+            custom_build_details = get_custom_build_details(hero.code, build_data, equipment_cache, abilities_cache)
+
+            # Calcul stats custom depuis équipements
+            equipment_codes = build_data.get('equipment', [])
+            custom_stats = calculate_stats_from_equipment(hero, equipment_codes, equipment_cache)
+
+            build_info = {
+                'build_name': build_data.get('name', 'Build Custom'),
+                'is_custom': True,
+                'stats': {'total': custom_stats},
+                'difficulty_level': 'Custom',
+                'build_details': custom_build_details
+            }
+        else:
+            # Fallback vers Normal si build introuvable
+            build_info = preloaded_builds[hero.code][1]
     
     # Données pour l'affichage
     stats = build_info['stats']['total']
     hero_icon = get_hero_icon(hero.name)
-    
+
+    # Callback pour mise à jour de la santé initiale
+    def on_health_change():
+        """Callback pour mise à jour immédiate des PV initiaux"""
+        new_health_value = st.session_state[f"health_value_{hero.code}"]
+        max_health = stats['health']
+        # Convertir en pourcentage pour stockage
+        new_health_percent = int((new_health_value / max_health) * 100)
+        if 'hero_starting_health' not in st.session_state:
+            st.session_state.hero_starting_health = {}
+        st.session_state.hero_starting_health[hero.code] = new_health_percent
+
+    # Slider de santé initiale (en PV réels)
+    max_health = stats['health']
+    current_health_percent = st.session_state.get('hero_starting_health', {}).get(hero.code, 100)
+    current_health_value = int((current_health_percent / 100) * max_health)
+
+    health_slider_key = f"health_value_{hero.code}"
+    selected_health_value = st.slider(
+        "❤️ PV départ :",
+        min_value=1,
+        max_value=max_health,
+        value=current_health_value,
+        step=1,
+        key=health_slider_key,
+        on_change=on_health_change,
+        format="%d PV",
+        help=f"Santé initiale du héros (max: {max_health} PV)"
+    )
+
     # Détermination des couleurs selon l'état
     if is_selected:
         border_color = Colors.SELECTED_BORDER

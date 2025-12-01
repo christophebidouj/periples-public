@@ -564,6 +564,153 @@ class DataLoader:
         
         return [Equipment(**data) for data in equipment_data]
 
+    # === GESTION DES BUILDS CUSTOM ===
+
+    def create_custom_builds_csv(self):
+        """Crée le fichier custom_builds.csv s'il n'existe pas"""
+        csv_path = os.path.join(self.data_folder, "custom_builds.csv")
+
+        if not os.path.exists(csv_path):
+            # Créer fichier avec colonnes
+            df = pd.DataFrame(columns=[
+                'hero_code', 'build_name', 'equipment_codes',
+                'abilities', 'potions_small', 'potions_large'
+            ])
+            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+            print(f"✅ Fichier {csv_path} créé")
+
+    def load_custom_builds(self) -> Dict[str, List[Dict]]:
+        """
+        Charge les builds custom depuis CSV
+
+        Returns:
+            Dict[str, List[Dict]]: {'P-1': [{'name': '...', 'equipment': [...], ...}], ...}
+        """
+        csv_path = os.path.join(self.data_folder, "custom_builds.csv")
+
+        # Créer le fichier s'il n'existe pas
+        if not os.path.exists(csv_path):
+            self.create_custom_builds_csv()
+            return {}
+
+        try:
+            df = pd.read_csv(csv_path, encoding='utf-8-sig')
+
+            if df.empty:
+                return {}
+
+            # Grouper par héros
+            builds_by_hero = {}
+
+            for _, row in df.iterrows():
+                hero_code = row['hero_code']
+
+                # Parser les équipements (string "E-1,E-2" -> liste ['E-1', 'E-2'])
+                equipment_codes = []
+                if pd.notna(row['equipment_codes']) and row['equipment_codes']:
+                    equipment_codes = [code.strip() for code in str(row['equipment_codes']).split(',')]
+
+                # Parser les capacités (string "1,2,3" -> liste [1, 2, 3])
+                abilities = []
+                if pd.notna(row['abilities']) and row['abilities']:
+                    abilities = [int(num.strip()) for num in str(row['abilities']).split(',')]
+
+                # Créer le build_data
+                build_data = {
+                    'name': row['build_name'],
+                    'equipment': equipment_codes,
+                    'abilities': abilities,
+                    'abilities_custom': len(abilities) > 0,
+                    'potions': {
+                        'small': int(row['potions_small']) if pd.notna(row['potions_small']) else 0,
+                        'large': int(row['potions_large']) if pd.notna(row['potions_large']) else 0
+                    }
+                }
+
+                # Ajouter au dictionnaire
+                if hero_code not in builds_by_hero:
+                    builds_by_hero[hero_code] = []
+
+                builds_by_hero[hero_code].append(build_data)
+
+            return builds_by_hero
+
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement des builds custom: {e}")
+            return {}
+
+    def save_custom_build(self, hero_code: str, build_data: Dict):
+        """
+        Sauvegarde un nouveau build dans le CSV
+
+        Args:
+            hero_code: Code du héros (P-1, P-2, etc.)
+            build_data: {'name': '...', 'equipment': [...], 'abilities': [...], 'potions': {...}}
+        """
+        csv_path = os.path.join(self.data_folder, "custom_builds.csv")
+
+        # Créer le fichier s'il n'existe pas
+        if not os.path.exists(csv_path):
+            self.create_custom_builds_csv()
+
+        try:
+            # Charger le CSV existant
+            df = pd.read_csv(csv_path, encoding='utf-8-sig')
+
+            # Préparer la nouvelle ligne
+            equipment_str = ','.join(build_data.get('equipment', []))
+            abilities_str = ','.join(map(str, build_data.get('abilities', [])))
+            potions = build_data.get('potions', {})
+
+            new_row = {
+                'hero_code': hero_code,
+                'build_name': build_data['name'],
+                'equipment_codes': equipment_str,
+                'abilities': abilities_str,
+                'potions_small': potions.get('small', 0),
+                'potions_large': potions.get('large', 0)
+            }
+
+            # Ajouter la ligne
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+            # Sauvegarder
+            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+
+            print(f"✅ Build '{build_data['name']}' sauvegardé pour {hero_code}")
+
+        except Exception as e:
+            print(f"❌ Erreur lors de la sauvegarde du build: {e}")
+            raise
+
+    def delete_custom_build(self, hero_code: str, build_name: str):
+        """
+        Supprime un build du CSV
+
+        Args:
+            hero_code: Code du héros
+            build_name: Nom du build à supprimer
+        """
+        csv_path = os.path.join(self.data_folder, "custom_builds.csv")
+
+        if not os.path.exists(csv_path):
+            return
+
+        try:
+            df = pd.read_csv(csv_path, encoding='utf-8-sig')
+
+            # Filtrer pour supprimer la ligne
+            df = df[~((df['hero_code'] == hero_code) & (df['build_name'] == build_name))]
+
+            # Sauvegarder
+            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+
+            print(f"✅ Build '{build_name}' supprimé pour {hero_code}")
+
+        except Exception as e:
+            print(f"❌ Erreur lors de la suppression du build: {e}")
+            raise
+
 # === FONCTION UTILITAIRE ===
 
 def get_hero_with_abilities(hero_code: str, loader: DataLoader) -> Character:
