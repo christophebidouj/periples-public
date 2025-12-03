@@ -29,7 +29,9 @@ try:
         display_abilities_selection_section,
         get_abilities_for_hero,
         validate_abilities_selection,
-        display_potions_selection_section
+        display_potions_selection_section,
+        reset_forge_selections,
+        load_build_selections_into_ui
     )
     FORGE_ABILITIES_AVAILABLE = True
 except ImportError:
@@ -568,7 +570,7 @@ def tab_forge(data):
     # LIGNE COMPACTE : Héros + Sélecteur Build + Supprimer
     hero_options = {h.code: f"{get_hero_icon(h.name)} {h.name}" for h in heroes}
 
-    col_hero, col_build, col_delete = st.columns([2, 3, 1])
+    col_hero, col_build, col_delete = st.columns([2, 2, 1])
 
     with col_hero:
         selected_code = st.selectbox(
@@ -592,6 +594,24 @@ def tab_forge(data):
             key=f"forge_build_selector_{selected_code}",
             label_visibility="collapsed"
         )
+
+    # === SYNCHRONISATION BUILD → UI ===
+    # Charger automatiquement les sélections du build SEULEMENT quand il change
+    if FORGE_ABILITIES_AVAILABLE:
+        # Clé pour tracker le dernier build sélectionné
+        last_build_key = f"forge_last_build_{selected_code}"
+        last_selected_build = st.session_state.get(last_build_key)
+
+        # Synchroniser UNIQUEMENT si le build a changé
+        if last_selected_build != selected_build:
+            st.session_state[last_build_key] = selected_build
+
+            if selected_build == "➕ Nouveau build":
+                # Nouveau build : réinitialiser toutes les sélections
+                reset_forge_selections(selected_code)
+            else:
+                # Build existant : charger ses sélections dans l'interface
+                load_build_selections_into_ui(selected_code, selected_build)
 
     with col_delete:
         # Bouton supprimer uniquement si un build existant est sélectionné

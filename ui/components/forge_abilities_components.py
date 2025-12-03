@@ -395,3 +395,73 @@ def get_forge_selections_summary(hero_code: str, abilities: List, selected_abili
     
     summary['has_selections'] = summary['abilities_count'] > 0 or summary['potions_count'] > 0
     return summary
+
+# === GESTION BUILDS - SYNCHRONISATION UI ===
+
+def reset_forge_selections(hero_code: str):
+    """
+    Réinitialise toutes les sélections de la forge pour un nouveau build vierge
+
+    Args:
+        hero_code: Code du héros (ex: 'P-1')
+
+    Cette fonction remet à zéro :
+    - Tous les équipements (checkboxes)
+    - Le slider de capacités
+    - Les compteurs de potions
+    """
+    # Reset équipements (tous les préfixes possibles)
+    for key in list(st.session_state.keys()):
+        if key.startswith(('forge_w_', 'forge_a_', 'forge_acc_')):
+            st.session_state[key] = False
+
+    # Reset capacités
+    slider_key = f"forge_abilities_level_{hero_code}"
+    st.session_state[slider_key] = 0
+
+    # Reset potions
+    st.session_state[f"forge_potion_small_{hero_code}"] = 0
+    st.session_state[f"forge_potion_large_{hero_code}"] = 0
+
+def load_build_selections_into_ui(hero_code: str, build_name: str):
+    """
+    Charge les sélections d'un build custom dans l'interface utilisateur
+
+    Args:
+        hero_code: Code du héros (ex: 'P-1')
+        build_name: Nom du build à charger
+
+    Cette fonction synchronise l'interface avec le contenu du build :
+    - Coche les équipements du build
+    - Ajuste le slider de capacités
+    - Règle les compteurs de potions
+    """
+    # 1. Récupérer le build depuis session_state
+    custom_builds_list = st.session_state.custom_builds.get(hero_code, [])
+    build_data = next((b for b in custom_builds_list if b['name'] == build_name), None)
+
+    if not build_data:
+        # Build non trouvé, réinitialiser par sécurité
+        reset_forge_selections(hero_code)
+        return
+
+    # 2. D'abord réinitialiser tout
+    reset_forge_selections(hero_code)
+
+    # 3. Synchroniser équipements (mettre checkboxes à True)
+    equipment_codes = build_data.get('equipment', [])
+    for eq_code in equipment_codes:
+        # Essayer tous les préfixes possibles (armes, armures, accessoires)
+        st.session_state[f"forge_w_{eq_code}"] = True
+        st.session_state[f"forge_a_{eq_code}"] = True
+        st.session_state[f"forge_acc_{eq_code}"] = True
+
+    # 4. Synchroniser capacités (slider niveau)
+    abilities = build_data.get('abilities', [])
+    abilities_level = len(abilities) if abilities else 0
+    st.session_state[f"forge_abilities_level_{hero_code}"] = abilities_level
+
+    # 5. Synchroniser potions
+    potions = build_data.get('potions', {})
+    st.session_state[f"forge_potion_small_{hero_code}"] = potions.get('small', 0)
+    st.session_state[f"forge_potion_large_{hero_code}"] = potions.get('large', 0)
