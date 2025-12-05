@@ -1,6 +1,6 @@
 Code,Nom,Type,Precision,Physical_Damage,Magical_Damage,Defense,Spells,Health
 O-1,Gemme de pouvoir,accessoire,0,0,0,0,0,0
-O-2,Baton de puissance,arme,0,1,0,0,0,0
+O-2,Baton de puissance,arme,0,0,0,0,0,0
 O-3,Médaillon d'appel,accessoire,0,0,0,0,0,0
 O-4,Lyre phoenix,accessoire,0,0,0,0,4,0
 O-5,Dague,arme,2,1,0,0,0,0

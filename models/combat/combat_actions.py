@@ -95,7 +95,7 @@ class CombatActions:
             if attack_roll in [18, 19] and hasattr(hero, 'temporary_buffs') and 'expanded_crit_range' in hero.temporary_buffs:
                 log.append(f"  🔥 CRI DE GUERRE ! Critique sur {attack_roll} (plage étendue 18-19-20)")
 
-            self._add_conversion_logs(log, attack_info)
+            self._add_conversion_logs(log, attack_info, final_damage)
 
             # 🐺 Log forme de loup si utilisée
             if elneha_wolf_used:
@@ -204,8 +204,8 @@ class CombatActions:
                 log_parts = [f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] → {target.name}({damage_result['health_damage']})"]
                 self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
                 log.append(' '.join(log_parts))
-                
-                self._add_conversion_logs(log, attack_info)
+
+                self._add_conversion_logs(log, attack_info, damage_value)
 
                 # 🐺 Log forme de loup si utilisée
                 if elneha_wolf_used:
@@ -379,18 +379,18 @@ class CombatActions:
         if modifiers:
             log_parts.append(f"[{','.join(modifiers)}]")
 
-    def _add_conversion_logs(self, log: list, attack_info: dict):
+    def _add_conversion_logs(self, log: list, attack_info: dict, damage_value: int = 0):
         """Ajoute les logs de conversion d'objets spéciaux"""
-        conversion_log = self._get_conversion_log(attack_info)
+        conversion_log = self._get_conversion_log(attack_info, damage_value)
         if conversion_log:
             log.append(f"  {conversion_log}")
-    
-    def _get_conversion_log(self, attack_info: dict) -> str:
+
+    def _get_conversion_log(self, attack_info: dict, damage_value: int = 0) -> str:
         """Génère le log de conversion selon l'objet spécial équipé"""
-        if attack_info.get('converted_by') == 'O-1':
+        if attack_info.get('conversion_source') == 'gemme_pouvoir':
             return "💎 Gemme de pouvoir: Attaque convertie en magie (forme animale)"
-        elif attack_info.get('converted_by') == 'O-4':
-            return "🎭 Lyre phoenix: Attaque convertie en magie"
+        elif attack_info.get('conversion_source') == 'lyre_phoenix':
+            return f"🎭 Lyre phoenix: Attaque convertie → {damage_value} dégâts magiques"
         return ""
     
     def set_combat_context(self, heroes: list, enemies: list):
@@ -660,7 +660,7 @@ class CombatActions:
         return False
 
     def enemy_attack(self, enemy, heroes: list, player_count: int, log: list, active_pets: list, manual_target=None):
-        """Attaque ennemi - cible l'équipe + Pets selon règles + FORME D'OURS via temporary_buffs
+        """Attaque ennemi - cible l'équipe (Héros + Pets) selon règles + FORME D'OURS via temporary_buffs
 
         Args:
             manual_target: Si fourni, cible spécifique (bypass sélection automatique IA)
@@ -668,6 +668,7 @@ class CombatActions:
         Returns:
             dict: {'hit': bool, 'damage': int, 'target': Character} ou None si pas de cible
         """
+        # Les ennemis peuvent cibler héros ET pets
         all_targets = heroes + active_pets
         alive_targets = [t for t in all_targets if t.is_alive()]
 

@@ -144,7 +144,8 @@ def init_sandbox_state():
         'sandbox_v2_action_state': None,  # Pour gérer le ciblage
         'sandbox_v2_current_actor': None,  # Personnage qui agit
         'sandbox_v2_last_selection': None,  # Mémoriser la dernière sélection
-        'sandbox_v2_played_this_round': []  # Liste des IDs qui ont joué ce round (mode manuel)
+        'sandbox_v2_played_this_round': [],  # Liste des IDs qui ont joué ce round (mode manuel)
+        'sandbox_v2_active_pets': []  # Liste des pets invoqués
     }
 
     for key, value in defaults.items():
@@ -281,6 +282,9 @@ def prepare_new_combat():
     st.session_state.sandbox_v2_current_turn_index = 0
     st.session_state.sandbox_v2_action_state = None
     st.session_state.sandbox_v2_current_actor = None
+
+    # CRITIQUE : Réinitialiser les pets invoqués (médaillon O-3)
+    st.session_state.sandbox_v2_active_pets = []
 
     # Réinitialiser les stats modifiées des ennemis
     if 'enemy_overrides' in st.session_state:
@@ -851,6 +855,81 @@ def display_guidance_banner():
             </div>
             """, unsafe_allow_html=True)
 
+def cleanup_dead_pets():
+    """
+    Retire les pets morts des combattants et de la liste active
+    Appelée après chaque action de combat
+    """
+    # Trouver les pets morts
+    dead_pets = [
+        c for c in st.session_state.sandbox_v2_combatants
+        if c['faction'] == 'pet' and not c['character'].is_alive()
+    ]
+
+    # Logger les morts
+    for pet_combatant in dead_pets:
+        pet = pet_combatant['character']
+        owner_name = getattr(pet, 'owner_name', 'Inconnu')
+        st.session_state.sandbox_v2_log.append(f"💀 {pet.name} ({owner_name}) est vaincu !")
+
+    # Retirer des combattants
+    st.session_state.sandbox_v2_combatants = [
+        c for c in st.session_state.sandbox_v2_combatants
+        if not (c['faction'] == 'pet' and not c['character'].is_alive())
+    ]
+
+    # Retirer de la liste active
+    st.session_state.sandbox_v2_active_pets = [
+        p for p in st.session_state.sandbox_v2_active_pets
+        if p.is_alive()
+    ]
+
+def add_pet_to_combat(owner_combatant: dict, pet: 'Pet'):
+    """
+    Ajoute un pet invoqué aux combattants
+
+    Args:
+        owner_combatant: Dictionnaire du combattant propriétaire (héros)
+        pet: Instance du pet invoqué
+    """
+    from models.character import Pet
+
+    # Retirer ancien pet si existant (ré-invocation)
+    st.session_state.sandbox_v2_active_pets = [
+        p for p in st.session_state.sandbox_v2_active_pets
+        if not (hasattr(p, 'owner_code') and p.owner_code == pet.owner_code)
+    ]
+
+    # Retirer ancien pet des combattants
+    st.session_state.sandbox_v2_combatants = [
+        c for c in st.session_state.sandbox_v2_combatants
+        if not (c['faction'] == 'pet' and
+                hasattr(c['character'], 'owner_code') and
+                c['character'].owner_code == pet.owner_code)
+    ]
+
+    # Ajouter le nouveau pet à la liste active
+    st.session_state.sandbox_v2_active_pets.append(pet)
+
+    # Créer combattant pet avec initiative juste après le propriétaire
+    owner_initiative = owner_combatant['initiative']
+    pet_initiative = owner_initiative + 0.5  # Juste après le propriétaire
+
+    pet_combatant = {
+        'character': pet,
+        'faction': 'pet',
+        'initiative': pet_initiative,
+        'id': f"pet_{pet.owner_code}"
+    }
+
+    # Trouver position du propriétaire et insérer le pet juste après
+    owner_index = st.session_state.sandbox_v2_combatants.index(owner_combatant)
+    st.session_state.sandbox_v2_combatants.insert(owner_index + 1, pet_combatant)
+
+    # Log invocation
+    st.session_state.sandbox_v2_log.append(f"🔮 {owner_combatant['character'].name} invoque son Pet !")
+    st.session_state.sandbox_v2_log.append(f"  ✨ {pet.name} apparaît (Précision: {pet.precision}, Dégâts magiques: {pet.get_total_magical_damage()}, Santé: {pet.health})")
+
 def get_current_combatant() -> Optional[Dict]:
     """Retourne le combattant actuel"""
     if (st.session_state.sandbox_v2_combatants and
@@ -911,6 +990,9 @@ def next_turn():
                 turn_number=turn_number,
                 combatants=st.session_state.sandbox_v2_combatants
             )
+
+    # Nettoyer les pets morts après chaque tour
+    cleanup_dead_pets()
 
     # Vérifier le mode (lire directement depuis initiative_setting)
     initiative_enabled = st.session_state.get('initiative_setting', True)
@@ -1013,7 +1095,10 @@ def next_turn():
                     if char.status_effects['invisible'].get('source') == 'ombre_mortelle':
                         char_name = getattr(char, 'display_name', char.name)
                         st.session_state.sandbox_v2_log.append(f"🌑 {char_name} redevient invisible (Assaut furieux)")
-            else:
+            elif current['faction'] == 'pet':
+                # Les Pets héritent de Character et utilisent start_hero_turn()
+                char.start_hero_turn()
+            else:  # faction == 'enemy'
                 char.start_enemy_turn()
 
             return  # Combattant vivant trouvé !
@@ -1157,9 +1242,9 @@ def display_enemy_interface(combatant: Dict):
 
     # Vérifier si on est en mode sélection de cible pour l'ennemi
     if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_ENEMY':
-        # Afficher interface de ciblage
-        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-        heroes_list = [c['character'] for c in hero_combatants]
+        # Afficher interface de ciblage - Les ennemis peuvent cibler héros ET pets
+        ally_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] in ['hero', 'pet']]
+        heroes_list = [c['character'] for c in ally_combatants]
 
         adapter = st.session_state.sandbox_v2_adapter
         target = adapter.enemy_turn_manual(
@@ -1176,7 +1261,7 @@ def display_enemy_interface(combatant: Dict):
                 heroes=heroes_list,
                 player_count=player_count,
                 log=st.session_state.sandbox_v2_log,
-                active_pets=[],  # Pas de pets dans Sandbox V2 pour l'instant
+                active_pets=st.session_state.sandbox_v2_active_pets,
                 manual_target=target
             )
 
@@ -1219,6 +1304,115 @@ def display_enemy_interface(combatant: Dict):
 
         with col2:
             if st.button("⏭️ Fin du Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
+                st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
+                save_game_state(f"{char.name} termine son tour")
+                next_turn()
+                st.rerun()
+
+def display_pet_interface(combatant: Dict):
+    """Interface pour Familier invoqué - Style Arène simplifié"""
+    char = combatant['character']
+
+    # Stats du Pet (RÉUTILISE APIs Pet/Character)
+    current_hp = char.current_health
+    max_hp = char.health  # Pet utilise 'health', pas 'max_health'
+    precision = char.precision
+    magical_damage = char.get_total_magical_damage()
+    parade_tokens = char.current_parade_tokens
+    owner_name = getattr(char, 'owner_name', 'Inconnu')
+
+    st.markdown(f"""
+    <div class="hero-header" style="border-color: #00FF88;">
+        <div>
+            <h3 style="margin: 0; color: white;">🐾 {char.name}</h3>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">Tour du familier de {owner_name}</p>
+        </div>
+        <div class="stats-badges">
+            <div class="stat-badge health">
+                <div style="font-size: 0.8rem;">❤️ PV</div>
+                <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+            </div>
+            <div class="stat-badge precision">
+                <div style="font-size: 0.8rem;">🎯 PRE</div>
+                <div style="font-weight: bold;">{precision}</div>
+            </div>
+            <div class="stat-badge magic">
+                <div style="font-size: 0.8rem;">🔮 MAG</div>
+                <div style="font-weight: bold;">{magical_damage}</div>
+            </div>
+            <div class="stat-badge defense">
+                <div style="font-size: 0.8rem;">🛡️ DEF</div>
+                <div style="font-weight: bold;">{parade_tokens}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Actions Pet (Attaque magique automatique)
+    st.markdown("### ⚔️ Actions")
+
+    # Vérifier si on est en mode sélection de cible pour le pet
+    if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_PET':
+        # Afficher interface de ciblage
+        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+        enemies_list = [c['character'] for c in enemy_combatants]
+        alive_enemies = [e for e in enemies_list if e.is_alive()]
+
+        if not alive_enemies:
+            st.warning("❌ Aucun ennemi vivant à cibler")
+            st.session_state.sandbox_v2_action_state = None
+            st.rerun()
+            return
+
+        st.info("🎯 Sélectionnez la cible du familier")
+
+        # Calculer player_count pour les stats ennemis
+        player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
+
+        # Boutons de sélection de cible
+        for enemy in alive_enemies:
+            stats = enemy.get_stats_for_players(player_count)
+            enemy_hp = enemy.current_health
+            enemy_max_hp = enemy.max_health
+
+            if st.button(
+                f"🎯 {enemy.name} ({enemy_hp}/{enemy_max_hp} PV)",
+                key=f"target_pet_{combatant['id']}_{enemy.code}",
+                use_container_width=True
+            ):
+                # Pet attaque avec dégâts magiques
+                adapter = st.session_state.sandbox_v2_adapter
+                log = st.session_state.sandbox_v2_log
+
+                # RÉUTILISE CombatActions.hero_attack() (Pets attaquent comme héros)
+                adapter.combat_actions.hero_attack(
+                    hero=char,
+                    enemies=[enemy],
+                    player_count=player_count,
+                    log=log
+                )
+
+                st.session_state.sandbox_v2_action_state = None
+                save_game_state(f"{char.name} attaque {enemy.name}")
+                next_turn()
+                st.rerun()
+
+        # Bouton annuler
+        if st.button("❌ Annuler", key=f"cancel_pet_targeting_{combatant['id']}"):
+            st.session_state.sandbox_v2_action_state = None
+            st.rerun()
+    else:
+        # Afficher boutons d'action normaux
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("🔮 Attaque Magique", key=f"sandbox_pet_attack_{combatant['id']}", type="primary", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_PET'
+                st.session_state.sandbox_v2_current_actor = char
+                st.rerun()
+
+        with col2:
+            if st.button("⏭️ Fin du Tour", key=f"sandbox_pet_skip_{combatant['id']}", use_container_width=True):
                 st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
                 save_game_state(f"{char.name} termine son tour")
                 next_turn()
@@ -1649,6 +1843,29 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             next_turn()
             st.rerun()
 
+    # NOUVEAU - Bouton Invocation Pet pour Kraor (P-4) avec Médaillon d'Appel (O-3)
+    if hasattr(char, 'code') and char.code == "P-4" and char.can_summon_pet():
+        # Vérifier si un pet est déjà invoqué
+        pet_already_summoned = any(
+            hasattr(p, 'owner_code') and p.owner_code == char.code
+            for p in st.session_state.sandbox_v2_active_pets
+        )
+
+        # Vérifier si Kraor peut encore agir ce tour
+        can_summon = not getattr(char, 'action_taken_this_turn', False)
+        can_summon = can_summon and getattr(char, 'can_attack_this_turn', True)
+        can_summon = can_summon and not getattr(char, 'potion_used_this_turn', False)
+
+        st.markdown("### 🐾 Médaillon d'Appel")
+
+        if pet_already_summoned:
+            st.info("✅ Pet déjà invoqué ce combat")
+        elif not can_summon:
+            st.warning("⚠️ Action déjà effectuée ce tour")
+        else:
+            if st.button("🔮 Invoquer Pet", key=f"summon_pet_{combatant_id}", type="primary", use_container_width=True):
+                use_summon_pet_action(char)
+
     # NOUVEAU - Bouton Rage pour Thordius (P-5) si Berserker débloqué
     if hasattr(char, 'code') and char.code == "P-5":
         berserker_unlocked = hasattr(char, 'temporary_buffs') and char.temporary_buffs.get('berserker_unlocked', False)
@@ -1821,6 +2038,79 @@ def display_actions_and_potions(char: Character, combatant_id: str):
             st.info("Aucune potion")
 
 # === ACTIONS DE COMBAT ===
+
+def use_summon_pet_action(char: Character):
+    """
+    Invoque le pet de Kraor ET le fait attaquer immédiatement
+    Termine le tour après l'invocation et l'attaque
+    """
+    from models.character import Pet
+    from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
+
+    # Vérifier que le héros peut invoquer un pet
+    if not char.can_summon_pet():
+        st.session_state.sandbox_v2_log.append(f"❌ {char.name} ne peut pas invoquer de pet")
+        st.rerun()
+        return
+
+    # 1. Créer le pet
+    pet = char.summon_pet()
+    if not pet:
+        st.session_state.sandbox_v2_log.append(f"❌ Échec de l'invocation")
+        st.rerun()
+        return
+
+    # 2. Initialiser le pet pour le combat
+    pet.start_new_combat()
+
+    # Récupérer l'adapter et initialiser les sorts du pet
+    adapter = st.session_state.sandbox_v2_adapter
+    adapter.spell_manager.initialize_spells(pet)
+    CharacterAbilitiesIntegration.add_required_attributes(pet)
+
+    # 3. Ajouter le pet aux combattants
+    # Trouver le combattant propriétaire
+    owner_combatant = None
+    for c in st.session_state.sandbox_v2_combatants:
+        if c['character'] == char:
+            owner_combatant = c
+            break
+
+    if owner_combatant:
+        add_pet_to_combat(owner_combatant, pet)
+    else:
+        st.session_state.sandbox_v2_log.append(f"❌ Impossible de trouver le propriétaire")
+        st.rerun()
+        return
+
+    # 4. 🆕 ATTAQUE IMMÉDIATE - Le pet attaque dès son invocation
+    enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+    alive_enemies = [e for e in enemies if e.is_alive()]
+
+    if alive_enemies:
+        heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+        player_count = len([h for h in heroes if h.is_alive()])
+
+        st.session_state.sandbox_v2_log.append(f"  ⚔️ {pet.name} attaque immédiatement !")
+
+        # Attaque immédiate du pet
+        adapter.combat_actions.hero_attack(
+            pet,
+            alive_enemies,
+            player_count,
+            st.session_state.sandbox_v2_log
+        )
+
+        # Nettoyer les pets morts après l'attaque
+        cleanup_dead_pets()
+
+    # 5. Marquer l'action comme prise (invocation = capacité magique)
+    char.action_taken_this_turn = True
+
+    # 6. Sauvegarder et passer au tour suivant
+    save_game_state(f"{char.name} invoque son Pet")
+    next_turn()
+    st.rerun()
 
 def use_ability_action(char: Character, ability):
     """
@@ -2169,6 +2459,75 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
 
     st.markdown(card_html, unsafe_allow_html=True)
 
+def display_pet_combat_card(pet: 'Pet', is_current_turn: bool = False):
+    """
+    Affiche une carte pour un pet invoqué avec format "carte à collectionner"
+    RÉUTILISE get_hero_card_style() de ui.styling (même format 260x370px)
+
+    Args:
+        pet: Familier invoqué
+        is_current_turn: True si c'est le tour de ce pet
+    """
+    # Récupérer stats en temps réel du pet
+    current_hp = pet.current_health
+    max_hp = pet.health
+    precision = pet.precision
+    magical_damage = pet.get_total_magical_damage()
+    is_alive = pet.is_alive()
+
+    # Nom avec icône pet
+    pet_name = f"🐾 {pet.name}"
+    owner_name = getattr(pet, 'owner_name', 'Inconnu')
+
+    # Détermination border color selon l'état
+    if is_current_turn:
+        border_color = "#FFD700"  # Doré pour tour actuel
+    elif not is_alive:
+        border_color = "#666"  # Gris pour mort
+    else:
+        border_color = "#00FF88"  # Vert clair pour pet actif
+
+    # Charger image du familier (RÉUTILISE même approche que héros/ennemis)
+    import base64
+    import os
+    pet_image_path = "data/images/familier_kraor.jpg"
+    background_style = ""
+
+    if os.path.exists(pet_image_path):
+        try:
+            with open(pet_image_path, "rb") as img_file:
+                img_base64 = base64.b64encode(img_file.read()).decode()
+                background_style = f"background-image: url('data:image/jpeg;base64,{img_base64}');"
+        except Exception:
+            # Fallback: gradient vert si erreur de lecture
+            background_style = "background: linear-gradient(135deg, #00a65a, #005030);"
+    else:
+        # Fallback: gradient vert si image non disponible
+        background_style = "background: linear-gradient(135deg, #00a65a, #005030);"
+
+    # Préparer stats_content (stats simplifiées pour pet)
+    stats_content = f"""
+    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
+        ❤️ {current_hp}/{max_hp} PV<br/>
+        🔮 {magical_damage} MAG 🎯 {precision} PRE<br/>
+        <span style="font-size: 0.75rem; color: #aaa;">🔗 {owner_name}</span>
+    </div>"""
+
+    # Préparer build_content (status du pet)
+    if is_current_turn:
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
+    elif not is_alive:
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 VAINCU</div>'
+    else:
+        build_content = '<div style="font-size: 0.9rem; font-weight: bold; color: #00FF88; text-shadow: 2px 2px 4px black;">✨ INVOQUÉ</div>'
+
+    # RÉUTILISE le style existant (même format que cartes héros)
+    card_html = get_hero_card_style(pet_name, border_color, background_style)
+    card_html = card_html.replace("{stats_content}", stats_content)
+    card_html = card_html.replace("{build_content}", build_content)
+
+    st.markdown(card_html, unsafe_allow_html=True)
+
 def display_recent_actions():
     """
     Affiche une zone de notification avec les dernières actions du combat
@@ -2394,9 +2753,11 @@ def display_combat_status():
                 character = combatant_data['character']
                 is_current = (combatant_data['id'] == current_character_id)
 
-                # Afficher carte selon le type (héros ou ennemi)
+                # Afficher carte selon le type (héros, pet ou ennemi)
                 if combatant_data['faction'] == 'hero':
                     display_hero_combat_card(character, is_current_turn=is_current)
+                elif combatant_data['faction'] == 'pet':
+                    display_pet_combat_card(character, is_current_turn=is_current)
                 else:
                     display_enemy_combat_card(character, is_current_turn=is_current)
 
@@ -2442,9 +2803,11 @@ def display_combat_status_team_mode():
                 character = combatant_data['character']
                 is_current = (combatant_data['id'] == current_character_id)
 
-                # Afficher carte selon le type (héros ou ennemi)
+                # Afficher carte selon le type (héros, pet ou ennemi)
                 if combatant_data['faction'] == 'hero':
                     display_hero_combat_card(character, is_current_turn=is_current)
+                elif combatant_data['faction'] == 'pet':
+                    display_pet_combat_card(character, is_current_turn=is_current)
                 else:
                     display_enemy_combat_card(character, is_current_turn=is_current)
 
@@ -2497,7 +2860,10 @@ def select_combatant_manually(combatant_id: str):
                     if char.status_effects['invisible'].get('source') == 'ombre_mortelle':
                         char_name = getattr(char, 'display_name', char.name)
                         st.session_state.sandbox_v2_log.append(f"🌑 {char_name} redevient invisible (Assaut furieux)")
-            else:
+            elif combatant['faction'] == 'pet':
+                # Les Pets héritent de Character et utilisent start_hero_turn()
+                char.start_hero_turn()
+            else:  # faction == 'enemy'
                 char.start_enemy_turn()
 
             # Marquer comme ayant joué ce round (mode manuel)
@@ -2506,7 +2872,12 @@ def select_combatant_manually(combatant_id: str):
 
             # Log
             name = char.name
-            faction = "🦸" if combatant['faction'] == 'hero' else "👹"
+            if combatant['faction'] == 'hero':
+                faction = "🦸"
+            elif combatant['faction'] == 'pet':
+                faction = "🐾"
+            else:  # enemy
+                faction = "👹"
             st.session_state.sandbox_v2_log.append(f"{faction} {name} commence son tour")
 
             # Sauvegarder l'état
@@ -2771,7 +3142,9 @@ def main_sandbox_v2():
             # Afficher interface seulement si vivant ET non-stunné
             if current['faction'] == 'hero':
                 display_hero_interface(current)
-            else:
+            elif current['faction'] == 'pet':
+                display_pet_interface(current)
+            else:  # faction == 'enemy'
                 display_enemy_interface(current)
         else:
             # Aucun tour actuel : En mode manuel, inviter l'utilisateur à sélectionner

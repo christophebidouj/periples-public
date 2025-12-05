@@ -1446,6 +1446,13 @@ class Character(BaseModel):
             if 102 not in self.unlocked_abilities:
                 self.unlocked_abilities.append(102)
 
+        # CRITIQUE - Reset tous les buffs/effets temporaires du combat précédent
+        self.temporary_buffs = {}
+        self.permanent_buffs = {}
+        self.active_persistent_effects = []
+        self.attack_flags = {}
+        self.status_effects = {}
+
         self.reset_turn_state()
         self.current_spells = self.get_total_spells()
         self.spells_used = 0
@@ -1459,14 +1466,14 @@ class Character(BaseModel):
         # Reset capacités
         for ability in self.abilities:
             ability.reset_combat_uses()
-        
+
         # O-2 Baton de puissance : +1 utilisation capacités magiques (Liarie)
         if self.code == "P-2" and self.has_equipment("O-2"):
             self._apply_baton_puissance_bonus()
-        
+
         # Reset parade
         self.refresh_parade_tokens()
-        
+
         # NOUVEAU - Initialiser attributs effets pour le combat
         self._add_required_attributes()
     
@@ -1589,7 +1596,7 @@ class Character(BaseModel):
         return base_status
 
 class Pet(Character):
-    """Pet invoqué avec système de jetons parade + héritage Character + gestion sorts + effets"""
+    """Familier invoqué avec système de jetons parade + héritage Character + gestion sorts + effets"""
     
     owner_code: str  # Code du héros qui l'a invoqué (ex: "P-4")
     owner_name: str  # Nom du héros qui l'a invoqué (ex: "Kraor")
@@ -1603,14 +1610,14 @@ class Pet(Character):
     @property
     def display_name(self) -> str:
         """Nom d'affichage du Pet"""
-        return f"Minion de {self.owner_name}"
+        return f"Familier de {self.owner_name}"
     
     @classmethod
     def create_kraor_pet(cls, owner: 'Character') -> 'Pet':
         """Crée le Pet de Kraor selon les stats définies"""
         return cls(
             code=f"{owner.code}_pet",
-            name="Pet Invoqué",
+            name="Familier Invoqué",
             owner_code=owner.code,
             owner_name=owner.name,
             # Stats du Pet selon règles : Précision 4, Dégâts magiques 4, Parade 0, Santé 15

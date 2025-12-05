@@ -152,7 +152,7 @@ class CombatEngine:
                         'health_remaining': pet.current_health,
                         'health_percentage': f"{(pet.current_health / pet.get_total_health() * 100):.0f}",
                         'is_alive': pet.is_alive(),
-                        'build': 'Pet Invoqué',
+                        'build': 'Familier Invoqué',
                         'parade_tokens_remaining': pet_parade_status['current_tokens'],
                         'parade_tokens_max': pet_parade_status['max_tokens'],
                         'special_effects': []  # Pets n'ont pas d'objets spéciaux

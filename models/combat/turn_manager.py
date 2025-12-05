@@ -82,14 +82,14 @@ class TurnManager:
             self.combat_actions.hero_attack(pet, alive_enemies, player_count, log)
     
     def enemies_turn(self, enemies: list, heroes: list, player_count: int, log: list, active_pets: list):
-        """Phase ennemis avec recharge parade - ATTAQUENT L'ÉQUIPE + Pets"""
+        """Phase ennemis avec recharge parade - ATTAQUENT L'ÉQUIPE (Héros + Pets)"""
         log.append("👹 Phase des Ennemis")
-        
+
         for enemy in [e for e in enemies if e.is_alive()]:
             alive_heroes = [h for h in heroes if h.is_alive()]
             alive_pets = [p for p in active_pets if p.is_alive()]
-            all_targets = alive_heroes + alive_pets
-            
+            all_targets = alive_heroes + alive_pets  # Les ennemis peuvent cibler héros ET pets
+
             if not all_targets:
                 break
             
@@ -108,7 +108,7 @@ class TurnManager:
             # RÈGLE OFFICIELLE : Ennemis attaquent l'équipe (héros + pets)
             enemy_stats = enemy.get_stats_for_players(player_count)
             damage = enemy_stats['damage']
-            
+
             # Les joueurs choisissent qui prend les dégâts (héros ou pets)
             target = self.heroes_distribute_damage(all_targets, damage, enemy.name, log)
 
