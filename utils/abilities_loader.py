@@ -120,30 +120,40 @@ class AbilitiesLoader:
         Returns:
             Optional[Ability]: Capacité créée ou None
         """
-        # Colonnes Excel : [Nom+Numéro, Coût, Description, Limitations]
-        if len(row) < 3:
+        # Colonnes Excel : [Niveau, Nom, Coût, Description, Limitation]
+        if len(row) < 4:
             return None
-        
-        # Colonne 1: Extraction héros + numéro
+
+        # Colonne 0: Extraction héros + numéro (ex: "Atucan 1")
         name_and_number = str(row.iloc[0]).strip()
-        if not name_and_number or name_and_number.lower() in ['nom', 'nan']:
+        if not name_and_number or name_and_number.lower() in ['niveau', 'nom', 'nan']:
             return None
-        
+
         hero_code, ability_number = self._parse_hero_info(name_and_number)
         if not hero_code:
             return None
-        
+
+        # Colonne 1: Nom élégant (depuis CSV Sorts.xlsx)
+        elegant_name_from_csv = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
+
         # Colonne 2: Coût en sorts
-        spell_cost = self._safe_int(row.iloc[1], 0)
-        
+        spell_cost_str = str(row.iloc[2]).strip().lower() if pd.notna(row.iloc[2]) else "0"
+        # Extraire le nombre du texte "1 sort" ou "2 sorts"
+        import re
+        spell_cost_match = re.search(r'(\d+)', spell_cost_str)
+        spell_cost = int(spell_cost_match.group(1)) if spell_cost_match else 0
+
         # Colonne 3: Description
-        description = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ""
-        
+        description = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+
         # Colonne 4: Limitations (optionnel) - CONVERSION AUTOMATIQUE JOUR → COMBAT
-        uses_per_combat = self._parse_limitations(row.iloc[3] if len(row) > 3 else None)
-        
-        # NOM ÉLÉGANT depuis CSV ou fallback
-        elegant_name = self._get_elegant_name(hero_code, ability_number, f"Capacité {ability_number}")
+        uses_per_combat = self._parse_limitations(row.iloc[4] if len(row) > 4 else None)
+
+        # NOM ÉLÉGANT : priorité CSV Sorts.xlsx, sinon fallback ability_names.csv
+        if elegant_name_from_csv and elegant_name_from_csv.lower() not in ['nan', '']:
+            elegant_name = elegant_name_from_csv
+        else:
+            elegant_name = self._get_elegant_name(hero_code, ability_number, f"Capacité {ability_number}")
         
         # Création objet Ability
         ability = Ability(

@@ -4,13 +4,13 @@ Capacités individuelles pour le héros Lame (P-7)
 Lame est un assassin spécialisé dans les dégâts burst, l'esquive et la furtivité.
 Ses capacités se concentrent sur les dégâts massifs et la survie par l'esquive.
 
-✅ DONNÉES OFFICIELLES Sorts.xlsx:
-P-7-1: Furtivité (Coût: 0) - N'attaque pas ce tour, double dégâts tour suivant
-P-7-2: Attaque sournoise (Coût: 0, 2/combat) - Esquive prochaine attaque adverse
-P-7-3: Empoisonnement (Coût: 0) - "Pas utile en combat" → DÉSACTIVÉ
-P-7-4: Paralysie (Coût: 0, 1/combat) - Tous ennemis paralysés 2 tours
-P-7-5: Assassination (Coût: 0, 3/combat) - Dégâts attaque sur tous ennemis
-P-7-6: Ombre mortelle (Coût: 0, 1/combat) - Furtivité permanente chaque tour
+✅ DONNÉES OFFICIELLES V3.0:
+P-7-1: Attaque furtive (Coût: 0) - N'attaque pas ce tour, double dégâts tour suivant, ne peut défendre
+P-7-2: Dérobade (Coût: 0, 2/combat) - Esquive prochaine attaque adverse
+P-7-3: Vol à la tire (Coût: 0) - "Pas utile en combat" → DÉSACTIVÉ
+P-7-4: Bombe fumigène (Coût: 0, 1/combat) - Tous ennemis paralysés 2 tours
+P-7-5: Attaque tournoyante (Coût: 0, 3/jour) - Dégâts attaque sur tous ennemis
+P-7-6: Assaut furieux (Coût: 0, 1/jour) - Auto-hit + ×2 dégâts permanent
 """
 
 from typing import List, Dict, Any
@@ -283,12 +283,12 @@ class LameAttaqueTournoyante(BaseAbility):
 
 @register_ability
 class LameAssautFurieux(BaseAbility):
-    """P-7-6: Assaut furieux - Furtivité permanente chaque tour"""
+    """P-7-6: Assaut furieux - Auto-hit + ×2 dégâts permanent"""
 
     hero_code = "P-7"
     ability_number = 6
     name = "Assaut furieux"
-    description = "Permet d'utiliser l'attaque furtive à tous les tours, au lieu d'un sur deux, pendant toute la durée du combat."
+    description = "Réussit toutes ses attaques sans lancer le dé, et inflige le double de dégâts."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -297,9 +297,9 @@ class LameAssautFurieux(BaseAbility):
         self.uses_remaining_combat = 1
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active furtivité permanente - appliqué automatiquement chaque tour"""
+        """Active auto-hit + ×2 dégâts PERMANENT pour tout le combat"""
         try:
-            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            # Vérifier limitation 1 capacité par tour pour Lame
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
@@ -307,35 +307,38 @@ class LameAssautFurieux(BaseAbility):
                 log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
                 return False
 
-            # Vérifier limitation
+            # Vérifier limitation 1/combat
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Ombre mortelle déjà utilisée ce combat")
+                log.append(f"⚠️ Assaut furieux déjà utilisé ce combat")
                 return False
 
-            caster.temporary_buffs['permanent_stealth'] = {
-                'type': 'permanent_combat',
-                'damage_multiplier': 2,
-                'auto_apply': True,  # S'applique chaque début de tour
-                'source': 'ombre_mortelle'
+            # NOUVEAU - Buff permanent : auto-hit + double dégâts
+            caster.temporary_buffs['assaut_furieux_permanent'] = {
+                'type': 'permanent_combat',  # Dure tout le combat
+                'auto_hit': True,  # Pas de jet de dé - réussit automatiquement
+                'damage_multiplier': 2,  # Double dégâts
+                'source': 'lame_assaut_furieux'
             }
 
             # Marquer capacité utilisée ce tour
             caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
-            log.append(f"👤💀 {caster.name} devient l'OMBRE MORTELLE !")
-            log.append(f"   🌑 Furtivité automatique chaque tour (×2 dégâts permanent)")
+            log.append(f"⚡💀 {caster.name} déclenche l'ASSAUT FURIEUX !")
+            log.append(f"   🎯 PERMANENT : Toutes attaques réussissent automatiquement (pas de dé)")
+            log.append(f"   ⚔️ PERMANENT : Dégâts ×2 sur toutes les attaques")
+            log.append(f"   ⏳ Effet actif jusqu'à la fin du combat")
 
-            # Décompter utilisation
+            # Décompter utilisation (désactive le bouton)
             self.uses_remaining_combat -= 1
 
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Ombre mortelle: {e}")
+            log.append(f"❌ Erreur Assaut furieux: {e}")
             return False
 
     def get_preview(self) -> str:
-        return f"👤💀 {self.name}: Furtivité permanente ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"⚡💀 {self.name}: Auto-hit + ×2 dégâts permanent ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]

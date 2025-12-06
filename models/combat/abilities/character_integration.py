@@ -122,7 +122,11 @@ class CharacterAbilitiesIntegration:
         # Reset état du tour standard
         character.reset_turn_state()
         character.magic_abilities_used_this_turn = 0
-        
+
+        # NOUVEAU - Reset compteur de relances pour Sens de la justice (Atucan P-3-2 passif)
+        if hasattr(character, 'temporary_buffs') and 'sens_de_la_justice_active' in character.temporary_buffs:
+            character.temporary_buffs['sens_de_la_justice_active']['rerolls_used_this_turn'] = 0
+
         # Recharger jetons parade avec effets
         CharacterAbilitiesIntegration.enhance_refresh_parade_tokens(character)
         
@@ -192,9 +196,10 @@ class CharacterAbilitiesIntegration:
         if character.temporary_buffs.get('double_next_attack', False):
             modifiers['damage_multiplier'] = 2.0
 
-        # NOUVEAU - Lame Ombre mortelle : Furtivité permanente
-        if character.temporary_buffs.get('permanent_stealth', False):
-            modifiers['damage_multiplier'] = 2.0
+        # NOUVEAU - Lame Assaut furieux (V3.0) : Auto-hit + ×2 dégâts permanent
+        if character.temporary_buffs.get('assaut_furieux_permanent', {}).get('damage_multiplier', 1.0) > 1.0:
+            assaut_buff = character.temporary_buffs['assaut_furieux_permanent']
+            modifiers['damage_multiplier'] = assaut_buff['damage_multiplier']
 
         # NOUVEAU - Lame Furtivité : Stealth next attack (si pas déjà double_next_attack)
         if modifiers['damage_multiplier'] == 1.0 and 'lame_stealth_next' in character.temporary_buffs:

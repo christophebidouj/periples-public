@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "mcp__ide__executeCode",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

@@ -22,7 +22,7 @@ Ses capacités se concentrent sur la protection du groupe et les soins sacrés.
 
 DONNÉES SOURCES OFFICIELLES:
 P-3-1: Imposition des mains (Coût: 1 sort) - ability_names.csv ✅
-P-3-2: Parade (Coût: 0 sort) - ability_names.csv ✅  
+P-3-2: Sens de la justice (Coût: 0 sort) - ability_names.csv ✅
 P-3-3: Châtiment divin (Coût: 1 sort, 1/combat) - ability_names.csv ✅
 P-3-4: Aura sacrée (Coût: 1 sort) - ability_names.csv ✅
 P-3-5: Soin supérieur (Coût: 1 sort, 1/combat) - ability_names.csv ✅
@@ -40,19 +40,19 @@ from ..ability_registry import register_ability
 
 @register_ability
 class AtucanImpositionDesMains(BaseAbility):
-    """P-3-1: Imposition des mains - Soigne selon santé actuelle d'Atucan"""
-    
+    """P-3-1: Imposition des mains - Soigne 2 blessures fixes"""
+
     hero_code = "P-3"
     ability_number = 1
     name = "Imposition des mains"  # Nom CSV compatible
-    description = "Soigne n'importe quel autre personnage, d'un montant égal à la moitié de la santé actuelle d'Atucan moins ses blessures."
+    description = "Soigne 2 blessures à un autre personnage."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1  # Coût officiel: 1 sort
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Soigne selon santé actuelle d'Atucan - API _apply_healing CORRIGÉE"""
+        """Soigne 2 blessures fixes - API _apply_healing"""
         try:
             # 1. Consommer coût sorts avec API officielle
             spell_manager = context.get('spell_manager')
@@ -65,12 +65,8 @@ class AtucanImpositionDesMains(BaseAbility):
                 log.append(f"⚠️ {caster.name} ne trouve personne à soigner (sauf lui-même)")
                 return False
 
-            # 3. Calcul soins selon mécanisme officiel - API RÉELLE
-            # Utiliser current_health directement (API confirmée)
-            atucan_current_health = getattr(caster, 'current_health', 0)
-            if atucan_current_health is None:
-                atucan_current_health = 0
-            healing_amount = max(1, atucan_current_health // 2)  # Au moins 1 PV
+            # 3. Soins fixes de 2 PV (règle officielle V3.0)
+            healing_amount = 2  # FIXE
 
             # 4. Sélectionner cible (allié le plus blessé)
             target = min(allies, key=lambda ally: ally.current_health if ally.current_health is not None else float('inf'))
@@ -79,7 +75,7 @@ class AtucanImpositionDesMains(BaseAbility):
             actual_healing = self._apply_healing(target, healing_amount, log)
 
             log.append(f"✨ {caster.name} impose ses mains sur {target.name}")
-            log.append(f"   💖 Soins = PV actuels Atucan ({atucan_current_health}) ÷ 2 = {healing_amount}")
+            log.append(f"   💖 Soins = 2 PV (fixe)")
 
             return True
 
@@ -88,7 +84,7 @@ class AtucanImpositionDesMains(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"💖 {self.name}: Soins = PV actuels Atucan / 2 (Coût: {self.spell_cost} sort)"
+        return f"💖 {self.name}: Soigne 2 PV (Coût: {self.spell_cost} sort)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         """Cible les alliés vivants SAUF Atucan (règle officielle)"""
@@ -96,76 +92,45 @@ class AtucanImpositionDesMains(BaseAbility):
 
 
 @register_ability
-class AtucanParade(BaseAbility):
-    """P-3-2: Parade - Double défense bouclier, empêche attaque"""
-    
+class AtucanSensDeLaJustice(BaseAbility):
+    """P-3-2: Sens de la justice - Relance dé d'attaque si 1 ou 2"""
+
     hero_code = "P-3"
     ability_number = 2
-    name = "Parade"  # Nom CSV compatible
-    description = "Double la valeur de défense des équipements de type bouclier. Atucan ne peut cependant pas attaquer ce tour."
-    
+    name = "Sens de la justice"  # Nom CSV compatible (V3.0)
+    description = "Si le résultat du dé d'attaque est de 1 ou 2, possibilité de relancer le dé une fois par tour."
+
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
-        self.spell_cost = 0  # Coût officiel: 0 sort
-    
+        self.spell_cost = 0  # Gratuit
+
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Double défense bouclier avec API temporary_defense_bonus CORRIGÉE + limitation 1/tour"""
+        """Active buff de relance de dé pour ce tour"""
         try:
-            # Pas de coût en sorts (capacité gratuite)
-
-            # 0. NOUVEAU - Vérifier si déjà utilisée ce tour (empêcher doublement infini)
-            if caster.temporary_buffs.get('parade_used_this_turn', False):
-                log.append(f"⚠️ {caster.name} a déjà utilisé Parade ce tour")
-                return False
-
-            # 0bis. NOUVEAU - Vérifier si bloquée par attaque ce tour (règle inverse)
-            if caster.temporary_buffs.get('parade_blocked_by_attack', False):
-                log.append(f"⚠️ {caster.name} ne peut pas utiliser Parade après avoir attaqué")
-                return False
-
-            # 1. Vérifier équipement bouclier avec API RÉELLE (via nom officiel)
-            # Les boucliers officiels : Rondache de bois, Bouclier de bois, Bouclier de fer
-            shield_defense = 0
-            shield_name = "bouclier"
-
-            for equipment in caster.equipped_items:
-                # Détecter boucliers via nomenclature officielle (nom contient "bouclier" ou "rondache")
-                equipment_name_lower = equipment.name.lower()
-                if 'bouclier' in equipment_name_lower or 'rondache' in equipment_name_lower:
-                    shield_defense += equipment.defense
-                    shield_name = equipment.name
-                    break
-
-            if shield_defense == 0:
-                log.append(f"⚠️ {caster.name} n'a pas de bouclier équipé (Rondache/Bouclier requis)")
-                return False
-
-            # 2. CORRIGÉ - Sauvegarder la valeur originale avant modification
+            # Initialiser temporary_buffs si nécessaire
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
-            caster.temporary_buffs['parade_original_max'] = caster.max_parade_tokens
 
-            # 3. Modifier RÉELLEMENT les jetons de parade (pas juste l'affichage)
-            caster.max_parade_tokens += shield_defense
-            caster.current_parade_tokens = caster.max_parade_tokens  # Recharge immédiate avec nouveau max
+            # Activer le buff de relance pour ce tour
+            caster.temporary_buffs['sens_de_la_justice_active'] = {
+                'reroll_on': [1, 2],  # Relance si dé = 1 ou 2
+                'max_rerolls_per_turn': 1,  # 1 seule relance par tour
+                'rerolls_used_this_turn': 0,  # Compteur
+                'source': 'atucan_sens_justice'
+            }
 
-            # 4. Empêcher attaque ce tour avec API RÉELLE
-            caster.can_attack_this_turn = False  # API Character pour bloquer attaque
-            caster.temporary_buffs['parade_used_this_turn'] = True  # Marquer comme utilisée
-
-            log.append(f"🛡️ {caster.name} adopte une posture défensive avec son {shield_name}")
-            log.append(f"   ⚔️ Jetons de parade: {caster.temporary_buffs['parade_original_max']} → {caster.max_parade_tokens} (bonus +{shield_defense})")
-            log.append(f"   ⚠️ Ne peut pas attaquer ce tour")
+            log.append(f"⚖️ {caster.name} invoque le Sens de la justice")
+            log.append(f"   🎲 Prochaine attaque (si dé = 1 ou 2) → relance possible (1 fois ce tour)")
 
             return True
-            
+
         except Exception as e:
-            log.append(f"❌ Erreur Parade: {e}")
+            log.append(f"❌ Erreur Sens de la justice: {e}")
             return False
-    
+
     def get_preview(self) -> str:
-        return f"🛡️ {self.name}: Double défense bouclier, bloque attaque (Gratuit)"
-    
+        return f"⚖️ {self.name}: Relance dé si 1-2 (1/tour, Gratuit)"
+
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         """Auto-cible Atucan"""
         return [caster]
@@ -519,11 +484,11 @@ def get_atucan_abilities_count() -> int:
 
 
 def get_atucan_abilities_summary() -> str:
-    """Retourne un résumé des capacités d'Atucan (DONNÉES OFFICIELLES)"""
+    """Retourne un résumé des capacités d'Atucan (DONNÉES OFFICIELLES V3.0)"""
     return """
-    🎭 ATUCAN (P-3) - 6 capacités complètes (DONNÉES OFFICIELLES + APIs CORRIGÉES):
-    ✅ P-3-1: Imposition des mains (1 sort) - Soins proportionnels santé Atucan
-    ✅ P-3-2: Parade (0 sort) - Double défense bouclier, bloque attaque
+    🎭 ATUCAN (P-3) - 6 capacités complètes (DONNÉES OFFICIELLES V3.0):
+    ✅ P-3-1: Imposition des mains (1 sort) - Soigne 2 PV fixes
+    ✅ P-3-2: Sens de la justice (0 sort) - Relance dé si 1-2 (1/tour)
     ✅ P-3-3: Châtiment divin (1 sort, 1/combat) - +4 dégâts magiques après attaque
     ✅ P-3-4: Aura sacrée (1 sort) - Tous alliés -1 blessure/attaque
     ✅ P-3-5: Soin supérieur (1 sort, 1/combat) - 8 PV répartis intelligemment
@@ -532,10 +497,10 @@ def get_atucan_abilities_summary() -> str:
 
 
 def get_atucan_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités d'Atucan (DONNÉES OFFICIELLES)"""
+    """Retourne les coûts en sorts des capacités d'Atucan (DONNÉES OFFICIELLES V3.0)"""
     return {
         "Imposition des mains": 1,
-        "Parade": 0,
+        "Sens de la justice": 0,
         "Châtiment divin": 1,
         "Aura sacrée": 1,
         "Soin supérieur": 1,
@@ -553,11 +518,11 @@ def get_atucan_damage_output() -> dict:
             "Châtiment divin": "+4 dégâts magiques après attaque (1/combat)"
         },
         "healing_output": {
-            "Imposition des mains": "Variable selon santé Atucan (1-4 PV typique)",
+            "Imposition des mains": "2 PV fixes (simple et prévisible)",
             "Soin supérieur": "8 PV répartis intelligemment (1/combat)"
         },
         "defensive_value": {
-            "Parade": "Double défense bouclier temporaire",
+            "Sens de la justice": "Relance dé attaque si 1-2 (améliore précision)",
             "Aura sacrée": "Tous alliés -1 blessure/attaque"
         }
     }
@@ -568,21 +533,21 @@ def get_atucan_tactical_analysis() -> dict:
     return {
         "role": "Paladin défensif - Tank/Support/Guérisseur",
         "strengths": [
-            "Soins flexibles (proportionnels + répartis)",
-            "Défense renforcée (bouclier + aura groupe)", 
+            "Soins fiables et constants (2 PV fixes + 8 PV répartis)",
+            "Relance de dé pour améliorer précision (Sens de la justice)",
             "Contrôle avec stun longue durée (2 tours)",
             "Ultimate dévastateur (AoE + contrôle)",
             "Coûts très abordables (0-2 sorts)",
-            "Synergies défense/attaque (parade + châtiment)"
+            "Synergies attaque (relance dé + châtiment)"
         ],
         "spell_efficiency": {
-            "free": ["Parade"],
+            "free": ["Sens de la justice"],
             "low_cost": ["Imposition", "Châtiment", "Aura", "Soin supérieur"],
             "medium_cost": ["Jugement dernier"]
         },
         "combat_usage": {
-            "early_game": "Parade + Aura sacrée pour setup défensif",
-            "mid_game": "Châtiment divin + Imposition des mains",
+            "early_game": "Sens de la justice + Aura sacrée pour setup offensif/défensif",
+            "mid_game": "Châtiment divin + Imposition des mains (soins constants)",
             "late_game": "Soin supérieur + Jugement dernier (finisher)",
             "limitations": "3 capacités limitées à 1/combat",
             "total_spell_cost": 6  # Si toutes utilisées
@@ -596,17 +561,65 @@ def get_atucan_tactical_analysis() -> dict:
 
 
 def get_atucan_equipment_requirements() -> dict:
-    """Analyse des besoins en équipement d'Atucan"""
+    """Analyse des besoins en équipement d'Atucan (V3.0)"""
     return {
         "essential": {
-            "bouclier": "Nécessaire pour maximiser Parade (double défense)"
+            "arme_physique": "Nécessaire pour attaques (bénéficie Sens de la justice + Châtiment)"
         },
         "recommended": {
-            "armure": "Augmente survie pour maintenir soins proportionnels",
-            "arme_physique": "Bénéficie du Châtiment divin (+4 dégâts)"
+            "armure": "Augmente survie en tant que paladin frontline",
+            "bouclier": "Améliore défense (jetons de parade)"
         },
-        "optimal_build": "Tank défensif avec bouclier haute défense"
+        "optimal_build": "Paladin équilibré attaque/défense avec relance de dé"
     }
+
+
+def auto_activate_sens_de_la_justice(heroes: List, log: List[str]) -> bool:
+    """
+    Active automatiquement le Sens de la justice si Atucan (P-3) est présent et vivant.
+    Appelé au début du combat par l'interface UI.
+
+    RÈGLE: Le Sens de la justice d'Atucan est une capacité passive permanente qui s'active
+    automatiquement dès le début du combat et reste active tant qu'Atucan est vivant.
+
+    Args:
+        heroes: Liste des héros participant au combat
+        log: Liste de logs de combat (sera modifiée)
+
+    Returns:
+        bool: True si le buff a été activé, False sinon
+
+    Effet:
+        Applique le buff 'sens_de_la_justice_active' à Atucan:
+        - reroll_on: [1, 2] (relance si dé = 1 ou 2)
+        - max_rerolls_per_turn: 1
+        - type: 'passive_permanent'
+        - Permanent (reste actif tout le combat)
+    """
+    # Chercher Atucan (P-3) parmi les héros vivants
+    atucan = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
+
+    if not atucan:
+        return False
+
+    # Initialiser temporary_buffs si nécessaire
+    if not hasattr(atucan, 'temporary_buffs'):
+        atucan.temporary_buffs = {}
+
+    # Appliquer le buff de sens de la justice (permanent)
+    atucan.temporary_buffs['sens_de_la_justice_active'] = {
+        'reroll_on': [1, 2],  # Relance si dé = 1 ou 2
+        'max_rerolls_per_turn': 1,  # 1 seule relance par tour
+        'rerolls_used_this_turn': 0,  # Compteur (reset chaque tour)
+        'type': 'passive_permanent',
+        'source': 'atucan_sens_justice_passif'
+        # Pas de 'rounds_remaining' → effet permanent jusqu'à fin du combat
+    }
+
+    # Logger l'activation
+    log.append(f"⚖️ Sens de la justice d'Atucan active (relance dé d'attaque 1-2, 1×/tour)")
+
+    return True
 
 
 def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
@@ -656,7 +669,7 @@ def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
 
     # Logger l'activation
     if protected_count > 0:
-        log.append(f"✨ Aura sacrée d'Atucan activée automatiquement ({protected_count} héros protégés, -1 blessure/attaque)")
+        log.append(f"✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)")
 
     return True
 
@@ -765,7 +778,7 @@ def get_atucan_vs_other_heroes() -> dict:
 # Export des capacités
 __all__ = [
     'AtucanImpositionDesMains',
-    'AtucanParade',
+    'AtucanSensDeLaJustice',
     'AtucanChatimentDivin',
     'AtucanAuraSacree',
     'AtucanSoinSuperieur',
@@ -776,6 +789,7 @@ __all__ = [
     'get_atucan_damage_output',
     'get_atucan_tactical_analysis',
     'get_atucan_equipment_requirements',
+    'auto_activate_sens_de_la_justice',  # Fonction d'activation automatique (passif)
     'auto_activate_aura_sacree',  # Fonction d'activation automatique
     'validate_atucan_implementation',
     'get_atucan_debug_info',

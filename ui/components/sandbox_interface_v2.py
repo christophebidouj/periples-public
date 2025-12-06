@@ -22,7 +22,7 @@ from ui.styling import get_hero_card_style
 from ui.components.combat_stats_tracker import CombatStatsTracker
 from ui.components.combat_stats_analyzer import analyze_combat_results, generate_balance_recommendations
 from ui.components.combat_results_display import display_combat_results_panel
-from models.combat.abilities.individual_abilities.heroes.atucan import auto_activate_aura_sacree
+from models.combat.abilities.individual_abilities.heroes.atucan import auto_activate_aura_sacree, auto_activate_sens_de_la_justice
 
 # === CSS STYLE ARÈNE ===
 # ===tour par tour guidé ===
@@ -702,6 +702,9 @@ def configure_combat():
         heroes = [c['character'] for c in hero_combatants]
         auto_activate_aura_sacree(heroes, st.session_state.sandbox_v2_log)
 
+        # NOUVEAU - Activation automatique Sens de la justice d'Atucan (PASSIF PERMANENT)
+        auto_activate_sens_de_la_justice(heroes, st.session_state.sandbox_v2_log)
+
         # Sauvegarder l'état initial
         save_game_state("Début du combat")
 
@@ -782,6 +785,14 @@ def log_active_persistent_effects():
         )
         if aura_active:
             st.session_state.sandbox_v2_log.append("✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)")
+
+        # Vérifier Sens de la justice d'Atucan (P-3)
+        sens_justice_active = (
+            hasattr(atucan, 'temporary_buffs') and
+            'sens_de_la_justice_active' in atucan.temporary_buffs
+        )
+        if sens_justice_active:
+            st.session_state.sandbox_v2_log.append("⚖️ Sens de la justice d'Atucan active (relance dé d'attaque 1-2, 1×/tour)")
 
     # Espace réservé pour d'autres effets persistants futurs
     # Exemple: buffs de groupe, malédictions permanentes, etc.
@@ -1463,29 +1474,34 @@ def display_abilities_grid(char: Character, combatant_id: str):
 
     # Forme humaine : capacités normales (1-6)
     # Exclure les capacités exclusives (101, 102) de l'affichage normal
-    abilities_to_display = [a for a in char.abilities if a.ability_number <= 100]
-    st.markdown("### 🔮 Capacités Spéciales")
+    # NOUVEAU : Filtrer pour ne garder QUE les capacités débloquées (masquer les vides)
+    unlocked_abilities = getattr(char, 'unlocked_abilities', [])
+    abilities_to_display = [
+        a for a in char.abilities
+        if a.ability_number <= 100 and a.ability_number in unlocked_abilities
+    ]
 
-    # Grille 3x2 pour forme humaine seulement
-    for row in range(2):
-        cols = st.columns(3)
-        for col_idx in range(3):
-            ability_index = row * 3 + col_idx
+    if abilities_to_display:
+        st.markdown("### 🔮 Capacités Spéciales")
 
-            with cols[col_idx]:
-                if ability_index < len(abilities_to_display):
-                    ability = abilities_to_display[ability_index]
-                    # Trouver l'index original pour le key unique
-                    original_index = char.abilities.index(ability) if ability in char.abilities else ability_index
-                    display_ability_card(char, ability, combatant_id, original_index)
-                else:
-                    st.markdown("""
-                    <div style="background: #555; border: 2px dashed #777; border-radius: 10px;
-                                padding: 15px; text-align: center; color: #999; min-height: 80px;
-                                display: flex; align-items: center; justify-content: center;">
-                        <strong>Vide</strong>
-                    </div>
-                    """, unsafe_allow_html=True)
+        # Grille dynamique : afficher seulement les capacités débloquées (max 3 par ligne)
+        num_abilities = len(abilities_to_display)
+        cols_per_row = min(3, num_abilities)  # Max 3 colonnes par ligne
+
+        for i in range(0, num_abilities, cols_per_row):
+            cols = st.columns(cols_per_row)
+            for col_idx in range(cols_per_row):
+                ability_idx = i + col_idx
+                if ability_idx < num_abilities:
+                    ability = abilities_to_display[ability_idx]
+                    with cols[col_idx]:
+                        # Trouver l'index original pour le key unique
+                        original_index = char.abilities.index(ability) if ability in char.abilities else ability_idx
+                        display_ability_card(char, ability, combatant_id, original_index)
+    else:
+        # Aucune capacité débloquée
+        st.markdown("### 🔮 Capacités Spéciales")
+        st.info("Aucune capacité débloquée dans ce build")
 
 def display_ability_card(char: Character, ability, combatant_id: str, ability_index: int):
     """Carte capacité cliquable style Arène"""
@@ -1584,7 +1600,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action and not is_aura_sacree
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
-    short_name = ability.name if len(ability.name) <= 15 else ability.name[:12] + "..."
+    short_name = ability.name if len(ability.name) <= 20 else ability.name[:17] + "..."
 
     button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
 
@@ -1612,8 +1628,14 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if is_form_active:
         button_label = f"{type_icon} {short_name}\n• Gratuit"
 
+    # NOUVEAU - Sens de la justice (Atucan P-3-2) : Capacité passive auto-activée
+    is_sens_de_la_justice = (char.code == "P-3" and ability.ability_number == 2)
+    if is_sens_de_la_justice:
+        button_label = f"🟣 {ability.name}\n⚡ Auto"  # Nom complet pour capacités passives
+        is_available = False  # Capacité passive (non cliquable mais active)
+
     if is_aura_sacree:
-        button_label = f"✨ {short_name}\n⚡ Automatique - Active"
+        button_label = f"🟣 {ability.name}\n⚡ Auto"  # Nom complet pour capacités passives
     elif not_useful_in_combat:
         button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
     elif armure_mage_already_used:
@@ -1636,6 +1658,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     # Tooltip avec description de la capacité
     tooltip_text = ability.description if hasattr(ability, 'description') else None
 
+    # Bouton standard - Les capacités passives sont identifiées par leur emoji 🟣
     if st.button(
         button_label,
         key=button_key,

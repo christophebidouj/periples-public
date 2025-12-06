@@ -31,7 +31,34 @@ class CombatActions:
             
         target = enemies[0]
         attack_modifiers = CharacterAbilitiesIntegration.check_attack_modifiers(hero)
-        attack_roll = random.randint(1, 20)
+
+        # 🎯 NOUVEAU - Assaut furieux (Lame P-7-6) : Auto-hit (pas de dé)
+        auto_hit = False
+        if hasattr(hero, 'temporary_buffs'):
+            assaut_buff = hero.temporary_buffs.get('assaut_furieux_permanent')
+            if assaut_buff and assaut_buff.get('auto_hit'):
+                auto_hit = True
+                attack_roll = 20  # Considéré comme réussite automatique (pas critique)
+                log.append(f"  ⚡ ASSAUT FURIEUX : Attaque réussit automatiquement (pas de dé)")
+            else:
+                attack_roll = random.randint(1, 20)
+        else:
+            attack_roll = random.randint(1, 20)
+
+        # ⚖️ NOUVEAU - Sens de la justice (Atucan P-3-2) : Relance dé si 1 ou 2
+        if not auto_hit and hasattr(hero, 'temporary_buffs'):
+            justice_buff = hero.temporary_buffs.get('sens_de_la_justice_active')
+            if justice_buff:
+                reroll_on = justice_buff.get('reroll_on', [])
+                max_rerolls = justice_buff.get('max_rerolls_per_turn', 0)
+                rerolls_used = justice_buff.get('rerolls_used_this_turn', 0)
+
+                if attack_roll in reroll_on and rerolls_used < max_rerolls:
+                    log.append(f"  ⚖️ SENS DE LA JUSTICE : Dé = {attack_roll} → Relance autorisée !")
+                    old_roll = attack_roll
+                    attack_roll = random.randint(1, 20)
+                    justice_buff['rerolls_used_this_turn'] += 1
+                    log.append(f"  🎲 Nouveau résultat : {old_roll} → {attack_roll}")
         
         attack_info = hero.get_attack_damage_info()
         damage_type = attack_info['damage_type']
@@ -44,13 +71,18 @@ class CombatActions:
         damage_value += attack_modifiers['damage_bonus']
         damage_value += self._get_mark_bonus_for_target(hero, target)
 
-        # 🐺 NOUVEAU: Elneha Férocité du loup - Consommer le buff après utilisation
+        # 🐺 NOUVEAU: Détection source multiplicateur de dégâts pour logs explicites
+        damage_multiplier_source = None  # Stocke la source du multiplicateur
         elneha_wolf_used = False
+
         if hasattr(hero, 'temporary_buffs') and attack_modifiers['damage_multiplier'] > 1.0:
             # Système ancien (avec compteur elneha_wolf_remaining)
             if hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
                 hero.temporary_buffs['elneha_wolf_remaining'] -= 1
-                elneha_wolf_used = True
+                # CORRECTION : Vérifier que c'est bien Elneha (P-1) avant de marquer le log
+                if hero.code == "P-1":
+                    elneha_wolf_used = True
+                    damage_multiplier_source = "elneha_wolf"
                 # Réactiver pour prochaine attaque si compteur > 0
                 if hero.temporary_buffs['elneha_wolf_remaining'] > 0:
                     hero.temporary_buffs['double_next_attack'] = True
@@ -58,11 +90,22 @@ class CombatActions:
                     # Plus d'utilisations, retirer le flag
                     hero.temporary_buffs.pop('double_next_attack', None)
 
-            # Système nouveau (Férocité du loup - individual ability)
+            # Assaut furieux (Lame P-7-6) - permanent
+            elif hero.temporary_buffs.get('assaut_furieux_permanent'):
+                damage_multiplier_source = "lame_assaut_furieux"
+
+            # Système nouveau (Férocité du loup - individual ability ou Attaque furtive Lame)
             elif hero.temporary_buffs.get('double_next_attack', False):
                 # Consommer le buff après l'attaque
                 hero.temporary_buffs.pop('double_next_attack', None)
-                elneha_wolf_used = True
+                # Identifier la source selon le héros
+                if hero.code == "P-1":  # Elneha
+                    elneha_wolf_used = True
+                    damage_multiplier_source = "elneha_wolf"
+                elif hero.code == "P-7":  # Lame
+                    damage_multiplier_source = "lame_furtivite"
+                else:
+                    damage_multiplier_source = "generic_double"
         
         combatant_name = getattr(hero, 'display_name', hero.name)
 
@@ -97,10 +140,16 @@ class CombatActions:
 
             self._add_conversion_logs(log, attack_info, final_damage)
 
-            # 🐺 Log forme de loup si utilisée
-            if elneha_wolf_used:
+            # 🐺 Log multiplicateur de dégâts selon la source
+            if damage_multiplier_source == "elneha_wolf":
                 remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
-                log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
+                log.append(f"  🐺 Forme de loup activée ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f} ({remaining} utilisations restantes)")
+            elif damage_multiplier_source == "lame_furtivite":
+                log.append(f"  🌑 Attaque furtive ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
+            elif damage_multiplier_source == "lame_assaut_furieux":
+                log.append(f"  ⚡💀 Assaut furieux ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
+            elif damage_multiplier_source == "generic_double":
+                log.append(f"  ⚔️ Dégâts multipliés ×{attack_modifiers['damage_multiplier']:.0f}")
 
             # NOUVEAU : Log résistance magique si active
             if damage_result.get('magical_resistance', 0) > 0:
@@ -175,9 +224,14 @@ class CombatActions:
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
             precision_bonus = hero.get_total_precision()
             log.append(f"{damage_type_emoji} ÉCHEC ! {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] attaque {target.name}")
-            # 🐺 Forme de loup gaspillée en cas d'échec critique
-            if elneha_wolf_used:
+            # 🐺 Multiplicateur gaspillé en cas d'échec critique
+            if damage_multiplier_source == "elneha_wolf":
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
+            elif damage_multiplier_source == "lame_furtivite":
+                log.append(f"  🌑 Attaque furtive gaspillée par l'échec critique...")
+            elif damage_multiplier_source in ["lame_assaut_furieux", "generic_double"]:
+                # Assaut furieux permanent n'est pas "gaspillé", juste inutile sur cet échec
+                pass
             self._handle_critical_failure(hero, target, log, player_count)
 
             # Return attack result for stats tracking
@@ -207,10 +261,16 @@ class CombatActions:
 
                 self._add_conversion_logs(log, attack_info, damage_value)
 
-                # 🐺 Log forme de loup si utilisée
-                if elneha_wolf_used:
+                # 🐺 Log multiplicateur de dégâts selon la source
+                if damage_multiplier_source == "elneha_wolf":
                     remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
-                    log.append(f"  🐺 Forme de loup activée ! Dégâts doublés ({remaining} utilisations restantes)")
+                    log.append(f"  🐺 Forme de loup activée ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f} ({remaining} utilisations restantes)")
+                elif damage_multiplier_source == "lame_furtivite":
+                    log.append(f"  🌑 Attaque furtive ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
+                elif damage_multiplier_source == "lame_assaut_furieux":
+                    log.append(f"  ⚡💀 Assaut furieux ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
+                elif damage_multiplier_source == "generic_double":
+                    log.append(f"  ⚔️ Dégâts multipliés ×{attack_modifiers['damage_multiplier']:.0f}")
 
                 # NOUVEAU : Log résistance magique si active
                 if damage_result.get('magical_resistance', 0) > 0:
@@ -287,9 +347,14 @@ class CombatActions:
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
                 precision_bonus = hero.get_total_precision()
                 log.append(f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] vs DEF[{target.defense}] → Échec")
-                # 🐺 Forme de loup gaspillée en cas d'échec
-                if elneha_wolf_used:
+                # 🐺 Multiplicateur gaspillé en cas d'échec
+                if damage_multiplier_source == "elneha_wolf":
                     log.append(f"  🐺 Forme de loup gaspillée par l'échec...")
+                elif damage_multiplier_source == "lame_furtivite":
+                    log.append(f"  🌑 Attaque furtive gaspillée par l'échec...")
+                elif damage_multiplier_source in ["lame_assaut_furieux", "generic_double"]:
+                    # Assaut furieux permanent n'est pas "gaspillé"
+                    pass
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
 
                 hero.action_taken_this_turn = True
