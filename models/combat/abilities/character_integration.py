@@ -306,7 +306,38 @@ class CharacterAbilitiesIntegration:
                         del enemy.status_effects['stunned']
 
         return status
-    
+
+    @staticmethod
+    def apply_stun_with_immunity_check(target, duration: int, source: str, log: List[str]) -> bool:
+        """
+        Applique un stun sur une cible AVEC vérification d'immunité
+
+        Args:
+            target: Cible à étourdir (Enemy ou Character)
+            duration: Durée du stun en tours
+            source: Source du stun (ex: 'elneha_eclair', 'raishi_combo')
+            log: Liste de logs pour messages
+
+        Returns:
+            bool: True si le stun a été appliqué, False si immunisé
+        """
+        # Vérifier immunité au stun (capacités ennemis)
+        if hasattr(target, 'status_effects') and target.status_effects.get('immunity_stun'):
+            target_name = getattr(target, 'name', 'Cible')
+            log.append(f"  🛡️ {target_name} est immunisé au Stun !")
+            return False
+
+        # Appliquer le stun
+        if not hasattr(target, 'status_effects'):
+            target.status_effects = {}
+
+        target.status_effects['stunned'] = {
+            'duration': duration,
+            'source': source
+        }
+
+        return True
+
     @staticmethod
     def get_character_effects_summary(character) -> Dict[str, Any]:
         """

@@ -216,7 +216,8 @@ def validate_character_state(char, context: str = ""):
             elif potion.quantity < 0:
                 issues.append(f"Potion {i} a une quantité négative: {potion.quantity}")
 
-    if hasattr(char, 'abilities'):
+    # Valider les capacités UNIQUEMENT pour les héros (pas les ennemis)
+    if is_hero and hasattr(char, 'abilities'):
         for i, ability in enumerate(char.abilities):
             if not hasattr(ability, 'uses_remaining_combat'):
                 issues.append(f"Capacité {i} manque l'attribut uses_remaining_combat")
@@ -561,6 +562,19 @@ class SandboxTurnManagerAdapter:
     ) -> Optional[Character]:
         """Tour ennemi avec ciblage manuel - Retourne la cible sélectionnée"""
         enemy.start_enemy_turn()
+
+        # NOUVEAU - Déclencher before_attack UNE SEULE FOIS (éviter logs doublés)
+        enemy_id = id(enemy)
+        if not hasattr(enemy, '_before_attack_triggered'):
+            enemy._before_attack_triggered = True
+
+            if self.turn_manager.enemy_ability_manager:
+                self.turn_manager.enemy_ability_manager.execute_trigger(
+                    trigger='before_attack',
+                    enemy=enemy,
+                    context={'heroes': heroes, 'log': log}
+                )
+
         target = ManualTargeting.select_hero_for_enemy_attack(enemy, heroes)
         return target
 
@@ -701,6 +715,13 @@ def configure_combat():
         # NOUVEAU - Activation automatique Aura sacrée d'Atucan (BUSINESS LOGIC)
         heroes = [c['character'] for c in hero_combatants]
         auto_activate_aura_sacree(heroes, st.session_state.sandbox_v2_log)
+
+        # NOUVEAU - Initialiser les capacités ennemis au début du combat
+        if turn_manager.enemy_ability_manager:
+            enemies = [c['character'] for c in enemy_combatants]
+            heroes = [c['character'] for c in hero_combatants]
+            turn_manager.enemy_ability_manager.initialize_combat(enemies, heroes, st.session_state.sandbox_v2_log)
+            turn_manager.combat_initialized = True
 
         # NOUVEAU - Activation automatique Sens de la justice d'Atucan (PASSIF PERMANENT)
         auto_activate_sens_de_la_justice(heroes, st.session_state.sandbox_v2_log)
@@ -948,22 +969,23 @@ def get_current_combatant() -> Optional[Dict]:
         return st.session_state.sandbox_v2_combatants[st.session_state.sandbox_v2_current_turn_index]
     return None
 
-def is_enemy_stunned(enemy) -> tuple:
+def is_character_stunned(character) -> tuple:
     """
-    Vérifie si un ennemi est étourdi (stunned) SANS décrémenter le compteur
+    Vérifie si un personnage (héros OU ennemi) est étourdi (stunned) SANS décrémenter le compteur
 
-    Fonction centralisée utilisée par :
+    Fonction centralisée UNIFIÉE utilisée par :
+    - display_hero_interface() : Bloquer les actions si stunné
     - display_enemy_interface() : Bloquer les actions si stunné
     - display_enemy_combat_card() : Afficher badge "😵 Étourdi (X tours)"
     - Mode manuel : Désactiver bouton "▶️ À son tour"
 
     Returns:
         (is_stunned, turns_remaining): (bool, int)
-        - is_stunned: True si l'ennemi a stunned > 0
+        - is_stunned: True si le personnage a stunned > 0
         - turns_remaining: Nombre de tours restants (0 si pas stunné)
     """
-    if hasattr(enemy, 'status_effects') and enemy.status_effects:
-        stunned_data = enemy.status_effects.get('stunned', None)
+    if hasattr(character, 'status_effects') and character.status_effects:
+        stunned_data = character.status_effects.get('stunned', None)
         if stunned_data:
             # stunned peut être un dict {'duration': X} ou un int (legacy)
             if isinstance(stunned_data, dict):
@@ -972,6 +994,11 @@ def is_enemy_stunned(enemy) -> tuple:
                 stunned_turns = stunned_data
             return (stunned_turns > 0, stunned_turns)
     return (False, 0)
+
+# Alias pour compatibilité avec code existant
+def is_enemy_stunned(enemy) -> tuple:
+    """Alias de is_character_stunned() pour compatibilité"""
+    return is_character_stunned(enemy)
 
 def next_turn():
     """
@@ -983,6 +1010,16 @@ def next_turn():
     """
     if not st.session_state.sandbox_v2_combatants:
         return
+
+    # CRITIQUE : Nettoyer les flags de tour du combattant actuel pour permettre les triggers au prochain tour
+    current_turn_index = st.session_state.get('sandbox_v2_current_turn_index', -1)
+    if current_turn_index >= 0 and current_turn_index < len(st.session_state.sandbox_v2_combatants):
+        current_char = st.session_state.sandbox_v2_combatants[current_turn_index]['character']
+        # Reset des flags temporaires pour permettre les triggers au prochain tour
+        if hasattr(current_char, '_on_turn_start_triggered'):
+            delattr(current_char, '_on_turn_start_triggered')
+        if hasattr(current_char, '_before_attack_triggered'):
+            delattr(current_char, '_before_attack_triggered')
 
     # Enregistrer la fin du tour du combattant actuel (pour stats)
     current_turn_index = st.session_state.get('sandbox_v2_current_turn_index', -1)
@@ -1029,27 +1066,12 @@ def next_turn():
             # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
             log_active_persistent_effects()
 
-            # CRITIQUE : Décrémenter les compteurs stunned (même logique que mode manuel)
+            # CRITIQUE : Décrémenter les compteurs stunned pour TOUS les combattants (héros ET ennemis)
             for combatant in st.session_state.sandbox_v2_combatants:
                 char = combatant['character']
-                if combatant['faction'] == 'enemy' and hasattr(char, 'status_effects'):
-                    if 'stunned' in char.status_effects:
-                        stunned_data = char.status_effects['stunned']
-                        # Gérer format dict ou int (legacy)
-                        if isinstance(stunned_data, dict):
-                            duration = stunned_data.get('duration', 0)
-                            if duration > 0:
-                                stunned_data['duration'] = duration - 1
-                                if stunned_data['duration'] <= 0:
-                                    del char.status_effects['stunned']
-                                    st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
-                        else:
-                            # Legacy: stunned est un int
-                            if stunned_data > 0:
-                                char.status_effects['stunned'] -= 1
-                                if char.status_effects['stunned'] <= 0:
-                                    del char.status_effects['stunned']
-                                    st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+                # SUPPRIMÉ : Ne plus décrémenter le stun au début du ROUND
+                # Le stun doit se décrémenter au début du TOUR du personnage stunné
+                # (voir display_hero_interface et display_enemy_interface)
 
                 # NOUVEAU : Décrémenter Aura sacrée (pour tous les personnages)
                 if combatant['faction'] == 'hero' and hasattr(char, 'temporary_buffs'):
@@ -1089,13 +1111,9 @@ def next_turn():
         if current and current['character'].is_alive():
             char = current['character']
 
-            # Vérifier stun SANS décrémenter (déjà fait dans main_sandbox_v2)
-            if current['faction'] == 'enemy':
-                is_stunned_here, _ = is_enemy_stunned(char)
-                if is_stunned_here:
-                    # Ennemi stunné - sauter SANS décrémenter (déjà fait dans main_sandbox_v2)
-                    iterations += 1
-                    continue  # Passer au combattant suivant
+            # SUPPRIMÉ : Ne plus auto-skip les ennemis stunnés
+            # Le stun est géré par display_enemy_interface avec le bouton "Sauter le tour"
+            # pour permettre la décrémentation correcte et la visibilité pour le joueur
 
             # Initialiser le tour du combattant (reset jetons parade + compteurs capacités magiques)
             if current['faction'] == 'hero':
@@ -1123,6 +1141,45 @@ def next_turn():
 def display_hero_interface(combatant: Dict):
     """Interface héros - Style Arène avec layout 2 colonnes"""
     char = combatant['character']
+
+    # CRITIQUE : Vérifier stun AVANT d'afficher les actions (RÉUTILISE fonction centralisée)
+    is_stunned, stunned_turns = is_character_stunned(char)
+
+    # Si stunné, afficher message et bloquer actions (MÊME LOGIQUE que pour les ennemis)
+    if is_stunned:
+        # Construire le message selon la durée
+        if stunned_turns >= 999:
+            stun_message = "🔒 Assommé jusqu'à la fin du combat"
+        else:
+            stun_message = f"😵 Assommé pour {stunned_turns} tour(s)"
+
+        st.error(f"**{char.name}** - {stun_message}")
+
+        # Bouton pour passer le tour (MÊME INTERFACE que pour les ennemis)
+        if st.button("⏭️ Sauter le tour (Assommé)", key=f"stunned_skip_{combatant['id']}", type="secondary", use_container_width=True):
+            # Décrémenter le compteur de stun
+            if hasattr(char, 'status_effects') and 'stunned' in char.status_effects:
+                stunned_data = char.status_effects['stunned']
+                if isinstance(stunned_data, dict):
+                    current_duration = stunned_data.get('duration', 0)
+                    if current_duration > 0 and current_duration < 999:  # Ne pas décrémenter si permanent
+                        stunned_data['duration'] -= 1
+                        new_duration = stunned_data['duration']
+
+                        if new_duration <= 0:
+                            # Stun expiré
+                            del char.status_effects['stunned']
+                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus assommé !")
+                        else:
+                            st.session_state.sandbox_v2_log.append(f"😵 {char.name} est assommé ! ({stunned_turns} → {new_duration} tour(s)) - Tour sauté")
+                    else:
+                        # Stun permanent
+                        st.session_state.sandbox_v2_log.append(f"🔒 {char.name} est assommé ! (permanent) - Tour sauté")
+
+            save_game_state(f"{char.name} assommé - tour sauté")
+            next_turn()
+            st.rerun()
+        return  # NE PAS afficher les actions
 
     # Header héros style Arène
     current_hp = char.current_health
@@ -1191,14 +1248,37 @@ def display_enemy_interface(combatant: Dict):
     """Interface ennemi - Style Arène"""
     char = combatant['character']
 
+    # NOUVEAU - Déclencher on_turn_start UNE SEULE FOIS au début du tour (AVANT toute action)
+    if not hasattr(char, '_on_turn_start_triggered'):
+        char._on_turn_start_triggered = True
+
+        # Récupérer la liste des héros vivants pour le contexte
+        ally_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] in ['hero', 'pet']]
+        heroes_list = [c['character'] for c in ally_combatants]
+
+        # Déclencher les capacités on_turn_start (Basilic, Golem, etc.)
+        adapter = st.session_state.sandbox_v2_adapter
+        if adapter.turn_manager.enemy_ability_manager:
+            adapter.turn_manager.enemy_ability_manager.execute_trigger(
+                trigger='on_turn_start',
+                enemy=char,
+                context={
+                    'heroes': heroes_list,
+                    'log': st.session_state.sandbox_v2_log,
+                    'round_number': st.session_state.sandbox_v2_round_number
+                }
+            )
+
     # CRITIQUE : Vérifier stun AVANT d'afficher les actions (fonction centralisée)
     is_stunned, stunned_turns = is_enemy_stunned(char)
 
     # Stats ennemis (RÉUTILISE APIs Enemy)
     current_hp = char.current_health
     max_hp = char.max_health
+    # Calculer player_count pour autres usages (mais pas pour stats ennemis)
     player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
-    stats = char.get_stats_for_players(player_count)
+    # IMPORTANT: Utilise stats de combat figées (ne changent pas si héros meurent)
+    stats = char.get_combat_stats()
     attack = stats['damage']
     defense = char.defense  # Seuil HIT (à battre pour toucher) - TOUJOURS utiliser l'attribut direct
     parade_tokens = char.current_parade_tokens
@@ -1237,11 +1317,35 @@ def display_enemy_interface(combatant: Dict):
 
         # Bouton pour passer manuellement (mode manuel) ou auto-skip (mode initiative)
         if st.button("⏭️ Sauter le tour (Étourdi)", key=f"sandbox_enemy_stunned_{combatant['id']}", type="secondary", use_container_width=True):
-            # Décrémenter le compteur via check_enemy_status_effects()
-            if hasattr(char, 'check_enemy_status_effects'):
-                status = char.check_enemy_status_effects()
-                stunned_after = char.status_effects.get('stunned', 0) if hasattr(char, 'status_effects') else 0
-                st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} → {stunned_after} tour(s)) - Tour sauté")
+            # Décrémenter le compteur de stun (même logique que pour les héros)
+            if hasattr(char, 'status_effects') and 'stunned' in char.status_effects:
+                stunned_data = char.status_effects['stunned']
+                if isinstance(stunned_data, dict):
+                    current_duration = stunned_data.get('duration', 0)
+                    if current_duration > 0 and current_duration < 999:  # Ne pas décrémenter si permanent
+                        stunned_data['duration'] -= 1
+                        new_duration = stunned_data['duration']
+
+                        if new_duration <= 0:
+                            # Stun expiré
+                            del char.status_effects['stunned']
+                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi !")
+                        else:
+                            st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} → {new_duration} tour(s)) - Tour sauté")
+                    else:
+                        # Stun permanent
+                        st.session_state.sandbox_v2_log.append(f"🔒 {char.name} est étourdi ! (permanent) - Tour sauté")
+                else:
+                    # Format int (legacy) - décrémenter directement
+                    if char.status_effects['stunned'] > 0 and char.status_effects['stunned'] < 999:
+                        char.status_effects['stunned'] -= 1
+                        if char.status_effects['stunned'] <= 0:
+                            del char.status_effects['stunned']
+                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi !")
+
+            # NOUVEAU - Reset flag on_turn_start pour le prochain tour
+            if hasattr(char, '_on_turn_start_triggered'):
+                delattr(char, '_on_turn_start_triggered')
 
             save_game_state(f"{char.name} étourdi - tour sauté")
             next_turn()
@@ -1266,41 +1370,82 @@ def display_enemy_interface(combatant: Dict):
         )
 
         if target:
-            # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
-            attack_result = adapter.combat_actions.enemy_attack(
-                enemy=char,
-                heroes=heroes_list,
-                player_count=player_count,
-                log=st.session_state.sandbox_v2_log,
-                active_pets=st.session_state.sandbox_v2_active_pets,
-                manual_target=target
-            )
+            # NOUVEAU - Gérer attaques multiples (capacités ennemis)
+            num_attacks = getattr(char, 'current_turn_attacks', 1)
 
-            # Track enemy attack stats
-            if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                tracker = st.session_state.sandbox_v2_stats_tracker
-                tracker.record_attack(
-                    char, target, attack_result['hit'], attack_result['damage'],
-                    is_critical=False, is_fail=False
+            # Log attaques multiples
+            if num_attacks > 1:
+                st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} va attaquer {num_attacks} fois {target.name} !")
+
+            for attack_num in range(num_attacks):
+                # Vérifier si la cible est toujours vivante
+                if not target.is_alive():
+                    st.session_state.sandbox_v2_log.append(f"  ⏸️ {target.name} est vaincu, attaques restantes annulées")
+                    break
+
+                # TOUTES les attaques ciblent la même personne sélectionnée
+                current_target = target
+
+                # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
+                attack_result = adapter.combat_actions.enemy_attack(
+                    enemy=char,
+                    heroes=heroes_list,
+                    player_count=player_count,
+                    log=st.session_state.sandbox_v2_log,
+                    active_pets=st.session_state.sandbox_v2_active_pets,
+                    manual_target=current_target
                 )
-                # Track damage taken by hero (TOUJOURS si hit, même si parade bloque tout)
-                if attack_result['hit']:
-                    parade_used = attack_result.get('parade_used', 0)
-                    damage = attack_result['damage']
-                    # Appeler record_damage_taken même si damage=0 (parade peut avoir bloqué tout)
-                    tracker.record_damage_taken(
-                        target,
-                        damage,
-                        parade_used=parade_used
+
+                # Track enemy attack stats
+                if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                    tracker = st.session_state.sandbox_v2_stats_tracker
+                    tracker.record_attack(
+                        char, current_target, attack_result['hit'], attack_result['damage'],
+                        is_critical=False, is_fail=False
                     )
+                    # Track damage taken by hero (TOUJOURS si hit, même si parade bloque tout)
+                    if attack_result['hit']:
+                        parade_used = attack_result.get('parade_used', 0)
+                        damage_dealt = attack_result['damage']
+                        # Appeler record_damage_taken même si damage=0 (parade peut avoir bloqué tout)
+                        tracker.record_damage_taken(
+                            current_target,
+                            damage_dealt,
+                            parade_used=parade_used
+                        )
+
+            # NOUVEAU - Reset current_turn_attacks pour le prochain tour
+            if hasattr(char, 'current_turn_attacks'):
+                char.current_turn_attacks = 1
+
+            # NOUVEAU - Reset flags pour le prochain tour
+            if hasattr(char, '_before_attack_triggered'):
+                delattr(char, '_before_attack_triggered')
+            if hasattr(char, '_on_turn_start_triggered'):
+                delattr(char, '_on_turn_start_triggered')
+
+            # NOUVEAU - Trigger after_attack (effets après avoir attaqué)
+            if adapter.turn_manager.enemy_ability_manager:
+                adapter.turn_manager.enemy_ability_manager.execute_trigger(
+                    trigger='after_attack',
+                    enemy=char,
+                    context={
+                        'heroes': heroes_list,
+                        'log': st.session_state.sandbox_v2_log,
+                        'round_number': st.session_state.sandbox_v2_round_number
+                    }
+                )
 
             st.session_state.sandbox_v2_action_state = None
-            save_game_state(f"{char.name} attaque {target.name}")
+            save_game_state(f"{char.name} termine son attaque")
             next_turn()
             st.rerun()
 
         # Bouton annuler
         if st.button("❌ Annuler", key=f"cancel_enemy_targeting_{combatant['id']}"):
+            # Reset flag before_attack pour permettre de recommencer
+            if hasattr(char, '_before_attack_triggered'):
+                delattr(char, '_before_attack_triggered')
             st.session_state.sandbox_v2_action_state = None
             st.rerun()
     else:
@@ -1315,6 +1460,10 @@ def display_enemy_interface(combatant: Dict):
 
         with col2:
             if st.button("⏭️ Fin du Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
+                # NOUVEAU - Reset flag on_turn_start pour le prochain tour
+                if hasattr(char, '_on_turn_start_triggered'):
+                    delattr(char, '_on_turn_start_triggered')
+
                 st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
                 save_game_state(f"{char.name} termine son tour")
                 next_turn()
@@ -1377,12 +1526,10 @@ def display_pet_interface(combatant: Dict):
 
         st.info("🎯 Sélectionnez la cible du familier")
 
-        # Calculer player_count pour les stats ennemis
-        player_count = len([h for h in st.session_state.sandbox_v2_heroes if h.is_alive()])
-
         # Boutons de sélection de cible
         for enemy in alive_enemies:
-            stats = enemy.get_stats_for_players(player_count)
+            # Utilise stats de combat figées (ne changent pas si héros meurent)
+            stats = enemy.get_combat_stats()
             enemy_hp = enemy.current_health
             enemy_max_hp = enemy.max_health
 
@@ -1434,6 +1581,17 @@ def display_abilities_grid(char: Character, combatant_id: str):
     if not hasattr(char, 'abilities') or not char.abilities:
         st.markdown("### 🔮 Capacités Spéciales")
         st.info("Aucune capacité disponible")
+        return
+
+    # NOUVEAU : Vérifier si les capacités sont bloquées par un ennemi (Démon majeur)
+    abilities_blocked_debuff = None
+    if hasattr(char, 'debuffs') and char.debuffs:
+        abilities_blocked_debuff = char.debuffs.get('abilities_blocked')
+
+    if abilities_blocked_debuff:
+        st.markdown("### 🔮 Capacités Spéciales")
+        source_name = abilities_blocked_debuff.get('source_name', 'un ennemi')
+        st.error(f"🚫 **Capacités bloquées par {source_name}** - Vous ne pouvez pas utiliser de capacités durant ce combat !")
         return
 
     # CAS SPÉCIAL ELNEHA : Filtrer capacités selon forme
@@ -2369,6 +2527,9 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
         rage_active = hero.temporary_buffs.get('berserker_rage_active', False)
 
+    # NOUVEAU - Vérifier si héros est stunné (RÉUTILISE fonction centralisée)
+    is_stunned, stunned_turns = is_character_stunned(hero)
+
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
@@ -2377,6 +2538,12 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: 2px 2px 4px black;">🔥💀 RAGE<br/>(IMMORTEL)</div>'
     elif not is_alive:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 INCONSCIENT</div>'
+    elif is_stunned:
+        # NOUVEAU : Badge visuel pour héros stunné (même format que ennemis)
+        if stunned_turns >= 999:
+            build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">🔒 Assommé</div>'
+        else:
+            build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">😵 Assommé ({stunned_turns} tours)</div>'
     elif rage_active:
         # NOUVEAU : Badge Rage active
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: 2px 2px 4px black;">🔥 RAGE ACTIVE</div>'
@@ -2405,15 +2572,10 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
         enemy: Personnage ennemi
         is_current_turn: True si c'est le tour de cet ennemi
     """
-    # Calculer player_count depuis héros vivants (RÉUTILISE pattern existant)
-    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-    heroes = [c['character'] for c in hero_combatants]
-    player_count = len([h for h in heroes if h.is_alive()])
-
-    # Récupérer stats en temps réel (RÉUTILISE APIs Enemy)
+    # Récupérer stats de combat figées (ne changent pas si héros meurent)
     current_hp = enemy.current_health
     max_hp = enemy.max_health
-    stats = enemy.get_stats_for_players(player_count)
+    stats = enemy.get_combat_stats()
     damage = stats['damage']
     defense = enemy.defense  # Seuil de défense (à battre pour toucher)
     parade_tokens = enemy.current_parade_tokens  # Jetons de parade (bloquent dégâts)
@@ -2837,15 +2999,20 @@ def display_combat_status_team_mode():
                 # Vérifier si le combattant a déjà joué ce round
                 has_played = combatant_data['id'] in st.session_state.sandbox_v2_played_this_round
 
-                # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
-                is_stunned, stunned_turns = is_enemy_stunned(character) if combatant_data['faction'] == 'enemy' else (False, 0)
+                # Vérifier si le combattant est étourdi (héros OU ennemi)
+                if combatant_data['faction'] == 'enemy':
+                    is_stunned, stunned_turns = is_enemy_stunned(character)
+                elif combatant_data['faction'] == 'hero':
+                    is_stunned, stunned_turns = is_character_stunned(character)
+                else:
+                    is_stunned, stunned_turns = (False, 0)
 
                 # Bouton "À son tour" si vivant et pas déjà en cours
                 if character.is_alive() and not is_current:
-                    # Désactiver si déjà joué OU étourdi
-                    button_disabled = has_played or is_stunned
+                    # Désactiver UNIQUEMENT si déjà joué (pas si stunné - besoin de sauter le tour)
+                    button_disabled = has_played
                     if is_stunned:
-                        button_label = f"😵 Étourdi ({stunned_turns} tours)"
+                        button_label = f"😵 Étourdi - Sauter tour ({stunned_turns})"
                     elif has_played:
                         button_label = "✅ A joué"
                     else:
@@ -3149,20 +3316,11 @@ def main_sandbox_v2():
                 st.rerun()
                 return
 
-            # VÉRIFICATION : Sauter si ennemi étourdi (mode initiative)
-            if current['faction'] == 'enemy' and initiative_enabled:
-                # Vérifier si l'ennemi est étourdi SANS décrémenter (décrémentation au nouveau round)
-                is_stunned, stunned_turns = is_enemy_stunned(current['character'])
-                if is_stunned:
-                    # Ennemi étourdi - sauter son tour (stun sera décrémenté au prochain round)
-                    st.session_state.sandbox_v2_log.append(
-                        f"😵 {current['character'].name} est étourdi ! Tour sauté ({stunned_turns} tour(s) restant(s))"
-                    )
-                    next_turn()
-                    st.rerun()
-                    return
+            # SUPPRIMÉ : Ne plus auto-skip les ennemis stunnés en mode initiative
+            # Le stun doit être géré par display_enemy_interface avec le bouton "Sauter le tour"
+            # pour que le joueur puisse voir l'état et que le stun soit correctement décrémenté
 
-            # Afficher interface seulement si vivant ET non-stunné
+            # Afficher interface (gère les stuns en interne)
             if current['faction'] == 'hero':
                 display_hero_interface(current)
             elif current['faction'] == 'pet':
@@ -3197,27 +3355,12 @@ def main_sandbox_v2():
             st.markdown(f"**Round {st.session_state.sandbox_v2_round_number}** - {played_count}/{total_alive} combattants ont joué")
 
             if st.button("🔄 Nouveau Round", type="primary", use_container_width=True):
-                # NOUVEAU - Décrémenter les compteurs stunned de tous les ennemis
+                # CRITIQUE : Traiter les effets persistants à chaque round
                 for combatant in st.session_state.sandbox_v2_combatants:
                     char = combatant['character']
-                    if combatant['faction'] == 'enemy' and hasattr(char, 'status_effects'):
-                        if 'stunned' in char.status_effects:
-                            stunned_data = char.status_effects['stunned']
-                            # Gérer format dict ou int (legacy)
-                            if isinstance(stunned_data, dict):
-                                duration = stunned_data.get('duration', 0)
-                                if duration > 0:
-                                    stunned_data['duration'] = duration - 1
-                                    if stunned_data['duration'] <= 0:
-                                        del char.status_effects['stunned']
-                                        st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
-                            else:
-                                # Legacy: stunned est un int
-                                if stunned_data > 0:
-                                    char.status_effects['stunned'] -= 1
-                                    if char.status_effects['stunned'] <= 0:
-                                        del char.status_effects['stunned']
-                                        st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi")
+                    # SUPPRIMÉ : Ne plus décrémenter le stun au début du ROUND
+                    # Le stun doit se décrémenter au début du TOUR du personnage stunné
+                    # (voir display_hero_interface et display_enemy_interface)
 
                     # NOUVEAU : Décrémenter Aura sacrée (pour tous les personnages)
                     if combatant['faction'] == 'hero' and hasattr(char, 'temporary_buffs'):

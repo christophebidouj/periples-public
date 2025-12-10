@@ -17,6 +17,7 @@ P-2-6: Pluie de météores ✅
 from typing import List, Dict, Any
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 
 # ========================================
@@ -233,14 +234,11 @@ class LiarieMurDeGlace(BaseAbility):
             # Appliquer l'effet de gel (stun) à tous les ennemis
             frozen_count = 0
             for enemy in enemies:
-                # Ajouter l'effet stun pour le prochain tour
-                if not hasattr(enemy, 'status_effects'):
-                    enemy.status_effects = {}
-                enemy.status_effects['stunned'] = {
-                    'duration': 1,
-                    'source': 'liarie_blizzard'
-                }
-                frozen_count += 1
+                # Effet stun (AVEC vérification immunité)
+                if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    enemy, duration=1, source='liarie_blizzard', log=log
+                ):
+                    frozen_count += 1
 
             log.append(f"❄️ {caster.name} invoque un {self.name} !")
             log.append(f"   🧊 {frozen_count} ennemi(s) gelé(s) - perdront leur prochaine action")

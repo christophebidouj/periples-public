@@ -32,6 +32,7 @@ P-3-6: Jugement dernier (Coût: 2 sorts, 1/combat) - ability_names.csv ✅
 from typing import List, Dict, Any
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 
 # ========================================
@@ -443,14 +444,11 @@ class AtucanJugementDernier(BaseAbility):
                     damaged_enemies.append(f"{enemy.name}: {actual_damage}")
                     total_damage_dealt += actual_damage
                 
-                # API RÉELLE : status_effects pour Enemy (confirmé)
-                if not hasattr(enemy, 'status_effects'):
-                    enemy.status_effects = {}
-                enemy.status_effects['stunned'] = {
-                    'duration': 2,  # 2 tours
-                    'source': 'atucan_jugement_dernier'
-                }
-                stunned_enemies.append(enemy.name)
+                # Effet stun (AVEC vérification immunité)
+                if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    enemy, duration=2, source='atucan_jugement_dernier', log=log
+                ):
+                    stunned_enemies.append(enemy.name)
             
             # 5. Décompter utilisation
             self.uses_remaining_combat -= 1

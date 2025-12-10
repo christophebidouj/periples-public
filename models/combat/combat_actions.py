@@ -190,14 +190,16 @@ class CombatActions:
             if hasattr(hero, 'temporary_buffs') and 'combo_ready' in hero.temporary_buffs:
                 combo_info = hero.temporary_buffs['combo_ready']
                 stun_duration = combo_info.get('stun_duration', 3)
-                # Appliquer stun sur la cible touchée
-                if not hasattr(target, 'status_effects'):
-                    target.status_effects = {}
-                target.status_effects['stunned'] = {
-                    'duration': stun_duration,
-                    'source': 'raishi_combo'
-                }
-                log.append(f"  💥🥊 COMBO ! {target.name} étourdi pour {stun_duration} tours")
+
+                # Effet stun Paume ouverte (AVEC vérification immunité)
+                stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    target, duration=stun_duration, source='raishi_paume_ouverte', log=log
+                )
+                if stunned:
+                    log.append(f"  🥋 Paume ouverte ! {target.name} assommé pour {stun_duration} tours")
+                else:
+                    log.append(f"  (effet annulé)")
+
                 # Consommer le buff après utilisation
                 hero.temporary_buffs.pop('combo_ready', None)
 
@@ -313,14 +315,16 @@ class CombatActions:
                 if hasattr(hero, 'temporary_buffs') and 'combo_ready' in hero.temporary_buffs:
                     combo_info = hero.temporary_buffs['combo_ready']
                     stun_duration = combo_info.get('stun_duration', 3)
-                    # Appliquer stun sur la cible touchée
-                    if not hasattr(target, 'status_effects'):
-                        target.status_effects = {}
-                    target.status_effects['stunned'] = {
-                        'duration': stun_duration,
-                        'source': 'raishi_combo'
-                    }
-                    log.append(f"  💥🥊 COMBO ! {target.name} étourdi pour {stun_duration} tours")
+
+                    # Effet stun Paume ouverte (AVEC vérification immunité)
+                    stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                        target, duration=stun_duration, source='raishi_paume_ouverte', log=log
+                    )
+                    if stunned:
+                        log.append(f"  🥋 Paume ouverte ! {target.name} assommé pour {stun_duration} tours")
+                    else:
+                        log.append(f"  (effet annulé)")
+
                     # Consommer le buff après utilisation
                     hero.temporary_buffs.pop('combo_ready', None)
 
@@ -411,8 +415,8 @@ class CombatActions:
     def _handle_critical_failure(self, attacker, target, log: list, player_count: int):
         """Gère l'échec critique avec riposte de l'ennemi (ignore la parade)"""
         try:
-            # Récupérer les dégâts complets de l'ennemi selon le nombre de joueurs
-            enemy_stats = target.get_stats_for_players(player_count)
+            # Récupérer les dégâts de l'ennemi (utilise combat_player_count figé)
+            enemy_stats = target.get_combat_stats()
             counter_damage = enemy_stats['damage']
 
             # Appliquer les dégâts DIRECTEMENT aux PV (ignore parade selon règles p.26)
@@ -740,7 +744,8 @@ class CombatActions:
         if not alive_targets:
             return None
 
-        enemy_stats = enemy.get_stats_for_players(player_count)
+        # Récupérer stats de combat (utilise combat_player_count figé)
+        enemy_stats = enemy.get_combat_stats()
         damage = enemy_stats['damage']
 
         # Sélection de cible : manuelle OU automatique (IA)

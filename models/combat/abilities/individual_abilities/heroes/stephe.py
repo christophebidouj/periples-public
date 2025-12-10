@@ -16,6 +16,7 @@ P-6-6: Miracle (Coût: 2, 1/combat) - Kill instantané ennemi <30 HP
 from typing import List, Dict, Any
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 
 # ========================================
@@ -117,14 +118,11 @@ class StepheAccordInterdit(BaseAbility):
 
             stunned_count = 0
             for enemy in enemies:
-                if not hasattr(enemy, 'status_effects'):
-                    enemy.status_effects = {}
-
-                enemy.status_effects['stunned'] = {
-                    'duration': 1,
-                    'source': 'stephe_benediction'
-                }
-                stunned_count += 1
+                # Effet stun (AVEC vérification immunité)
+                if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    enemy, duration=1, source='stephe_benediction', log=log
+                ):
+                    stunned_count += 1
 
             log.append(f"✨ {caster.name} bénit le champ de bataille !")
             log.append(f"   😵 {stunned_count} ennemis perdent leur action ce tour")

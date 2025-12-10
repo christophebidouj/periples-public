@@ -242,11 +242,11 @@ class RaishiPaumeOuverte(BaseAbility):
         self.stun_duration = 3
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active Combo - Prochaine attaque réussie stun l'ennemi pour 3 tours"""
+        """Active Paume ouverte - Prochaine attaque réussie assomme l'ennemi 3 tours"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Combo déjà utilisé ({self.uses_per_combat} fois)")
+                log.append(f"⚠️ {self.name} déjà utilisé ({self.uses_per_combat} fois)")
                 return False
 
             # Ajouter buff pour prochaine attaque
@@ -256,11 +256,11 @@ class RaishiPaumeOuverte(BaseAbility):
             caster.temporary_buffs['combo_ready'] = {
                 'type': 'next_attack',
                 'stun_duration': self.stun_duration,
-                'source': 'raishi_combo'
+                'source': 'raishi_paume_ouverte'
             }
 
-            log.append(f"💥🥊 {caster.name} prépare un COMBO !")
-            log.append(f"   ⚡ Prochaine attaque réussie étourdit l'ennemi {self.stun_duration} tours")
+            log.append(f"🥋 {caster.name} active {self.name} !")
+            log.append(f"   ⚡ Prochaine attaque réussie assomme l'ennemi {self.stun_duration} tours")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1

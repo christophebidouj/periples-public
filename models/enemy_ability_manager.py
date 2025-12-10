@@ -1,0 +1,291 @@
+"""
+Gestionnaire d'exécution des capacités ennemis
+Applique les effets au bon moment selon les triggers
+"""
+
+from typing import List, Dict, Any, Optional
+from models.enemy_ability import EnemyAbility, EnemyAbilityTrigger, EnemyAbilityEffect
+from models.character import Enemy, Character
+import random
+
+
+class EnemyAbilityManager:
+    """Gère l'exécution des capacités ennemis pendant le combat"""
+
+    def __init__(self):
+        """Initialise le gestionnaire"""
+        # Note: Le compteur global n'est plus utilisé - chaque ennemi a son propre compteur individuel
+
+    def initialize_combat(self, enemies: List[Enemy], heroes: List[Character], log: List[str]):
+        """
+        Initialise les capacités au début du combat
+        Applique les flags permanents (immunités, blocages)
+
+        Args:
+            enemies: Liste des ennemis
+            heroes: Liste des héros (nécessaire pour blocage capacités)
+            log: Log de combat
+        """
+        for enemy in enemies:
+            if hasattr(enemy, 'abilities') and enemy.abilities:
+                self.execute_trigger(
+                    trigger=EnemyAbilityTrigger.ON_COMBAT_START.value,
+                    enemy=enemy,
+                    context={'heroes': heroes, 'log': log}
+                )
+
+    def execute_trigger(self, trigger: str, enemy: Enemy, context: Dict[str, Any]):
+        """
+        Exécute toutes les capacités de l'ennemi qui matchent le trigger
+
+        Args:
+            trigger: Moment d'activation (on_combat_start, before_attack, etc.)
+            enemy: Ennemi concerné
+            context: Contexte du combat (heroes, log, etc.)
+        """
+        if not hasattr(enemy, 'abilities') or not enemy.abilities:
+            return
+
+        for ability in enemy.abilities:
+            if ability.has_trigger(trigger) and ability.active:
+                self._execute_ability(ability, enemy, context)
+
+    def _execute_ability(self, ability: EnemyAbility, enemy: Enemy, context: Dict[str, Any]):
+        """
+        Exécute une capacité spécifique
+
+        Args:
+            ability: Capacité à exécuter
+            enemy: Ennemi concerné
+            context: Contexte du combat
+        """
+        log = context.get('log', [])
+
+        # Exécuter chaque effet de la capacité
+        for effect in ability.effects:
+            if effect == EnemyAbilityEffect.IMMUNITY_STUN.value:
+                self._apply_immunity_stun(enemy, log)
+
+            elif effect == EnemyAbilityEffect.BLOCK_HERO_ABILITIES.value:
+                self._apply_block_hero_abilities(enemy, context, log)
+
+            elif effect == EnemyAbilityEffect.EXTRA_ATTACKS.value:
+                self._apply_extra_attacks(enemy, ability, log)
+
+            elif effect == EnemyAbilityEffect.STUN_HERO_PERMANENT.value:
+                self._apply_stun_hero_permanent(enemy, ability, context, log)
+
+            elif effect == EnemyAbilityEffect.STUN_HERO_TEMPORARY.value:
+                self._apply_stun_hero_temporary(enemy, ability, context, log)
+
+            elif effect == EnemyAbilityEffect.ALTERNATING_EFFECTS.value:
+                self._apply_alternating_effects(enemy, ability, context, log)
+
+            # Les autres effects seront implémentés dans les phases suivantes
+            # elif effect == EnemyAbilityEffect.PERIODIC_STUN.value:
+            #     self._apply_periodic_stun(enemy, ability, context, log)
+            # etc.
+
+    # === NIVEAU 1 - FLAGS PERMANENTS ===
+
+    def _apply_immunity_stun(self, enemy: Enemy, log: List[str]):
+        """
+        Applique l'immunité au stun
+        Marque l'ennemi comme immunisé dans ses status_effects
+        """
+        if not hasattr(enemy, 'status_effects'):
+            enemy.status_effects = {}
+
+        enemy.status_effects['immunity_stun'] = True
+        log.append(f"🛡️ {enemy.name} est immunisé au Stun")
+
+    def _apply_block_hero_abilities(self, enemy: Enemy, context: Dict[str, Any], log: List[str]):
+        """
+        Bloque toutes les capacités des héros
+        Applique un debuff sur tous les héros présents
+        """
+        heroes = context.get('heroes', [])
+
+        for hero in heroes:
+            if not hasattr(hero, 'debuffs'):
+                hero.debuffs = {}
+
+            hero.debuffs['abilities_blocked'] = {
+                'source': enemy.code,
+                'source_name': enemy.name
+            }
+
+        log.append(f"🚫 {enemy.name} bloque toutes les capacités des héros !")
+
+    # === NIVEAU 2 - ATTAQUES MULTIPLES ===
+
+    def _apply_extra_attacks(self, enemy: Enemy, ability: EnemyAbility, log: List[str]):
+        """
+        Configure le nombre d'attaques pour ce tour
+        Stocke temporairement le nombre d'attaques dans l'ennemi
+        """
+        num_attacks = ability.get_parameter('attacks', 2)
+
+        # Stocker dans un attribut temporaire pour ce tour
+        if not hasattr(enemy, 'current_turn_attacks'):
+            enemy.current_turn_attacks = num_attacks
+        else:
+            enemy.current_turn_attacks = num_attacks
+
+        log.append(f"⚡ {enemy.name} préparera {num_attacks} attaques ce tour !")
+
+    # === NIVEAU 3 - STUN RÉCURRENT ===
+
+    def _apply_stun_hero_permanent(self, enemy: Enemy, ability: EnemyAbility, context: Dict[str, Any], log: List[str]):
+        """
+        Stun un héros aléatoire jusqu'à la fin du combat
+        Le héros ne peut plus agir pour le reste du combat
+        """
+        heroes = context.get('heroes', [])
+        alive_heroes = [h for h in heroes if h.is_alive()]
+
+        if not alive_heroes:
+            return
+
+        # Sélectionner un héros aléatoire qui n'est pas déjà stunné
+        available_heroes = [
+            h for h in alive_heroes
+            if not (hasattr(h, 'status_effects') and h.status_effects.get('stunned'))
+        ]
+
+        if not available_heroes:
+            return  # Tous les héros sont déjà stun
+
+        target = random.choice(available_heroes)
+
+        # Appliquer le stun permanent (RÉUTILISE structure existante 'stunned')
+        if not hasattr(target, 'status_effects'):
+            target.status_effects = {}
+
+        target.status_effects['stunned'] = {
+            'duration': 999,  # Valeur très élevée = permanent
+            'source': enemy.code,
+            'source_name': enemy.name
+        }
+
+        target_name = getattr(target, 'display_name', target.name)
+        log.append(f"🔒 {enemy.name} assomme {target_name} jusqu'à la fin du combat !")
+
+    def _apply_stun_hero_temporary(self, enemy: Enemy, ability: EnemyAbility, context: Dict[str, Any], log: List[str]):
+        """
+        Stun un héros aléatoire pendant N tours
+        Le héros ne pourra pas agir pendant N tours
+        """
+        heroes = context.get('heroes', [])
+        alive_heroes = [h for h in heroes if h.is_alive()]
+
+        if not alive_heroes:
+            return
+
+        # Sélectionner un héros aléatoire
+        target = random.choice(alive_heroes)
+
+        # Durée du stun (en tours)
+        duration = ability.get_parameter('duration', 1)
+
+        # Appliquer le stun temporaire (RÉUTILISE structure existante 'stunned')
+        if not hasattr(target, 'status_effects'):
+            target.status_effects = {}
+
+        target.status_effects['stunned'] = {
+            'duration': duration,
+            'source': enemy.code,
+            'source_name': enemy.name
+        }
+
+        target_name = getattr(target, 'display_name', target.name)
+        log.append(f"😵 {enemy.name} assomme {target_name} pour {duration} tour(s) !")
+
+    # === NIVEAU 4 - EFFETS ALTERNÉS ===
+
+    def _apply_alternating_effects(self, enemy: Enemy, ability: EnemyAbility, context: Dict[str, Any], log: List[str]):
+        """
+        Applique des effets qui alternent selon le numéro du tour (pair/impair)
+
+        Format des paramètres : "even:effect:value,odd:effect:value"
+        Exemples :
+        - "even:damage_all:2:magical,odd:stun_temporary:1"
+        - "even:stun_temporary:1,odd:damage_all:6:magical"
+        """
+        heroes = context.get('heroes', [])
+        if not heroes:
+            return
+
+        # Récupérer les paramètres even et odd
+        # Le CSV est parsé comme: {"even": "damage_all:2:magical", "odd": "stun_temporary:1"}
+        even_params = ability.get_parameter('even', '')
+        odd_params = ability.get_parameter('odd', '')
+
+        if not even_params and not odd_params:
+            log.append(f"⚠️ {enemy.name} - Paramètres alternating_effects manquants")
+            return
+
+        # Parser les effets pairs et impairs
+        # Format: "effect:value:type" ou "effect:value"
+        even_effect = even_params.split(':') if even_params else None
+        odd_effect = odd_params.split(':') if odd_params else None
+
+        # Déterminer quel effet appliquer selon le numéro du ROUND
+        # Le round est partagé par tous les combattants (héros ET ennemis)
+        round_number = context.get('round_number', 1)
+        is_even_turn = (round_number % 2 == 0)
+        effect_to_apply = even_effect if is_even_turn else odd_effect
+
+        if not effect_to_apply:
+            return
+
+        effect_type = effect_to_apply[0]
+
+        # Appliquer l'effet correspondant
+        if effect_type == 'damage_all':
+            # Dégâts à tous les héros
+            damage = int(effect_to_apply[1]) if len(effect_to_apply) > 1 else 0
+            damage_type = effect_to_apply[2] if len(effect_to_apply) > 2 else 'magical'
+
+            alive_heroes = [h for h in heroes if h.is_alive()]
+            if alive_heroes:
+                for hero in alive_heroes:
+                    hero.current_health = max(0, hero.current_health - damage)
+
+                turn_type = "pair" if is_even_turn else "impair"
+                log.append(f"💥 {enemy.name} (tour {turn_type}) inflige {damage} dégâts magiques à tous les héros !")
+
+        elif effect_type == 'stun_temporary':
+            # Stunner un héros aléatoire
+            duration = int(effect_to_apply[1]) if len(effect_to_apply) > 1 else 1
+
+            alive_heroes = [h for h in heroes if h.is_alive()]
+            # Ne stunner que les héros non déjà stunnés
+            available_heroes = [
+                h for h in alive_heroes
+                if not (hasattr(h, 'status_effects') and h.status_effects.get('stunned'))
+            ]
+
+            if available_heroes:
+                import random
+                target = random.choice(available_heroes)
+
+                if not hasattr(target, 'status_effects'):
+                    target.status_effects = {}
+
+                target.status_effects['stunned'] = {
+                    'duration': duration,
+                    'source': enemy.code,
+                    'source_name': enemy.name
+                }
+
+                target_name = getattr(target, 'display_name', target.name)
+                turn_type = "pair" if is_even_turn else "impair"
+                log.append(f"😵 {enemy.name} (tour {turn_type}) assomme {target_name} pour {duration} tour(s) !")
+
+    # === HELPERS ===
+
+    def reset_combat(self):
+        """Reset l'état du manager pour un nouveau combat"""
+        # Note: Les compteurs individuels des ennemis sont gérés dans Enemy.individual_turn_counter
+        pass

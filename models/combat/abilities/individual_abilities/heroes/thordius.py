@@ -16,6 +16,7 @@ P-5-6: Berserker (Coût: 0, 1/combat) - Continue à combattre même inconscient
 from typing import List, Dict, Any
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 
 # ========================================
@@ -171,16 +172,15 @@ class ThordiusChargeDeTaureau(BaseAbility):
             # Prioriser ennemi avec plus de PV
             target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
 
-            # Appliquer stun
-            if not hasattr(target, 'status_effects'):
-                target.status_effects = {}
+            # Effet stun (AVEC vérification immunité)
+            stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                target, duration=1, source='thordius_intimidation', log=log
+            )
 
-            target.status_effects['stunned'] = {
-                'duration': 1,
-                'source': 'thordius_intimidation'
-            }
-
-            log.append(f"😱 {caster.name} intimide {target.name} - Action bloquée !")
+            if stunned:
+                log.append(f"😱 {caster.name} intimide {target.name} - Action bloquée !")
+            else:
+                log.append(f"😱 {caster.name} tente d'intimider {target.name}")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1

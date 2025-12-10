@@ -16,6 +16,7 @@ P-7-6: Assaut furieux (Coût: 0, 1/jour) - Auto-hit + ×2 dégâts permanent
 from typing import List, Dict, Any
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 
 # ========================================
@@ -191,14 +192,11 @@ class LameBombeFumigene(BaseAbility):
 
             paralyzed_count = 0
             for enemy in enemies:
-                if not hasattr(enemy, 'status_effects'):
-                    enemy.status_effects = {}
-
-                enemy.status_effects['stunned'] = {
-                    'duration': self.stun_duration,
-                    'source': 'lame_paralysie'
-                }
-                paralyzed_count += 1
+                # Effet stun (AVEC vérification immunité)
+                if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    enemy, duration=self.stun_duration, source='lame_paralysie', log=log
+                ):
+                    paralyzed_count += 1
 
             # Marquer capacité utilisée ce tour
             caster.temporary_buffs['lame_ability_used_this_turn'] = True

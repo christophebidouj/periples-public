@@ -1181,6 +1181,13 @@ class Character(BaseModel):
             prevents_attack=ability.prevents_attack
         )
 
+        # NOUVEAU - Vérifier si les capacités sont bloquées (debuff enemy abilities)
+        if hasattr(self, 'debuffs') and 'abilities_blocked' in self.debuffs:
+            blocker_info = self.debuffs['abilities_blocked']
+            action.success = False
+            action.message = f"🚫 Capacités bloquées par {blocker_info.get('source_name', 'un ennemi')} !"
+            return action
+
         # Vérifier limite capacités magiques (règle p.24 - une seule capacité magique par tour)
         if ability.prevents_attack:  # Capacité magique
             if self.magic_abilities_used_this_turn >= 1:
@@ -1693,23 +1700,38 @@ class Enemy(BaseModel):
     
     # Marques appliquées
     marks: Dict[str, Any] = Field(default_factory=dict)
-    
+
+    # === SYSTÈME DE CAPACITÉS ENNEMIS ===
+    abilities: List[Any] = Field(default_factory=list)  # Liste des EnemyAbility
+    current_turn_attacks: int = 1  # Nombre d'attaques ce tour (capacité EA-3)
+    combat_player_count: Optional[int] = None  # Nombre de joueurs INITIAL (figé pour tout le combat)
+
     def get_stats_for_players(self, player_count: int) -> Dict[str, int]:
-        return self.stats_by_players.get(player_count, self.stats_by_players[4])
+        # Clamp player_count entre 2 et 4 (plage valide - pas de stats pour 1 joueur)
+        # Si 1 joueur, utiliser stats pour 2 joueurs (minimum du jeu)
+        clamped_count = max(2, min(4, player_count))
+        return self.stats_by_players.get(clamped_count, self.stats_by_players[2])
     
     def initialize_for_combat(self, player_count: int):
-        """Initialise santé ET parade + effets"""
+        """Initialise santé ET parade + effets
+
+        IMPORTANT: Le player_count est FIGÉ au début du combat.
+        Même si des héros meurent, les stats de l'ennemi ne changent pas.
+        """
+        # CRITIQUE: Sauvegarder le player_count initial (ne change JAMAIS pendant le combat)
+        self.combat_player_count = player_count
+
         stats = self.get_stats_for_players(player_count)
-        
+
         # Santé
         self.max_health = stats['health']
         self.current_health = stats['health']
-        
+
         # Parade (Defense_Xj dans le CSV)
         # Note: Assume que 'defense' dans stats est en fait la parade
         self.max_parade_tokens = stats.get('defense', 0)
         self.current_parade_tokens = self.max_parade_tokens
-        
+
         # NOUVEAU - Initialiser attributs effets
         if not hasattr(self, 'debuffs'):
             self.debuffs = {}
@@ -1717,6 +1739,15 @@ class Enemy(BaseModel):
             self.status_effects = {}
         if not hasattr(self, 'marks'):
             self.marks = {}
+
+    def get_combat_stats(self) -> Dict[str, int]:
+        """
+        Retourne les stats de combat (utilise combat_player_count figé)
+        À utiliser PENDANT le combat au lieu de get_stats_for_players()
+        """
+        if self.combat_player_count is None:
+            raise ValueError(f"{self.name} n'a pas été initialisé pour le combat (combat_player_count manquant)")
+        return self.get_stats_for_players(self.combat_player_count)
     
     def is_alive(self) -> bool:
         # NOUVEAU - Berserker rage (Thordius P-5-6) : Continue à combattre même inconscient

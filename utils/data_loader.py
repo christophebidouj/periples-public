@@ -6,7 +6,7 @@ VERSION CONCISE - Code simplifié pour débutants Python
 import pandas as pd
 import os
 import random
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import streamlit as st
 
 from models.character import Character, Enemy, Equipment
@@ -18,6 +18,42 @@ try:
     ABILITIES_AVAILABLE = True
 except ImportError:
     ABILITIES_AVAILABLE = False
+
+# Import du système de capacités ennemis
+try:
+    from models.enemy_ability import EnemyAbility
+    ENEMY_ABILITIES_AVAILABLE = True
+except ImportError:
+    ENEMY_ABILITIES_AVAILABLE = False
+
+# === MAPPING ENNEMIS → CAPACITÉS ===
+# Associe chaque code ennemi à ses capacités
+ENEMY_ABILITY_MAPPING = {
+    # Niveau 1 - Immunités simples
+    'E-77': ['EA-1'],  # Manticore: immunity_stun
+    'E-85': ['EA-1'],  # Tarasque: immunity_stun
+    'E-89': ['EA-2'],  # Démon majeur: block_hero_abilities
+
+    # Niveau 2 - Attaques multiples testées sur E-46/E-47 (Phase 2)
+
+    # Niveau 3 - Stun récurrent (sera implémenté Phase 3)
+    'E-75': ['EA-4'],  # Basilic: stun_hero_permanent
+    'E-79': ['EA-5'],  # Golem: stun_hero_temporary
+
+    # Niveau 4 - Effets alternants (sera implémenté Phase 4)
+    'E-56': ['EA-6'],  # Bordalius: alternating_effects
+    'E-62': ['EA-1', 'EA-7'],  # Nécromancien: immunity + alternating
+    'E-87': ['EA-1', 'EA-8'],  # Majere: immunity + alternating
+
+    # Niveau 5 - Dragons complexes (sera implémenté Phase 5)
+    'E-46': ['EA-1', 'EA-3', 'EA-9', 'EA-10'],  # Dragon azur complet
+    'E-47': ['EA-1', 'EA-3', 'EA-9', 'EA-10'],  # Sosnen variant 1
+    'E-48': ['EA-1', 'EA-3', 'EA-9'],           # Sosnen variant 2
+
+    # Niveau 6 - Conditions spéciales (sera implémenté Phase 6)
+    'E-73': ['EA-11'],  # Troll: ability_check_stun
+    'E-83': ['EA-1'],   # Vouivre: immunity_stun uniquement (EA-12 non implémenté - attaques à distance non gérées)
+}
 
 def safe_randint(min_val: int, max_val: int) -> int:
     """Version sécurisée de randint qui évite les crashes"""
@@ -70,7 +106,7 @@ class DataLoader:
             return self._create_default_heroes()
     
     def load_enemies(self) -> List[Enemy]:
-        """Charge la liste des ennemis officiels (E-X)"""
+        """Charge la liste des ennemis officiels (E-X) avec leurs capacités"""
         csv_file = os.path.join(self.data_folder, "enemies.csv")
 
         # Créer le CSV si absent
@@ -82,9 +118,14 @@ class DataLoader:
         try:
             df = pd.read_csv(csv_file)
 
+            # Charger les capacités ennemis
+            enemy_abilities_data = self._load_enemy_abilities()
+
             for _, row in df.iterrows():
                 enemy = self._create_enemy_from_row(row)
                 if enemy:
+                    # Attribuer les capacités à l'ennemi
+                    self._add_abilities_to_enemy(enemy, enemy_abilities_data)
                     enemies.append(enemy)
 
             if len(enemies) == 0:
@@ -236,32 +277,41 @@ class DataLoader:
             health=int(row['Health'])
         )
     
-    def _create_enemy_from_row(self, row) -> Enemy:
-        """Crée un ennemi depuis une ligne CSV"""
+    def _safe_int(self, value, default=0) -> int:
+        """Convertit une valeur en int, retourne default si NaN/vide"""
         try:
-            # CORRECTION: Créer stats_by_players au bon format
+            if pd.isna(value) or value == '':
+                return default
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+
+    def _create_enemy_from_row(self, row) -> Enemy:
+        """Crée un ennemi depuis une ligne CSV (gère les valeurs NaN)"""
+        try:
+            # CORRECTION: Créer stats_by_players au bon format (avec gestion NaN)
             stats_by_players = {
                 2: {
-                    'damage': int(row['Damage_2J']),
-                    'health': int(row['Health_2J']),
-                    'defense': int(row['Defense_2J'])
+                    'damage': self._safe_int(row['Damage_2J'], 0),
+                    'health': self._safe_int(row['Health_2J'], 1),
+                    'defense': self._safe_int(row['Defense_2J'], 0)
                 },
                 3: {
-                    'damage': int(row['Damage_3J']),
-                    'health': int(row['Health_3J']),
-                    'defense': int(row['Defense_3J'])
+                    'damage': self._safe_int(row['Damage_3J'], 0),
+                    'health': self._safe_int(row['Health_3J'], 1),
+                    'defense': self._safe_int(row['Defense_3J'], 0)
                 },
                 4: {
-                    'damage': int(row['Damage_4J']),
-                    'health': int(row['Health_4J']),
-                    'defense': int(row['Defense_4J'])
+                    'damage': self._safe_int(row['Damage_4J'], 0),
+                    'health': self._safe_int(row['Health_4J'], 1),
+                    'defense': self._safe_int(row['Defense_4J'], 0)
                 }
             }
-            
+
             return Enemy(
                 code=str(row['Code']),
                 name=str(row['Nom']),
-                defense=int(row['Defense']),
+                defense=self._safe_int(row['Defense'], 0),
                 stats_by_players=stats_by_players,
                 is_magical=bool(row.get('Is_Magical', False)),
                 has_magical_damage=bool(row.get('Has_Magical_Damage', False))
@@ -334,7 +384,105 @@ class DataLoader:
                 print(f"🔮 {hero.name}: {len(combat_abilities)} capacités ajoutées ({excluded_count} hors-combat exclues)")
             else:
                 print(f"🔮 {hero.name}: {len(combat_abilities)} capacités ajoutées")
-    
+
+    # === MÉTHODES PRIVÉES - CAPACITÉS ENNEMIS ===
+
+    def _load_enemy_abilities(self) -> Dict[str, EnemyAbility]:
+        """
+        Charge les capacités ennemis depuis enemy_abilities.csv
+        Retourne un dictionnaire {code: EnemyAbility}
+        """
+        if not ENEMY_ABILITIES_AVAILABLE:
+            return {}
+
+        csv_file = os.path.join(self.data_folder, "enemy_abilities.csv")
+
+        if not os.path.exists(csv_file):
+            print("⚠️ Fichier enemy_abilities.csv non trouvé")
+            return {}
+
+        try:
+            df = pd.read_csv(csv_file)
+            abilities = {}
+
+            for _, row in df.iterrows():
+                ability = self._create_enemy_ability_from_row(row)
+                if ability:
+                    abilities[ability.code] = ability
+
+            print(f"✅ {len(abilities)} capacités ennemis chargées")
+            return abilities
+
+        except Exception as e:
+            print(f"❌ Erreur chargement capacités ennemis: {e}")
+            return {}
+
+    def _create_enemy_ability_from_row(self, row) -> Optional[EnemyAbility]:
+        """Crée une EnemyAbility depuis une ligne CSV"""
+        try:
+            # Parse triggers (séparés par virgule)
+            triggers_str = str(row.get('triggers', ''))
+            triggers = [t.strip() for t in triggers_str.split(',') if t.strip()]
+
+            # Parse effects (séparés par virgule)
+            effects_str = str(row.get('effects', ''))
+            effects = [e.strip() for e in effects_str.split(',') if e.strip()]
+
+            # Parse parameters (format: key:value,key:value)
+            parameters_str = str(row.get('parameters', ''))
+            parameters = {}
+            if parameters_str and parameters_str != 'nan':
+                for param in parameters_str.split(','):
+                    if ':' in param:
+                        key, value = param.split(':', 1)
+                        # Essayer de convertir en int si possible
+                        try:
+                            parameters[key.strip()] = int(value.strip())
+                        except ValueError:
+                            parameters[key.strip()] = value.strip()
+
+            return EnemyAbility(
+                code=str(row['code']),
+                name=str(row['name']),
+                description=str(row['description']),
+                triggers=triggers,
+                effects=effects,
+                parameters=parameters
+            )
+
+        except Exception as e:
+            print(f"⚠️ Erreur création capacité ennemi {row.get('code', 'inconnu')}: {e}")
+            return None
+
+    def _add_abilities_to_enemy(self, enemy: Enemy, abilities_data: Dict[str, EnemyAbility]):
+        """
+        Attribue les capacités à un ennemi selon ENEMY_ABILITY_MAPPING
+
+        Args:
+            enemy: Ennemi à équiper
+            abilities_data: Dictionnaire {code: EnemyAbility}
+        """
+        if not ENEMY_ABILITIES_AVAILABLE:
+            return
+
+        # Récupérer les codes de capacités pour cet ennemi
+        ability_codes = ENEMY_ABILITY_MAPPING.get(enemy.code, [])
+
+        if not ability_codes:
+            return  # Ennemi sans capacités
+
+        # Créer des instances des capacités (deepcopy pour indépendance)
+        enemy.abilities = []
+        for ability_code in ability_codes:
+            if ability_code in abilities_data:
+                # Créer une copie indépendante de la capacité
+                from copy import deepcopy
+                ability_copy = deepcopy(abilities_data[ability_code])
+                enemy.abilities.append(ability_copy)
+
+        if enemy.abilities:
+            print(f"⚡ {enemy.name}: {len(enemy.abilities)} capacité(s) ajoutée(s)")
+
     # === MÉTHODES PRIVÉES - BUILDS ===
     
     def _get_custom_build(self, hero_code: str, equipment: List[Equipment]) -> Dict:

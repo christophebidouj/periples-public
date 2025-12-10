@@ -17,6 +17,7 @@ P-1-6: Résurrection ✅ (Coût: 2 sorts) - Ressuscite à PV max
 from typing import List, Dict, Any
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
+from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
 
 
 # ========================================
@@ -288,15 +289,12 @@ class ElnehaOndeTonnante(BaseAbility):
             for enemy in all_enemies:
                 damage_dealt = self._apply_damage(enemy, self.damage_amount, "magical", log)
                 results.append(f"{enemy.name}: {damage_dealt} dégâts")
-                
-                # Effet stun
-                if not hasattr(enemy, 'status_effects'):
-                    enemy.status_effects = {}
-                enemy.status_effects['stunned'] = {
-                    'duration': 1,
-                    'source': 'elneha_eclair'
-                }
-                stunned_enemies.append(enemy.name)
+
+                # Effet stun (AVEC vérification immunité)
+                if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    enemy, duration=1, source='elneha_eclair', log=log
+                ):
+                    stunned_enemies.append(enemy.name)
             
             log.append(f"⚡ {caster.name} lance {self.name} !")
             log.append(f"   Dégâts: " + ", ".join(results))
