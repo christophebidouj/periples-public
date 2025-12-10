@@ -44,7 +44,7 @@ except ImportError as e:
 # Import des capacités d'Atucan (P-3)
 try:
     from .atucan import (
-        AtucanImpositionDesMains, AtucanParade, AtucanChatimentDivin,
+        AtucanImpositionDesMains, AtucanSensDeLaJustice, AtucanChatimentDivin,
         AtucanAuraSacree, AtucanSoinSuperieur, AtucanJugementDernier,
         get_atucan_abilities_count, get_atucan_abilities_summary,
         get_atucan_spell_costs, get_atucan_tactical_analysis
@@ -58,7 +58,7 @@ except ImportError as e:
 # Import des capacités de Kraor (P-4) - NOUVEAU PHASE 3+
 try:
     from .kraor import (
-        KraorPiege, KraorPoison, KraorFlecheExplosive, KraorPluieDeFlèches,
+        KraorMarqueDuChasseur, KraorPluieDeProjectiles, KraorSoinMineur, KraorTirRapide,
         get_kraor_abilities_count, get_kraor_abilities_summary,
         get_kraor_spell_costs, get_kraor_combat_limitations, get_kraor_tactical_analysis,
         validate_kraor_implementation, get_kraor_debug_info
@@ -72,8 +72,8 @@ except ImportError as e:
 # Import des capacités de Thordius (P-5) - NOUVEAU PHASE 4
 try:
     from .thordius import (
-        ThordiusCoupDeRage, ThordiusCharge, ThordiusIntimidation,
-        ThordiusFrappePuissante, ThordiusCriDeGuerre, ThordiusBerserker
+        ThordiusDefenseSansArmure, ThordiusRageDeBerserker, ThordiusChargeDeTaureau,
+        ThordiusTemerité, ThordiusCritiqueBrutal, ThordiusRageInsatiable
     )
     THORDIUS_LOADED = True
     print("✅ Capacités de Thordius (P-5) chargées avec succès")
@@ -84,8 +84,8 @@ except ImportError as e:
 # Import des capacités de Stephe (P-6) - NOUVEAU PHASE 4
 try:
     from .stephe import (
-        StepheSoinLeger, StepheBenediction, StepheProtectionDivine,
-        StephePurification, StepheGuerisonDeGroupe, StepheMiracle
+        StepheAffaiblissement, StepheAccordInterdit, StepheInspiration,
+        StepheInvisibilite, StepheSoinMajeur, StepheMotDeMort
     )
     STEPHE_LOADED = True
     print("✅ Capacités de Stephe (P-6) chargées avec succès")
@@ -96,8 +96,8 @@ except ImportError as e:
 # Import des capacités de Lame (P-7) - NOUVEAU PHASE 4
 try:
     from .lame import (
-        LameFurtivite, LameAttaqueSournoise, LameParalysie,
-        LameAssassination, LameOmbreMortelle
+        LameAttaqueFurtive, LameDerobade, LameBombeFumigene,
+        LameAttaqueTournoyante, LameAssautFurieux
     )
     LAME_LOADED = True
     print("✅ Capacités de Lame (P-7) chargées avec succès")
@@ -108,8 +108,8 @@ except ImportError as e:
 # Import des capacités de Raishi (P-8) - NOUVEAU PHASE 4
 try:
     from .raishi import (
-        RaishiArtMartial, RaishiMeditation, RaishiCoupCritique,
-        RaishiEsquiveParfaite, RaishiCombo, RaishiMaitriseAbsolue
+        RaishiPointFaible, RaishiAttaquesMultiples, RaishiPurification,
+        RaishiDelugeDeCups, RaishiPaumeOuverte, RaishiZuiQuan
     )
     RAISHI_LOADED = True
     print("✅ Capacités de Raishi (P-8) chargées avec succès")
@@ -140,42 +140,42 @@ if LIARIE_LOADED:
 # Atucan exports
 if ATUCAN_LOADED:
     __all__.extend([
-        'AtucanImpositionDesMains', 'AtucanParade', 'AtucanChatimentDivin',
+        'AtucanImpositionDesMains', 'AtucanSensDeLaJustice', 'AtucanChatimentDivin',
         'AtucanAuraSacree', 'AtucanSoinSuperieur', 'AtucanJugementDernier'
     ])
 
 # Kraor exports - NOUVEAU
 if KRAOR_LOADED:
     __all__.extend([
-        'KraorPiege', 'KraorPoison', 'KraorFlecheExplosive', 'KraorPluieDeFlèches'
+        'KraorMarqueDuChasseur', 'KraorPluieDeProjectiles', 'KraorSoinMineur', 'KraorTirRapide'
     ])
 
 # Thordius exports - NOUVEAU PHASE 4
 if THORDIUS_LOADED:
     __all__.extend([
-        'ThordiusCoupDeRage', 'ThordiusCharge', 'ThordiusIntimidation',
-        'ThordiusFrappePuissante', 'ThordiusCriDeGuerre', 'ThordiusBerserker'
+        'ThordiusDefenseSansArmure', 'ThordiusRageDeBerserker', 'ThordiusChargeDeTaureau',
+        'ThordiusTemerité', 'ThordiusCritiqueBrutal', 'ThordiusRageInsatiable'
     ])
 
 # Stephe exports - NOUVEAU PHASE 4
 if STEPHE_LOADED:
     __all__.extend([
-        'StepheSoinLeger', 'StepheBenediction', 'StepheProtectionDivine',
-        'StephePurification', 'StepheGuerisonDeGroupe', 'StepheMiracle'
+        'StepheAffaiblissement', 'StepheAccordInterdit', 'StepheInspiration',
+        'StepheInvisibilite', 'StepheSoinMajeur', 'StepheMotDeMort'
     ])
 
 # Lame exports - NOUVEAU PHASE 4
 if LAME_LOADED:
     __all__.extend([
-        'LameFurtivite', 'LameAttaqueSournoise', 'LameParalysie',
-        'LameAssassination', 'LameOmbreMortelle'
+        'LameAttaqueFurtive', 'LameDerobade', 'LameBombeFumigene',
+        'LameAttaqueTournoyante', 'LameAssautFurieux'
     ])
 
 # Raishi exports - NOUVEAU PHASE 4
 if RAISHI_LOADED:
     __all__.extend([
-        'RaishiArtMartial', 'RaishiMeditation', 'RaishiCoupCritique',
-        'RaishiEsquiveParfaite', 'RaishiCombo', 'RaishiMaitriseAbsolue'
+        'RaishiPointFaible', 'RaishiAttaquesMultiples', 'RaishiPurification',
+        'RaishiDelugeDeCups', 'RaishiPaumeOuverte', 'RaishiZuiQuan'
     ])
 
 # ========================================

@@ -2738,14 +2738,14 @@ def display_recent_actions():
             return True
         return False
 
-    # Récupérer les 3 dernières lignes d'ACTION (pas d'initialisation)
+    # Récupérer les 15 dernières lignes d'ACTION (pas d'initialisation)
     action_lines = []
     for line in reversed(st.session_state.sandbox_v2_log):
         # Filtrer les lignes d'initialisation
         if not is_initialization_line(line):
             action_lines.append(line)
-        # Arrêter après 3 lignes d'action
-        if len(action_lines) >= 3:
+        # Arrêter après 15 lignes d'action
+        if len(action_lines) >= 15:
             break
 
     # Si aucune action réelle, ne rien afficher

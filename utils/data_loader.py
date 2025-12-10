@@ -45,10 +45,11 @@ ENEMY_ABILITY_MAPPING = {
     'E-62': ['EA-1', 'EA-7'],  # Nécromancien: immunity + alternating
     'E-87': ['EA-1', 'EA-8'],  # Majere: immunity + alternating
 
-    # Niveau 5 - Dragons complexes (sera implémenté Phase 5)
+    # Niveau 5 - Dragons complexes (Phase 5 en cours)
     'E-46': ['EA-1', 'EA-3', 'EA-9', 'EA-10'],  # Dragon azur complet
-    'E-47': ['EA-1', 'EA-3', 'EA-9', 'EA-10'],  # Sosnen variant 1
-    'E-48': ['EA-1', 'EA-3', 'EA-9'],           # Sosnen variant 2
+    'E-47': ['EA-1', 'EA-3', 'EA-9', 'EA-10'],  # Sosnen variant 1 (complet)
+    'E-48': ['EA-1', 'EA-3', 'EA-9'],           # Sosnen variant 2 (sans dégâts périodiques)
+    'E-49': ['EA-1', 'EA-3'],                   # Sosnen variant 3 (minimal)
 
     # Niveau 6 - Conditions spéciales (sera implémenté Phase 6)
     'E-73': ['EA-11'],  # Troll: ability_check_stun

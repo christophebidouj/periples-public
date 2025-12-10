@@ -81,10 +81,15 @@ class EnemyAbilityManager:
             elif effect == EnemyAbilityEffect.ALTERNATING_EFFECTS.value:
                 self._apply_alternating_effects(enemy, ability, context, log)
 
+            elif effect == EnemyAbilityEffect.PERIODIC_STUN.value:
+                self._apply_periodic_stun(enemy, ability, context, log)
+
+            elif effect == EnemyAbilityEffect.PERIODIC_DAMAGE.value:
+                self._apply_periodic_damage(enemy, ability, context, log)
+
             # Les autres effects seront implémentés dans les phases suivantes
-            # elif effect == EnemyAbilityEffect.PERIODIC_STUN.value:
-            #     self._apply_periodic_stun(enemy, ability, context, log)
-            # etc.
+            # elif effect == EnemyAbilityEffect.ABILITY_CHECK_STUN.value:
+            #     self._apply_ability_check_stun(enemy, ability, context, log)
 
     # === NIVEAU 1 - FLAGS PERMANENTS ===
 
@@ -282,6 +287,90 @@ class EnemyAbilityManager:
                 target_name = getattr(target, 'display_name', target.name)
                 turn_type = "pair" if is_even_turn else "impair"
                 log.append(f"😵 {enemy.name} (tour {turn_type}) assomme {target_name} pour {duration} tour(s) !")
+
+    # === NIVEAU 5 - EFFETS PÉRIODIQUES ===
+
+    def _apply_periodic_stun(self, enemy: Enemy, ability: EnemyAbility, context: Dict[str, Any], log: List[str]):
+        """
+        Stun un héros aléatoire tous les N rounds pendant X tours
+
+        Exemple: Dragon azur - Stun tous les 2 rounds pendant 1 tour
+        Paramètres: interval:2,duration:1
+        """
+        heroes = context.get('heroes', [])
+        if not heroes:
+            return
+
+        # Récupérer les paramètres
+        interval = ability.get_parameter('interval', 2)  # Tous les N rounds
+        duration = ability.get_parameter('duration', 1)  # Pendant X tours
+
+        # Utiliser le round_number partagé (comme alternating_effects)
+        round_number = context.get('round_number', 1)
+
+        # Vérifier si c'est le bon round pour appliquer l'effet
+        if round_number % interval != 0:
+            return  # Pas le bon round
+
+        # Sélectionner un héros aléatoire vivant qui n'est pas déjà stunné
+        alive_heroes = [h for h in heroes if h.is_alive()]
+        available_heroes = [
+            h for h in alive_heroes
+            if not (hasattr(h, 'status_effects') and h.status_effects.get('stunned'))
+        ]
+
+        if not available_heroes:
+            return  # Aucun héros disponible
+
+        import random
+        target = random.choice(available_heroes)
+
+        # Appliquer le stun
+        if not hasattr(target, 'status_effects'):
+            target.status_effects = {}
+
+        target.status_effects['stunned'] = {
+            'duration': duration,
+            'source': enemy.code,
+            'source_name': enemy.name
+        }
+
+        target_name = getattr(target, 'display_name', target.name)
+        log.append(f"🌀 {enemy.name} (round {round_number}) assomme {target_name} pour {duration} tour(s) ! (périodique tous les {interval} rounds)")
+
+    def _apply_periodic_damage(self, enemy: Enemy, ability: EnemyAbility, context: Dict[str, Any], log: List[str]):
+        """
+        Inflige des dégâts à tous les héros tous les N rounds
+
+        Exemple: Dragon azur - 4 dégâts magiques tous les 3 rounds
+        Paramètres: interval:3,damage:4,type:magical
+        """
+        heroes = context.get('heroes', [])
+        if not heroes:
+            return
+
+        # Récupérer les paramètres
+        interval = ability.get_parameter('interval', 3)  # Tous les N rounds
+        damage = ability.get_parameter('damage', 4)      # Montant des dégâts
+        damage_type = ability.get_parameter('type', 'magical')  # Type de dégâts
+
+        # Utiliser le round_number partagé
+        round_number = context.get('round_number', 1)
+
+        # Vérifier si c'est le bon round pour appliquer l'effet
+        if round_number % interval != 0:
+            return  # Pas le bon round
+
+        # Appliquer les dégâts à tous les héros vivants
+        alive_heroes = [h for h in heroes if h.is_alive()]
+        if not alive_heroes:
+            return
+
+        for hero in alive_heroes:
+            hero.current_health = max(0, hero.current_health - damage)
+
+        damage_emoji = "✨" if damage_type == "magical" else "⚔️"
+        log.append(f"{damage_emoji} {enemy.name} (round {round_number}) inflige {damage} dégâts {damage_type}s à tous les héros ! (périodique tous les {interval} rounds)")
 
     # === HELPERS ===
 

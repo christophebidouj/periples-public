@@ -33,26 +33,36 @@ Ce fichier trace l'avancement du développement et des tests du système de capa
 - ✅ E-79 Golem de pierre - Stun temporaire chaque tour + décompte correct
 - ✅ E-89 Démon majeur - Blocage capacités héros fonctionnel
 
-### Phase 4 - Effets Alternés (IMPLÉMENTÉE ✅ - Session du 2025-12-09)
+### Phase 4 - Effets Alternés (TERMINÉE ✅ - Session du 2025-12-10)
 **Capacités implémentées:**
 - ✅ EA-6: `alternating_effects` - Bordalius (Tours pairs: 2 dégâts magiques tous / Tours impairs: stun 1 tour)
 - ✅ EA-7: `alternating_effects` - Nécromancien (Tours pairs: 2 dégâts magiques tous / Tours impairs: stun 1 tour)
 - ✅ EA-8: `alternating_effects` - Majere (Tours pairs: stun 1 tour / Tours impairs: 6 dégâts magiques tous)
 
 **Mécanisme implémenté:**
-- ✅ Compteur global de tours incrémenté au début de chaque tour d'ennemi
+- ✅ Utilisation du numéro de round partagé (plus de compteur global)
 - ✅ Parser de paramètres even/odd depuis CSV
-- ✅ Application automatique des effets selon parité du tour
+- ✅ Application automatique des effets selon parité du round
 - ✅ Support `damage_all` (dégâts AoE magiques) et `stun_temporary`
 
 **Fichiers modifiés:**
-- ✅ `models/enemy_ability_manager.py` - Méthode `_apply_alternating_effects()`
-- ✅ `ui/components/sandbox_interface_v2.py` - Incrémentation compteur global ligne 1285
+- ✅ `models/enemy_ability_manager.py` - Méthode `_apply_alternating_effects()` avec round_number
+- ✅ `ui/components/sandbox_interface_v2.py` - Passage round_number dans contexte + fix stun
+- ✅ `models/character.py` - Stats ennemis figées (combat_player_count)
+- ✅ `models/combat/combat_actions.py` - Utilisation get_combat_stats()
+- ✅ `models/combat/turn_manager.py` - Utilisation get_combat_stats()
 
-**Tests à effectuer (PRIORITÉ):**
-- ⏳ E-56 Bordalius - Vérifier alternance dégâts pairs / stun impairs
-- ⏳ E-62 Nécromancien - Vérifier alternance + immunité stun
-- ⏳ E-87 Majere - Vérifier alternance inversée (stun pairs / dégâts impairs)
+**Tests validés:**
+- ✅ E-56 Bordalius - Alternance dégâts pairs / stun impairs fonctionnelle
+- ✅ E-62 Nécromancien - Alternance + immunité stun validée
+- ✅ E-87 Majere - Alternance inversée (stun pairs / dégâts impairs) validée
+
+**Corrections majeures cette session:**
+- ✅ Stats ennemis figées au début du combat (ne changent plus si héros meurent)
+- ✅ Gestion stun : décrémentation au tour du personnage (non au round global)
+- ✅ Effets alternés basés sur numéro de round (non compteur global partagé)
+- ✅ Suppression auto-skip ennemis stunnés en mode initiative
+- ✅ Autorisation sélection combattants stunnés en mode manuel
 
 ---
 
@@ -116,11 +126,11 @@ models/enemy_ability_manager.py
 
 ---
 
-## 🧪 TESTS PRIORITAIRES À EFFECTUER DEMAIN
+## 🧪 TESTS PHASE 4 - EFFECTUÉS ET VALIDÉS ✅
 
-### Test Phase 4 - Effets Alternés (PRIORITÉ)
+### Test Phase 4 - Effets Alternés (COMPLÉTÉ)
 
-#### Test 1: E-56 Bordalius (Alternance dégâts/stun)
+#### Test 1: E-56 Bordalius (Alternance dégâts/stun) ✅
 **Objectif:** Vérifier que Bordalius alterne entre dégâts AoE (tours pairs) et stun (tours impairs)
 
 **Procédure:**
@@ -240,9 +250,9 @@ utils/
 - ✅ `extra_attacks` - Attaques multiples
 - ✅ `stun_hero_permanent` - Stun permanent
 - ✅ `stun_hero_temporary` - Stun temporaire
+- ✅ `alternating_effects` - Effets alternés pairs/impairs
 
 ### Effets à implémenter:
-- ⬜ `alternating_effects` - Effets alternés pairs/impairs
 - ⬜ `periodic_stun` - Stun périodique
 - ⬜ `periodic_damage` - Dégâts périodiques
 - ⬜ `ability_check_stun` - Test de capacité
@@ -251,22 +261,12 @@ utils/
 
 ## 🎯 PRIORITÉS POUR LA PROCHAINE SESSION
 
-### Priorité 1: Tests Phase 3 (URGENT)
-1. Tester E-75 Basilic (stun permanent)
-2. Tester E-79 Golem de pierre (stun temporaire récurrent)
-3. Retester E-89 Démon majeur (blocage capacités)
-
-### Priorité 2: Phase 4 - Effets Alternés
-1. Implémenter `_apply_alternating_effects()` dans `enemy_ability_manager.py`
-2. Parser paramètres `even:effet,odd:effet`
-3. Tester E-37 Bordalius, E-60 Nécromancien, E-72 Majere
-
-### Priorité 3: Phase 5 - Effets Périodiques
+### Priorité 1: Phase 5 - Effets Périodiques
 1. Implémenter `_apply_periodic_stun()` et `_apply_periodic_damage()`
-2. Ajouter compteur de tours par ennemi
+2. Utiliser le compteur de tour existant (les rounds)
 3. Tester E-46 Dragon azur, E-47 Sosnen
 
-### Priorité 4: Phase 6 - Conditions Spéciales
+### Priorité 2: Phase 6 - Conditions Spéciales
 1. Implémenter `_apply_ability_check_stun()` (Troll)
 2. Tester E-55 Troll
 
@@ -276,15 +276,15 @@ utils/
 
 **Capacités implémentées:** 8 / 11 (73%)
 **Ennemis testés Phase 3:** 3 / 3 (100% - E-75, E-79, E-89)
-**Ennemis à tester Phase 4:** 0 / 3 (0% - E-56, E-62, E-87)
+**Ennemis testés Phase 4:** 3 / 3 (100% - E-56, E-62, E-87) ✅
 **Phases complétées:** 4 / 6 (67%)
 
 **Note:** EA-12 (ranged_only_threshold) retirée du développement - les attaques à distance ne sont pas gérées dans l'application.
 
-**Prochaine étape:** Tests Phase 4 → Implémentation Phase 5
+**Prochaine étape:** Implémentation Phase 5 (Effets périodiques)
 
 ---
 
 *Dernière mise à jour: 2025-12-10*
-*Session: Mise à jour TODO - Retrait EA-12 (attaques à distance non gérées)*
+*Session: Phase 4 COMPLÉTÉE - Tests validés + Corrections système combat*
 *Développeur: Claude Sonnet 4.5*

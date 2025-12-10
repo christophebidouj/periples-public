@@ -66,7 +66,7 @@ class CombatEngine:
                 return self._make_result('heroes', round_num, heroes_combat, enemies_combat, log, start_time, active_pets)
             
             # Phase ennemis (rechargent parade + attaquent)
-            self.turn_manager.enemies_turn(enemies_combat, heroes_combat, player_count, log, active_pets)
+            self.turn_manager.enemies_turn(enemies_combat, heroes_combat, player_count, log, active_pets, round_num)
             if self._check_victory(heroes_combat + active_pets, "ennemis", round_num, log):
                 self._apply_defeat(heroes_combat, log)
                 return self._make_result('enemies', round_num, heroes_combat, enemies_combat, log, start_time, active_pets)

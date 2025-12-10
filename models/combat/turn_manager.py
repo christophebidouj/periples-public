@@ -120,7 +120,7 @@ class TurnManager:
             # Pet attaque automatiquement le premier ennemi
             self.combat_actions.hero_attack(pet, alive_enemies, player_count, log)
     
-    def enemies_turn(self, enemies: list, heroes: list, player_count: int, log: list, active_pets: list):
+    def enemies_turn(self, enemies: list, heroes: list, player_count: int, log: list, active_pets: list, round_number: int = 1):
         """Phase ennemis avec recharge parade + capacités - ATTAQUENT L'ÉQUIPE (Héros + Pets)"""
         log.append("👹 Phase des Ennemis")
 
@@ -141,7 +141,19 @@ class TurnManager:
             enemy.start_enemy_turn()
             if enemy.max_parade_tokens > 0:
                 log.append(f"🔄 {enemy.name} recharge {enemy.max_parade_tokens} jetons parade")
-            
+
+            # NOUVEAU - Trigger on_turn_start (effets périodiques, stun récurrent, etc.)
+            if self.enemy_ability_manager:
+                self.enemy_ability_manager.execute_trigger(
+                    trigger='on_turn_start',
+                    enemy=enemy,
+                    context={
+                        'heroes': heroes,
+                        'log': log,
+                        'round_number': round_number
+                    }
+                )
+
             # NOUVEAU - Vérifier stun avant action
             from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
             status = CharacterAbilitiesIntegration.check_enemy_status_effects(enemy)
@@ -218,7 +230,11 @@ class TurnManager:
                 self.enemy_ability_manager.execute_trigger(
                     trigger='after_attack',
                     enemy=enemy,
-                    context={'heroes': heroes, 'log': log}
+                    context={
+                        'heroes': heroes,
+                        'log': log,
+                        'round_number': round_number
+                    }
                 )
 
     def heroes_distribute_damage(self, heroes: list, damage: int, enemy_name: str, log: list):

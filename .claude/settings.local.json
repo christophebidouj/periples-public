@@ -3,7 +3,11 @@
     "allow": [
       "Bash(git restore:*)",
       "mcp__ide__executeCode",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pip show:*)",
+      "Bash(.venv/Scripts/pip:*)",
+      "Bash(conda list:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
