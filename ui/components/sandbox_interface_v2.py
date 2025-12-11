@@ -723,6 +723,7 @@ def configure_combat():
             turn_manager.enemy_ability_manager.initialize_combat(enemies, heroes, st.session_state.sandbox_v2_log)
             turn_manager.combat_initialized = True
 
+
         # NOUVEAU - Activation automatique Sens de la justice d'Atucan (PASSIF PERMANENT)
         auto_activate_sens_de_la_justice(heroes, st.session_state.sandbox_v2_log)
 
@@ -771,6 +772,34 @@ def generate_initiative():
     # Indiquer le début du combat
     st.session_state.sandbox_v2_log.append("")
     st.session_state.sandbox_v2_log.append("=== ROUND 1 ===")
+
+    # NOUVEAU - Déclencher capacités ennemis on_round_start pour le Round 1 (EA-11 Troll)
+    turn_manager = st.session_state.get('sandbox_v2_turn_manager')
+    if turn_manager and hasattr(turn_manager, 'enemy_ability_manager') and turn_manager.enemy_ability_manager:
+        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+        heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+
+        st.session_state.sandbox_v2_log.append(f"🔍 Trigger on_round_start (Round 1)...")
+
+        for enemy_combatant in enemy_combatants:
+            enemy = enemy_combatant['character']
+            if enemy.is_alive():
+                # DEBUG : Vérifier capacités
+                has_abilities = hasattr(enemy, 'abilities') and enemy.abilities
+                if has_abilities:
+                    for ability in enemy.abilities:
+                        if ability.has_trigger('on_round_start'):
+                            st.session_state.sandbox_v2_log.append(f"🔍 {enemy.code} {enemy.name} → {ability.code} (trigger on_round_start)")
+
+                turn_manager.enemy_ability_manager.execute_trigger(
+                    trigger='on_round_start',
+                    enemy=enemy,
+                    context={
+                        'heroes': heroes_list,
+                        'log': st.session_state.sandbox_v2_log,
+                        'round_number': st.session_state.sandbox_v2_round_number
+                    }
+                )
 
     # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
     log_active_persistent_effects()
@@ -1062,6 +1091,34 @@ def next_turn():
             st.session_state.sandbox_v2_current_turn_index = 0
             st.session_state.sandbox_v2_round_number += 1
             st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+
+            # NOUVEAU - Déclencher capacités ennemis on_round_start (EA-11 Troll)
+            turn_manager = st.session_state.get('sandbox_v2_turn_manager')
+            if turn_manager and hasattr(turn_manager, 'enemy_ability_manager') and turn_manager.enemy_ability_manager:
+                enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+                heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+
+                st.session_state.sandbox_v2_log.append(f"🔍 Trigger on_round_start (Round {st.session_state.sandbox_v2_round_number})...")
+
+                for enemy_combatant in enemy_combatants:
+                    enemy = enemy_combatant['character']
+                    if enemy.is_alive():
+                        # DEBUG : Vérifier capacités
+                        has_abilities = hasattr(enemy, 'abilities') and enemy.abilities
+                        if has_abilities:
+                            for ability in enemy.abilities:
+                                if ability.has_trigger('on_round_start'):
+                                    st.session_state.sandbox_v2_log.append(f"🔍 {enemy.code} {enemy.name} → {ability.code} (trigger on_round_start)")
+
+                        turn_manager.enemy_ability_manager.execute_trigger(
+                            trigger='on_round_start',
+                            enemy=enemy,
+                            context={
+                                'heroes': heroes_list,
+                                'log': st.session_state.sandbox_v2_log,
+                                'round_number': st.session_state.sandbox_v2_round_number
+                            }
+                        )
 
             # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
             log_active_persistent_effects()
@@ -3388,6 +3445,34 @@ def main_sandbox_v2():
                 # Log
                 st.session_state.sandbox_v2_log.append("")
                 st.session_state.sandbox_v2_log.append(f"=== ROUND {st.session_state.sandbox_v2_round_number} ===")
+
+                # NOUVEAU - Déclencher capacités ennemis on_round_start (EA-11 Troll)
+                turn_manager = st.session_state.get('sandbox_v2_turn_manager')
+                if turn_manager and hasattr(turn_manager, 'enemy_ability_manager') and turn_manager.enemy_ability_manager:
+                    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+                    heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+
+                    st.session_state.sandbox_v2_log.append(f"🔍 Trigger on_round_start (Round {st.session_state.sandbox_v2_round_number})...")
+
+                    for enemy_combatant in enemy_combatants:
+                        enemy = enemy_combatant['character']
+                        if enemy.is_alive():
+                            # DEBUG : Vérifier capacités
+                            has_abilities = hasattr(enemy, 'abilities') and enemy.abilities
+                            if has_abilities:
+                                for ability in enemy.abilities:
+                                    if ability.has_trigger('on_round_start'):
+                                        st.session_state.sandbox_v2_log.append(f"🔍 {enemy.code} {enemy.name} → {ability.code} (trigger on_round_start)")
+
+                            turn_manager.enemy_ability_manager.execute_trigger(
+                                trigger='on_round_start',
+                                enemy=enemy,
+                                context={
+                                    'heroes': heroes_list,
+                                    'log': st.session_state.sandbox_v2_log,
+                                    'round_number': st.session_state.sandbox_v2_round_number
+                                }
+                            )
 
                 # NOUVEAU - Log effets persistants actifs (Aura sacrée, etc.)
                 log_active_persistent_effects()

@@ -11,6 +11,7 @@ from enum import Enum
 class EnemyAbilityTrigger(Enum):
     """Moments d'activation des capacités ennemis"""
     ON_COMBAT_START = "on_combat_start"      # Début du combat (flags permanents)
+    ON_ROUND_START = "on_round_start"        # Début de chaque round (avant tous les tours)
     ON_TURN_START = "on_turn_start"          # Début du tour de l'ennemi
     BEFORE_ATTACK = "before_attack"          # Avant d'attaquer
     AFTER_ATTACK = "after_attack"            # Après avoir attaqué
