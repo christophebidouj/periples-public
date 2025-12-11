@@ -1542,6 +1542,10 @@ def display_pet_interface(combatant: Dict):
                 adapter = st.session_state.sandbox_v2_adapter
                 log = st.session_state.sandbox_v2_log
 
+                # Calculer player_count (nombre de héros vivants)
+                heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                player_count = len([h for h in heroes_list if h.is_alive()])
+
                 # RÉUTILISE CombatActions.hero_attack() (Pets attaquent comme héros)
                 adapter.combat_actions.hero_attack(
                     hero=char,
@@ -2264,33 +2268,13 @@ def use_summon_pet_action(char: Character):
         st.rerun()
         return
 
-    # 4. 🆕 ATTAQUE IMMÉDIATE - Le pet attaque dès son invocation
-    enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-    alive_enemies = [e for e in enemies if e.is_alive()]
-
-    if alive_enemies:
-        heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-        player_count = len([h for h in heroes if h.is_alive()])
-
-        st.session_state.sandbox_v2_log.append(f"  ⚔️ {pet.name} attaque immédiatement !")
-
-        # Attaque immédiate du pet
-        adapter.combat_actions.hero_attack(
-            pet,
-            alive_enemies,
-            player_count,
-            st.session_state.sandbox_v2_log
-        )
-
-        # Nettoyer les pets morts après l'attaque
-        cleanup_dead_pets()
-
-    # 5. Marquer l'action comme prise (invocation = capacité magique)
+    # 4. Marquer l'action comme prise (invocation = capacité magique)
     char.action_taken_this_turn = True
 
-    # 6. Sauvegarder et passer au tour suivant
+    # 5. Sauvegarder état pour undo/redo
     save_game_state(f"{char.name} invoque son Pet")
-    next_turn()
+
+    # 6. Rafraîchir interface (le tour continue - pas de next_turn())
     st.rerun()
 
 def use_ability_action(char: Character, ability):
