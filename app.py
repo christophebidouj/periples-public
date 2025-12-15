@@ -328,7 +328,7 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
             'spells': stats['spells']
         })
     
-    # Données ennemis (inchangées)
+    # Données ennemis
     enemies_data = []
     for code in enemy_codes:
         enemy = next((e for e in data['enemies'] if e.code == code), None)
@@ -337,6 +337,7 @@ def prepare_teams_for_recap(hero_codes: List[str], enemy_codes: List[str], data,
             continue
         stats = enemy.get_stats_for_players(player_count)
         enemies_data.append({
+            'code': enemy.code,  # Ajouté pour permettre la suppression depuis le récapitulatif
             'name': enemy.name,
             'number': enemy.code.split('-')[-1],
             'is_magical': enemy.is_magical,
@@ -554,12 +555,33 @@ def tab_selection(data):
     # === RÉCAPITULATIF ===
     if nb_heroes >= 2 and nb_enemies > 0:
         heroes_data, enemies_data = prepare_teams_for_recap(
-            st.session_state.selected_heroes, 
-            st.session_state.selected_enemies, 
-            data, 
+            st.session_state.selected_heroes,
+            st.session_state.selected_enemies,
+            data,
             player_count
         )
         display_team_recap(heroes_data, enemies_data, player_count)
+
+        # Message incitatif pour lancer le Playtest
+        st.markdown("---")
+        st.success("""
+        ✅ **Équipes prêtes !** Vos héros et ennemis sont sélectionnés.
+        """)
+
+        # Bouton pour basculer directement vers l'onglet Playtest
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 Lancer le Playtest", type="primary", use_container_width=True):
+                # Utiliser une variable intermédiaire pour éviter l'erreur Streamlit
+                st.session_state.pending_navigation = "🎮 Playtest Manuel"
+                st.rerun()
+
+    else:
+        # Message si sélection incomplète
+        if nb_heroes < 2:
+            st.info("ℹ️ Sélectionnez au moins **2 héros** pour commencer.")
+        if nb_enemies == 0:
+            st.info("ℹ️ Sélectionnez au moins **1 ennemi** pour commencer.")
 
 def tab_forge(data):
     """Onglet forge des équipements - Version 8 héros MIGRÉE"""
@@ -737,64 +759,108 @@ def tab_forge(data):
                 st.error(f"❌ Erreur lors de la sauvegarde: {e}")
 
 def display_about():
-    """Section À Propos - Version 8 héros MIGRÉE"""
-    
-    # Informations sur le jeu
-    st.subheader("🎲 Jeu de Société")
+    """Section À Propos - Version finale mise à jour"""
+
+    # En-tête : Jeu de Société + Balance Workshop côte à côte
     col1, col2 = st.columns(2)
-    
+
     with col1:
+        st.subheader("🎲 Jeu de Société")
         st.markdown("""
         **Périples** © Bastien LIAUTY
         - Genre : RPG coopératif médiéval-fantastique
         - Joueurs : 1 à 4 joueurs
         - Version des règles : V3.0
-        """)
-    
-    with col2:
-        st.markdown("""
-        **Statut :** Prototype en développement
-        - 8 héros principaux avec formes d'Elneha
-        - 72 ennemis évolutifs
-        - 56 équipements et 48 capacités spéciales
+
+        **Données simulées :**
+        - 8 héros jouables avec transformations
+        - 72 ennemis évolutifs + **11 capacités ennemis**
+        - 56 équipements + 4 objets spéciaux uniques
+        - 48 capacités héros spéciales
         """)
 
-    # Informations techniques
-    st.subheader("💻 Balance Workshop")
-    col1, col2 = st.columns(2)
-    
-    with col1:
+    with col2:
+        st.subheader("💻 Balance Workshop")
         st.markdown("""
         **Développement :**
-        - Code Python : Christophe Bidouj
+        - Développeur : Christophe Bidouj
         - Assistance IA : Claude AI (Anthropic)
         - Technologies : Python, Streamlit, Pydantic
-        """)
-    
-    with col2:
-        st.markdown("""
-        **Fonctionnalités :**
-        - Simulation de combats automatisés
-        - Forge d'équipements personnalisés
-        - Système de capacités et potions
-        - **8 héros** avec builds basés sur équipements réels
+
+        **Modes de gestion des tours :**
+        - 🎲 **Initiative (D20)** : Ordre automatique par jets de dés
+        - 🎮 **Manuel** : Sélection libre de l'ordre de jeu
+        - ↩️ **Undo/Redo** : Navigation dans l'historique
+        - 📊 **Analyse avancée** : Métriques détaillées
         """)
 
-    # Objectifs et usage
-    st.subheader("🎯 Objectifs")
+    # Objectifs et usage (DÉPLACÉ EN HAUT)
+    st.subheader("🎯 Objectifs de l'Atelier")
     st.markdown("""
-    Ce simulateur permet de tester et valider l'équilibrage des mécaniques de jeu :
-    - **Combats** : Validation des règles et équilibrage selon le nombre de joueurs
-    - **Équipements** : Test des builds personnalisés et impact réel des équipements  
-    - **Capacités** : Simulation des 48 capacités spéciales des héros
-    - **Builds Réels** : 3 niveaux de difficulté avec calcul depuis équipements authentiques
-    - **Objets Spéciaux** : 4 objets uniques avec effets complexes intégrés
-    - **Métriques** : Analyse du taux de survie, durée de combat et utilisation des ressources
+    Cet **atelier d'équilibrage** permet de tester et valider les mécaniques de jeu :
+
+    - **Équilibrage Multi-joueurs** : Validation de la scalabilité des ennemis (2J/3J/4J)
+    - **Test de Builds** : Comparaison pré-définis vs personnalisés avec métriques détaillées
+    - **Validation de Capacités** : Simulation complète des 48 capacités héros + 11 capacités ennemis
+    - **Création de Contenu** : Forge d'équipements et ennemis personnalisés pour tests
+    - **Analyse Stratégique** : Logs détaillés et statistiques pour optimisation tactique
+    """)
+
+    # Fonctionnalités principales
+    st.subheader("⚙️ Fonctionnalités")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        **🏰 Sélection & Configuration**
+        - Builds héros pré-définis (Facile/Normal/Difficile)
+        - **Builds personnalisés illimités** (CSV)
+        - Configuration initiative & critiques
+        - Sélection ennemis standards ou custom
+
+        **⚙️ Forge d'Équipements**
+        - Création d'équipements personnalisés
+        - Édition des bonus et statistiques
+        - Builds héros sur-mesure
+        - Import/Export CSV
+        """)
+
+    with col2:
+        st.markdown("""
+        **⚔️ Gestion Ennemis**
+        - **Création d'ennemis personnalisés**
+        - Édition stats multi-joueurs (2J/3J/4J)
+        - Association de capacités ennemis
+        - Ennemis magiques et physiques
+
+        **🎮 Playtest Manuel (Sandbox V2)**
+        - Combats interactifs avec contrôle complet
+        - Système de potions (petite/grande)
+        - Ciblage manuel héros/ennemis
+        - Logs de combat détaillés en temps réel
+        """)
+
+    # Systèmes avancés
+    st.subheader("🔬 Systèmes Avancés")
+    st.markdown("""
+    **Capacités Héros (48 capacités)** : Soins, dégâts, buffs, invocations, transformations
+
+    **Capacités Ennemis (11 types)** : Immunités, stun, attaques multiples, effets alternés/périodiques, blocages
+
+    **Métriques de Combat** :
+    - Taux de survie et durée de combat
+    - Dégâts totaux infligés/reçus par combattant
+    - Parade utilisée et sorts consommés
+    - Soins reçus et capacités activées
+    - Taux de critique et précision des attaques
+
+    **Objets Spéciaux** : 4 objets uniques avec mécaniques complexes intégrées (Médaillon d'appel, etc.)
     """)
 
     # Avertissement usage
     st.info("""
-    **📋 Usage autorisé :** Cet outil est destiné aux tests d'équilibrage pour l'équipe de développement du jeu Périples. 
+    **📋 Usage autorisé :** Cet outil est destiné aux tests d'équilibrage pour l'équipe de développement du jeu Périples.
     L'usage commercial ou la redistribution ne sont pas autorisés.
     """)
 
@@ -804,13 +870,18 @@ def main():
     """Application principale MIGRÉE"""
     init_app()
 
+    # Gérer la navigation différée (avant la création des widgets)
+    if 'pending_navigation' in st.session_state:
+        st.session_state.main_navigation = st.session_state.pending_navigation
+        del st.session_state.pending_navigation
+
     # Appliquer le thème sélectionné
     selected_theme = st.session_state.get('selected_theme', 'Professionnel')
     apply_fantasy_theme(selected_theme)
-    
+
     # Titre natif Streamlit
     st.title("⚔️ Périples – Atelier d'Équilibrage ⚔️")
-    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Dev Python : **Christophe Bidouj** | Simulateur d'équilibrage du jeu de société Périples")
+    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Développeur : **Christophe Bidouj** | Simulateur d'équilibrage du jeu de société Périples")
     
     # Données avec cache
     try:
@@ -842,7 +913,7 @@ def main():
     # st.tabs() ne garde pas en mémoire l'onglet actif entre les reruns (limitation Streamlit)
 
     # Navigation par onglets avec mémorisation
-    tabs_list = ["🏰 Sélection", "⚙️ Forge", "⚔️ Gestion Ennemis", "🎮 Playtest Manuel", "ℹ️ À Propos"]
+    tabs_list = ["🏰 Sélection", "🎮 Playtest Manuel", "⚙️ Forge", "⚔️ Gestion Ennemis", "ℹ️ À Propos"]
 
     # Initialiser la navigation avec le premier onglet par défaut
     if 'main_navigation' not in st.session_state:
@@ -862,12 +933,12 @@ def main():
     # Affichage du contenu selon l'onglet actif
     if selected_tab == "🏰 Sélection":
         tab_selection(data)
+    elif selected_tab == "🎮 Playtest Manuel":
+        main_sandbox_v2()
     elif selected_tab == "⚙️ Forge":
         tab_forge(data)
     elif selected_tab == "⚔️ Gestion Ennemis":
         main_enemy_editor()
-    elif selected_tab == "🎮 Playtest Manuel":
-        main_sandbox_v2()
     elif selected_tab == "ℹ️ À Propos":
         display_about()
 

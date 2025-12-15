@@ -7,7 +7,9 @@
       "Bash(pip show:*)",
       "Bash(.venv/Scripts/pip:*)",
       "Bash(conda list:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(tree:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

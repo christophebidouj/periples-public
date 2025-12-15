@@ -87,7 +87,7 @@ Ce fichier trace l'avancement du développement et des tests du système de capa
 - ✅ E-46 Dragon azur - Stun tous les 2 rounds + dégâts tous les 3 rounds fonctionnels
 - ✅ E-47 Sosnen - Stun tous les 2 rounds + dégâts tous les 3 rounds fonctionnels
 
-### Phase 6 - Conditions Spéciales (TERMINÉE ✅ - Session du 2025-12-11)
+### Phase 6 - Conditions Spéciales (TERMINÉE ✅ - Session du 2025-12-15)
 **Capacités implémentées:**
 - ✅ EA-11: `ability_check_stun` - Test de capacité au début du tour (Troll)
 
@@ -103,13 +103,15 @@ Ce fichier trace l'avancement du développement et des tests du système de capa
 - Les capacités spéciales (101, 102) ne comptent pas dans le niveau
 
 **Fichiers modifiés:**
-- ✅ `models/enemy_ability_manager.py` - Méthode `_apply_ability_check_stun()` ajoutée (lignes 376-426)
+- ✅ `models/enemy_ability_manager.py` - Méthode `_apply_ability_check_stun()` ajoutée + logs nettoyés
 - ✅ `models/enemy_ability.py` - Nouveau trigger `ON_ROUND_START` ajouté
 - ✅ `data/enemy_abilities.csv` - EA-11 trigger changé de `on_turn_start` → `on_round_start`
-- ✅ `ui/components/sandbox_interface_v2.py` - Appel trigger `on_round_start` en mode initiative (ligne 1066) et manuel (ligne 3411)
+- ✅ `ui/components/sandbox_interface_v2.py` - Trigger `on_round_start` appelé en mode initiative ET manuel (Round 1 + rounds suivants) + logs nettoyés
 
-**Tests à effectuer:**
-- [ ] E-73 Troll - Vérifier test de capacité + stun si échec
+**Tests validés:**
+- ✅ E-73 Troll - Test de capacité + stun fonctionnels en mode initiative et manuel
+- ✅ Logs propres et concis (suppression de tous les logs de debug 🔍)
+- ✅ Trigger `on_round_start` déclenché dès le Round 1 en mode manuel
 
 **Note:** E-83 Vouivre reste disponible comme ennemi standard, mais sa capacité EA-12 (attaques à distance) n'est pas implémentée car les mécaniques d'attaques à distance ne sont pas gérées dans l'application.
 
@@ -269,18 +271,18 @@ utils/
 ## 📊 STATISTIQUES
 
 **Capacités implémentées:** 11 / 11 (100%) ✅
-**Ennemis testés Phase 3:** 3 / 3 (100% - E-75, E-79, E-89)
+**Ennemis testés Phase 3:** 3 / 3 (100% - E-75, E-79, E-89) ✅
 **Ennemis testés Phase 4:** 3 / 3 (100% - E-56, E-62, E-87) ✅
 **Ennemis testés Phase 5:** 2 / 2 (100% - E-46, E-47) ✅
-**Ennemis testés Phase 6:** 0 / 1 (0% - E-73 à tester)
+**Ennemis testés Phase 6:** 1 / 1 (100% - E-73) ✅
 **Phases complétées:** 6 / 6 (100%) ✅
 
 **Note:** EA-12 (ranged_only_threshold) retirée du développement - les attaques à distance ne sont pas gérées dans l'application.
 
-**Prochaine étape:** Tests Phase 6 (E-73 Troll)
+**Système de capacités ennemis:** COMPLET ✅
 
 ---
 
-*Dernière mise à jour: 2025-12-11*
-*Session: Phase 6 IMPLÉMENTÉE - EA-11 ability_check_stun (Troll E-73)*
+*Dernière mise à jour: 2025-12-15*
+*Session: Phase 6 TERMINÉE ET TESTÉE - Nettoyage logs debug + fix trigger Round 1 mode manuel*
 *Développeur: Claude Sonnet 4.5*

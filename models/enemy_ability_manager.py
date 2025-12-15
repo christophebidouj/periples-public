@@ -45,25 +45,12 @@ class EnemyAbilityManager:
         """
         log = context.get('log', [])
 
-        # DEBUG : Trace l'appel du trigger
-        if trigger == 'on_round_start':
-            log.append(f"🔍 execute_trigger appelé pour {enemy.code} {enemy.name} avec trigger '{trigger}'")
-
         if not hasattr(enemy, 'abilities') or not enemy.abilities:
-            if trigger == 'on_round_start':
-                log.append(f"🔍 → Ennemi {enemy.code} n'a PAS de capacités")
             return
-
-        if trigger == 'on_round_start':
-            log.append(f"🔍 → Ennemi {enemy.code} a {len(enemy.abilities)} capacité(s)")
 
         for ability in enemy.abilities:
             if ability.has_trigger(trigger) and ability.active:
-                if trigger == 'on_round_start':
-                    log.append(f"🔍 → Exécution de {ability.code} ({ability.name})")
                 self._execute_ability(ability, enemy, context)
-            elif trigger == 'on_round_start':
-                log.append(f"🔍 → {ability.code} ne matche pas le trigger (triggers: {ability.triggers})")
 
     def _execute_ability(self, ability: EnemyAbility, enemy: Enemy, context: Dict[str, Any]):
         """
@@ -396,39 +383,30 @@ class EnemyAbilityManager:
         Niveau de capacité = nombre de capacités débloquées (1-6, exclut capacités spéciales)
         Paramètres: threshold:10
         """
-        # DEBUG : Log IMMÉDIAT pour tracer l'exécution
-        log.append(f"🔍 _apply_ability_check_stun DEBUT - {enemy.name}")
-
         import random
 
         heroes = context.get('heroes', [])
-        log.append(f"🔍 → {len(heroes)} héros dans le contexte")
         if not heroes:
             return
 
         # Récupérer le seuil (par défaut 10)
         threshold = ability.get_parameter('threshold', 10)
-        log.append(f"🔍 → Seuil: {threshold}")
 
         # Tester TOUS les héros vivants
         alive_heroes = [h for h in heroes if h.is_alive()]
-        log.append(f"🔍 → {len(alive_heroes)} héros vivants")
 
         if not alive_heroes:
-            log.append(f"🔍 → AUCUN héros vivant, arrêt")
             return
 
-        # Log d'introduction (format Option 1)
+        # Log d'introduction
         log.append(f"🧌 {enemy.name} teste les capacités des héros (seuil: {threshold})...")
 
         # Tester chaque héros individuellement
         results = []
-        log.append(f"🔍 → Début boucle test héros")
 
         for target in alive_heroes:
             try:
                 target_name = getattr(target, 'display_name', target.name)
-                log.append(f"🔍 → Test {target_name}...")
 
                 # Lancer D20 + niveau de capacité
                 d20_roll = random.randint(1, 20)
@@ -437,12 +415,8 @@ class EnemyAbilityManager:
                 ability_level = len([a for a in unlocked if 1 <= a <= 6])
                 total = d20_roll + ability_level
 
-                log.append(f"🔍   D20={d20_roll}, Niv={ability_level}, Total={total}")
-
                 # Vérifier si le test échoue (< threshold)
                 if total < threshold:
-                    log.append(f"🔍   {total} < {threshold} → ÉCHEC, application stun")
-
                     # Appliquer le stun pour 1 tour
                     if not hasattr(target, 'status_effects'):
                         target.status_effects = {}
@@ -453,10 +427,8 @@ class EnemyAbilityManager:
                         'source_name': enemy.name
                     }
 
-                    # Format: • Nom (D20: X + Niv: Y = Total) → Résultat
                     results.append(f"  • {target_name} (D20: {d20_roll} + Niv: {ability_level} = {total}) → 😵 Assommé(e) 1 tour")
                 else:
-                    log.append(f"🔍   {total} ≥ {threshold} → RÉUSSITE")
                     # Test réussi - pas de stun
                     results.append(f"  • {target_name} (D20: {d20_roll} + Niv: {ability_level} = {total}) → ✅ Résiste")
 
@@ -464,14 +436,9 @@ class EnemyAbilityManager:
                 # Protection contre les erreurs
                 log.append(f"⚠️ Erreur test {getattr(target, 'name', 'inconnu')}: {str(e)}")
 
-        log.append(f"🔍 → Fin boucle, {len(results)} résultats")
-
         # Ajouter tous les résultats au log
-        log.append(f"🔍 → Ajout des résultats au log...")
         for result in results:
             log.append(result)
-
-        log.append(f"🔍 _apply_ability_check_stun FIN")
 
     # === HELPERS ===
 

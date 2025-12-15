@@ -579,12 +579,26 @@ def display_team_recap(heroes_details, enemies_details, player_count):
         st.markdown("### 👹 ÉQUIPE MONSTRES")
 
         for e in enemies_details:
-            header_text = f"👾 {e['name']} — ❤️ {e['health']} | ⚔️ {e['damage']} | 🛡️ {e['defense']}"
+            # Créer deux colonnes : nom de l'ennemi et bouton de suppression
+            enemy_col, delete_col = st.columns([9, 1])
 
-            with st.expander(header_text, expanded=False):
-                st.write(f"**Numéro :** #{e['number']}")
-                if e.get('is_magical'):
-                    st.write("🔮 *Créature magique*")
+            with enemy_col:
+                header_text = f"👾 {e['name']} — ❤️ {e['health']} | ⚔️ {e['damage']} | 🛡️ {e['defense']}"
+
+                with st.expander(header_text, expanded=False):
+                    st.write(f"**Numéro :** #{e['number']}")
+                    if e.get('is_magical'):
+                        st.write("🔮 *Créature magique*")
+
+            with delete_col:
+                # Bouton de suppression pour retirer l'ennemi
+                if st.button("❌", key=f"remove_enemy_{e['code']}", help=f"Retirer {e['name']}", use_container_width=True):
+                    # Retirer l'ennemi de la sélection
+                    selected_enemies = st.session_state.get('selected_enemies', [])
+                    if e['code'] in selected_enemies:
+                        selected_enemies.remove(e['code'])
+                        st.session_state.selected_enemies = selected_enemies
+                        st.rerun()
 
     # Info joueurs
     st.markdown(f"<p style='color:#888;'>👥 Nombre de joueurs : <strong>{player_count}</strong></p>", unsafe_allow_html=True)
