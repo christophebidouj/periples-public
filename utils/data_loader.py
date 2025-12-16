@@ -30,7 +30,7 @@ except ImportError:
 # Associe chaque code ennemi à ses capacités
 ENEMY_ABILITY_MAPPING = {
     # Niveau 1 - Immunités simples
-    'E-77': ['EA-1'],  # Manticore: immunity_stun
+    'E-77': ['EA-1', 'EA-13'],  # Manticore: immunity_stun + epines de feu
     'E-85': ['EA-1'],  # Tarasque: immunity_stun
     'E-89': ['EA-2'],  # Démon majeur: block_hero_abilities
 
@@ -140,12 +140,19 @@ class DataLoader:
             return self._create_default_enemies()
 
     def load_custom_enemies(self) -> List[Enemy]:
-        """Charge la liste des ennemis personnalisés (CE-X)"""
+        """Charge la liste des ennemis personnalisés (CE-X) avec leurs capacités"""
         from models.enemy_manager import EnemyManager
 
         try:
             manager = EnemyManager()
             custom_enemies = manager.load_custom_enemies()
+
+            # CRITIQUE : Charger les capacités pour les ennemis custom
+            if ENEMY_ABILITIES_AVAILABLE and custom_enemies:
+                enemy_abilities_data = self._load_enemy_abilities()
+
+                for enemy in custom_enemies:
+                    self._add_abilities_to_enemy(enemy, enemy_abilities_data)
 
             if custom_enemies:
                 print(f"✅ {len(custom_enemies)} ennemis personnalisés chargés")
@@ -457,7 +464,9 @@ class DataLoader:
 
     def _add_abilities_to_enemy(self, enemy: Enemy, abilities_data: Dict[str, EnemyAbility]):
         """
-        Attribue les capacités à un ennemi selon ENEMY_ABILITY_MAPPING
+        Attribue les capacités à un ennemi selon:
+        - ENEMY_ABILITY_MAPPING pour ennemis officiels (E-X)
+        - Attribut ability_codes pour ennemis custom (CE-X)
 
         Args:
             enemy: Ennemi à équiper
@@ -466,8 +475,16 @@ class DataLoader:
         if not ENEMY_ABILITIES_AVAILABLE:
             return
 
-        # Récupérer les codes de capacités pour cet ennemi
-        ability_codes = ENEMY_ABILITY_MAPPING.get(enemy.code, [])
+        # Déterminer la source des codes de capacités
+        ability_codes = []
+
+        if enemy.code.startswith('E-'):
+            # Ennemi officiel → mapping codé en dur
+            ability_codes = ENEMY_ABILITY_MAPPING.get(enemy.code, [])
+        elif enemy.code.startswith('CE-'):
+            # Ennemi custom → récupérer depuis l'attribut
+            if hasattr(enemy, 'ability_codes') and enemy.ability_codes:
+                ability_codes = enemy.ability_codes
 
         if not ability_codes:
             return  # Ennemi sans capacités
@@ -480,6 +497,9 @@ class DataLoader:
                 from copy import deepcopy
                 ability_copy = deepcopy(abilities_data[ability_code])
                 enemy.abilities.append(ability_copy)
+            else:
+                # Warning si code invalide (protection defensive)
+                print(f"⚠️ {enemy.name}: capacité {ability_code} introuvable")
 
         if enemy.abilities:
             print(f"⚡ {enemy.name}: {len(enemy.abilities)} capacité(s) ajoutée(s)")

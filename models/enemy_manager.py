@@ -54,6 +54,9 @@ class EnemyManager:
                 if enemy:
                     enemies.append(enemy)
 
+            # Charger les capacités pour les ennemis avec ability_codes
+            self._load_abilities_for_enemies(enemies)
+
             return enemies
 
         except Exception as e:
@@ -334,7 +337,8 @@ class EnemyManager:
                 'Damage_2J', 'Health_2J', 'Defense_2J',
                 'Damage_3J', 'Health_3J', 'Defense_3J',
                 'Damage_4J', 'Health_4J', 'Defense_4J',
-                'Is_Magical', 'Has_Magical_Damage'
+                'Is_Magical', 'Has_Magical_Damage',
+                'Abilities'
             ])
             df.to_csv(self.csv_path, index=False)
             print(f"✅ Fichier {self.csv_path} créé")
@@ -360,7 +364,13 @@ class EnemyManager:
                 }
             }
 
-            return Enemy(
+            # Parser la colonne Abilities (codes séparés par virgules)
+            ability_codes = []
+            abilities_str = row.get('Abilities', '')
+            if pd.notna(abilities_str) and str(abilities_str).strip():
+                ability_codes = [code.strip() for code in str(abilities_str).split(',') if code.strip()]
+
+            enemy = Enemy(
                 code=str(row['Code']),
                 name=str(row['Nom']).capitalize(),
                 defense=int(row['Defense']),
@@ -369,6 +379,11 @@ class EnemyManager:
                 has_magical_damage=bool(row.get('Has_Magical_Damage', False)),
                 is_custom=True  # Marquer comme ennemi personnalisé
             )
+
+            # Stocker les codes de capacités pour que DataLoader les charge
+            enemy.ability_codes = ability_codes
+
+            return enemy
         except Exception as e:
             print(f"⚠️ Erreur création ennemi depuis row: {e}")
             return None
@@ -393,7 +408,7 @@ class EnemyManager:
             }
         }
 
-        return Enemy(
+        enemy = Enemy(
             code=code,
             name=data['name'].strip().capitalize(),
             defense=int(data['defense']),
@@ -403,11 +418,28 @@ class EnemyManager:
             is_custom=True  # Marquer comme ennemi personnalisé
         )
 
+        # Stocker les codes de capacités si fournis
+        if 'abilities' in data and data['abilities']:
+            enemy.ability_codes = data['abilities']  # Liste de codes ['EA-1', 'EA-3']
+        else:
+            enemy.ability_codes = []
+
+        return enemy
+
     def _save_enemies_to_csv(self, enemies: List[Enemy]):
         """Sauvegarde la liste des ennemis dans le CSV"""
         data = []
 
         for enemy in enemies:
+            # Extraire les codes de capacités
+            ability_codes = []
+            if hasattr(enemy, 'abilities') and enemy.abilities:
+                # Si l'ennemi a des objets EnemyAbility complets
+                ability_codes = [ability.code for ability in enemy.abilities]
+            elif hasattr(enemy, 'ability_codes') and enemy.ability_codes:
+                # Si l'ennemi a juste les codes (cas intermédiaire)
+                ability_codes = enemy.ability_codes
+
             row = {
                 'Code': enemy.code,
                 'Nom': enemy.name,
@@ -422,9 +454,84 @@ class EnemyManager:
                 'Health_4J': enemy.stats_by_players[4]['health'],
                 'Defense_4J': enemy.stats_by_players[4]['defense'],
                 'Is_Magical': enemy.is_magical,
-                'Has_Magical_Damage': enemy.has_magical_damage
+                'Has_Magical_Damage': enemy.has_magical_damage,
+                'Abilities': ','.join(ability_codes) if ability_codes else ''
             }
             data.append(row)
 
         df = pd.DataFrame(data)
         df.to_csv(self.csv_path, index=False)
+
+    def _load_abilities_for_enemies(self, enemies: List[Enemy]):
+        """
+        Charge les objets EnemyAbility pour chaque ennemi ayant des ability_codes
+
+        Args:
+            enemies: Liste d'ennemis à enrichir avec les capacités
+        """
+        try:
+            # Vérifier si le module enemy_ability est disponible
+            from models.enemy_ability import EnemyAbility
+
+            # Charger les données des capacités depuis le CSV
+            abilities_csv_path = "data/enemy_abilities.csv"
+            if not os.path.exists(abilities_csv_path):
+                return
+
+            df_abilities = pd.read_csv(abilities_csv_path)
+            if df_abilities.empty:
+                return
+
+            # Créer un dictionnaire de lookup code -> EnemyAbility
+            ability_lookup = {}
+            for _, row in df_abilities.iterrows():
+                try:
+                    # Parse triggers (séparés par virgule)
+                    triggers_str = str(row.get('triggers', ''))
+                    triggers = [t.strip() for t in triggers_str.split(',') if t.strip()]
+
+                    # Parse effects (séparés par virgule)
+                    effects_str = str(row.get('effects', ''))
+                    effects = [e.strip() for e in effects_str.split(',') if e.strip()]
+
+                    # Parse parameters (format: key:value,key:value)
+                    parameters_str = str(row.get('parameters', ''))
+                    parameters = {}
+                    if parameters_str and parameters_str != 'nan':
+                        for param in parameters_str.split(','):
+                            if ':' in param:
+                                key, value = param.split(':', 1)
+                                # Essayer de convertir en int si possible
+                                try:
+                                    parameters[key.strip()] = int(value.strip())
+                                except ValueError:
+                                    parameters[key.strip()] = value.strip()
+
+                    ability = EnemyAbility(
+                        code=str(row['code']),
+                        name=str(row['name']),
+                        description=str(row['description']),
+                        triggers=triggers,
+                        effects=effects,
+                        parameters=parameters
+                    )
+                    ability_lookup[ability.code] = ability
+                except Exception as e:
+                    print(f"⚠️ Erreur création capacité {row.get('code', 'unknown')}: {e}")
+                    continue
+
+            # Attacher les capacités aux ennemis
+            for enemy in enemies:
+                if hasattr(enemy, 'ability_codes') and enemy.ability_codes:
+                    enemy.abilities = []
+                    for code in enemy.ability_codes:
+                        if code in ability_lookup:
+                            enemy.abilities.append(ability_lookup[code])
+                        else:
+                            print(f"⚠️ Capacité {code} non trouvée pour {enemy.code}")
+
+        except ImportError:
+            # Module enemy_ability non disponible, on skip silencieusement
+            pass
+        except Exception as e:
+            print(f"⚠️ Erreur chargement capacités: {e}")

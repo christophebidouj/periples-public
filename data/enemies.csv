@@ -66,7 +66,6 @@ E-72,Vase gélatineuse,14,2,20,0,3,30,0,4,40,0,True,True
 E-73,Troll,14,5,30,2,6,35,3,7,40,4,False,False
 E-75,Basilic,14,4,20,0,5,25,1,6,30,2,True,False
 E-77,Manticore,16,4,30,1,5,35,2,6,40,3,False,False
-E-78,Epines de feu,,2,,,3,,,4,,,False,False
 E-79,Golem de pierre,12,5,25,1,6,30,2,7,35,3,False,False
 E-81,Elémentaire d'eau,15,4,25,2,5,30,3,6,35,4,True,True
 E-82,Déferlante,12,2,10,0,2,15,1,2,20,2,False,False

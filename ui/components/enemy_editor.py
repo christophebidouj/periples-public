@@ -62,6 +62,35 @@ def main_enemy_editor():
         font-weight: 600 !important;
     }
 
+    /* Style spécial pour les checkboxes de capacités (boutons toggle) */
+    [data-testid="stCheckbox"][data-baseweb="checkbox"] {
+        background: rgba(139, 69, 19, 0.1);
+        border: 2px solid #d4af37;
+        border-radius: 8px;
+        padding: 8px;
+        transition: all 0.2s ease;
+    }
+
+    [data-testid="stCheckbox"][data-baseweb="checkbox"]:hover {
+        background: rgba(212, 175, 55, 0.2);
+        border-color: #ffd700;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Checkbox cochée (ON) */
+    [data-testid="stCheckbox"] input:checked + div {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(255, 215, 0, 0.2)) !important;
+    }
+
+    /* Label des capacités plus gros */
+    [data-testid="stCheckbox"] label p {
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+        color: #8b6914 !important;
+        margin: 0 !important;
+    }
+
     /* Compact le formulaire */
     [data-testid="stForm"] > div {
         gap: 0.5rem !important;
@@ -98,6 +127,110 @@ def main_enemy_editor():
     # Information sur les ennemis officiels
     st.info("ℹ️ Les ennemis officiels (E-1 à E-72) ne peuvent pas être modifiés. "
             "Seuls vos ennemis personnalisés (CE-X) peuvent être édités ou supprimés.")
+
+
+def _display_enemy_abilities_selection(current_abilities: list = None) -> list:
+    """
+    Widget de sélection des capacités ennemies avec boutons ON/OFF
+
+    Args:
+        current_abilities: Liste des codes actuels (pour édition)
+
+    Returns:
+        Liste des codes sélectionnés (ex: ['EA-1', 'EA-3'])
+    """
+    from utils.data_loader import DataLoader
+
+    loader = DataLoader()
+
+    def translate_trigger(trigger: str) -> str:
+        """Traduit un trigger technique en français naturel"""
+        translations = {
+            'on_combat_start': 'Au début du combat',
+            'on_round_start': 'Au début du round',
+            'on_turn_start': 'Au début du tour',
+            'before_attack': 'Avant l\'attaque',
+            'after_attack': 'Après l\'attaque',
+            'on_receive_damage': 'Quand reçoit des dégâts'
+        }
+        return translations.get(trigger, trigger)
+
+    def translate_effect(effect: str) -> str:
+        """Traduit un effet technique en français naturel"""
+        translations = {
+            'immunity_stun': 'Immunité au Stun',
+            'block_hero_abilities': 'Bloque les capacités des héros',
+            'extra_attacks': 'Attaques supplémentaires',
+            'stun_hero_permanent': 'Stun permanent',
+            'stun_hero_temporary': 'Stun temporaire',
+            'alternating_effects': 'Effets alternés',
+            'damage_all_heroes': 'Dégâts à tous les héros',
+            'periodic_stun': 'Stun périodique',
+            'periodic_damage': 'Dégâts périodiques',
+            'ability_check_stun': 'Test de capacité (Stun)',
+            'player_scaled_damage': 'Dégâts selon nombre de joueurs'
+        }
+        return translations.get(effect, effect)
+
+    try:
+        # Charger toutes les capacités disponibles
+        all_abilities = loader._load_enemy_abilities()
+
+        if not all_abilities:
+            st.warning("⚠️ Aucune capacité ennemi disponible")
+            return []
+
+        # Trier les capacités par code (EA-1, EA-2, ...)
+        sorted_codes = sorted(all_abilities.keys())
+
+        # Exclure EA-12 (non implémenté)
+        sorted_codes = [code for code in sorted_codes if code != 'EA-12']
+
+        selected = []
+
+        # Afficher les boutons toggle en grille (6 par ligne)
+        num_cols = 6
+        num_abilities = len(sorted_codes)
+        num_rows = (num_abilities + num_cols - 1) // num_cols
+
+        for row_idx in range(num_rows):
+            cols = st.columns(num_cols)
+
+            for col_idx in range(num_cols):
+                ability_idx = row_idx * num_cols + col_idx
+
+                if ability_idx >= num_abilities:
+                    break
+
+                code = sorted_codes[ability_idx]
+                ability = all_abilities[code]
+
+                with cols[col_idx]:
+                    # Traduire triggers et effets en français
+                    triggers_fr = [translate_trigger(t) for t in ability.triggers]
+                    effects_fr = [translate_effect(e) for e in ability.effects]
+
+                    # Checkbox avec nom de la capacité et tooltip avec description complète traduite
+                    is_selected = st.checkbox(
+                        f"{ability.name}",
+                        value=code in (current_abilities or []),
+                        key=f"ability_{code}",
+                        help=f"**{code} - {ability.name}**\n\n{ability.description}\n\n**Déclenchement :** {', '.join(triggers_fr)}\n**Effet :** {', '.join(effects_fr)}"
+                    )
+
+                    if is_selected:
+                        selected.append(code)
+
+        # Afficher résumé des capacités sélectionnées avec noms
+        if selected:
+            selected_names = [all_abilities[code].name for code in selected]
+            st.info(f"✅ {len(selected)} capacité(s) sélectionnée(s) : {', '.join(selected_names)}")
+
+        return selected
+
+    except Exception as e:
+        st.error(f"❌ Erreur chargement capacités: {e}")
+        return []
 
 
 def _display_creation_form(manager: EnemyManager):
@@ -167,6 +300,10 @@ def _display_creation_form(manager: EnemyManager):
         with col3:
             st.write("")  # Spacer
 
+        # Section capacités spéciales
+        st.markdown("#### ⚡ Capacités spéciales")
+        selected_abilities = _display_enemy_abilities_selection(current_abilities=[])
+
         # Bouton de création (centré)
         col_spacer1, col_button, col_spacer2 = st.columns([1, 1, 1])
         with col_button:
@@ -187,7 +324,8 @@ def _display_creation_form(manager: EnemyManager):
                 'health_4j': stats_4j['health'],
                 'defense_4j': stats_4j['defense'],
                 'is_magical': is_magical,
-                'has_magical_damage': has_magical_damage
+                'has_magical_damage': has_magical_damage,
+                'abilities': selected_abilities  # Liste des codes de capacités
             }
 
             # Créer l'ennemi
@@ -226,6 +364,13 @@ def _display_edit_form(manager: EnemyManager):
     if st.button("❌ Annuler l'édition", use_container_width=True):
         st.session_state.editing_enemy_code = None
         st.rerun()
+
+    # Extraire les codes de capacités actuelles
+    current_ability_codes = []
+    if hasattr(enemy, 'abilities') and enemy.abilities:
+        current_ability_codes = [ability.code for ability in enemy.abilities]
+    elif hasattr(enemy, 'ability_codes') and enemy.ability_codes:
+        current_ability_codes = enemy.ability_codes
 
     with st.form("enemy_edit_form"):
         # Nom de l'ennemi (ligne 1 - toute la largeur)
@@ -302,6 +447,10 @@ def _display_edit_form(manager: EnemyManager):
         with col3:
             st.write("")  # Spacer
 
+        # Section capacités spéciales
+        st.markdown("#### ⚡ Capacités spéciales")
+        selected_abilities = _display_enemy_abilities_selection(current_abilities=current_ability_codes)
+
         # Bouton de sauvegarde (centré)
         col_spacer1, col_button, col_spacer2 = st.columns([1, 1, 1])
         with col_button:
@@ -322,7 +471,8 @@ def _display_edit_form(manager: EnemyManager):
                 'health_4j': stats_4j['health'],
                 'defense_4j': stats_4j['defense'],
                 'is_magical': is_magical,
-                'has_magical_damage': has_magical_damage
+                'has_magical_damage': has_magical_damage,
+                'abilities': selected_abilities  # Liste des codes de capacités
             }
 
             # Mettre à jour l'ennemi
@@ -413,13 +563,30 @@ def _display_custom_enemies_list(manager: EnemyManager):
                     badges.append("⚡")
                 badges_str = " ".join(badges) if badges else ""
 
+                # Compter les capacités et créer tooltip avec noms uniquement
+                ability_count = 0
+                ability_details = ""
+                if hasattr(enemy, 'abilities') and enemy.abilities:
+                    ability_count = len(enemy.abilities)
+                    # Tooltip avec noms uniquement (sans codes)
+                    ability_details = ", ".join([a.name for a in enemy.abilities])
+                elif hasattr(enemy, 'ability_codes') and enemy.ability_codes:
+                    ability_count = len(enemy.ability_codes)
+                    # Si on a juste les codes, les afficher (fallback)
+                    ability_details = ", ".join(enemy.ability_codes)
+
+                # Badge capacités avec tooltip
+                abilities_badge = ""
+                if ability_count > 0:
+                    abilities_badge = f'<span title="{ability_details}" style="background: rgba(212,175,55,0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 4px; cursor: help;">⚡{ability_count}</span>'
+
                 # Carte HTML compacte
                 card_html = f"""
                 <div style="border: 2px solid #d4af37; border-radius: 10px; padding: 12px;
                             background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(210, 180, 140, 0.1));
                             margin-bottom: 10px; min-height: 200px; text-align: center;">
                     <div style="font-weight: bold; font-size: 0.85rem; color: #8b6914; margin-bottom: 3px;">
-                        {enemy.code} {badges_str}
+                        {enemy.code} {badges_str} {abilities_badge}
                     </div>
                     <div style="font-size: 1.1rem; color: #d4af37; margin-bottom: 10px; font-weight: 700;
                                 text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);">

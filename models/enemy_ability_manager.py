@@ -92,6 +92,9 @@ class EnemyAbilityManager:
             elif effect == EnemyAbilityEffect.ABILITY_CHECK_STUN.value:
                 self._apply_ability_check_stun(enemy, ability, context, log)
 
+            elif effect == EnemyAbilityEffect.PLAYER_SCALED_DAMAGE.value:
+                self._apply_player_scaled_damage(enemy, ability, context, log)
+
     # === NIVEAU 1 - FLAGS PERMANENTS ===
 
     def _apply_immunity_stun(self, enemy: Enemy, log: List[str]):
@@ -439,6 +442,45 @@ class EnemyAbilityManager:
         # Ajouter tous les résultats au log
         for result in results:
             log.append(result)
+
+    def _apply_player_scaled_damage(self, enemy: Enemy, ability: EnemyAbility, context: Dict[str, Any], log: List[str]):
+        """
+        Inflige des dégâts physiques scalés par le nombre de joueurs au début de chaque round
+
+        Exemple: Epines de feu - 2 dégâts si 1-3 joueurs, 3 dégâts si 4 joueurs
+        Paramètres: damage_low:2,damage_high:3,threshold:4,type:physical
+
+        Note: Utilise combat_player_count figé au début du combat (compte les morts)
+        """
+        heroes = context.get('heroes', [])
+        if not heroes:
+            return
+
+        # Récupérer les paramètres
+        damage_low = ability.get_parameter('damage_low', 2)      # Dégâts si < threshold joueurs
+        damage_high = ability.get_parameter('damage_high', 3)    # Dégâts si >= threshold joueurs
+        threshold = ability.get_parameter('threshold', 4)        # Seuil de joueurs
+        damage_type = ability.get_parameter('type', 'physical')  # Type de dégâts
+
+        # Récupérer le nombre de joueurs figé au début du combat
+        player_count = context.get('player_count', len(heroes))
+
+        # Déterminer les dégâts selon le nombre de joueurs
+        damage = damage_high if player_count >= threshold else damage_low
+
+        # Appliquer les dégâts à tous les héros vivants
+        alive_heroes = [h for h in heroes if h.is_alive()]
+        if not alive_heroes:
+            return
+
+        for hero in alive_heroes:
+            hero.current_health = max(0, hero.current_health - damage)
+
+        # Log avec emoji selon le type
+        damage_emoji = "🔥" if damage_type == "physical" else "✨"
+        damage_type_fr = "physiques" if damage_type == "physical" else "magiques"
+        player_info = f"{player_count}J"
+        log.append(f"{damage_emoji} {enemy.name} ({player_info}) inflige {damage} dégâts {damage_type_fr} à tous les héros au début du round !")
 
     # === HELPERS ===
 

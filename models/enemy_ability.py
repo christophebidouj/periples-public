@@ -41,6 +41,7 @@ class EnemyAbilityEffect(Enum):
 
     # Niveau 6 - Conditions spéciales
     ABILITY_CHECK_STUN = "ability_check_stun"        # Check D20 + capacité
+    PLAYER_SCALED_DAMAGE = "player_scaled_damage"    # Dégâts scalés par nombre de joueurs
     # Note: RANGED_ONLY_THRESHOLD (EA-12) non implémenté - attaques à distance non gérées
 
 

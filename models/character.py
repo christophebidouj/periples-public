@@ -1703,6 +1703,7 @@ class Enemy(BaseModel):
 
     # === SYSTÈME DE CAPACITÉS ENNEMIS ===
     abilities: List[Any] = Field(default_factory=list)  # Liste des EnemyAbility
+    ability_codes: List[str] = Field(default_factory=list)  # Codes temporaires pour ennemis custom (CE-X)
     current_turn_attacks: int = 1  # Nombre d'attaques ce tour (capacité EA-3)
     combat_player_count: Optional[int] = None  # Nombre de joueurs INITIAL (figé pour tout le combat)
 
