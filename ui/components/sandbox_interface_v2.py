@@ -1262,44 +1262,209 @@ def display_hero_interface(combatant: Dict):
         magic = char.get_total_spells()
         defense = char.get_total_parade()
 
-    st.markdown(f"""
-    <div class="hero-header">
-        <div>
-            <h3 style="margin: 0; color: white;">🦸 {char.name}</h3>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">C'est votre tour - Choisissez une action</p>
-        </div>
-        <div class="stats-badges">
-            <div class="stat-badge health">
-                <div style="font-size: 0.8rem;">❤️ PV</div>
-                <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
-            </div>
-            <div class="stat-badge precision">
-                <div style="font-size: 0.8rem;">🎯 PRE</div>
-                <div style="font-weight: bold;">{precision}</div>
-            </div>
-            <div class="stat-badge attack">
-                <div style="font-size: 0.8rem;">⚔️ ATT</div>
-                <div style="font-weight: bold;">{attack}</div>
-            </div>
-            <div class="stat-badge defense">
-                <div style="font-size: 0.8rem;">🛡️ DEF</div>
-                <div style="font-weight: bold;">{defense}</div>
-            </div>
-            <div class="stat-badge magic">
-                <div style="font-size: 0.8rem;">✨ MAG</div>
-                <div style="font-weight: bold;">{magic}</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Header compact en 2 colonnes : Stats | Action + Potions (aligné avec abilities en dessous)
+    col_header_stats, col_header_actions = st.columns([3, 2])
 
-    # Layout 2 colonnes
-    col_abilities, col_actions = st.columns([2, 1])
+    with col_header_stats:
+        # Stats compactes avec badges
+        st.markdown(f"""
+        <div class="hero-header">
+            <div>
+                <h3 style="margin: 0; color: white;">🦸 {char.name}</h3>
+                <p style="margin: 5px 0 10px 0; opacity: 0.9; font-size: 0.9rem;">C'est votre tour</p>
+            </div>
+            <div class="stats-badges">
+                <div class="stat-badge health">
+                    <div style="font-size: 0.8rem;">❤️ PV</div>
+                    <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+                </div>
+                <div class="stat-badge precision">
+                    <div style="font-size: 0.8rem;">🎯 PRE</div>
+                    <div style="font-weight: bold;">{precision}</div>
+                </div>
+                <div class="stat-badge attack">
+                    <div style="font-size: 0.8rem;">⚔️ ATT</div>
+                    <div style="font-weight: bold;">{attack}</div>
+                </div>
+                <div class="stat-badge defense">
+                    <div style="font-size: 0.8rem;">🛡️ DEF</div>
+                    <div style="font-weight: bold;">{defense}</div>
+                </div>
+                <div class="stat-badge magic">
+                    <div style="font-size: 0.8rem;">✨ MAG</div>
+                    <div style="font-weight: bold;">{magic}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_header_actions:
+        # Vérifier si on est en mode sélection de cible
+        action_state = st.session_state.get('sandbox_v2_action_state')
+        current_actor = st.session_state.get('sandbox_v2_current_actor')
+        is_selecting = (action_state == 'SELECTING_TARGET_HERO' and current_actor == char)
+
+        if not is_selecting:
+            # Bouton Attaquer (full width)
+            can_attack = char.can_attack_this_turn if hasattr(char, 'can_attack_this_turn') else True
+
+            if can_attack:
+                if st.button("⚔️ Attaquer", key=f"header_attack_{combatant['id']}", type="primary", use_container_width=True):
+                    # Vérifier si attack_all_enemies est actif (Kraor capacité 4)
+                    attack_all = hasattr(char, 'temporary_buffs') and 'attack_all_enemies' in char.temporary_buffs
+
+                    if attack_all:
+                        # Attaque multi-cible : attaquer TOUS les ennemis vivants
+                        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+                        enemies_list = [c['character'] for c in enemy_combatants]
+                        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                        heroes_list = [c['character'] for c in hero_combatants]
+                        player_count = len([h for h in heroes_list if h.is_alive()])
+                        adapter = st.session_state.sandbox_v2_adapter
+
+                        alive_enemies = [e for e in enemies_list if e.is_alive()]
+                        st.session_state.sandbox_v2_log.append(f"💥 {char.name} déclenche une attaque ciblant TOUS les ennemis !")
+                        for enemy in alive_enemies:
+                            attack_result = adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
+
+                            # Track attack stats
+                            if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                                tracker = st.session_state.sandbox_v2_stats_tracker
+                                tracker.record_attack(
+                                    char, enemy, attack_result['hit'], attack_result['damage'],
+                                    attack_result['critical'], attack_result['critical_fail']
+                                )
+                                if attack_result['hit']:
+                                    tracker.record_damage_taken(
+                                        enemy,
+                                        attack_result['damage'],
+                                        parade_used=attack_result.get('parade_used', 0)
+                                    )
+
+                        # Consommer le buff
+                        char.temporary_buffs.pop('attack_all_enemies', None)
+
+                        # Marquer attaque effectuée
+                        char.can_attack_this_turn = False
+                        char.attack_done_this_turn = True
+
+                        save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
+                        st.rerun()
+                    else:
+                        # Attaque normale : sélectionner une cible
+                        st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
+                        st.session_state.sandbox_v2_current_actor = char
+                        st.rerun()
+            else:
+                st.button("⚔️ Attaquer (déjà fait)", key=f"header_attack_{combatant['id']}", disabled=True, use_container_width=True)
+
+        # Potions (3 boutons sur une seule ligne - ultra compact)
+        # Vérifier si Elneha est en forme animale (pas de potions)
+        is_elneha_animal = (char.code == "P-1" and
+                           hasattr(char, 'current_form') and
+                           char.current_form in ["bear", "wolf"])
+
+        if is_elneha_animal:
+            st.caption("⚠️ Potions indisponibles (forme animale)")
+        elif hasattr(char, 'health_potions') and char.health_potions:
+            potions_summary = char.get_potions_summary()
+
+            # 3 boutons sur une seule ligne (labels clairs, pas de titre)
+            col_small, col_large, col_give = st.columns(3)
+
+            with col_small:
+                small_count = potions_summary['small_count']
+                if small_count > 0:
+                    if st.button(f"🩸 Petite potion ({small_count})", key=f"header_potion_small_{combatant['id']}", use_container_width=True):
+                        use_small_potion_action(char)
+                else:
+                    st.button(f"🩸 Petite potion (0)", disabled=True, key=f"header_potion_small_{combatant['id']}", use_container_width=True)
+
+            with col_large:
+                large_count = potions_summary['large_count']
+                if large_count > 0:
+                    if st.button(f"❤️‍🩹 Grande potion ({large_count})", key=f"header_potion_large_{combatant['id']}", use_container_width=True):
+                        use_large_potion_action(char)
+                else:
+                    st.button(f"❤️‍🩹 Grande potion (0)", disabled=True, key=f"header_potion_large_{combatant['id']}", use_container_width=True)
+
+            with col_give:
+                # Faire boire à un allié
+                has_any_potion = potions_summary['total_count'] > 0
+                action_already_taken = (
+                    char.action_taken_this_turn or
+                    char.potion_used_this_turn or
+                    not char.can_attack_this_turn
+                )
+
+                if has_any_potion and not action_already_taken:
+                    if st.button("🤝 Donner potion", key=f"header_give_potion_{combatant['id']}", use_container_width=True):
+                        st.session_state.sandbox_v2_action_state = 'GIVING_POTION'
+                        st.session_state.sandbox_v2_current_actor = char
+                        st.rerun()
+                elif has_any_potion:
+                    st.button("🤝 Donner potion", disabled=True, key=f"header_give_potion_{combatant['id']}", use_container_width=True, help="Action déjà prise")
+                else:
+                    st.button("🤝 Donner potion", disabled=True, key=f"header_give_potion_{combatant['id']}", use_container_width=True)
+        else:
+            st.caption("🧪 Aucune potion")
+
+    # Layout 2 colonnes : Capacités | Actions (aligné avec header stats|actions)
+    col_abilities, col_actions = st.columns([3, 2])
 
     with col_abilities:
         display_abilities_grid(char, combatant['id'])
 
+        # NOUVEAU - Bouton Invocation Pet pour Kraor (P-4) avec Médaillon d'Appel (O-3)
+        if hasattr(char, 'code') and char.code == "P-4" and char.can_summon_pet():
+            # Vérifier si un pet est déjà invoqué
+            pet_already_summoned = any(
+                hasattr(p, 'owner_code') and p.owner_code == char.code
+                for p in st.session_state.sandbox_v2_active_pets
+            )
+
+            # Vérifier si Kraor peut encore agir ce tour
+            can_summon = not getattr(char, 'action_taken_this_turn', False)
+            can_summon = can_summon and getattr(char, 'can_attack_this_turn', True)
+            can_summon = can_summon and not getattr(char, 'potion_used_this_turn', False)
+
+            st.markdown("### 🐾 Médaillon d'Appel")
+
+            if pet_already_summoned:
+                st.info("✅ Pet déjà invoqué ce combat")
+            elif not can_summon:
+                st.warning("⚠️ Action déjà effectuée ce tour")
+            else:
+                if st.button("🔮 Invoquer Pet", key=f"summon_pet_{combatant['id']}", type="primary", use_container_width=True):
+                    use_summon_pet_action(char)
+
     with col_actions:
+        # Boutons de contrôle du tour (Undo/Redo/Fin)
+        st.markdown("### 🕒 Historique")
+        col_undo, col_redo = st.columns(2)
+
+        with col_undo:
+            can_undo = st.session_state.sandbox_v2_history_index > 0
+            if st.button("⏪ Annuler", key=f"sidebar_undo_{combatant['id']}", disabled=not can_undo, use_container_width=True):
+                restore_previous_state()
+                st.rerun()
+
+        with col_redo:
+            can_redo = st.session_state.sandbox_v2_history_index < len(st.session_state.sandbox_v2_game_history) - 1
+            if st.button("⏩ Refaire", key=f"sidebar_redo_{combatant['id']}", disabled=not can_redo, use_container_width=True):
+                restore_next_state()
+                st.rerun()
+
+        # Bouton Fin du Tour (déplacé depuis header)
+        if st.button("⏭️ Fin du Tour", key=f"sidebar_skip_{combatant['id']}", type="primary", use_container_width=True):
+            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
+            save_game_state(f"{char.name} termine son tour")
+            next_turn()
+            st.rerun()
+
+        st.markdown("---")  # Séparateur
+
+        # Gestion des modes spéciaux (sélection de cible, etc.)
         display_actions_and_potions(char, combatant['id'])
 
 def display_enemy_interface(combatant: Dict):
@@ -1341,183 +1506,182 @@ def display_enemy_interface(combatant: Dict):
     defense = char.defense  # Seuil HIT (à battre pour toucher) - TOUJOURS utiliser l'attribut direct
     parade_tokens = char.current_parade_tokens
 
-    st.markdown(f"""
-    <div class="enemy-header">
-        <div>
-            <h3 style="margin: 0; color: white;">👹 {char.name}</h3>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">Tour de l'ennemi - Vous le contrôlez</p>
+    # Header compact en 2 colonnes : Stats | Actions (proportions harmonisées avec héros)
+    col_header_stats, col_header_actions = st.columns([3, 2])
+
+    with col_header_stats:
+        # Stats compactes avec badges (identique à interface héros)
+        st.markdown(f"""
+        <div class="enemy-header">
+            <div>
+                <h3 style="margin: 0; color: white;">👹 {char.name}</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Tour de l'ennemi - Vous le contrôlez</p>
+            </div>
+            <div class="stats-badges">
+                <div class="stat-badge health">
+                    <div style="font-size: 0.8rem;">❤️ PV</div>
+                    <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+                </div>
+                <div class="stat-badge attack">
+                    <div style="font-size: 0.8rem;">⚔️ ATT</div>
+                    <div style="font-weight: bold;">{attack}</div>
+                </div>
+                <div class="stat-badge precision">
+                    <div style="font-size: 0.8rem;">🎯 HIT</div>
+                    <div style="font-weight: bold;">{defense}</div>
+                </div>
+                <div class="stat-badge defense">
+                    <div style="font-size: 0.8rem;">🛡️ DEF</div>
+                    <div style="font-weight: bold;">{parade_tokens}</div>
+                </div>
+            </div>
         </div>
-        <div class="stats-badges">
-            <div class="stat-badge health">
-                <div style="font-size: 0.8rem;">❤️ PV</div>
-                <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
-            </div>
-            <div class="stat-badge attack">
-                <div style="font-size: 0.8rem;">⚔️ ATT</div>
-                <div style="font-weight: bold;">{attack}</div>
-            </div>
-            <div class="stat-badge precision">
-                <div style="font-size: 0.8rem;">🎯 HIT</div>
-                <div style="font-weight: bold;">{defense}</div>
-            </div>
-            <div class="stat-badge defense">
-                <div style="font-size: 0.8rem;">🛡️ DEF</div>
-                <div style="font-weight: bold;">{parade_tokens}</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    # Si l'ennemi est étourdi, bloquer les actions et passer automatiquement le tour
-    if is_stunned:
-        st.markdown("### 😵 Étourdi !")
-        st.warning(f"**{char.name}** est étourdi pour encore **{stunned_turns} tour(s)** ! Son tour est automatiquement sauté.")
+    with col_header_actions:
+        # Si l'ennemi est étourdi, afficher message dans la colonne actions
+        if is_stunned:
+            st.warning(f"😵 **Étourdi** pour {stunned_turns} tour(s)")
 
-        # Bouton pour passer manuellement (mode manuel) ou auto-skip (mode initiative)
-        if st.button("⏭️ Sauter le tour (Étourdi)", key=f"sandbox_enemy_stunned_{combatant['id']}", type="secondary", use_container_width=True):
-            # Décrémenter le compteur de stun (même logique que pour les héros)
-            if hasattr(char, 'status_effects') and 'stunned' in char.status_effects:
-                stunned_data = char.status_effects['stunned']
-                if isinstance(stunned_data, dict):
-                    current_duration = stunned_data.get('duration', 0)
-                    if current_duration > 0 and current_duration < 999:  # Ne pas décrémenter si permanent
-                        stunned_data['duration'] -= 1
-                        new_duration = stunned_data['duration']
+            # Bouton pour passer manuellement (mode manuel) ou auto-skip (mode initiative)
+            if st.button("⏭️ Sauter le tour (Étourdi)", key=f"sandbox_enemy_stunned_{combatant['id']}", type="secondary", use_container_width=True):
+                # Décrémenter le compteur de stun (même logique que pour les héros)
+                if hasattr(char, 'status_effects') and 'stunned' in char.status_effects:
+                    stunned_data = char.status_effects['stunned']
+                    if isinstance(stunned_data, dict):
+                        current_duration = stunned_data.get('duration', 0)
+                        if current_duration > 0 and current_duration < 999:  # Ne pas décrémenter si permanent
+                            stunned_data['duration'] -= 1
+                            new_duration = stunned_data['duration']
 
-                        if new_duration <= 0:
-                            # Stun expiré
-                            del char.status_effects['stunned']
-                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi !")
+                            if new_duration <= 0:
+                                # Stun expiré
+                                del char.status_effects['stunned']
+                                st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi !")
+                            else:
+                                st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} → {new_duration} tour(s)) - Tour sauté")
                         else:
-                            st.session_state.sandbox_v2_log.append(f"😵 {char.name} est étourdi ! ({stunned_turns} → {new_duration} tour(s)) - Tour sauté")
+                            # Stun permanent
+                            st.session_state.sandbox_v2_log.append(f"🔒 {char.name} est étourdi ! (permanent) - Tour sauté")
                     else:
-                        # Stun permanent
-                        st.session_state.sandbox_v2_log.append(f"🔒 {char.name} est étourdi ! (permanent) - Tour sauté")
-                else:
-                    # Format int (legacy) - décrémenter directement
-                    if char.status_effects['stunned'] > 0 and char.status_effects['stunned'] < 999:
-                        char.status_effects['stunned'] -= 1
-                        if char.status_effects['stunned'] <= 0:
-                            del char.status_effects['stunned']
-                            st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi !")
+                        # Format int (legacy) - décrémenter directement
+                        if char.status_effects['stunned'] > 0 and char.status_effects['stunned'] < 999:
+                            char.status_effects['stunned'] -= 1
+                            if char.status_effects['stunned'] <= 0:
+                                del char.status_effects['stunned']
+                                st.session_state.sandbox_v2_log.append(f"✅ {char.name} n'est plus étourdi !")
 
-            # NOUVEAU - Reset flag on_turn_start pour le prochain tour
-            if hasattr(char, '_on_turn_start_triggered'):
-                delattr(char, '_on_turn_start_triggered')
+                # NOUVEAU - Reset flag on_turn_start pour le prochain tour
+                if hasattr(char, '_on_turn_start_triggered'):
+                    delattr(char, '_on_turn_start_triggered')
 
-            save_game_state(f"{char.name} étourdi - tour sauté")
-            next_turn()
-            st.rerun()
-        return  # NE PAS afficher les actions d'attaque
+                save_game_state(f"{char.name} étourdi - tour sauté")
+                next_turn()
+                st.rerun()
+            return  # NE PAS afficher les actions d'attaque
 
-    # Actions ennemi (seulement si NON stunné)
-    st.markdown("### ⚔️ Actions")
+        # Vérifier si on est en mode sélection de cible pour l'ennemi
+        if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_ENEMY':
+            # Afficher interface de ciblage - Les ennemis peuvent cibler héros ET pets
+            ally_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] in ['hero', 'pet']]
+            heroes_list = [c['character'] for c in ally_combatants]
 
-    # Vérifier si on est en mode sélection de cible pour l'ennemi
-    if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_ENEMY':
-        # Afficher interface de ciblage - Les ennemis peuvent cibler héros ET pets
-        ally_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] in ['hero', 'pet']]
-        heroes_list = [c['character'] for c in ally_combatants]
+            adapter = st.session_state.sandbox_v2_adapter
+            target = adapter.enemy_turn_manual(
+                char,
+                heroes_list,
+                player_count,
+                st.session_state.sandbox_v2_log
+            )
 
-        adapter = st.session_state.sandbox_v2_adapter
-        target = adapter.enemy_turn_manual(
-            char,
-            heroes_list,
-            player_count,
-            st.session_state.sandbox_v2_log
-        )
+            if target:
+                # NOUVEAU - Gérer attaques multiples (capacités ennemis)
+                num_attacks = getattr(char, 'current_turn_attacks', 1)
 
-        if target:
-            # NOUVEAU - Gérer attaques multiples (capacités ennemis)
-            num_attacks = getattr(char, 'current_turn_attacks', 1)
+                # Log attaques multiples
+                if num_attacks > 1:
+                    st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} va attaquer {num_attacks} fois {target.name} !")
 
-            # Log attaques multiples
-            if num_attacks > 1:
-                st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} va attaquer {num_attacks} fois {target.name} !")
+                for attack_num in range(num_attacks):
+                    # Vérifier si la cible est toujours vivante
+                    if not target.is_alive():
+                        st.session_state.sandbox_v2_log.append(f"  ⏸️ {target.name} est vaincu, attaques restantes annulées")
+                        break
 
-            for attack_num in range(num_attacks):
-                # Vérifier si la cible est toujours vivante
-                if not target.is_alive():
-                    st.session_state.sandbox_v2_log.append(f"  ⏸️ {target.name} est vaincu, attaques restantes annulées")
-                    break
+                    # TOUTES les attaques ciblent la même personne sélectionnée
+                    current_target = target
 
-                # TOUTES les attaques ciblent la même personne sélectionnée
-                current_target = target
-
-                # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
-                attack_result = adapter.combat_actions.enemy_attack(
-                    enemy=char,
-                    heroes=heroes_list,
-                    player_count=player_count,
-                    log=st.session_state.sandbox_v2_log,
-                    active_pets=st.session_state.sandbox_v2_active_pets,
-                    manual_target=current_target
-                )
-
-                # Track enemy attack stats
-                if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                    tracker = st.session_state.sandbox_v2_stats_tracker
-                    tracker.record_attack(
-                        char, current_target, attack_result['hit'], attack_result['damage'],
-                        is_critical=False, is_fail=False
+                    # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
+                    attack_result = adapter.combat_actions.enemy_attack(
+                        enemy=char,
+                        heroes=heroes_list,
+                        player_count=player_count,
+                        log=st.session_state.sandbox_v2_log,
+                        active_pets=st.session_state.sandbox_v2_active_pets,
+                        manual_target=current_target
                     )
-                    # Track damage taken by hero (TOUJOURS si hit, même si parade bloque tout)
-                    if attack_result['hit']:
-                        parade_used = attack_result.get('parade_used', 0)
-                        damage_dealt = attack_result['damage']
-                        # Appeler record_damage_taken même si damage=0 (parade peut avoir bloqué tout)
-                        tracker.record_damage_taken(
-                            current_target,
-                            damage_dealt,
-                            parade_used=parade_used
+
+                    # Track enemy attack stats
+                    if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                        tracker = st.session_state.sandbox_v2_stats_tracker
+                        tracker.record_attack(
+                            char, current_target, attack_result['hit'], attack_result['damage'],
+                            is_critical=False, is_fail=False
                         )
+                        # Track damage taken by hero (TOUJOURS si hit, même si parade bloque tout)
+                        if attack_result['hit']:
+                            parade_used = attack_result.get('parade_used', 0)
+                            damage_dealt = attack_result['damage']
+                            # Appeler record_damage_taken même si damage=0 (parade peut avoir bloqué tout)
+                            tracker.record_damage_taken(
+                                current_target,
+                                damage_dealt,
+                                parade_used=parade_used
+                            )
 
-            # NOUVEAU - Reset current_turn_attacks pour le prochain tour
-            if hasattr(char, 'current_turn_attacks'):
-                char.current_turn_attacks = 1
+                # NOUVEAU - Reset current_turn_attacks pour le prochain tour
+                if hasattr(char, 'current_turn_attacks'):
+                    char.current_turn_attacks = 1
 
-            # NOUVEAU - Reset flags pour le prochain tour
-            if hasattr(char, '_before_attack_triggered'):
-                delattr(char, '_before_attack_triggered')
-            if hasattr(char, '_on_turn_start_triggered'):
-                delattr(char, '_on_turn_start_triggered')
+                # NOUVEAU - Reset flags pour le prochain tour
+                if hasattr(char, '_before_attack_triggered'):
+                    delattr(char, '_before_attack_triggered')
+                if hasattr(char, '_on_turn_start_triggered'):
+                    delattr(char, '_on_turn_start_triggered')
 
-            # NOUVEAU - Trigger after_attack (effets après avoir attaqué)
-            if adapter.turn_manager.enemy_ability_manager:
-                adapter.turn_manager.enemy_ability_manager.execute_trigger(
-                    trigger='after_attack',
-                    enemy=char,
-                    context={
-                        'heroes': heroes_list,
-                        'log': st.session_state.sandbox_v2_log,
-                        'round_number': st.session_state.sandbox_v2_round_number
-                    }
-                )
+                # NOUVEAU - Trigger after_attack (effets après avoir attaqué)
+                if adapter.turn_manager.enemy_ability_manager:
+                    adapter.turn_manager.enemy_ability_manager.execute_trigger(
+                        trigger='after_attack',
+                        enemy=char,
+                        context={
+                            'heroes': heroes_list,
+                            'log': st.session_state.sandbox_v2_log,
+                            'round_number': st.session_state.sandbox_v2_round_number
+                        }
+                    )
 
-            st.session_state.sandbox_v2_action_state = None
-            save_game_state(f"{char.name} termine son attaque")
-            next_turn()
-            st.rerun()
+                st.session_state.sandbox_v2_action_state = None
+                save_game_state(f"{char.name} termine son attaque")
+                next_turn()
+                st.rerun()
 
-        # Bouton annuler
-        if st.button("❌ Annuler", key=f"cancel_enemy_targeting_{combatant['id']}"):
-            # Reset flag before_attack pour permettre de recommencer
-            if hasattr(char, '_before_attack_triggered'):
-                delattr(char, '_before_attack_triggered')
-            st.session_state.sandbox_v2_action_state = None
-            st.rerun()
-    else:
-        # Afficher boutons d'action normaux
-        col1, col2 = st.columns(2)
-
-        with col1:
+            # Bouton annuler
+            if st.button("❌ Annuler", key=f"cancel_enemy_targeting_{combatant['id']}"):
+                # Reset flag before_attack pour permettre de recommencer
+                if hasattr(char, '_before_attack_triggered'):
+                    delattr(char, '_before_attack_triggered')
+                st.session_state.sandbox_v2_action_state = None
+                st.rerun()
+        else:
+            # Actions principales (harmonisé avec interface héros)
             if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
                 st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ENEMY'
                 st.session_state.sandbox_v2_current_actor = char
                 st.rerun()
 
-        with col2:
-            if st.button("⏭️ Fin du Tour", key=f"sandbox_enemy_skip_{combatant['id']}", use_container_width=True):
+            # Contrôle de tour
+            if st.button("⏭️ Fin du Tour", key=f"sandbox_enemy_skip_{combatant['id']}", type="secondary", use_container_width=True):
                 # NOUVEAU - Reset flag on_turn_start pour le prochain tour
                 if hasattr(char, '_on_turn_start_triggered'):
                     delattr(char, '_on_turn_start_triggered')
@@ -1539,100 +1703,100 @@ def display_pet_interface(combatant: Dict):
     parade_tokens = char.current_parade_tokens
     owner_name = getattr(char, 'owner_name', 'Inconnu')
 
-    st.markdown(f"""
-    <div class="hero-header" style="border-color: #00FF88;">
-        <div>
-            <h3 style="margin: 0; color: white;">🐾 {char.name}</h3>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">Tour du familier de {owner_name}</p>
+    # Header compact en 2 colonnes : Stats | Actions (proportions harmonisées avec héros)
+    col_header_stats, col_header_actions = st.columns([3, 2])
+
+    with col_header_stats:
+        # Stats compactes avec badges (identique à interface héros)
+        st.markdown(f"""
+        <div class="hero-header" style="border-color: #00FF88;">
+            <div>
+                <h3 style="margin: 0; color: white;">🐾 {char.name}</h3>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">Tour du familier de {owner_name}</p>
+            </div>
+            <div class="stats-badges">
+                <div class="stat-badge health">
+                    <div style="font-size: 0.8rem;">❤️ PV</div>
+                    <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
+                </div>
+                <div class="stat-badge precision">
+                    <div style="font-size: 0.8rem;">🎯 PRE</div>
+                    <div style="font-weight: bold;">{precision}</div>
+                </div>
+                <div class="stat-badge magic">
+                    <div style="font-size: 0.8rem;">🔮 MAG</div>
+                    <div style="font-weight: bold;">{magical_damage}</div>
+                </div>
+                <div class="stat-badge defense">
+                    <div style="font-size: 0.8rem;">🛡️ DEF</div>
+                    <div style="font-weight: bold;">{parade_tokens}</div>
+                </div>
+            </div>
         </div>
-        <div class="stats-badges">
-            <div class="stat-badge health">
-                <div style="font-size: 0.8rem;">❤️ PV</div>
-                <div style="font-weight: bold;">{current_hp}/{max_hp}</div>
-            </div>
-            <div class="stat-badge precision">
-                <div style="font-size: 0.8rem;">🎯 PRE</div>
-                <div style="font-weight: bold;">{precision}</div>
-            </div>
-            <div class="stat-badge magic">
-                <div style="font-size: 0.8rem;">🔮 MAG</div>
-                <div style="font-weight: bold;">{magical_damage}</div>
-            </div>
-            <div class="stat-badge defense">
-                <div style="font-size: 0.8rem;">🛡️ DEF</div>
-                <div style="font-weight: bold;">{parade_tokens}</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    # Actions Pet (Attaque magique automatique)
-    st.markdown("### ⚔️ Actions")
+    with col_header_actions:
+        # Vérifier si on est en mode sélection de cible pour le pet
+        if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_PET':
+            # Afficher interface de ciblage
+            enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+            enemies_list = [c['character'] for c in enemy_combatants]
+            alive_enemies = [e for e in enemies_list if e.is_alive()]
 
-    # Vérifier si on est en mode sélection de cible pour le pet
-    if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_PET':
-        # Afficher interface de ciblage
-        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-        enemies_list = [c['character'] for c in enemy_combatants]
-        alive_enemies = [e for e in enemies_list if e.is_alive()]
-
-        if not alive_enemies:
-            st.warning("❌ Aucun ennemi vivant à cibler")
-            st.session_state.sandbox_v2_action_state = None
-            st.rerun()
-            return
-
-        st.info("🎯 Sélectionnez la cible du familier")
-
-        # Boutons de sélection de cible
-        for enemy in alive_enemies:
-            # Utilise stats de combat figées (ne changent pas si héros meurent)
-            stats = enemy.get_combat_stats()
-            enemy_hp = enemy.current_health
-            enemy_max_hp = enemy.max_health
-
-            if st.button(
-                f"🎯 {enemy.name} ({enemy_hp}/{enemy_max_hp} PV)",
-                key=f"target_pet_{combatant['id']}_{enemy.code}",
-                use_container_width=True
-            ):
-                # Pet attaque avec dégâts magiques
-                adapter = st.session_state.sandbox_v2_adapter
-                log = st.session_state.sandbox_v2_log
-
-                # Calculer player_count (nombre de héros vivants)
-                heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-                player_count = len([h for h in heroes_list if h.is_alive()])
-
-                # RÉUTILISE CombatActions.hero_attack() (Pets attaquent comme héros)
-                adapter.combat_actions.hero_attack(
-                    hero=char,
-                    enemies=[enemy],
-                    player_count=player_count,
-                    log=log
-                )
-
+            if not alive_enemies:
+                st.warning("❌ Aucun ennemi vivant à cibler")
                 st.session_state.sandbox_v2_action_state = None
-                save_game_state(f"{char.name} attaque {enemy.name}")
-                next_turn()
                 st.rerun()
+                return
 
-        # Bouton annuler
-        if st.button("❌ Annuler", key=f"cancel_pet_targeting_{combatant['id']}"):
-            st.session_state.sandbox_v2_action_state = None
-            st.rerun()
-    else:
-        # Afficher boutons d'action normaux
-        col1, col2 = st.columns(2)
+            st.info("🎯 Sélectionnez la cible du familier")
 
-        with col1:
+            # Boutons de sélection de cible
+            for enemy in alive_enemies:
+                # Utilise stats de combat figées (ne changent pas si héros meurent)
+                stats = enemy.get_combat_stats()
+                enemy_hp = enemy.current_health
+                enemy_max_hp = enemy.max_health
+
+                if st.button(
+                    f"🎯 {enemy.name} ({enemy_hp}/{enemy_max_hp} PV)",
+                    key=f"target_pet_{combatant['id']}_{enemy.code}",
+                    use_container_width=True
+                ):
+                    # Pet attaque avec dégâts magiques
+                    adapter = st.session_state.sandbox_v2_adapter
+                    log = st.session_state.sandbox_v2_log
+
+                    # Calculer player_count (nombre de héros vivants)
+                    heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                    player_count = len([h for h in heroes_list if h.is_alive()])
+
+                    # RÉUTILISE CombatActions.hero_attack() (Pets attaquent comme héros)
+                    adapter.combat_actions.hero_attack(
+                        hero=char,
+                        enemies=[enemy],
+                        player_count=player_count,
+                        log=log
+                    )
+
+                    st.session_state.sandbox_v2_action_state = None
+                    save_game_state(f"{char.name} attaque {enemy.name}")
+                    next_turn()
+                    st.rerun()
+
+            # Bouton annuler
+            if st.button("❌ Annuler", key=f"cancel_pet_targeting_{combatant['id']}"):
+                st.session_state.sandbox_v2_action_state = None
+                st.rerun()
+        else:
+            # Actions principales (harmonisé avec interface héros)
             if st.button("🔮 Attaque Magique", key=f"sandbox_pet_attack_{combatant['id']}", type="primary", use_container_width=True):
                 st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_PET'
                 st.session_state.sandbox_v2_current_actor = char
                 st.rerun()
 
-        with col2:
-            if st.button("⏭️ Fin du Tour", key=f"sandbox_pet_skip_{combatant['id']}", use_container_width=True):
+            # Contrôle de tour
+            if st.button("⏭️ Fin du Tour", key=f"sandbox_pet_skip_{combatant['id']}", type="secondary", use_container_width=True):
                 st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
                 save_game_state(f"{char.name} termine son tour")
                 next_turn()
@@ -1891,8 +2055,10 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
             use_ability_action(char, ability)
 
 def display_actions_and_potions(char: Character, combatant_id: str):
-    """Colonne actions + potions style Arène"""
-    st.markdown("### ⚡ Actions de Base")
+    """Colonne actions + potions style Arène
+    NOTE: Les actions principales et potions sont maintenant dans le header compact
+    Cette fonction gère uniquement la sélection de cible et modes spéciaux
+    """
 
     # Vérifier si on est en mode sélection de cible
     if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_HERO':
@@ -2022,92 +2188,9 @@ def display_actions_and_potions(char: Character, combatant_id: str):
         if st.button("❌ Annuler", key=f"cancel_targeting_{combatant_id}"):
             st.session_state.sandbox_v2_action_state = None
             st.rerun()
-    else:
-        # Afficher boutons d'action normaux
-        # Attaque (désactivé si déjà attaqué ce tour)
-        can_attack = char.can_attack_this_turn if hasattr(char, 'can_attack_this_turn') else True
-
-        if can_attack:
-            if st.button("⚔️ Attaquer", key=f"sandbox_attack_{combatant_id}", type="primary", use_container_width=True):
-                # Vérifier si attack_all_enemies est actif (Kraor capacité 4)
-                attack_all = hasattr(char, 'temporary_buffs') and 'attack_all_enemies' in char.temporary_buffs
-
-                if attack_all:
-                    # Attaque multi-cible : pas besoin de sélectionner une cible
-                    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-                    enemies_list = [c['character'] for c in enemy_combatants]
-                    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-                    heroes_list = [c['character'] for c in hero_combatants]
-                    player_count = len([h for h in heroes_list if h.is_alive()])
-                    adapter = st.session_state.sandbox_v2_adapter
-
-                    # Attaquer TOUS les ennemis vivants
-                    alive_enemies = [e for e in enemies_list if e.is_alive()]
-                    st.session_state.sandbox_v2_log.append(f"💥 {char.name} déclenche une attaque ciblant TOUS les ennemis !")
-                    for enemy in alive_enemies:
-                        attack_result = adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
-
-                        # Track attack stats
-                        if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                            tracker = st.session_state.sandbox_v2_stats_tracker
-                            tracker.record_attack(
-                                char, enemy, attack_result['hit'], attack_result['damage'],
-                                attack_result['critical'], attack_result['critical_fail']
-                            )
-                            # Track damage taken by enemy (TOUJOURS si hit, même si parade bloque tout)
-                            if attack_result['hit']:
-                                tracker.record_damage_taken(
-                                    enemy,
-                                    attack_result['damage'],
-                                    parade_used=attack_result.get('parade_used', 0)
-                                )
-
-                    # Consommer le buff
-                    char.temporary_buffs.pop('attack_all_enemies', None)
-
-                    # Marquer attaque effectuée
-                    char.can_attack_this_turn = False
-                    char.attack_done_this_turn = True
-
-                    save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
-                    st.rerun()
-                else:
-                    # Attaque normale : sélectionner une cible
-                    st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_HERO'
-                    st.session_state.sandbox_v2_current_actor = char
-                    st.rerun()
-        else:
-            st.button("⚔️ Attaquer (déjà fait)", key=f"sandbox_attack_{combatant_id}", disabled=True, use_container_width=True)
-
-        # Passer
-        if st.button("⏭️ Fin du Tour", key=f"sandbox_skip_{combatant_id}", use_container_width=True):
-            st.session_state.sandbox_v2_log.append(f"⏭️ {char.name} termine son tour")
-            save_game_state(f"{char.name} termine son tour")
-            next_turn()
-            st.rerun()
-
-    # NOUVEAU - Bouton Invocation Pet pour Kraor (P-4) avec Médaillon d'Appel (O-3)
-    if hasattr(char, 'code') and char.code == "P-4" and char.can_summon_pet():
-        # Vérifier si un pet est déjà invoqué
-        pet_already_summoned = any(
-            hasattr(p, 'owner_code') and p.owner_code == char.code
-            for p in st.session_state.sandbox_v2_active_pets
-        )
-
-        # Vérifier si Kraor peut encore agir ce tour
-        can_summon = not getattr(char, 'action_taken_this_turn', False)
-        can_summon = can_summon and getattr(char, 'can_attack_this_turn', True)
-        can_summon = can_summon and not getattr(char, 'potion_used_this_turn', False)
-
-        st.markdown("### 🐾 Médaillon d'Appel")
-
-        if pet_already_summoned:
-            st.info("✅ Pet déjà invoqué ce combat")
-        elif not can_summon:
-            st.warning("⚠️ Action déjà effectuée ce tour")
-        else:
-            if st.button("🔮 Invoquer Pet", key=f"summon_pet_{combatant_id}", type="primary", use_container_width=True):
-                use_summon_pet_action(char)
+    # NOTE: Les boutons "Attaquer" et "Fin du Tour" ont été déplacés dans le header compact
+    # pour gagner de l'espace vertical. Ils sont maintenant dans display_hero_interface()
+    # NOTE: Le "Médaillon d'Appel" de Kraor a été déplacé dans col_abilities (colonne de gauche)
 
     # NOUVEAU - Bouton Rage pour Thordius (P-5) si Berserker débloqué
     if hasattr(char, 'code') and char.code == "P-5":
@@ -2129,9 +2212,7 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                 save_game_state(f"{char.name} - Rage {new_state}")
                 st.rerun()
 
-    # Potions
-    st.markdown("### 🧪 Potions")
-
+    # === GESTION MODE "FAIRE BOIRE" ===
     # État de sélection pour "faire boire"
     action_state = st.session_state.get('sandbox_v2_action_state', None)
 
@@ -2221,64 +2302,9 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                     st.session_state.sandbox_v2_potion_type = None
                     st.rerun()
 
-    # MODE NORMAL: Utiliser sur soi-même ou entrer en mode "faire boire"
-    else:
-        # NOUVEAU - Elneha formes animales : Bloquer toutes les potions
-        is_elneha_animal = (char.code == "P-1" and
-                           hasattr(char, 'current_form') and
-                           char.current_form in ["bear", "wolf"])
-
-        if is_elneha_animal:
-            st.warning("⚠️ Potions indisponibles en forme animale")
-        elif hasattr(char, 'health_potions') and char.health_potions:
-            potions_summary = char.get_potions_summary()
-
-            # Boire soi-même
-            st.caption("Boire soi-même:")
-            col1, col2 = st.columns(2)
-
-            with col1:
-                small_count = potions_summary['small_count']
-                if small_count > 0:
-                    if st.button(f"🩸 Petite\n{small_count}", key=f"sandbox_potion_small_{combatant_id}", use_container_width=True):
-                        use_small_potion_action(char)
-                else:
-                    st.button(f"🩸 Petite\n0", disabled=True, use_container_width=True)
-
-            with col2:
-                large_count = potions_summary['large_count']
-                if large_count > 0:
-                    if st.button(f"❤️‍🩹 Grande\n{large_count}", key=f"sandbox_potion_large_{combatant_id}", use_container_width=True):
-                        use_large_potion_action(char)
-                else:
-                    st.button(f"❤️‍🩹 Grande\n0", disabled=True, use_container_width=True)
-
-            # Faire boire à un allié
-            st.caption("Ou donner à un allié:")
-            has_any_potion = potions_summary['total_count'] > 0
-
-            # Vérifier si une action a déjà été prise ce tour
-            action_already_taken = (
-                char.action_taken_this_turn or
-                char.potion_used_this_turn or
-                not char.can_attack_this_turn
-            )
-
-            # Le bouton "Faire Boire" est disponible seulement si:
-            # - Le héros a des potions
-            # - Aucune action n'a été prise ce tour
-            if has_any_potion and not action_already_taken:
-                if st.button("🤝 Faire Boire une Potion", key=f"give_potion_{combatant_id}", use_container_width=True):
-                    st.session_state.sandbox_v2_action_state = 'GIVING_POTION'
-                    st.session_state.sandbox_v2_current_actor = char
-                    st.rerun()
-            else:
-                button_label = "🤝 Faire Boire une Potion"
-                if action_already_taken:
-                    button_label += " (Action déjà prise)"
-                st.button(button_label, disabled=True, use_container_width=True)
-        else:
-            st.info("Aucune potion")
+    # NOTE: La section Potions a été déplacée dans le header compact
+    # pour gagner de l'espace vertical et améliorer l'ergonomie.
+    # Les potions sont maintenant affichées dans display_hero_interface()
 
 # === ACTIONS DE COMBAT ===
 
@@ -3479,28 +3505,15 @@ def main_sandbox_v2():
                 save_game_state(f"Nouveau round {st.session_state.sandbox_v2_round_number}")
                 st.rerun()
 
-    # === CONTRÔLES UNDO/REDO ===
+    # === CONTRÔLES RESET COMBAT ===
+    # NOTE: Les boutons Undo/Redo sont maintenant intégrés dans le header compact des héros
+    # pour un accès plus rapide et une meilleure ergonomie (pas besoin de scroller)
+    # Garde uniquement le bouton Reset Combat pour les situations d'urgence
     if st.session_state.sandbox_v2_game_history and phase == 'COMBAT':
         st.markdown("---")
-        st.markdown("### 🕒 Historique")
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            can_undo = st.session_state.sandbox_v2_history_index > 0
-            if st.button("⏪ Annuler", disabled=not can_undo, use_container_width=True):
-                restore_previous_state()
-                st.rerun()
-
-        with col2:
-            can_redo = st.session_state.sandbox_v2_history_index < len(st.session_state.sandbox_v2_game_history) - 1
-            if st.button("⏩ Refaire", disabled=not can_redo, use_container_width=True):
-                restore_next_state()
-                st.rerun()
-
-        with col3:
+        col_reset = st.columns([1, 2, 1])[1]  # Centrer le bouton
+        with col_reset:
             if st.button("🔄 Reset Combat", use_container_width=True):
-                # Utilise la fonction centralisée de reset
                 reset_combat_state()
                 st.rerun()
 
