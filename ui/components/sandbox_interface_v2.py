@@ -167,7 +167,8 @@ def validate_character_state(char, context: str = ""):
     issues = []
 
     # Déterminer si c'est un Character (héros) ou Enemy
-    is_hero = hasattr(char, 'abilities')
+    # Utiliser isinstance() pour distinction fiable (les ennemis peuvent aussi avoir des abilities)
+    is_hero = isinstance(char, Character)
 
     # Attributs communs à tous (héros et ennemis)
     common_attrs = [
@@ -238,8 +239,8 @@ def ensure_character_attributes(char):
     l'ajout de nouveaux attributs au modèle
     """
     # Déterminer si c'est un Character (héros) ou Enemy
-    # Les héros ont des abilities, les ennemis n'en ont pas
-    is_hero = hasattr(char, 'abilities')
+    # Utiliser isinstance() pour distinction fiable (les ennemis peuvent aussi avoir des abilities)
+    is_hero = isinstance(char, Character)
 
     if is_hero:
         # Attributs spécifiques aux héros (Character)
@@ -3250,6 +3251,12 @@ def main_sandbox_v2():
                 analysis,
                 st.session_state.sandbox_v2_log
             )
+
+            # Bouton pour lancer un nouveau combat
+            st.markdown("---")
+            if st.button("🔄 Nouveau Combat", type="primary", use_container_width=True):
+                reset_combat_state()
+                st.rerun()
         else:
             # Fallback si pas de tracker (ne devrait pas arriver)
             if phase == 'VICTORY':

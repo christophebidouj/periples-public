@@ -20,7 +20,7 @@ from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waitin
 from ui.components import *
 from ui.components.hero_components import preload_hero_builds_for_all_difficulties
 from hero_builds_data import get_abilities_for_level
-from ui.components.sandbox_interface_v2 import main_sandbox_v2
+from ui.components.sandbox_interface_v2 import main_sandbox_v2, reset_combat_state
 from ui.components.enemy_editor import main_enemy_editor
 
 # Import des capacités et des potions
@@ -572,7 +572,9 @@ def tab_selection(data):
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("🚀 Lancer le Playtest", type="primary", use_container_width=True):
-                # Utiliser une variable intermédiaire pour éviter l'erreur Streamlit
+                # Réinitialiser l'état du combat pour démarrer un combat frais
+                reset_combat_state()
+                # Naviguer vers l'onglet Playtest
                 st.session_state.pending_navigation = "🎮 Playtest Manuel"
                 st.rerun()
 
