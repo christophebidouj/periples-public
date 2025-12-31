@@ -83,25 +83,24 @@ class DataLoader:
     def load_heroes(self) -> List[Character]:
         """Charge la liste des héros avec leurs capacités"""
         csv_file = os.path.join(self.data_folder, "heroes.csv")
-        
+
         # Créer le CSV si absent
         if not os.path.exists(csv_file):
             self._create_csv_files()
-        
+
         # Lire le CSV
         heroes = []
         try:
             df = pd.read_csv(csv_file)
-            abilities_data = self._load_abilities()
-            
+
             for _, row in df.iterrows():
                 hero = self._create_hero_from_row(row)
-                self._add_abilities_to_hero(hero, abilities_data)
+                self._add_abilities_to_hero(hero)
                 heroes.append(hero)
-                
+
             print(f"✅ {len(heroes)} héros chargés")
             return heroes
-            
+
         except Exception as e:
             print(f"❌ Erreur chargement héros: {e}")
             return self._create_default_heroes()
@@ -376,9 +375,10 @@ class DataLoader:
         self._abilities_loaded = True
         return self._abilities or {}
     
-    def _add_abilities_to_hero(self, hero: Character, abilities_data: Dict):
+    def _add_abilities_to_hero(self, hero: Character):
         """Ajoute les capacités à un héros (filtre capacités hors-combat)"""
-        hero_abilities = abilities_data.get(hero.code, [])
+        # CORRIGÉ: Utiliser get_hero_abilities() qui inclut les capacités exclusives (101, 102 pour Elneha)
+        hero_abilities = self.get_hero_abilities(hero.code)
         if hero_abilities and hasattr(hero, 'add_abilities'):
             # FILTRER les capacités "Pas utile en combat"
             combat_abilities = [

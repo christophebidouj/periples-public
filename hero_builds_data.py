@@ -221,17 +221,24 @@ def get_build_name_by_difficulty(difficulty: str) -> str:
 def get_abilities_for_level(hero_code: str, abilities_level: int) -> list:
     """
     Retourne la liste des numéros de capacités acquises selon le niveau
-    
+
     Args:
         hero_code: Code du héros (ex: "P-1")
         abilities_level: Niveau de capacité (1-6)
-        
+
     Returns:
         list: Liste des numéros de capacités acquises [1, 2, 3, ...]
     """
     if abilities_level <= 0:
         return []
-    
+
     # Max 6 capacités par héros
     max_abilities = min(abilities_level, 6)
-    return list(range(1, max_abilities + 1))
+    abilities = list(range(1, max_abilities + 1))
+
+    # CORRECTION: Ajouter capacités exclusives pour Elneha (formes animales)
+    if hero_code == "P-1" and abilities_level >= 1:
+        # Ajouter les capacités exclusives des formes (101: Ours, 102: Loup)
+        abilities.extend([101, 102])
+
+    return abilities

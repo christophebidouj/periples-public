@@ -312,6 +312,13 @@ class Character(BaseModel):
         self.max_parade_tokens = 2  # CORRIGÉ: 2 jetons de parade (pas 0)
         self.current_parade_tokens = 2
 
+        # Débloquer capacité exclusive de l'ours (101 - Résistance d'ours)
+        if 101 not in self.unlocked_abilities:
+            self.unlocked_abilities.append(101)
+        # Retirer capacité du loup si présente
+        if 102 in self.unlocked_abilities:
+            self.unlocked_abilities.remove(102)
+
         # Marquer la transformation
         self.current_form = "bear"
         self.action_taken_this_turn = True  # Transformation = action exclusive
@@ -343,6 +350,13 @@ class Character(BaseModel):
         self.max_parade_tokens = 0
         self.current_parade_tokens = 0
 
+        # Débloquer capacité exclusive du loup (102 - Férocité du loup)
+        if 102 not in self.unlocked_abilities:
+            self.unlocked_abilities.append(102)
+        # Retirer capacité de l'ours si présente
+        if 101 in self.unlocked_abilities:
+            self.unlocked_abilities.remove(101)
+
         # Marquer la transformation
         self.current_form = "wolf"
         self.action_taken_this_turn = True  # Transformation = action exclusive
@@ -361,6 +375,12 @@ class Character(BaseModel):
 
         # Restaurer les stats humaines
         self._restore_human_stats()
+
+        # Retirer les capacités exclusives des formes animales
+        if 101 in self.unlocked_abilities:
+            self.unlocked_abilities.remove(101)  # Résistance d'ours
+        if 102 in self.unlocked_abilities:
+            self.unlocked_abilities.remove(102)  # Férocité du loup
 
         # Marquer la transformation
         self.current_form = "human"
@@ -387,6 +407,13 @@ class Character(BaseModel):
         if self.current_form in ["bear", "wolf"] and self.current_health <= 0:
             # Restaurer forme humaine avec stats sauvegardées
             self._restore_human_stats()
+
+            # Retirer les capacités exclusives des formes animales
+            if 101 in self.unlocked_abilities:
+                self.unlocked_abilities.remove(101)  # Résistance d'ours
+            if 102 in self.unlocked_abilities:
+                self.unlocked_abilities.remove(102)  # Férocité du loup
+
             self.current_form = "human"
             return True
 
