@@ -7,7 +7,11 @@ VERSION PROPRE - Sans forçage CSS brutal
 import streamlit as st
 import base64
 import os
-from typing import Optional
+import re
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.character import Enemy
 
 def get_hero_icon(hero_name: str) -> str:
     """Retourne l'icône correspondant au héros"""
@@ -93,6 +97,64 @@ def get_hero_image_path(hero_name: str, current_form: Optional[str] = None) -> O
     }
 
     return image_mapping.get(hero_name)
+
+def normalize_enemy_name(name: str) -> str:
+    """
+    Normalise le nom d'un ennemi pour le matching avec les images du bestiaire.
+
+    Exemples:
+        "Okkoto 1" -> "Okkoto"
+        "Dragon azur (2)" -> "Dragon azur"
+        "Draugr 3" -> "Draugr"
+        "Âme en peine" -> "Âme en peine" (inchangé)
+
+    Args:
+        name: Nom de l'ennemi à normaliser
+
+    Returns:
+        Nom normalisé sans variantes numériques
+    """
+    # Enlever les numéros entre parenthèses: "Dragon azur (2)" -> "Dragon azur"
+    name = re.sub(r'\s*\(\d+\)$', '', name)
+
+    # Enlever les numéros à la fin: "Okkoto 1" -> "Okkoto"
+    name = re.sub(r'\s+\d+$', '', name)
+
+    return name.strip()
+
+def get_enemy_image_path(enemy: "Enemy") -> str:
+    """
+    Retourne le chemin vers l'image d'un ennemi selon sa nature (officiel ou custom).
+
+    Logique de sélection:
+        1. Si ennemi custom (is_custom=True) -> Custom.jpg
+        2. Sinon, normaliser le nom et chercher dans Images Bestiaire/
+        3. Si image trouvée -> utiliser cette image
+        4. Sinon -> fallback sur monstres.jpg (image générique)
+
+    Args:
+        enemy: Instance de la classe Enemy
+
+    Returns:
+        Chemin vers l'image appropriée (toujours un chemin valide)
+    """
+    # CAS 1: Ennemi custom créé par l'utilisateur
+    if enemy.is_custom:
+        return "data/images/Images Bestiaire/Custom.jpg"
+
+    # CAS 2: Ennemi officiel du bestiaire
+    # Normaliser le nom (enlever variantes numériques)
+    normalized_name = normalize_enemy_name(enemy.name)
+
+    # Construire le chemin vers l'image dans le bestiaire
+    bestiaire_path = f"data/images/Images Bestiaire/{normalized_name}.jpg"
+
+    # Vérifier si l'image existe
+    if os.path.exists(bestiaire_path):
+        return bestiaire_path
+
+    # CAS 3: Fallback - image générique si aucune correspondance
+    return "data/images/monstres.jpg"
 
 def load_hero_image_base64(image_path: str) -> Optional[str]:
     """Charge une image héros en base64 pour affichage"""

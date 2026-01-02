@@ -17,7 +17,7 @@ from models.combat.spell_manager import SpellManager
 from models.combat.initiative_manager import InitiativeManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
-from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon
+from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon, get_enemy_image_path
 from ui.styling import get_hero_card_style
 from ui.components.combat_stats_tracker import CombatStatsTracker
 from ui.components.combat_stats_analyzer import analyze_combat_results, generate_balance_recommendations
@@ -2657,10 +2657,10 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     else:
         border_color = "#e74c3c"  # Rouge pour vivant en attente
 
-    # Charger image monstres.jpg (RÉUTILISE même approche que héros avec chemin relatif portable)
+    # Charger l'image spécifique de l'ennemi (officiel/custom avec fallback automatique)
     import base64
     import os
-    monster_image_path = "data/images/monstres.jpg"
+    monster_image_path = get_enemy_image_path(enemy)  # Sélection intelligente selon enemy.is_custom et nom normalisé
     background_style = ""
 
     if os.path.exists(monster_image_path):
