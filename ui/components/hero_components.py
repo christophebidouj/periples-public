@@ -512,7 +512,7 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     
     # Contenu des stats
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0;">
+    <div style="font-family: monospace; font-size: 1rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000, 0 0 5px #000;">
         🎯{stats["precision"]} • ⚔️{stats["damage"]} • ❤️{stats["health"]}{bonus_text}
     </div>"""
     
@@ -522,7 +522,7 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         build_name_display += "..."
         
     build_content = f"""
-    <div style="font-size: 0.9rem; font-style: italic; color: #e0e0e0;">
+    <div style="font-size: 0.9rem; font-style: italic; color: #e0e0e0; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000, 0 0 5px #000;">
         {build_name_display}
     </div>"""
     

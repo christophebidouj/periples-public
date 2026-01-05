@@ -668,7 +668,7 @@ def get_hero_card_style(hero_name: str, border_color: str, background_style: str
                 {background_style} background-size: cover; background-position: center top;
                 position: relative; color: white; margin: 10px auto;">
         <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); border-radius: 5px; padding: 4px 8px;">
-            <strong style="font-size: 16px; color: yellow; text-shadow: 2px 2px black;">{hero_name}</strong>
+            <strong style="font-size: 16px; color: yellow; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">{hero_name}</strong>
         </div>
         <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 70%); padding: 15px;">
             {{stats_content}}

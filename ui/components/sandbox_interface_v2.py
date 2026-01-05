@@ -2572,7 +2572,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
 
     # Préparer stats_content (2 stats par ligne pour meilleure lisibilité)
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
+    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000, 0 0 5px #000;">
         ❤️ {current_hp}/{max_hp} PV 🎯 {precision} PRE<br/>
         ⚔️ {attack} ATT 🛡️ {defense} DEF<br/>
         ✨ {magic} MAG
@@ -2598,29 +2598,44 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # NOUVEAU - Vérifier si héros est stunné (RÉUTILISE fonction centralisée)
     is_stunned, stunned_turns = is_character_stunned(hero)
 
+    # NOUVEAU - Vérifier si Lame est en mode furtif
+    is_stealthy = False
+    stealth_turns = 0
+    if hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects:
+        stealth_data = hero.status_effects['invisible']
+        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
+            is_stealthy = True
+            stealth_turns = stealth_data.get('turns_remaining', 0)
+
     # Préparer build_content (remplacé par status pour le combat)
-    if is_current_turn:
-        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
+    if is_current_turn and is_stealthy:
+        # NOUVEAU : Badge combiné FURTIF + C'EST SON TOUR (pour Lame)
+        build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡🥷 SON TOUR<br/>(FURTIF {stealth_turns}T)</div>'
+    elif is_current_turn:
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡ C\'EST SON TOUR</div>'
     elif not is_alive and rage_active:
         # NOUVEAU : Badge Rage active même inconscient
-        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: 2px 2px 4px black;">🔥💀 RAGE<br/>(IMMORTEL)</div>'
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🔥💀 RAGE<br/>(IMMORTEL)</div>'
     elif not is_alive:
-        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 INCONSCIENT</div>'
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">💀 INCONSCIENT</div>'
     elif is_stunned:
         # NOUVEAU : Badge visuel pour héros stunné (même format que ennemis)
         if stunned_turns >= 999:
-            build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">🔒 Assommé</div>'
+            build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🔒 Assommé</div>'
         else:
-            build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">😵 Assommé ({stunned_turns} tours)</div>'
+            build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">😵 Assommé ({stunned_turns} tours)</div>'
+    elif is_stealthy:
+        # NOUVEAU : Badge Furtivité active (Lame P-7-1)
+        build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #6A0DAD; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🥷 FURTIF<br/>({stealth_turns} tours)</div>'
     elif rage_active:
         # NOUVEAU : Badge Rage active
-        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: 2px 2px 4px black;">🔥 RAGE ACTIVE</div>'
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🔥 RAGE ACTIVE</div>'
     elif wolf_form_active:
         # NOUVEAU : Badge Forme de loup avec compteur et indication x2 dégâts
-        build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FF4500; text-shadow: 2px 2px 4px black;">🐺 LOUP ×2 ATK<br/>({wolf_remaining} rest.)</div>'
+        build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FF4500; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🐺 LOUP ×2 ATK<br/>({wolf_remaining} rest.)</div>'
     elif pluie_active:
         # NOUVEAU : Badge Pluie de flèches (2 attaques par tour)
-        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #00CED1; text-shadow: 2px 2px 4px black;">🏹 PLUIE<br/>(2 ATK/tour)</div>'
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #00CED1; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🏹 PLUIE<br/>(2 ATK/tour)</div>'
     else:
         build_content = '&nbsp;'  # Espace invisible - pas de label par défaut
 
@@ -2678,7 +2693,7 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     # Préparer stats_content (2 stats par ligne pour meilleure lisibilité)
     magic_line = "<br/>        ✨ MAG" if enemy.is_magical else ""
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
+    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000, 0 0 5px #000;">
         ❤️ {current_hp}/{max_hp} PV ⚔️ {damage} ATT<br/>
         🎯 {defense} HIT 🛡️ {parade_tokens} DEF{magic_line}
     </div>"""
@@ -2693,15 +2708,15 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
 
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
-        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡ C\'EST SON TOUR</div>'
     elif not is_alive:
-        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 MORT</div>'
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">💀 MORT</div>'
     elif is_stunned:
         # NOUVEAU : Badge visuel pour ennemi étourdi (cohérent avec mode manuel)
-        build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: 2px 2px 4px black;">😵 Étourdi ({stunned_turns} tours)</div>'
+        build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">😵 Étourdi ({stunned_turns} tours)</div>'
     elif is_marked_by_kraor:
         # NOUVEAU : Badge visuel pour ennemi marqué par Kraor (Piège +2 dégâts groupe)
-        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF6347; text-shadow: 2px 2px 4px black;">🎯 MARQUÉ<br/>+2 dégâts groupe</div>'
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF6347; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🎯 MARQUÉ<br/>+2 dégâts groupe</div>'
     else:
         build_content = '&nbsp;'  # Espace invisible - pas de label par défaut
 
@@ -2760,7 +2775,7 @@ def display_pet_combat_card(pet: 'Pet', is_current_turn: bool = False):
 
     # Préparer stats_content (stats simplifiées pour pet)
     stats_content = f"""
-    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5;">
+    <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; color: #f0f0f0; line-height: 1.5; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000, 0 0 5px #000;">
         ❤️ {current_hp}/{max_hp} PV<br/>
         🔮 {magical_damage} MAG 🎯 {precision} PRE<br/>
         <span style="font-size: 0.75rem; color: #aaa;">🔗 {owner_name}</span>
@@ -2768,11 +2783,11 @@ def display_pet_combat_card(pet: 'Pet', is_current_turn: bool = False):
 
     # Préparer build_content (status du pet)
     if is_current_turn:
-        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 4px black;">⚡ C\'EST SON TOUR</div>'
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡ C\'EST SON TOUR</div>'
     elif not is_alive:
-        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: 2px 2px 4px black;">💀 VAINCU</div>'
+        build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #ff4444; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">💀 VAINCU</div>'
     else:
-        build_content = '<div style="font-size: 0.9rem; font-weight: bold; color: #00FF88; text-shadow: 2px 2px 4px black;">✨ INVOQUÉ</div>'
+        build_content = '<div style="font-size: 0.9rem; font-weight: bold; color: #00FF88; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">✨ INVOQUÉ</div>'
 
     # RÉUTILISE le style existant (même format que cartes héros)
     card_html = get_hero_card_style(pet_name, border_color, background_style)
