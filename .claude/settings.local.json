@@ -11,7 +11,8 @@
       "Bash(tree:*)",
       "Bash(ls:*)",
       "Bash(streamlit run:*)",
-      "Bash(.venv/Scripts/python:*)"
+      "Bash(.venv/Scripts/python:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": []
