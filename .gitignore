@@ -9,6 +9,10 @@ data/images/*
 !data/images/*.png
 !data/images/*.jpg
 !data/images/*.jpeg
+!data/images/Images Bestiaire/
+!data/images/Images Bestiaire/*.png
+!data/images/Images Bestiaire/*.jpg
+!data/images/Images Bestiaire/*.jpeg
 *.exe
 *.pkg
 #ignorer les fichiers temporaires et les fichiers compilés
