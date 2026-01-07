@@ -24,7 +24,7 @@ from ..ability_registry import register_ability
 
 @register_ability
 class RaishiPointFaible(BaseAbility):
-    """P-8-1: Point faible - Ignore parade ennemis (permanent passif)"""
+    """P-8-1: Point faible - Ignore parade ennemis (PASSIF)"""
 
     hero_code = "P-8"
     ability_number = 1
@@ -36,33 +36,19 @@ class RaishiPointFaible(BaseAbility):
         self.spell_cost = 0
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active capacité passive - ignore parade ennemis pour tout le combat"""
-        try:
-            # Ajouter buff permanent
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
+        """Capacité PASSIVE INFORMATIVE - Affiche le statut du passif."""
+        # Vérifier si le passif est actif
+        is_active = hasattr(caster, 'temporary_buffs') and 'ignore_parade' in caster.temporary_buffs
 
-            # Vérifier si déjà actif
-            if 'ignore_parade' in caster.temporary_buffs:
-                log.append(f"⚠️ Art martial déjà actif")
-                return False
+        if is_active:
+            log.append(f"ℹ️ {caster.name} - Point faible actif (Ignore parade ennemis)")
+        else:
+            log.append(f"⚠️ {caster.name} - Point faible inactif (erreur d'activation)")
 
-            caster.temporary_buffs['ignore_parade'] = {
-                'type': 'permanent_combat',
-                'source': 'raishi_art_martial'
-            }
-
-            log.append(f"🥋 {caster.name} maîtrise l'Art martial !")
-            log.append(f"   🎯 Ignore la parade des ennemis (permanent)")
-
-            return True
-
-        except Exception as e:
-            log.append(f"❌ Erreur Art martial: {e}")
-            return False
+        return False  # Ne pas consommer d'action
 
     def get_preview(self) -> str:
-        return f"🥋 {self.name}: Ignore parade ennemis permanent (Gratuit)"
+        return f"🥋 {self.name}: PASSIF - Ignore parade ennemis permanent"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
@@ -332,3 +318,48 @@ class RaishiZuiQuan(BaseAbility):
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
+
+
+
+# ========================================
+# FONCTIONS D'AUTO-ACTIVATION (PASSIFS)
+# ========================================
+
+def auto_activate_point_faible(heroes: List, log: List[str]) -> bool:
+    """
+    AUTO-ACTIVATION: Active automatiquement "Point faible" pour Raishi dès le début du combat.
+
+    Point faible est un passif permanent qui permet à Raishi d'ignorer la parade des ennemis.
+    Cette capacité s'active automatiquement dès le début du combat et reste active tant que
+    Raishi est vivant.
+
+    Args:
+        heroes: Liste des héros participant au combat
+        log: Liste de logs de combat (sera modifiée)
+
+    Returns:
+        bool: True si le buff a été activé, False sinon
+
+    Effet:
+        Ignore la parade des ennemis lors des attaques
+    """
+    # Chercher Raishi (P-8) parmi les héros vivants
+    raishi = next((h for h in heroes if h.code == "P-8" and h.is_alive()), None)
+
+    if not raishi:
+        return False
+
+    # Initialiser temporary_buffs si nécessaire
+    if not hasattr(raishi, 'temporary_buffs'):
+        raishi.temporary_buffs = {}
+
+    # Appliquer le buff permanent
+    raishi.temporary_buffs['ignore_parade'] = {
+        'type': 'passive_permanent',
+        'source': 'raishi_point_faible'
+    }
+
+    # Logger l'activation
+    log.append(f"🥋 Point faible de Raishi actif (Ignore parade ennemis)")
+
+    return True

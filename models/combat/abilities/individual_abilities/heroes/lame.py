@@ -236,7 +236,7 @@ class LameAttaqueTournoyante(BaseAbility):
         self.uses_remaining_combat = 3
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Prochaine attaque cible TOUS les ennemis (multi-target)"""
+        """Attaque tournoyante - Touche automatiquement TOUS les ennemis vivants à 100%"""
         try:
             # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
             if not hasattr(caster, 'temporary_buffs'):
@@ -248,20 +248,46 @@ class LameAttaqueTournoyante(BaseAbility):
 
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Assassination déjà utilisée ({self.uses_per_combat} fois)")
+                log.append(f"⚠️ Attaque tournoyante déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            caster.temporary_buffs['assassination_ready'] = {
-                'type': 'multi_target',
-                'applies_to': 'next_attack',
-                'source': 'lame_assassination'
-            }
+            # Récupérer les ennemis du contexte
+            enemies = context.get('enemies', [])
+            alive_enemies = [e for e in enemies if e.is_alive()]
+
+            if not alive_enemies:
+                log.append(f"⚠️ Aucun ennemi vivant à cibler")
+                return False
+
+            # Calculer les dégâts de l'attaque
+            damage_roll = caster.calculate_damage_roll()
+
+            log.append(f"🗡️💨 {caster.name} déclenche ATTAQUE TOURNOYANTE !")
+            log.append(f"   ⚔️ Touche automatiquement TOUS les ennemis vivants !")
+
+            # Attaquer TOUS les ennemis vivants à 100% de toucher
+            for enemy in alive_enemies:
+                # Appliquer dégâts avec parade
+                initial_hp = enemy.current_health
+                damage_dealt, parade_used = enemy.apply_damage_with_parade(damage_roll)
+                final_hp = enemy.current_health
+
+                # Log détaillé
+                if parade_used > 0:
+                    log.append(f"  ⚔️ {enemy.name}: {damage_roll} dégâts - {parade_used} parade = {damage_dealt} dégâts (PV: {initial_hp} → {final_hp})")
+                else:
+                    log.append(f"  ⚔️ {enemy.name}: {damage_dealt} dégâts (PV: {initial_hp} → {final_hp})")
+
+                # Vérifier KO
+                if not enemy.is_alive():
+                    log.append(f"  💀 {enemy.name} est vaincu !")
+
+            # Bloquer l'attaque normale pour ce tour
+            caster.can_attack_this_turn = False
+            caster.attack_done_this_turn = True
 
             # Marquer capacité utilisée ce tour
             caster.temporary_buffs['lame_ability_used_this_turn'] = True
-
-            log.append(f"🗡️ {caster.name} prépare une Assassination !")
-            log.append(f"   ⚔️ Prochaine attaque touchera TOUS les ennemis")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -269,7 +295,7 @@ class LameAttaqueTournoyante(BaseAbility):
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Assassination: {e}")
+            log.append(f"❌ Erreur Attaque tournoyante: {e}")
             return False
 
     def get_preview(self) -> str:

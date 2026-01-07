@@ -24,6 +24,8 @@ from ui.components.combat_stats_tracker import CombatStatsTracker
 from ui.components.combat_stats_analyzer import analyze_combat_results, generate_balance_recommendations
 from ui.components.combat_results_display import display_combat_results_panel
 from models.combat.abilities.individual_abilities.heroes.atucan import auto_activate_aura_sacree, auto_activate_sens_de_la_justice
+from models.combat.abilities.individual_abilities.heroes.thordius import auto_activate_defense_sans_armure, auto_activate_critique_brutal
+from models.combat.abilities.individual_abilities.heroes.raishi import auto_activate_point_faible
 
 # === CSS STYLE ARÈNE ===
 # ===tour par tour guidé ===
@@ -728,6 +730,15 @@ def configure_combat():
 
         # NOUVEAU - Activation automatique Sens de la justice d'Atucan (PASSIF PERMANENT)
         auto_activate_sens_de_la_justice(heroes, st.session_state.sandbox_v2_log)
+
+        # NOUVEAU - Activation automatique Défense sans armure de Thordius (PASSIF PERMANENT)
+        auto_activate_defense_sans_armure(heroes, st.session_state.sandbox_v2_log)
+
+        # NOUVEAU - Activation automatique Critique brutal de Thordius (PASSIF PERMANENT)
+        auto_activate_critique_brutal(heroes, st.session_state.sandbox_v2_log)
+
+        # NOUVEAU - Activation automatique Point faible de Raishi (PASSIF PERMANENT)
+        auto_activate_point_faible(heroes, st.session_state.sandbox_v2_log)
 
         # Sauvegarder l'état initial
         save_game_state("Début du combat")
@@ -1581,100 +1592,9 @@ def display_enemy_interface(combatant: Dict):
                 st.rerun()
             return  # NE PAS afficher les actions d'attaque
 
-        # Vérifier si on est en mode sélection de cible pour l'ennemi
-        if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_ENEMY':
-            # Afficher interface de ciblage - Les ennemis peuvent cibler héros ET pets
-            ally_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] in ['hero', 'pet']]
-            heroes_list = [c['character'] for c in ally_combatants]
-
-            adapter = st.session_state.sandbox_v2_adapter
-            target = adapter.enemy_turn_manual(
-                char,
-                heroes_list,
-                player_count,
-                st.session_state.sandbox_v2_log
-            )
-
-            if target:
-                # NOUVEAU - Gérer attaques multiples (capacités ennemis)
-                num_attacks = getattr(char, 'current_turn_attacks', 1)
-
-                # Log attaques multiples
-                if num_attacks > 1:
-                    st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} va attaquer {num_attacks} fois {target.name} !")
-
-                for attack_num in range(num_attacks):
-                    # Vérifier si la cible est toujours vivante
-                    if not target.is_alive():
-                        st.session_state.sandbox_v2_log.append(f"  ⏸️ {target.name} est vaincu, attaques restantes annulées")
-                        break
-
-                    # TOUTES les attaques ciblent la même personne sélectionnée
-                    current_target = target
-
-                    # RÉUTILISE CombatActions.enemy_attack() avec ciblage manuel
-                    attack_result = adapter.combat_actions.enemy_attack(
-                        enemy=char,
-                        heroes=heroes_list,
-                        player_count=player_count,
-                        log=st.session_state.sandbox_v2_log,
-                        active_pets=st.session_state.sandbox_v2_active_pets,
-                        manual_target=current_target
-                    )
-
-                    # Track enemy attack stats
-                    if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                        tracker = st.session_state.sandbox_v2_stats_tracker
-                        tracker.record_attack(
-                            char, current_target, attack_result['hit'], attack_result['damage'],
-                            is_critical=False, is_fail=False
-                        )
-                        # Track damage taken by hero (TOUJOURS si hit, même si parade bloque tout)
-                        if attack_result['hit']:
-                            parade_used = attack_result.get('parade_used', 0)
-                            damage_dealt = attack_result['damage']
-                            # Appeler record_damage_taken même si damage=0 (parade peut avoir bloqué tout)
-                            tracker.record_damage_taken(
-                                current_target,
-                                damage_dealt,
-                                parade_used=parade_used
-                            )
-
-                # NOUVEAU - Reset current_turn_attacks pour le prochain tour
-                if hasattr(char, 'current_turn_attacks'):
-                    char.current_turn_attacks = 1
-
-                # NOUVEAU - Reset flags pour le prochain tour
-                if hasattr(char, '_before_attack_triggered'):
-                    delattr(char, '_before_attack_triggered')
-                if hasattr(char, '_on_turn_start_triggered'):
-                    delattr(char, '_on_turn_start_triggered')
-
-                # NOUVEAU - Trigger after_attack (effets après avoir attaqué)
-                if adapter.turn_manager.enemy_ability_manager:
-                    adapter.turn_manager.enemy_ability_manager.execute_trigger(
-                        trigger='after_attack',
-                        enemy=char,
-                        context={
-                            'heroes': heroes_list,
-                            'log': st.session_state.sandbox_v2_log,
-                            'round_number': st.session_state.sandbox_v2_round_number
-                        }
-                    )
-
-                st.session_state.sandbox_v2_action_state = None
-                save_game_state(f"{char.name} termine son attaque")
-                next_turn()
-                st.rerun()
-
-            # Bouton annuler
-            if st.button("❌ Annuler", key=f"cancel_enemy_targeting_{combatant['id']}"):
-                # Reset flag before_attack pour permettre de recommencer
-                if hasattr(char, '_before_attack_triggered'):
-                    delattr(char, '_before_attack_triggered')
-                st.session_state.sandbox_v2_action_state = None
-                st.rerun()
-        else:
+        # NOTE: Le ciblage d'attaque se fait maintenant directement sur les cartes
+        # Le code de ciblage séparé a été supprimé, voir execute_enemy_attack_on_target()
+        if st.session_state.sandbox_v2_action_state != 'SELECTING_TARGET_ENEMY':
             # Actions principales (harmonisé avec interface héros)
             if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
                 st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ENEMY'
@@ -1942,7 +1862,17 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     # NOUVEAU - Vérifier uses_per_combat générique (pour toutes les capacités)
     combat_uses_exhausted = False
     combat_uses_remaining = None
-    if (hasattr(ability, 'uses_per_combat') and hasattr(ability, 'uses_remaining_combat') and
+
+    # CAS SPÉCIAL - Rage de berserker (Thordius P-5-2) : Vérifier via temporary_buffs
+    is_rage_berserker = (char.code == "P-5" and ability.ability_number == 2)
+    if is_rage_berserker:
+        if hasattr(char, 'temporary_buffs') and char.temporary_buffs.get('thordius_rage_used', False):
+            combat_uses_exhausted = True
+            combat_uses_remaining = 0
+        else:
+            combat_uses_remaining = 1
+    # Cas général pour autres capacités
+    elif (hasattr(ability, 'uses_per_combat') and hasattr(ability, 'uses_remaining_combat') and
         ability.uses_per_combat is not None and ability.uses_remaining_combat is not None):
         combat_uses_remaining = ability.uses_remaining_combat
         combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
@@ -2019,12 +1949,58 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         button_label = f"🟣 {ability.name}\n⚡ Auto"  # Nom complet pour capacités passives
         is_available = False  # Capacité passive (non cliquable mais active)
 
+    # NOUVEAU - Défense sans armure (Thordius P-5-1) : Capacité passive avec statut visuel
+    is_defense_sans_armure = (char.code == "P-5" and ability.ability_number == 1)
+    defense_sans_armure_active = False
+    if is_defense_sans_armure:
+        # Vérifier si le buff est actif
+        if hasattr(char, 'temporary_buffs') and 'defense_sans_armure_active' in char.temporary_buffs:
+            defense_sans_armure_active = True
+            button_label = f"🟢 {ability.name}\n✅ Active"  # Vert = actif
+        else:
+            # Vérifier si c'est à cause de l'armure
+            has_armor = False
+            if hasattr(char, 'equipment') and char.equipment:
+                for item in char.equipment:
+                    if hasattr(item, 'type') and item.type == 'armure':
+                        has_armor = True
+                        break
+
+            if has_armor:
+                button_label = f"🔴 {ability.name}\n⚠️ Armure"  # Rouge = inactif (armure)
+            else:
+                button_label = f"🔴 {ability.name}\n⚠️ Inactif"  # Rouge = inactif (autre raison)
+
+        is_available = False  # Capacité passive (non cliquable mais informative)
+
+    # NOUVEAU - Critique brutal (Thordius P-5-5) : Capacité passive avec statut visuel
+    is_critique_brutal = (char.code == "P-5" and ability.ability_number == 5)
+    if is_critique_brutal:
+        # Vérifier si le buff est actif
+        if hasattr(char, 'temporary_buffs') and 'expanded_crit_range' in char.temporary_buffs:
+            button_label = f"🟢 {ability.name}\n✅ Active"  # Vert = actif
+        else:
+            button_label = f"🔴 {ability.name}\n⚠️ Inactif"  # Rouge = inactif
+        is_available = False  # Capacité passive (non cliquable mais informative)
+
+    # NOUVEAU - Point faible (Raishi P-8-1) : Capacité passive avec statut visuel
+    is_point_faible = (char.code == "P-8" and ability.ability_number == 1)
+    if is_point_faible:
+        # Vérifier si le buff est actif
+        if hasattr(char, 'temporary_buffs') and 'ignore_parade' in char.temporary_buffs:
+            button_label = f"🟢 {ability.name}\n✅ Active"  # Vert = actif
+        else:
+            button_label = f"🔴 {ability.name}\n⚠️ Inactif"  # Rouge = inactif
+        is_available = False  # Capacité passive (non cliquable mais informative)
+
     if is_aura_sacree:
         button_label = f"🟣 {ability.name}\n⚡ Auto"  # Nom complet pour capacités passives
     elif not_useful_in_combat:
         button_label = f"{type_icon} {short_name}\n🚫 Hors combat"
     elif armure_mage_already_used:
         button_label = f"{type_icon} {short_name}\n✅ Active"
+    elif is_rage_berserker and combat_uses_exhausted:
+        button_label = f"⚡ {short_name}\n✅ Active"  # Rage active (bonus permanent)
     elif lame_ability_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ 1 capacité/tour"
     elif parade_already_used:
@@ -2058,140 +2034,12 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
 def display_actions_and_potions(char: Character, combatant_id: str):
     """Colonne actions + potions style Arène
     NOTE: Les actions principales et potions sont maintenant dans le header compact
-    Cette fonction gère uniquement la sélection de cible et modes spéciaux
+    NOTE: Le ciblage d'attaque se fait maintenant directement sur les cartes
+    Cette fonction gère uniquement les modes spéciaux (Rage Thordius, Faire boire potion)
     """
-
-    # Vérifier si on est en mode sélection de cible
-    if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_HERO':
-        # Afficher interface de ciblage
-        enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-        enemies_list = [c['character'] for c in enemy_combatants]
-        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-        heroes_list = [c['character'] for c in hero_combatants]
-
-        target = ManualTargeting.select_enemy_for_hero_attack(
-            char,
-            enemies_list,
-            heroes_list
-        )
-
-        if target:
-            player_count = len([h for h in heroes_list if h.is_alive()])
-            adapter = st.session_state.sandbox_v2_adapter
-
-            # NOUVEAU - Vérifier buffs multi-cibles (Kraor, Lame, Raishi)
-            attack_all = hasattr(char, 'temporary_buffs') and (
-                'attack_all_enemies' in char.temporary_buffs or
-                'assassination_ready' in char.temporary_buffs or
-                'esquive_parfaite_ready' in char.temporary_buffs
-            )
-
-            if attack_all:
-                # Attaquer TOUS les ennemis vivants
-                alive_enemies = [e for e in enemies_list if e.is_alive()]
-
-                # NOUVEAU - Raishi Esquive parfaite : 1 jet unique pour tous (single_roll)
-                # NOTE: Esquive parfaite devrait faire 1 seul jet de toucher, et si réussi,
-                # appliquer les dégâts à tous les ennemis. L'implémentation actuelle fait
-                # un jet par ennemi pour simplifier, mais le concept reste "attaque multi-cible"
-                esquive_single_roll = False
-                if 'esquive_parfaite_ready' in char.temporary_buffs:
-                    esquive_data = char.temporary_buffs['esquive_parfaite_ready']
-                    if isinstance(esquive_data, dict):
-                        esquive_single_roll = esquive_data.get('single_roll', False)
-
-                if esquive_single_roll:
-                    st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche Esquive parfaite ! (1 jet → tous ennemis)")
-                else:
-                    st.session_state.sandbox_v2_log.append(f"⚔️ {char.name} déclenche une attaque multi-cible !")
-
-                for enemy in alive_enemies:
-                    attack_result = adapter.combat_actions.hero_attack(char, [enemy], player_count, st.session_state.sandbox_v2_log)
-
-                    # Track attack stats
-                    if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                        tracker = st.session_state.sandbox_v2_stats_tracker
-                        tracker.record_attack(
-                            char, enemy, attack_result['hit'], attack_result['damage'],
-                            attack_result['critical'], attack_result['critical_fail']
-                        )
-                        # Track damage taken by enemy (TOUJOURS si hit, même si parade bloque tout)
-                        if attack_result['hit']:
-                            tracker.record_damage_taken(
-                                enemy,
-                                attack_result['damage'],
-                                parade_used=attack_result.get('parade_used', 0)
-                            )
-
-                # Consommer les buffs multi-cibles
-                if hasattr(char, 'temporary_buffs'):
-                    char.temporary_buffs.pop('attack_all_enemies', None)
-                    char.temporary_buffs.pop('assassination_ready', None)
-                    char.temporary_buffs.pop('esquive_parfaite_ready', None)
-
-                save_game_state(f"{char.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
-            else:
-                # Attaque normale (cible unique)
-                # NOTE: Méditation (Raishi P-8-2) gérée automatiquement par combat_actions.py
-                # La 2e frappe (dégâts / 2) est déclenchée automatiquement après l'attaque réussie
-                attack_result = adapter.combat_actions.hero_attack(char, [target], player_count, st.session_state.sandbox_v2_log)
-
-                # Track attack stats
-                if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
-                    tracker = st.session_state.sandbox_v2_stats_tracker
-                    tracker.record_attack(
-                        char, target, attack_result['hit'], attack_result['damage'],
-                        attack_result['critical'], attack_result['critical_fail']
-                    )
-                    # Track damage taken by target (TOUJOURS si hit, même si parade bloque tout)
-                    if attack_result['hit']:
-                        tracker.record_damage_taken(
-                            target,
-                            attack_result['damage'],
-                            parade_used=attack_result.get('parade_used', 0)
-                        )
-
-                save_game_state(f"{char.name} attaque {target.name}")
-
-            # Marquer qu'une attaque a été effectuée
-            # NOUVEAU - Kraor Pluie de flèches : Permettre 2 attaques si buff actif
-            has_double_attacks = hasattr(char, 'temporary_buffs') and 'double_attacks_permanent' in char.temporary_buffs
-
-            if has_double_attacks:
-                # Compter les attaques ce tour dans temporary_buffs (dict flexible)
-                if not hasattr(char, 'temporary_buffs'):
-                    char.temporary_buffs = {}
-
-                attacks_count = char.temporary_buffs.get('attacks_this_turn', 0)
-                char.temporary_buffs['attacks_this_turn'] = attacks_count + 1
-
-                # Bloquer après 2 attaques
-                if char.temporary_buffs['attacks_this_turn'] >= 2:
-                    char.can_attack_this_turn = False
-                # Sinon, permettre une 2ème attaque
-            else:
-                # Comportement normal : bloquer après 1 attaque
-                char.can_attack_this_turn = False
-
-            char.attack_done_this_turn = True  # NOUVEAU - Empêche capacités magiques après attaque (règle p.24)
-
-            # NOUVEAU - Si Atucan attaque, désactiver Parade pour ce tour (règle inverse de Parade)
-            if hasattr(char, 'code') and char.code == "P-3":  # Atucan
-                if not hasattr(char, 'temporary_buffs'):
-                    char.temporary_buffs = {}
-                char.temporary_buffs['parade_blocked_by_attack'] = True
-
-            st.session_state.sandbox_v2_action_state = None
-            # NE PAS appeler next_turn() - le héros peut encore agir (boire potion, etc.)
-            st.rerun()
-
-        # Bouton annuler
-        if st.button("❌ Annuler", key=f"cancel_targeting_{combatant_id}"):
-            st.session_state.sandbox_v2_action_state = None
-            st.rerun()
-    # NOTE: Les boutons "Attaquer" et "Fin du Tour" ont été déplacés dans le header compact
-    # pour gagner de l'espace vertical. Ils sont maintenant dans display_hero_interface()
-    # NOTE: Le "Médaillon d'Appel" de Kraor a été déplacé dans col_abilities (colonne de gauche)
+    # NOTE: Le code de ciblage d'attaque (SELECTING_TARGET_HERO) a été supprimé
+    # Le ciblage se fait maintenant directement sur les cartes via execute_attack_on_target()
+    # Voir display_combat_status() et display_combat_status_team_mode() pour la nouvelle implémentation
 
     # NOUVEAU - Bouton Rage pour Thordius (P-5) si Berserker débloqué
     if hasattr(char, 'code') and char.code == "P-5":
@@ -2980,6 +2828,244 @@ def display_combat_log_colored():
 
     st.markdown(scrollable_log, unsafe_allow_html=True)
 
+def execute_attack_on_target(attacker: Character, target: Enemy):
+    """
+    Exécute une attaque du héros sur l'ennemi ciblé et affiche les résultats
+    Utilisé pour le ciblage direct sur les cartes
+    """
+    # Récupérer les données nécessaires
+    enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+    enemies_list = [c['character'] for c in enemy_combatants]
+    hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+    heroes_list = [c['character'] for c in hero_combatants]
+    player_count = len([h for h in heroes_list if h.is_alive()])
+    adapter = st.session_state.sandbox_v2_adapter
+
+    # Vérifier buffs multi-cibles (Kraor, Lame, Raishi)
+    attack_all = hasattr(attacker, 'temporary_buffs') and (
+        'attack_all_enemies' in attacker.temporary_buffs or
+        'assassination_ready' in attacker.temporary_buffs or
+        'esquive_parfaite_ready' in attacker.temporary_buffs
+    )
+
+    if attack_all:
+        # Attaquer TOUS les ennemis vivants
+        alive_enemies = [e for e in enemies_list if e.is_alive()]
+
+        esquive_single_roll = False
+        if 'esquive_parfaite_ready' in attacker.temporary_buffs:
+            esquive_data = attacker.temporary_buffs['esquive_parfaite_ready']
+            if isinstance(esquive_data, dict):
+                esquive_single_roll = esquive_data.get('single_roll', False)
+
+        if esquive_single_roll:
+            st.session_state.sandbox_v2_log.append(f"⚔️ {attacker.name} déclenche Esquive parfaite ! (1 jet → tous ennemis)")
+        else:
+            st.session_state.sandbox_v2_log.append(f"⚔️ {attacker.name} déclenche une attaque multi-cible !")
+
+        # Exécuter attaques et collecter résultats
+        results = []
+        for enemy in alive_enemies:
+            attack_result = adapter.combat_actions.hero_attack(attacker, [enemy], player_count, st.session_state.sandbox_v2_log)
+
+            if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+                tracker = st.session_state.sandbox_v2_stats_tracker
+                tracker.record_attack(
+                    attacker, enemy, attack_result['hit'], attack_result['damage'],
+                    attack_result['critical'], attack_result['critical_fail']
+                )
+                if attack_result['hit']:
+                    tracker.record_damage_taken(
+                        enemy,
+                        attack_result['damage'],
+                        parade_used=attack_result.get('parade_used', 0)
+                    )
+            results.append((enemy.name, attack_result))
+
+        # Afficher résumé des résultats
+        summary = f"💥 **Attaque Multi-Cible de {attacker.name}**\n\n"
+        for enemy_name, res in results:
+            if res['critical']:
+                summary += f"🎯 {enemy_name}: CRITIQUE ! {res['damage']} dégâts\n"
+            elif res['hit']:
+                summary += f"✅ {enemy_name}: Touché ! {res['damage']} dégâts\n"
+            elif res['critical_fail']:
+                summary += f"💀 {enemy_name}: ÉCHEC CRITIQUE !\n"
+            else:
+                summary += f"❌ {enemy_name}: Raté\n"
+
+        st.toast(summary, icon="💥")
+
+        # Consommer les buffs multi-cibles
+        if hasattr(attacker, 'temporary_buffs'):
+            attacker.temporary_buffs.pop('attack_all_enemies', None)
+            attacker.temporary_buffs.pop('assassination_ready', None)
+            attacker.temporary_buffs.pop('esquive_parfaite_ready', None)
+
+        save_game_state(f"{attacker.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
+    else:
+        # Attaque normale (cible unique)
+        attack_result = adapter.combat_actions.hero_attack(attacker, [target], player_count, st.session_state.sandbox_v2_log)
+
+        # Track attack stats
+        if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+            tracker = st.session_state.sandbox_v2_stats_tracker
+            tracker.record_attack(
+                attacker, target, attack_result['hit'], attack_result['damage'],
+                attack_result['critical'], attack_result['critical_fail']
+            )
+            if attack_result['hit']:
+                tracker.record_damage_taken(
+                    target,
+                    attack_result['damage'],
+                    parade_used=attack_result.get('parade_used', 0)
+                )
+
+        # Afficher résultat de l'attaque avec popup
+        if attack_result['critical']:
+            result_msg = f"🎯 **CRITIQUE !**\n\n{attacker.name} inflige **{attack_result['damage']} dégâts** à {target.name} !"
+            if attack_result.get('parade_used', 0) > 0:
+                result_msg += f"\n🛡️ Parade utilisée: {attack_result['parade_used']}"
+            st.toast(result_msg, icon="🎯")
+        elif attack_result['hit']:
+            result_msg = f"✅ **Touché !**\n\n{attacker.name} inflige **{attack_result['damage']} dégâts** à {target.name}"
+            if attack_result.get('parade_used', 0) > 0:
+                result_msg += f"\n🛡️ Parade utilisée: {attack_result['parade_used']}"
+            st.toast(result_msg, icon="⚔️")
+        elif attack_result['critical_fail']:
+            st.toast(f"💀 **ÉCHEC CRITIQUE !**\n\n{attacker.name} rate complètement son attaque sur {target.name} !", icon="💀")
+        else:
+            st.toast(f"❌ **Raté**\n\n{attacker.name} rate son attaque sur {target.name}", icon="❌")
+
+        save_game_state(f"{attacker.name} attaque {target.name}")
+
+    # Marquer qu'une attaque a été effectuée
+    has_double_attacks = hasattr(attacker, 'temporary_buffs') and 'double_attacks_permanent' in attacker.temporary_buffs
+
+    if has_double_attacks:
+        if not hasattr(attacker, 'temporary_buffs'):
+            attacker.temporary_buffs = {}
+
+        attacks_count = attacker.temporary_buffs.get('attacks_this_turn', 0)
+        attacker.temporary_buffs['attacks_this_turn'] = attacks_count + 1
+
+        if attacker.temporary_buffs['attacks_this_turn'] >= 2:
+            attacker.can_attack_this_turn = False
+    else:
+        attacker.can_attack_this_turn = False
+
+    attacker.attack_done_this_turn = True
+
+    # Si Atucan attaque, désactiver Parade pour ce tour
+    if hasattr(attacker, 'code') and attacker.code == "P-3":  # Atucan
+        if not hasattr(attacker, 'temporary_buffs'):
+            attacker.temporary_buffs = {}
+        attacker.temporary_buffs['parade_blocked_by_attack'] = True
+
+    # Désactiver le mode de sélection
+    st.session_state.sandbox_v2_action_state = None
+    st.rerun()
+
+def execute_enemy_attack_on_target(attacker: Enemy, target: Character):
+    """
+    Exécute une attaque de l'ennemi sur le héros ciblé et affiche les résultats
+    Utilisé pour le ciblage direct sur les cartes
+    """
+    # Récupérer les données nécessaires
+    ally_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] in ['hero', 'pet']]
+    heroes_list = [c['character'] for c in ally_combatants]
+    player_count = len([h for h in heroes_list if h.is_alive() and not hasattr(h, 'is_pet')])
+    adapter = st.session_state.sandbox_v2_adapter
+
+    # Gérer attaques multiples (capacités ennemis)
+    num_attacks = getattr(attacker, 'current_turn_attacks', 1)
+
+    # Log attaques multiples
+    if num_attacks > 1:
+        st.session_state.sandbox_v2_log.append(f"⚔️ {attacker.name} va attaquer {num_attacks} fois {target.name} !")
+
+    # Exécuter les attaques et collecter résultats
+    results = []
+    for attack_num in range(num_attacks):
+        # Vérifier si la cible est toujours vivante
+        if not target.is_alive():
+            st.session_state.sandbox_v2_log.append(f"  ⏸️ {target.name} est vaincu, attaques restantes annulées")
+            break
+
+        # Exécuter l'attaque
+        attack_result = adapter.combat_actions.enemy_attack(
+            enemy=attacker,
+            heroes=heroes_list,
+            player_count=player_count,
+            log=st.session_state.sandbox_v2_log,
+            active_pets=st.session_state.sandbox_v2_active_pets,
+            manual_target=target
+        )
+
+        # Track enemy attack stats
+        if 'sandbox_v2_stats_tracker' in st.session_state and attack_result:
+            tracker = st.session_state.sandbox_v2_stats_tracker
+            tracker.record_attack(
+                attacker, target, attack_result['hit'], attack_result['damage'],
+                is_critical=False, is_fail=False
+            )
+            if attack_result['hit']:
+                parade_used = attack_result.get('parade_used', 0)
+                damage_dealt = attack_result['damage']
+                tracker.record_damage_taken(
+                    target,
+                    damage_dealt,
+                    parade_used=parade_used
+                )
+
+        results.append(attack_result)
+
+    # Afficher résumé des résultats
+    if num_attacks > 1:
+        # Attaques multiples - résumé
+        summary = f"💥 **{attacker.name} attaque {num_attacks} fois {target.name}**\n\n"
+        total_damage = sum(r['damage'] for r in results if r['hit'])
+        hits = sum(1 for r in results if r['hit'])
+        summary += f"✅ {hits}/{num_attacks} touché(s) - Total: {total_damage} dégâts"
+        st.toast(summary, icon="💥")
+    else:
+        # Attaque simple - popup détaillée
+        attack_result = results[0]
+        if attack_result['hit']:
+            result_msg = f"⚔️ **{attacker.name} touche !**\n\n{attack_result['damage']} dégâts infligés à {target.name}"
+            if attack_result.get('parade_used', 0) > 0:
+                result_msg += f"\n🛡️ Parade utilisée: {attack_result['parade_used']}"
+            st.toast(result_msg, icon="⚔️")
+        else:
+            st.toast(f"❌ **{attacker.name} rate !**\n\n{target.name} esquive l'attaque", icon="❌")
+
+    # Reset flags
+    if hasattr(attacker, 'current_turn_attacks'):
+        attacker.current_turn_attacks = 1
+    if hasattr(attacker, '_before_attack_triggered'):
+        delattr(attacker, '_before_attack_triggered')
+    if hasattr(attacker, '_on_turn_start_triggered'):
+        delattr(attacker, '_on_turn_start_triggered')
+
+    # Trigger after_attack
+    if adapter.turn_manager.enemy_ability_manager:
+        adapter.turn_manager.enemy_ability_manager.execute_trigger(
+            trigger='after_attack',
+            enemy=attacker,
+            context={
+                'heroes': heroes_list,
+                'log': st.session_state.sandbox_v2_log,
+                'round_number': st.session_state.sandbox_v2_round_number
+            }
+        )
+
+    save_game_state(f"{attacker.name} termine son attaque")
+
+    # Désactiver le mode de sélection et passer au tour suivant
+    st.session_state.sandbox_v2_action_state = None
+    next_turn()
+    st.rerun()
+
 def display_combat_status():
     """
     MODE INITIATIVE ACTIVÉE - Affiche tous les combattants dans l'ordre d'initiative (D20)
@@ -3029,6 +3115,47 @@ def display_combat_status():
                     display_pet_combat_card(character, is_current_turn=is_current)
                 else:
                     display_enemy_combat_card(character, is_current_turn=is_current)
+
+                # Mode ciblage : afficher bouton "Cibler" selon le type d'attaque
+                action_state = st.session_state.get('sandbox_v2_action_state')
+                current_actor = st.session_state.get('sandbox_v2_current_actor')
+
+                if action_state == 'SELECTING_TARGET_HERO' and current_actor:
+                    # Héros attaque ennemi : boutons sur les ennemis
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_enemy_init_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True
+                        ):
+                            execute_attack_on_target(current_actor, character)
+                    # Griser les héros pendant le ciblage
+                    elif combatant_data['faction'] == 'hero':
+                        st.button(
+                            "⏸️ En attente...",
+                            key=f"disabled_hero_init_{combatant_data['id']}",
+                            disabled=True,
+                            use_container_width=True
+                        )
+                elif action_state == 'SELECTING_TARGET_ENEMY' and current_actor:
+                    # Ennemi attaque héros : boutons sur les héros/pets
+                    if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_hero_init_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True
+                        ):
+                            execute_enemy_attack_on_target(current_actor, character)
+                    # Griser les ennemis pendant le ciblage
+                    elif combatant_data['faction'] == 'enemy':
+                        st.button(
+                            "⏸️ En attente...",
+                            key=f"disabled_enemy_init_{combatant_data['id']}",
+                            disabled=True,
+                            use_container_width=True
+                        )
 
 def display_combat_status_team_mode():
     """
@@ -3080,39 +3207,81 @@ def display_combat_status_team_mode():
                 else:
                     display_enemy_combat_card(character, is_current_turn=is_current)
 
-                # Vérifier si le combattant a déjà joué ce round
-                has_played = combatant_data['id'] in st.session_state.sandbox_v2_played_this_round
+                # Mode ciblage : afficher bouton "Cibler" selon le type d'attaque
+                action_state = st.session_state.get('sandbox_v2_action_state')
+                current_actor = st.session_state.get('sandbox_v2_current_actor')
 
-                # Vérifier si le combattant est étourdi (héros OU ennemi)
-                if combatant_data['faction'] == 'enemy':
-                    is_stunned, stunned_turns = is_enemy_stunned(character)
-                elif combatant_data['faction'] == 'hero':
-                    is_stunned, stunned_turns = is_character_stunned(character)
+                if action_state == 'SELECTING_TARGET_HERO' and current_actor:
+                    # Héros attaque ennemi : boutons sur les ennemis
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_enemy_manual_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True
+                        ):
+                            execute_attack_on_target(current_actor, character)
+                    # Griser les héros pendant le ciblage
+                    elif combatant_data['faction'] == 'hero':
+                        st.button(
+                            "⏸️ En attente...",
+                            key=f"disabled_hero_manual_{combatant_data['id']}",
+                            disabled=True,
+                            use_container_width=True
+                        )
+                elif action_state == 'SELECTING_TARGET_ENEMY' and current_actor:
+                    # Ennemi attaque héros : boutons sur les héros/pets
+                    if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_hero_manual_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True
+                        ):
+                            execute_enemy_attack_on_target(current_actor, character)
+                    # Griser les ennemis pendant le ciblage
+                    elif combatant_data['faction'] == 'enemy':
+                        st.button(
+                            "⏸️ En attente...",
+                            key=f"disabled_enemy_manual_{combatant_data['id']}",
+                            disabled=True,
+                            use_container_width=True
+                        )
                 else:
-                    is_stunned, stunned_turns = (False, 0)
+                    # Mode normal : afficher boutons "À son tour"
+                    # Vérifier si le combattant a déjà joué ce round
+                    has_played = combatant_data['id'] in st.session_state.sandbox_v2_played_this_round
 
-                # Bouton "À son tour" si vivant et pas déjà en cours
-                if character.is_alive() and not is_current:
-                    # Désactiver UNIQUEMENT si déjà joué (pas si stunné - besoin de sauter le tour)
-                    button_disabled = has_played
-                    if is_stunned:
-                        button_label = f"😵 Étourdi - Sauter tour ({stunned_turns})"
-                    elif has_played:
-                        button_label = "✅ A joué"
+                    # Vérifier si le combattant est étourdi (héros OU ennemi)
+                    if combatant_data['faction'] == 'enemy':
+                        is_stunned, stunned_turns = is_enemy_stunned(character)
+                    elif combatant_data['faction'] == 'hero':
+                        is_stunned, stunned_turns = is_character_stunned(character)
                     else:
-                        button_label = "▶️ À son tour"
+                        is_stunned, stunned_turns = (False, 0)
 
-                    # Bouton simple avec use_container_width pour cohérence
-                    button_key = f"select_{combatant_data['faction']}_{combatant_data['id']}"
-                    if st.button(
-                        button_label,
-                        key=button_key,
-                        type="secondary" if (has_played or is_stunned) else "primary",
-                        disabled=button_disabled,
-                        use_container_width=True
-                    ):
-                        if not button_disabled:
-                            select_combatant_manually(combatant_data['id'])
+                    # Bouton "À son tour" si vivant et pas déjà en cours
+                    if character.is_alive() and not is_current:
+                        # Désactiver UNIQUEMENT si déjà joué (pas si stunné - besoin de sauter le tour)
+                        button_disabled = has_played
+                        if is_stunned:
+                            button_label = f"😵 Étourdi - Sauter tour ({stunned_turns})"
+                        elif has_played:
+                            button_label = "✅ A joué"
+                        else:
+                            button_label = "▶️ À son tour"
+
+                        # Bouton simple avec use_container_width pour cohérence
+                        button_key = f"select_{combatant_data['faction']}_{combatant_data['id']}"
+                        if st.button(
+                            button_label,
+                            key=button_key,
+                            type="secondary" if (has_played or is_stunned) else "primary",
+                            disabled=button_disabled,
+                            use_container_width=True
+                        ):
+                            if not button_disabled:
+                                select_combatant_manually(combatant_data['id'])
 
 def select_combatant_manually(combatant_id: str):
     """
@@ -3333,6 +3502,21 @@ def main_sandbox_v2():
         else:
             # MODE MANUEL : Afficher cartes par équipe avec boutons de sélection
             display_combat_status_team_mode()
+
+        # Bouton d'annulation du ciblage (visible pour les deux modes de ciblage)
+        action_state = st.session_state.get('sandbox_v2_action_state')
+        if action_state in ['SELECTING_TARGET_HERO', 'SELECTING_TARGET_ENEMY']:
+            st.markdown("---")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("❌ Annuler le ciblage", key="cancel_targeting_global", type="secondary", use_container_width=True):
+                    # Reset flags pour les ennemis si on annule
+                    current_actor = st.session_state.get('sandbox_v2_current_actor')
+                    if current_actor and hasattr(current_actor, '_before_attack_triggered'):
+                        delattr(current_actor, '_before_attack_triggered')
+                    st.session_state.sandbox_v2_action_state = None
+                    st.session_state.sandbox_v2_current_actor = None
+                    st.rerun()
 
         st.markdown("---")
 

@@ -203,6 +203,23 @@ class CombatActions:
                 # Consommer le buff après utilisation
                 hero.temporary_buffs.pop('combo_ready', None)
 
+            # NOUVEAU - Charge de taureau (Thordius P-5-3) : Stun ennemi 1 tour après attaque réussie
+            if hasattr(hero, 'temporary_buffs') and 'charge_taureau_ready' in hero.temporary_buffs:
+                charge_info = hero.temporary_buffs['charge_taureau_ready']
+                stun_duration = charge_info.get('stun_duration', 1)
+
+                # Effet stun Charge de taureau (AVEC vérification immunité)
+                stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                    target, duration=stun_duration, source='thordius_charge_taureau', log=log
+                )
+                if stunned:
+                    log.append(f"  🐂 CHARGE DE TAUREAU ! {target.name} assommé pour {stun_duration} tour")
+                else:
+                    log.append(f"  (effet annulé)")
+
+                # Consommer le buff après utilisation
+                hero.temporary_buffs.pop('charge_taureau_ready', None)
+
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
 
@@ -327,6 +344,23 @@ class CombatActions:
 
                     # Consommer le buff après utilisation
                     hero.temporary_buffs.pop('combo_ready', None)
+
+                # NOUVEAU - Charge de taureau (Thordius P-5-3) : Stun ennemi 1 tour après attaque réussie
+                if hasattr(hero, 'temporary_buffs') and 'charge_taureau_ready' in hero.temporary_buffs:
+                    charge_info = hero.temporary_buffs['charge_taureau_ready']
+                    stun_duration = charge_info.get('stun_duration', 1)
+
+                    # Effet stun Charge de taureau (AVEC vérification immunité)
+                    stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                        target, duration=stun_duration, source='thordius_charge_taureau', log=log
+                    )
+                    if stunned:
+                        log.append(f"  🐂 CHARGE DE TAUREAU ! {target.name} assommé pour {stun_duration} tour")
+                    else:
+                        log.append(f"  (effet annulé)")
+
+                    # Consommer le buff après utilisation
+                    hero.temporary_buffs.pop('charge_taureau_ready', None)
 
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")

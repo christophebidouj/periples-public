@@ -25,7 +25,7 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 @register_ability
 class ThordiusDefenseSansArmure(BaseAbility):
-    """P-5-1: Défense sans armure - +2 parade si pas d'armure/bouclier équipé"""
+    """P-5-1: Défense sans armure - PASSIF : +2 parade permanents si pas d'armure/bouclier équipé"""
 
     hero_code = "P-5"
     ability_number = 1
@@ -38,45 +38,47 @@ class ThordiusDefenseSansArmure(BaseAbility):
         self.parade_bonus = 2
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Accorde +2 parade si Thordius ne porte ni armure ni bouclier"""
+        """
+        Capacité PASSIVE INFORMATIVE - Affiche le statut du passif.
+        Le buff est appliqué automatiquement au début du combat par auto_activate_defense_sans_armure().
+        Cette fonction sert uniquement à informer l'utilisateur.
+        """
         try:
-            # Vérifier équipement
-            # IMPORTANT: Dans equipment.csv, le type est 'armure' (lowercase) et inclut armures ET boucliers
-            has_armor_or_shield = False
+            # Vérifier si le passif est actif
+            is_active = False
+            if hasattr(caster, 'temporary_buffs') and 'defense_sans_armure_active' in caster.temporary_buffs:
+                is_active = True
 
+            # Vérifier équipement pour afficher les raisons
+            has_armor_or_shield = False
             if hasattr(caster, 'equipment') and caster.equipment:
                 for item in caster.equipment:
-                    if hasattr(item, 'type'):
-                        # Vérifier uniquement type='armure' (inclut armures et boucliers dans le CSV)
-                        # Ignore les 'arme' et 'accessoire'
-                        if item.type == 'armure':
-                            has_armor_or_shield = True
-                            break
+                    if hasattr(item, 'type') and item.type == 'armure':
+                        has_armor_or_shield = True
+                        break
 
-            # Si armure/bouclier équipé, refuser
-            if has_armor_or_shield:
-                log.append(f"⚠️ {caster.name} porte une armure ou un bouclier - Défense sans armure impossible")
-                return False
-
-            # CORRECTION: Ajouter les jetons de parade pour ce tour uniquement
-            # On modifie SEULEMENT current_parade_tokens (pas max_parade_tokens)
-            # Ainsi, au prochain refresh_parade_tokens(), les jetons reviendront à la normale
-            if hasattr(caster, 'current_parade_tokens'):
-                caster.current_parade_tokens += self.parade_bonus
-                log.append(f"💪 {caster.name} utilise Défense sans armure (+{self.parade_bonus} jetons de parade ce tour)")
-                log.append(f"  🛡️ Jetons de parade actuels: {caster.current_parade_tokens}")
+            # Afficher le statut
+            if is_active:
+                log.append(f"💪 PASSIF ACTIF : Défense sans armure (+{self.parade_bonus} jetons de parade permanents)")
+                log.append(f"  ℹ️ Ce bonus est appliqué automatiquement au début du combat")
+                if hasattr(caster, 'max_parade_tokens'):
+                    log.append(f"  🛡️ Jetons de parade max: {caster.max_parade_tokens}")
             else:
-                log.append(f"⚠️ {caster.name} ne peut pas utiliser Défense sans armure (pas de système de parade)")
-                return False
+                if has_armor_or_shield:
+                    log.append(f"⚠️ PASSIF INACTIF : {caster.name} porte une armure/bouclier")
+                    log.append(f"  ℹ️ Retirez votre armure pour activer ce bonus permanent (+{self.parade_bonus} parade)")
+                else:
+                    log.append(f"⚠️ PASSIF INACTIF : Défense sans armure non activée")
 
-            return True
+            # Retourner False pour ne pas consommer d'action
+            return False
 
         except Exception as e:
             log.append(f"❌ Erreur Défense sans armure: {e}")
             return False
 
     def get_preview(self) -> str:
-        return f"💪 {self.name}: +{self.parade_bonus} parade si pas d'armure/bouclier (Gratuit)"
+        return f"💪 {self.name} [PASSIF]: +{self.parade_bonus} parade permanents (Info)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]  # Cible soi-même
@@ -101,19 +103,20 @@ class ThordiusRageDeBerserker(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Accorde +3 dégâts physiques permanent pour tout le combat"""
         try:
-            # Vérifier limitation
-            if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Charge déjà utilisée ce combat")
-                return False
-
-            # Ajouter buff permanent
+            # Initialiser temporary_buffs si nécessaire
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
+            # CORRECTION : Vérifier limitation via temporary_buffs (persiste avec undo/redo)
+            if caster.temporary_buffs.get('thordius_rage_used', False):
+                log.append(f"⚠️ Rage de berserker déjà utilisée ce combat")
+                return False
+
+            # Ajouter buff permanent de dégâts
             caster.temporary_buffs['thordius_charge_damage'] = {
                 'type': 'permanent_combat',
                 'damage_bonus': self.damage_bonus,
-                'source': 'charge'
+                'source': 'rage_berserker'
             }
 
             # Appliquer bonus dégâts directement sur current_attack
@@ -122,15 +125,18 @@ class ThordiusRageDeBerserker(BaseAbility):
             elif hasattr(caster, 'damage'):
                 caster.damage += self.damage_bonus
 
-            log.append(f"⚡ {caster.name} charge ! (+{self.damage_bonus} dégâts permanent)")
+            log.append(f"⚡ {caster.name} entre en RAGE DE BERSERKER ! (+{self.damage_bonus} dégâts permanent)")
 
-            # Décompter utilisation
+            # CORRECTION : Marquer comme utilisée via temporary_buffs (persiste avec undo/redo)
+            caster.temporary_buffs['thordius_rage_used'] = True
+
+            # Décompter utilisation (pour l'affichage dans le preview)
             self.uses_remaining_combat -= 1
 
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Charge: {e}")
+            log.append(f"❌ Erreur Rage de berserker: {e}")
             return False
 
     def get_preview(self) -> str:
@@ -156,31 +162,23 @@ class ThordiusChargeDeTaureau(BaseAbility):
         self.uses_remaining_combat = 2
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Stun un ennemi (bloque son action pour 1 tour)"""
+        """Active Charge de taureau - la prochaine attaque réussie stunera la cible pour 1 tour"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Intimidation déjà utilisée ({self.uses_per_combat} fois)")
+                log.append(f"⚠️ Charge de taureau déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            # Sélectionner ennemi cible
-            enemies = self._get_all_enemies(caster, context)
-            if not enemies:
-                log.append(f"⚠️ Aucun ennemi à intimider")
-                return False
+            # Activer le buff pour la prochaine attaque (même pattern que Paume ouverte de Raishi)
+            if not hasattr(caster, 'temporary_buffs'):
+                caster.temporary_buffs = {}
 
-            # Prioriser ennemi avec plus de PV
-            target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
+            caster.temporary_buffs['charge_taureau_ready'] = {
+                'stun_duration': 1,
+                'source': 'thordius_charge_taureau'
+            }
 
-            # Effet stun (AVEC vérification immunité)
-            stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                target, duration=1, source='thordius_intimidation', log=log
-            )
-
-            if stunned:
-                log.append(f"😱 {caster.name} intimide {target.name} - Action bloquée !")
-            else:
-                log.append(f"😱 {caster.name} tente d'intimider {target.name}")
+            log.append(f"🐂 {caster.name} se prépare à CHARGER ! (Prochaine attaque réussie stun 1 tour)")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -188,14 +186,14 @@ class ThordiusChargeDeTaureau(BaseAbility):
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Intimidation: {e}")
+            log.append(f"❌ Erreur Charge de taureau: {e}")
             return False
 
     def get_preview(self) -> str:
-        return f"😱 {self.name}: Stun ennemi 1 tour ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"🐂 {self.name}: Prochaine attaque stun 1 tour ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [e for e in all_enemies if self._is_alive(e)]
+        return [caster]  # Cible soi-même pour activer le buff
 
 
 @register_ability
@@ -262,7 +260,7 @@ class ThordiusTemerité(BaseAbility):
 
 @register_ability
 class ThordiusCritiqueBrutal(BaseAbility):
-    """P-5-5: Critique brutal - Critiques sur 18-19-20 au lieu de 20 seul"""
+    """P-5-5: Critique brutal - Critiques sur 18-19-20 au lieu de 20 seul (PASSIF)"""
 
     hero_code = "P-5"
     ability_number = 5
@@ -274,33 +272,19 @@ class ThordiusCritiqueBrutal(BaseAbility):
         self.spell_cost = 0
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Élargit la plage de critique à 18-19-20 pour tout le combat"""
-        try:
-            # Ajouter buff permanent
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
+        """Capacité PASSIVE INFORMATIVE - Affiche le statut du passif."""
+        # Vérifier si le passif est actif
+        is_active = hasattr(caster, 'temporary_buffs') and 'expanded_crit_range' in caster.temporary_buffs
 
-            # Vérifier si déjà actif
-            if 'expanded_crit_range' in caster.temporary_buffs:
-                log.append(f"⚠️ Cri de guerre déjà actif")
-                return False
+        if is_active:
+            log.append(f"ℹ️ {caster.name} - Critique brutal actif (Critiques: 18-19-20)")
+        else:
+            log.append(f"⚠️ {caster.name} - Critique brutal inactif (erreur d'activation)")
 
-            caster.temporary_buffs['expanded_crit_range'] = {
-                'type': 'permanent_combat',
-                'critical_rolls': [18, 19, 20],
-                'source': 'cri_de_guerre'
-            }
-
-            log.append(f"🔥 {caster.name} pousse un CRI DE GUERRE ! (Critiques: 18-19-20)")
-
-            return True
-
-        except Exception as e:
-            log.append(f"❌ Erreur Cri de guerre: {e}")
-            return False
+        return False  # Ne pas consommer d'action
 
     def get_preview(self) -> str:
-        return f"🔥 {self.name}: Critiques 18-19-20 permanent (Gratuit)"
+        return f"🔥 {self.name}: PASSIF - Critiques 18-19-20 permanent"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
@@ -355,3 +339,112 @@ class ThordiusRageInsatiable(BaseAbility):
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
         return [caster]
+
+
+# ========================================
+# FONCTIONS D'AUTO-ACTIVATION (PASSIFS)
+# ========================================
+
+def auto_activate_defense_sans_armure(heroes: List, log: List[str]) -> bool:
+    """
+    Active automatiquement Défense sans armure si Thordius (P-5) est présent, vivant,
+    et ne porte ni armure ni bouclier.
+    Appelé au début du combat par l'interface UI.
+
+    RÈGLE: Défense sans armure de Thordius est une capacité passive permanente qui s'active
+    automatiquement dès le début du combat si les conditions sont remplies (pas d'armure/bouclier)
+    et reste active tant que Thordius est vivant et ne change pas d'équipement.
+
+    Args:
+        heroes: Liste des héros participant au combat
+        log: Liste de logs de combat (sera modifiée)
+
+    Returns:
+        bool: True si le buff a été activé, False sinon
+
+    Effet:
+        Ajoute +2 jetons de parade permanents à Thordius si pas d'armure/bouclier équipé
+    """
+    # Chercher Thordius (P-5) parmi les héros vivants
+    thordius = next((h for h in heroes if h.code == "P-5" and h.is_alive()), None)
+
+    if not thordius:
+        return False
+
+    # Vérifier équipement : aucune armure/bouclier
+    has_armor_or_shield = False
+    if hasattr(thordius, 'equipment') and thordius.equipment:
+        for item in thordius.equipment:
+            if hasattr(item, 'type') and item.type == 'armure':
+                has_armor_or_shield = True
+                break
+
+    # Si armure/bouclier équipé, ne pas activer
+    if has_armor_or_shield:
+        log.append(f"⚠️ Défense sans armure inactive (Thordius porte une armure/bouclier)")
+        return False
+
+    # Initialiser temporary_buffs si nécessaire
+    if not hasattr(thordius, 'temporary_buffs'):
+        thordius.temporary_buffs = {}
+
+    # Appliquer le buff permanent
+    thordius.temporary_buffs['defense_sans_armure_active'] = {
+        'parade_bonus': 2,
+        'type': 'passive_permanent',
+        'source': 'thordius_defense_sans_armure'
+    }
+
+    # Appliquer directement le bonus aux jetons de parade max
+    if hasattr(thordius, 'max_parade_tokens'):
+        thordius.max_parade_tokens += 2
+
+    # Recharger les jetons de parade pour refléter la nouvelle valeur max
+    if hasattr(thordius, 'current_parade_tokens') and hasattr(thordius, 'max_parade_tokens'):
+        thordius.current_parade_tokens = thordius.max_parade_tokens
+
+    # Logger l'activation
+    log.append(f"💪 Défense sans armure de Thordius active (+2 jetons de parade permanents)")
+
+    return True
+
+
+def auto_activate_critique_brutal(heroes: List, log: List[str]) -> bool:
+    """
+    AUTO-ACTIVATION: Active automatiquement "Critique brutal" pour Thordius dès le début du combat.
+
+    Critique brutal est un passif permanent qui élargit la plage de critique à 18-19-20
+    au lieu de 20 seul. Cette capacité s'active automatiquement dès le début du combat
+    et reste active tant que Thordius est vivant.
+
+    Args:
+        heroes: Liste des héros participant au combat
+        log: Liste de logs de combat (sera modifiée)
+
+    Returns:
+        bool: True si le buff a été activé, False sinon
+
+    Effet:
+        Permet les critiques sur 18-19-20 au lieu de 20 seul
+    """
+    # Chercher Thordius (P-5) parmi les héros vivants
+    thordius = next((h for h in heroes if h.code == "P-5" and h.is_alive()), None)
+
+    if not thordius:
+        return False
+
+    # Initialiser temporary_buffs si nécessaire
+    if not hasattr(thordius, 'temporary_buffs'):
+        thordius.temporary_buffs = {}
+
+    # Appliquer le buff permanent
+    thordius.temporary_buffs['expanded_crit_range'] = {
+        'type': 'passive_permanent',
+        'critical_rolls': [18, 19, 20],
+        'source': 'critique_brutal'
+    }
+
+    # Logger l'activation
+    log.append(f"🔥 Critique brutal de Thordius actif (Critiques: 18-19-20)")
+
+    return True
