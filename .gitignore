@@ -1,8 +1,9 @@
 # Ignorer les builds et exécutables
 dist/
 build/
-#ignorer les fichiers data mais laisser les images
+#ignorer les fichiers data mais laisser les images et CSV
 data/*
+!data/*.csv
 !data/images/
 data/images/*
 !data/images/*.png

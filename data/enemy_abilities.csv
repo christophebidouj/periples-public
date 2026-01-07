@@ -1,0 +1,14 @@
+code,name,description,triggers,effects,parameters
+EA-1,Immunité Stun,Ne peut pas être Stun,on_combat_start,immunity_stun,
+EA-2,Blocage,Bloque toutes les capacités des personnages,on_combat_start,block_hero_abilities,
+EA-3,Double attaque,Fait 2 attaques par tour,before_attack,extra_attacks,attacks:2
+EA-4,Basilic,Bloque un personnage jusqu'à la fin du combat,on_turn_start,stun_hero_permanent,
+EA-5,Golem,Bloque un personnage pendant 1 tour,on_turn_start,stun_hero_temporary,duration:1
+EA-6,Bordalius,"Tours pairs: 2 dégâts magiques tous / Tours impairs: stun 1 tour",after_attack,alternating_effects,"even:damage_all:2:magical,odd:stun_temporary:1"
+EA-7,Nécromancien,"Tours pairs: 2 dégâts magiques tous / Tours impairs: stun 1 tour",after_attack,alternating_effects,"even:damage_all:2:magical,odd:stun_temporary:1"
+EA-8,Majere,"Tours pairs: stun 1 tour / Tours impairs: 6 dégâts magiques tous",on_turn_start,alternating_effects,"even:stun_temporary:1,odd:damage_all:6:magical"
+EA-9,Stun périodique,Bloque un joueur tous les 2 tours pendant 1 tour,on_turn_start,periodic_stun,"interval:2,duration:1"
+EA-10,Dégâts périodiques,Inflige 4 dégâts magiques tous les 3 tours,on_turn_start,periodic_damage,"interval:3,damage:4,type:magical"
+EA-11,Test du Troll,"Au début du round, D20 + niveau capacité < 10 → stun",on_round_start,ability_check_stun,threshold:10
+EA-12,Vouivre,"À 30% santé, seulement attaques à distance",on_receive_damage,ranged_only_threshold,threshold:0.3
+EA-13,Epines de feu,Inflige des dégâts physiques au début de chaque round (2 si 1-3J / 3 si 4J),on_round_start,player_scaled_damage,"damage_low:2,damage_high:3,threshold:4,type:physical"

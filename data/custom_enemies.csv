@@ -1,0 +1,11 @@
+Code,Nom,Defense,Damage_2J,Health_2J,Defense_2J,Damage_3J,Health_3J,Defense_3J,Damage_4J,Health_4J,Defense_4J,Is_Magical,Has_Magical_Damage,Abilities
+CE-3,Venture,10,1,11,1,3,13,1,6,15,2,False,False,
+CE-4,Bruce lee,20,2,10,0,2,10,0,2,10,0,False,False,
+CE-7,Gouki,10,2,10,0,2,10,0,2,10,0,False,False,
+CE-10,Hanzo,10,2,10,0,2,10,0,2,10,0,False,False,
+CE-1,Marissa,10,2,10,0,2,10,0,2,10,0,False,False,
+CE-2,Golem de pierre,10,2,10,0,2,10,0,2,10,0,True,True,
+CE-5,Golem de feu,12,3,11,1,4,10,0,5,10,0,True,False,
+CE-6,Le vilain robert,10,2,10,0,2,10,0,2,10,0,False,False,
+CE-8,Le gentil,10,2,10,0,2,10,0,2,10,0,False,False,"EA-1,EA-10,EA-11"
+CE-9,Doom,10,2,10,0,2,10,0,2,10,0,False,False,"EA-1,EA-10,EA-11"

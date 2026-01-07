@@ -1,0 +1,33 @@
+Niveau,Nom,Description
+E-46,Dragon azur,"Ne peut pas être Stun.
++ Fait 2 attaques par tour
++ Tous les deux tours, bloque un joueur pendant un tour. 
++ Tous les trois tours, inflige 4 dégâts magique."
+E-47,Sosnen - Dragon azur,"Ne peut pas être Stun.
++ Fait 2 attaques par tour
++ Tous les deux tours, bloque un joueur pendant un tour. 
++ Tous les trois tours, inflige 4 dégâts magique."
+E-48,Sosnen - Dragon azur,"Ne peut pas être Stun.
++ Fait 2 attaques par tour
++ Tous les deux tours, bloque un joueur pendant un tour."
+E-49,Sosnen - Dragon azur,"Ne peut pas être Stun.
++ Fait 2 attaques par tour"
+E-56,Bordalius,"Après son attaque, utilise l'action suivante :
+Tours pairs, inflige 2 dégâts magiques a tous les joueurs.
+Tours impairs, stun un personnage pendant 1 tour."
+E-62,Nécromancien,"Ne peut pas être Stun
+Après son attaque, utilise l'action suivante :
+Tours pairs, inflige 2 dégâts magiques a tous les joueurs.
+Tours impairs, stun un personnage pendant 1 tour."
+E-73,Troll,"Au début du tour tous les joueurs lancent un dé 20 et ajoute son niveau de capacité.
+Si le résultat en inférieur à 10, le personnage est stun pour ce tour."
+E-75,Basilic,"A chaque tour, bloque un personnage jusqu'à la fin du combat."
+E-77,Manticore,Ne peut pas être Stun.
+E-79,Golem de pierre,"A chaque tour, bloque un personnage pendant un tour."
+E-83,Vouivre,"Ne peut pas être Stun.
+À 30% de sa santé, ne peut peut être touché que par les attaques à distance."
+E-85,Tarasque,Ne peut pas être Stun.
+E-87,Majere,"Ne peut pas être Stun.
+Tours pairs, stun un personnage pendant 1 tour.
+Tours impairs, inflige 6 dégâts magiques à tous les joueurs."
+E-89,Démon majeur,Bloque toutes les capacités des personnages.
