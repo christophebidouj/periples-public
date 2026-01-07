@@ -7,16 +7,18 @@ import pandas as pd
 import os
 from typing import List, Dict, Optional
 from models.abilities import Ability, AbilityEffect, TargetType
+from utils.paths import get_data_path
 
 class AbilitiesLoader:
     """
     Chargeur simple des capacités depuis Sorts.xlsx + ability_names.csv
     CODE SIMPLIFIÉ pour débutants Python
     """
-    
+
     def __init__(self):
-        self.sorts_file = "data/Sorts.xlsx"
-        self.names_file = "data/ability_names.csv"
+        # Utiliser les chemins absolus pour garantir la portabilité
+        self.sorts_file = get_data_path("Sorts.xlsx")
+        self.names_file = get_data_path("ability_names.csv")
         self.names_cache = {}  # Cache des noms élégants
     
     def load_abilities_from_excel(self) -> Dict[str, List[Ability]]:

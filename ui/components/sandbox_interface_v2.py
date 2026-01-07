@@ -17,6 +17,7 @@ from models.combat.spell_manager import SpellManager
 from models.combat.initiative_manager import InitiativeManager
 from models.rules_engine import GameRules
 from utils.data_loader import DataLoader
+from utils.paths import get_image_path
 from ui.components.ui_elements import get_hero_image_path, load_hero_image_base64, get_hero_icon, get_enemy_image_path
 from ui.styling import get_hero_card_style
 from ui.components.combat_stats_tracker import CombatStatsTracker
@@ -2758,7 +2759,7 @@ def display_pet_combat_card(pet: 'Pet', is_current_turn: bool = False):
     # Charger image du familier (RÉUTILISE même approche que héros/ennemis)
     import base64
     import os
-    pet_image_path = "data/images/familier_kraor.jpg"
+    pet_image_path = get_image_path("familier_kraor.jpg")
     background_style = ""
 
     if os.path.exists(pet_image_path):

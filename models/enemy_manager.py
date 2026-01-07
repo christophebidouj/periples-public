@@ -15,19 +15,21 @@ import pandas as pd
 import os
 from typing import List, Dict, Optional, Tuple
 from models.character import Enemy
+from utils.paths import get_data_path
 
 
 class EnemyManager:
     """Gestionnaire CRUD pour les ennemis personnalisés"""
 
-    def __init__(self, csv_path: str = "data/custom_enemies.csv"):
+    def __init__(self, csv_path: str = None):
         """
         Initialise le gestionnaire
 
         Args:
-            csv_path: Chemin vers le CSV des ennemis personnalisés
+            csv_path: Chemin vers le CSV des ennemis personnalisés (optionnel)
         """
-        self.csv_path = csv_path
+        # Utiliser le chemin absolu pour garantir la portabilité
+        self.csv_path = csv_path if csv_path is not None else get_data_path("custom_enemies.csv")
         self._ensure_csv_exists()
 
     # === LECTURE ===

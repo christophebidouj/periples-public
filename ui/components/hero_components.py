@@ -11,10 +11,11 @@ import streamlit as st
 import pandas as pd
 from typing import List, Dict, Any
 from models.character import Character
+from utils.paths import get_data_path
 
 # Import des styles depuis le module styling
 from ui.styling import (
-    get_hero_card_style, 
+    get_hero_card_style,
     get_team_recap_styles,
     get_forge_styles,
     Colors
@@ -28,7 +29,7 @@ def load_equipment_details_cache():
     Charge et met en cache les détails de tous les équipements
     """
     try:
-        df = pd.read_csv("data/equipment.csv")
+        df = pd.read_csv(get_data_path("equipment.csv"))
         equipment_dict = {}
         
         for _, row in df.iterrows():

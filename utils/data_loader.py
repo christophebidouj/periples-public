@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 import streamlit as st
 
 from models.character import Character, Enemy, Equipment
+from utils.paths import get_data_dir, get_data_path
 
 # Import du système de capacités (optionnel)
 try:
@@ -64,11 +65,12 @@ def safe_randint(min_val: int, max_val: int) -> int:
 
 class DataLoader:
     """Charge les données du jeu depuis Excel/CSV"""
-    
-    def __init__(self, data_folder: str = "data"):
-        self.data_folder = data_folder
+
+    def __init__(self, data_folder: str = None):
+        # Utiliser le chemin absolu depuis utils.paths pour garantir la portabilité
+        self.data_folder = data_folder if data_folder is not None else get_data_dir()
         self._create_folder_if_missing()
-        
+
         # Cache pour les capacités
         self._abilities = None
         self._abilities_loaded = False

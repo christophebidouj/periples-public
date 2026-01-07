@@ -9,6 +9,7 @@ import base64
 import os
 import re
 from typing import Optional, TYPE_CHECKING
+from utils.paths import get_image_path, get_bestiary_image_path
 
 if TYPE_CHECKING:
     from models.character import Enemy
@@ -74,26 +75,26 @@ def get_hero_image_path(hero_name: str, current_form: Optional[str] = None) -> O
         current_form: Forme actuelle (pour Elneha uniquement) : "bear", "wolf", "human"
 
     Returns:
-        Chemin vers l'image appropriée
+        Chemin vers l'image appropriée (chemin absolu pour portabilité)
     """
     # CAS SPÉCIAL ELNEHA : Images selon forme de transformation
     if hero_name == "Elneha" and current_form:
         if current_form == "bear":
-            return "data/images/Ours.jpg"
+            return get_image_path("Ours.jpg")
         elif current_form == "wolf":
-            return "data/images/Loup.jpg"
+            return get_image_path("Loup.jpg")
         # Si current_form == "human" ou autre, utiliser l'image par défaut
 
     # Mapping direct vers les fichiers JPG - SANS ACCENT pour éviter les erreurs
     image_mapping = {
-        "Elneha": "data/images/Elneha_-_Druidesse.jpg",
-        "Liarie": "data/images/Liarie_-_Mage.jpg",
-        "Atucan": "data/images/Atucan_-_Paladin.jpg",
-        "Kraor": "data/images/Kraor_-_Rodeur.jpg",
-        "Thordius": "data/images/Thordius_-_Barbare.jpg",
-        "Stephe": "data/images/Stephe_-_Barde.jpg",  # SANS ACCENT - Mapping direct
-        "Lame": "data/images/Lame_-_Roublarde.jpg",
-        "Raishi": "data/images/Raishi_-_Pugiliste.jpg"
+        "Elneha": get_image_path("Elneha_-_Druidesse.jpg"),
+        "Liarie": get_image_path("Liarie_-_Mage.jpg"),
+        "Atucan": get_image_path("Atucan_-_Paladin.jpg"),
+        "Kraor": get_image_path("Kraor_-_Rodeur.jpg"),
+        "Thordius": get_image_path("Thordius_-_Barbare.jpg"),
+        "Stephe": get_image_path("Stephe_-_Barde.jpg"),  # SANS ACCENT - Mapping direct
+        "Lame": get_image_path("Lame_-_Roublarde.jpg"),
+        "Raishi": get_image_path("Raishi_-_Pugiliste.jpg")
     }
 
     return image_mapping.get(hero_name)
@@ -136,25 +137,25 @@ def get_enemy_image_path(enemy: "Enemy") -> str:
         enemy: Instance de la classe Enemy
 
     Returns:
-        Chemin vers l'image appropriée (toujours un chemin valide)
+        Chemin vers l'image appropriée (toujours un chemin valide, absolu pour portabilité)
     """
     # CAS 1: Ennemi custom créé par l'utilisateur
     if enemy.is_custom:
-        return "data/images/Images Bestiaire/Custom.jpg"
+        return get_bestiary_image_path("Custom.jpg")
 
     # CAS 2: Ennemi officiel du bestiaire
     # Normaliser le nom (enlever variantes numériques)
     normalized_name = normalize_enemy_name(enemy.name)
 
     # Construire le chemin vers l'image dans le bestiaire
-    bestiaire_path = f"data/images/Images Bestiaire/{normalized_name}.jpg"
+    bestiaire_path = get_bestiary_image_path(f"{normalized_name}.jpg")
 
     # Vérifier si l'image existe
     if os.path.exists(bestiaire_path):
         return bestiaire_path
 
     # CAS 3: Fallback - image générique si aucune correspondance
-    return "data/images/monstres.jpg"
+    return get_image_path("monstres.jpg")
 
 def load_hero_image_base64(image_path: str) -> Optional[str]:
     """Charge une image héros en base64 pour affichage"""
