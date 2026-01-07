@@ -4,6 +4,7 @@ build/
 #ignorer les fichiers data mais laisser les images et CSV
 data/*
 !data/*.csv
+!data/*.xlsx
 !data/images/
 data/images/*
 !data/images/*.png
