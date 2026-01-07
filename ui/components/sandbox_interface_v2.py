@@ -1316,7 +1316,13 @@ def display_hero_interface(combatant: Dict):
         current_actor = st.session_state.get('sandbox_v2_current_actor')
         is_selecting = (action_state == 'SELECTING_TARGET_HERO' and current_actor == char)
 
-        if not is_selecting:
+        if is_selecting:
+            # Mode ciblage : afficher bouton Annuler
+            if st.button("❌ Annuler le ciblage", key=f"cancel_target_{combatant['id']}", type="secondary", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.rerun()
+        else:
             # Bouton Attaquer (full width)
             can_attack = char.can_attack_this_turn if hasattr(char, 'can_attack_this_turn') else True
 
@@ -1594,14 +1600,24 @@ def display_enemy_interface(combatant: Dict):
 
         # NOTE: Le ciblage d'attaque se fait maintenant directement sur les cartes
         # Le code de ciblage séparé a été supprimé, voir execute_enemy_attack_on_target()
-        if st.session_state.sandbox_v2_action_state != 'SELECTING_TARGET_ENEMY':
+        if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_ENEMY' and st.session_state.get('sandbox_v2_current_actor') == char:
+            # Mode ciblage : afficher bouton Annuler
+            if st.button("❌ Annuler le ciblage", key=f"cancel_enemy_target_{combatant['id']}", type="secondary", use_container_width=True):
+                # Reset flags pour les ennemis si on annule
+                if hasattr(char, '_before_attack_triggered'):
+                    delattr(char, '_before_attack_triggered')
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.rerun()
+        else:
             # Actions principales (harmonisé avec interface héros)
             if st.button("⚔️ Attaquer", key=f"sandbox_enemy_attack_{combatant['id']}", type="primary", use_container_width=True):
                 st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ENEMY'
                 st.session_state.sandbox_v2_current_actor = char
                 st.rerun()
 
-            # Contrôle de tour
+        # Contrôle de tour (toujours affiché)
+        if st.session_state.sandbox_v2_action_state != 'SELECTING_TARGET_ENEMY' or st.session_state.get('sandbox_v2_current_actor') != char:
             if st.button("⏭️ Fin du Tour", key=f"sandbox_enemy_skip_{combatant['id']}", type="secondary", use_container_width=True):
                 # NOUVEAU - Reset flag on_turn_start pour le prochain tour
                 if hasattr(char, '_on_turn_start_triggered'):
@@ -3123,11 +3139,31 @@ def display_combat_status():
                 if action_state == 'SELECTING_TARGET_HERO' and current_actor:
                     # Héros attaque ennemi : boutons sur les ennemis
                     if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        # Calculer prévisualisation des dégâts
+                        hero_damage = current_actor.get_total_damage()
+                        enemy_parade = character.current_parade_tokens
+
+                        # Vérifier si le héros ignore la parade
+                        ignore_parade = False
+                        if hasattr(current_actor, 'temporary_buffs') and 'ignore_parade' in current_actor.temporary_buffs:
+                            ignore_parade = True
+
+                        if ignore_parade:
+                            damage_preview = hero_damage
+                            tooltip = f"💥 Dégâts: {hero_damage} (parade ignorée)"
+                        else:
+                            damage_after_parade = max(0, hero_damage - enemy_parade)
+                            if damage_after_parade > 0:
+                                tooltip = f"💥 Dégâts: {hero_damage} - 🛡️ {enemy_parade} = 💔 {damage_after_parade}"
+                            else:
+                                tooltip = f"💥 Dégâts: {hero_damage} - 🛡️ {enemy_parade} = ✅ Bloqué"
+
                         if st.button(
                             "🎯 Choisir cette cible",
                             key=f"target_enemy_init_{combatant_data['id']}",
                             type="primary",
-                            use_container_width=True
+                            use_container_width=True,
+                            help=tooltip
                         ):
                             execute_attack_on_target(current_actor, character)
                     # Griser les héros pendant le ciblage
@@ -3141,11 +3177,32 @@ def display_combat_status():
                 elif action_state == 'SELECTING_TARGET_ENEMY' and current_actor:
                     # Ennemi attaque héros : boutons sur les héros/pets
                     if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
+                        # Calculer prévisualisation des dégâts
+                        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                        player_count = len([c for c in hero_combatants if c['character'].is_alive()])
+                        enemy_stats = current_actor.get_stats_for_players(player_count)
+                        enemy_damage = enemy_stats['damage']
+                        hero_parade = character.current_parade_tokens
+
+                        # Vérifier invisibilité
+                        is_invisible = hasattr(character, 'status_effects') and 'invisible' in character.status_effects
+
+                        if is_invisible:
+                            tooltip = "🌫️ Cible invisible - Non ciblable"
+                        else:
+                            damage_after_parade = max(0, enemy_damage - hero_parade)
+                            if damage_after_parade > 0:
+                                tooltip = f"💥 Dégâts: {enemy_damage} - 🛡️ {hero_parade} = 💔 {damage_after_parade}"
+                            else:
+                                tooltip = f"💥 Dégâts: {enemy_damage} - 🛡️ {hero_parade} = ✅ Bloqué"
+
                         if st.button(
                             "🎯 Choisir cette cible",
                             key=f"target_hero_init_{combatant_data['id']}",
                             type="primary",
-                            use_container_width=True
+                            use_container_width=True,
+                            disabled=is_invisible,
+                            help=tooltip
                         ):
                             execute_enemy_attack_on_target(current_actor, character)
                     # Griser les ennemis pendant le ciblage
@@ -3214,11 +3271,31 @@ def display_combat_status_team_mode():
                 if action_state == 'SELECTING_TARGET_HERO' and current_actor:
                     # Héros attaque ennemi : boutons sur les ennemis
                     if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        # Calculer prévisualisation des dégâts
+                        hero_damage = current_actor.get_total_damage()
+                        enemy_parade = character.current_parade_tokens
+
+                        # Vérifier si le héros ignore la parade
+                        ignore_parade = False
+                        if hasattr(current_actor, 'temporary_buffs') and 'ignore_parade' in current_actor.temporary_buffs:
+                            ignore_parade = True
+
+                        if ignore_parade:
+                            damage_preview = hero_damage
+                            tooltip = f"💥 Dégâts: {hero_damage} (parade ignorée)"
+                        else:
+                            damage_after_parade = max(0, hero_damage - enemy_parade)
+                            if damage_after_parade > 0:
+                                tooltip = f"💥 Dégâts: {hero_damage} - 🛡️ {enemy_parade} = 💔 {damage_after_parade}"
+                            else:
+                                tooltip = f"💥 Dégâts: {hero_damage} - 🛡️ {enemy_parade} = ✅ Bloqué"
+
                         if st.button(
                             "🎯 Choisir cette cible",
                             key=f"target_enemy_manual_{combatant_data['id']}",
                             type="primary",
-                            use_container_width=True
+                            use_container_width=True,
+                            help=tooltip
                         ):
                             execute_attack_on_target(current_actor, character)
                     # Griser les héros pendant le ciblage
@@ -3232,11 +3309,32 @@ def display_combat_status_team_mode():
                 elif action_state == 'SELECTING_TARGET_ENEMY' and current_actor:
                     # Ennemi attaque héros : boutons sur les héros/pets
                     if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
+                        # Calculer prévisualisation des dégâts
+                        hero_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                        player_count = len([c for c in hero_combatants if c['character'].is_alive()])
+                        enemy_stats = current_actor.get_stats_for_players(player_count)
+                        enemy_damage = enemy_stats['damage']
+                        hero_parade = character.current_parade_tokens
+
+                        # Vérifier invisibilité
+                        is_invisible = hasattr(character, 'status_effects') and 'invisible' in character.status_effects
+
+                        if is_invisible:
+                            tooltip = "🌫️ Cible invisible - Non ciblable"
+                        else:
+                            damage_after_parade = max(0, enemy_damage - hero_parade)
+                            if damage_after_parade > 0:
+                                tooltip = f"💥 Dégâts: {enemy_damage} - 🛡️ {hero_parade} = 💔 {damage_after_parade}"
+                            else:
+                                tooltip = f"💥 Dégâts: {enemy_damage} - 🛡️ {hero_parade} = ✅ Bloqué"
+
                         if st.button(
                             "🎯 Choisir cette cible",
                             key=f"target_hero_manual_{combatant_data['id']}",
                             type="primary",
-                            use_container_width=True
+                            use_container_width=True,
+                            disabled=is_invisible,
+                            help=tooltip
                         ):
                             execute_enemy_attack_on_target(current_actor, character)
                     # Griser les ennemis pendant le ciblage
@@ -3502,21 +3600,6 @@ def main_sandbox_v2():
         else:
             # MODE MANUEL : Afficher cartes par équipe avec boutons de sélection
             display_combat_status_team_mode()
-
-        # Bouton d'annulation du ciblage (visible pour les deux modes de ciblage)
-        action_state = st.session_state.get('sandbox_v2_action_state')
-        if action_state in ['SELECTING_TARGET_HERO', 'SELECTING_TARGET_ENEMY']:
-            st.markdown("---")
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button("❌ Annuler le ciblage", key="cancel_targeting_global", type="secondary", use_container_width=True):
-                    # Reset flags pour les ennemis si on annule
-                    current_actor = st.session_state.get('sandbox_v2_current_actor')
-                    if current_actor and hasattr(current_actor, '_before_attack_triggered'):
-                        delattr(current_actor, '_before_attack_triggered')
-                    st.session_state.sandbox_v2_action_state = None
-                    st.session_state.sandbox_v2_current_actor = None
-                    st.rerun()
 
         st.markdown("---")
 

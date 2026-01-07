@@ -260,7 +260,7 @@ class LameAttaqueTournoyante(BaseAbility):
                 return False
 
             # Calculer les dégâts de l'attaque
-            damage_roll = caster.calculate_damage_roll()
+            damage_roll = caster.get_total_damage()
 
             log.append(f"🗡️💨 {caster.name} déclenche ATTAQUE TOURNOYANTE !")
             log.append(f"   ⚔️ Touche automatiquement TOUS les ennemis vivants !")

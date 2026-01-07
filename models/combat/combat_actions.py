@@ -120,7 +120,11 @@ class CombatActions:
 
         # Critique
         if is_critical:
-            final_damage = damage_value * 2
+            # IMPORTANT: Auto-hit (Assaut furieux) ignore le multiplicateur ×2 du critique
+            if auto_hit:
+                final_damage = damage_value  # Pas de ×2 critique (déjà ×2 par Assaut furieux)
+            else:
+                final_damage = damage_value * 2  # Critique normal ×2
             # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
             ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
             is_magical_dmg = (damage_type == 'magical')

@@ -54,20 +54,34 @@ class StepheAffaiblissement(BaseAbility):
 
             target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
 
+            # Initialiser debuffs si nécessaire
+            if not hasattr(target, 'debuffs'):
+                target.debuffs = {}
+
             # Appliquer debuff permanent défense
-            if hasattr(target, 'precision'):
-                target.precision = max(0, target.precision - self.defense_reduction)
+            target.debuffs['defense_reduction'] = self.defense_reduction
+            # Modifier directement la défense de base
+            target.defense = max(0, target.defense - self.defense_reduction)
 
             # Appliquer debuff permanent santé max
-            if hasattr(target, 'health'):
-                target.health = max(1, target.health - self.health_reduction)
+            target.debuffs['max_health_reduction'] = self.health_reduction
+
+            # Modifier la santé max dans les stats selon les joueurs
+            player_count = context.get('player_count', len(context.get('heroes', [])))
+            if hasattr(target, 'stats_by_players'):
+                for count, stats in target.stats_by_players.items():
+                    if 'health' in stats:
+                        stats['health'] = max(1, stats['health'] - self.health_reduction)
+
+            # Ajuster max_health si présent
+            if hasattr(target, 'max_health'):
+                target.max_health = max(1, target.max_health - self.health_reduction)
                 # Ajuster HP actuel si supérieur au nouveau max
-                target_current = getattr(target, 'current_health', None)
-                if target_current is not None and target_current > target.health:
-                    target.current_health = target.health
+                if hasattr(target, 'current_health') and target.current_health > target.max_health:
+                    target.current_health = target.max_health
 
             log.append(f"🌙 {caster.name} affaiblit {target.name}")
-            log.append(f"   ⬇️ Défense -{self.defense_reduction}, Santé max -{self.health_reduction}")
+            log.append(f"   ⬇️ Défense -{self.defense_reduction} (DEF: {target.defense}), Santé max -{self.health_reduction}")
 
             return True
 
