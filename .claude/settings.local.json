@@ -16,7 +16,8 @@
       "Bash(echo \"\n\n\n# ========================================\n# FONCTIONS D''AUTO-ACTIVATION (PASSIFS)\n# ========================================\n\ndef auto_activate_point_faible(heroes: List, log: List[str]) -> bool:\n    \"\"\"\"\"\"\n    AUTO-ACTIVATION: Active automatiquement \"\"Point faible\"\" pour Raishi dès le début du combat.\n\n    Point faible est un passif permanent qui permet à Raishi d''ignorer la parade des ennemis.\n    Cette capacité s''active automatiquement dès le début du combat et reste active tant que\n    Raishi est vivant.\n\n    Args:\n        heroes: Liste des héros participant au combat\n        log: Liste de logs de combat (sera modifiée)\n\n    Returns:\n        bool: True si le buff a été activé, False sinon\n\n    Effet:\n        Ignore la parade des ennemis lors des attaques\n    \"\"\"\"\"\"\n    # Chercher Raishi (P-8) parmi les héros vivants\n    raishi = next((h for h in heroes if h.code == \"\"P-8\"\" and h.is_alive()), None)\n\n    if not raishi:\n        return False\n\n    # Initialiser temporary_buffs si nécessaire\n    if not hasattr(raishi, ''temporary_buffs''):\n        raishi.temporary_buffs = {}\n\n    # Appliquer le buff permanent\n    raishi.temporary_buffs[''ignore_parade''] = {\n        ''type'': ''passive_permanent'',\n        ''source'': ''raishi_point_faible''\n    }\n\n    # Logger l''activation\n    log.append(f\"\"🥋 Point faible de Raishi actif (Ignore parade ennemis)\"\")\n\n    return True\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
