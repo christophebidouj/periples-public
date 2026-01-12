@@ -1673,64 +1673,28 @@ def display_pet_interface(combatant: Dict):
         """, unsafe_allow_html=True)
 
     with col_header_actions:
-        # Vérifier si on est en mode sélection de cible pour le pet
-        if st.session_state.sandbox_v2_action_state == 'SELECTING_TARGET_PET':
-            # Afficher interface de ciblage
-            enemy_combatants = [c for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
-            enemies_list = [c['character'] for c in enemy_combatants]
-            alive_enemies = [e for e in enemies_list if e.is_alive()]
+        # Système de ciblage harmonisé (comme les héros)
+        action_state = st.session_state.get('sandbox_v2_action_state')
+        current_actor = st.session_state.get('sandbox_v2_current_actor')
+        is_selecting = (action_state == 'SELECTING_TARGET_PET' and current_actor == char)
 
-            if not alive_enemies:
-                st.warning("❌ Aucun ennemi vivant à cibler")
+        if is_selecting:
+            # Mode ciblage : afficher bouton Annuler
+            if st.button("❌ Annuler le ciblage", key=f"cancel_pet_target_{combatant['id']}", type="secondary", use_container_width=True):
                 st.session_state.sandbox_v2_action_state = None
-                st.rerun()
-                return
-
-            st.info("🎯 Sélectionnez la cible du familier")
-
-            # Boutons de sélection de cible
-            for enemy in alive_enemies:
-                # Utilise stats de combat figées (ne changent pas si héros meurent)
-                stats = enemy.get_combat_stats()
-                enemy_hp = enemy.current_health
-                enemy_max_hp = enemy.max_health
-
-                if st.button(
-                    f"🎯 {enemy.name} ({enemy_hp}/{enemy_max_hp} PV)",
-                    key=f"target_pet_{combatant['id']}_{enemy.code}",
-                    use_container_width=True
-                ):
-                    # Pet attaque avec dégâts magiques
-                    adapter = st.session_state.sandbox_v2_adapter
-                    log = st.session_state.sandbox_v2_log
-
-                    # Calculer player_count (nombre de héros vivants)
-                    heroes_list = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
-                    player_count = len([h for h in heroes_list if h.is_alive()])
-
-                    # RÉUTILISE CombatActions.hero_attack() (Pets attaquent comme héros)
-                    adapter.combat_actions.hero_attack(
-                        hero=char,
-                        enemies=[enemy],
-                        player_count=player_count,
-                        log=log
-                    )
-
-                    st.session_state.sandbox_v2_action_state = None
-                    save_game_state(f"{char.name} attaque {enemy.name}")
-                    next_turn()
-                    st.rerun()
-
-            # Bouton annuler
-            if st.button("❌ Annuler", key=f"cancel_pet_targeting_{combatant['id']}"):
-                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
                 st.rerun()
         else:
-            # Actions principales (harmonisé avec interface héros)
-            if st.button("🔮 Attaque Magique", key=f"sandbox_pet_attack_{combatant['id']}", type="primary", use_container_width=True):
-                st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_PET'
-                st.session_state.sandbox_v2_current_actor = char
-                st.rerun()
+            # Bouton Attaque Magique (avec gestion can_attack_this_turn comme les héros)
+            can_attack = char.can_attack_this_turn if hasattr(char, 'can_attack_this_turn') else True
+
+            if can_attack:
+                if st.button("🔮 Attaque Magique", key=f"sandbox_pet_attack_{combatant['id']}", type="primary", use_container_width=True):
+                    st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_PET'
+                    st.session_state.sandbox_v2_current_actor = char
+                    st.rerun()
+            else:
+                st.button("🔮 Attaque Magique (déjà fait)", key=f"sandbox_pet_attack_{combatant['id']}", disabled=True, use_container_width=True)
 
             # Contrôle de tour
             if st.button("⏭️ Fin du Tour", key=f"sandbox_pet_skip_{combatant['id']}", type="secondary", use_container_width=True):
@@ -3213,6 +3177,40 @@ def display_combat_status():
                             disabled=True,
                             use_container_width=True
                         )
+                elif action_state == 'SELECTING_TARGET_PET' and current_actor:
+                    # Pet attaque ennemi : boutons sur les ennemis
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        # Pet a des dégâts magiques fixes (4)
+                        pet_damage = 4
+                        enemy_parade = character.current_parade_tokens
+
+                        damage_after_parade = max(0, pet_damage - enemy_parade)
+                        if damage_after_parade > 0:
+                            tooltip = f"💥 Dégâts magiques: {pet_damage} - 🛡️ {enemy_parade} = 💔 {damage_after_parade}"
+                        else:
+                            tooltip = f"💥 Dégâts magiques: {pet_damage} - 🛡️ {enemy_parade} = ✅ Bloqué"
+
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_enemy_pet_init_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True,
+                            help=tooltip
+                        ):
+                            # Utiliser la fonction execute_attack_on_target comme les héros
+                            execute_attack_on_target(current_actor, character)
+                            # Pet passe automatiquement au tour suivant (comportement spécifique)
+                            save_game_state(f"{current_actor.name} termine son tour")
+                            next_turn()
+                            st.rerun()
+                    # Griser les héros/pets pendant le ciblage
+                    elif combatant_data['faction'] in ['hero', 'pet']:
+                        st.button(
+                            "⏸️ En attente...",
+                            key=f"disabled_ally_pet_init_{combatant_data['id']}",
+                            disabled=True,
+                            use_container_width=True
+                        )
 
 def display_combat_status_team_mode():
     """
@@ -3345,6 +3343,40 @@ def display_combat_status_team_mode():
                             disabled=True,
                             use_container_width=True
                         )
+                elif action_state == 'SELECTING_TARGET_PET' and current_actor:
+                    # Pet attaque ennemi : boutons sur les ennemis
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        # Pet a des dégâts magiques fixes (4)
+                        pet_damage = 4
+                        enemy_parade = character.current_parade_tokens
+
+                        damage_after_parade = max(0, pet_damage - enemy_parade)
+                        if damage_after_parade > 0:
+                            tooltip = f"💥 Dégâts magiques: {pet_damage} - 🛡️ {enemy_parade} = 💔 {damage_after_parade}"
+                        else:
+                            tooltip = f"💥 Dégâts magiques: {pet_damage} - 🛡️ {enemy_parade} = ✅ Bloqué"
+
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_enemy_pet_manual_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True,
+                            help=tooltip
+                        ):
+                            # Utiliser la fonction execute_attack_on_target comme les héros
+                            execute_attack_on_target(current_actor, character)
+                            # Pet passe automatiquement au tour suivant (comportement spécifique)
+                            save_game_state(f"{current_actor.name} termine son tour")
+                            next_turn()
+                            st.rerun()
+                    # Griser les héros/pets pendant le ciblage
+                    elif combatant_data['faction'] in ['hero', 'pet']:
+                        st.button(
+                            "⏸️ En attente...",
+                            key=f"disabled_ally_pet_manual_{combatant_data['id']}",
+                            disabled=True,
+                            use_container_width=True
+                        )
                 else:
                     # Mode normal : afficher boutons "À son tour"
                     # Vérifier si le combattant a déjà joué ce round
@@ -3420,6 +3452,36 @@ def select_combatant_manually(combatant_id: str):
             else:  # enemy
                 faction = "👹"
             st.session_state.sandbox_v2_log.append(f"{faction} {name} commence son tour")
+
+            # NOUVEAU - Vérifier si le combattant est étourdi et auto-skip le tour
+            if combatant['faction'] == 'enemy':
+                is_stunned, stunned_turns = is_enemy_stunned(char)
+            elif combatant['faction'] == 'hero':
+                is_stunned, stunned_turns = is_character_stunned(char)
+            else:
+                is_stunned, stunned_turns = (False, 0)
+
+            if is_stunned:
+                # Décrémenter le compteur de stun automatiquement
+                if hasattr(char, 'status_effects') and 'stunned' in char.status_effects:
+                    stunned_data = char.status_effects['stunned']
+                    if isinstance(stunned_data, dict):
+                        current_duration = stunned_data.get('duration', 0)
+                        new_duration = max(0, current_duration - 1)
+                        if new_duration > 0:
+                            stunned_data['duration'] = new_duration
+                            st.session_state.sandbox_v2_log.append(f"  😵 Toujours étourdi ({new_duration} tour(s) restant(s))")
+                        else:
+                            # Retirer l'effet
+                            char.status_effects.pop('stunned', None)
+                            st.session_state.sandbox_v2_log.append(f"  ✅ N'est plus étourdi")
+
+                # Log et passage automatique au tour suivant
+                st.session_state.sandbox_v2_log.append(f"⏭️ {name} passe son tour (étourdi)")
+                save_game_state(f"{name} étourdi - tour sauté")
+                next_turn()
+                st.rerun()
+                break
 
             # Sauvegarder l'état
             save_game_state(f"{name} sélectionné")
@@ -3751,6 +3813,34 @@ def main_sandbox_v2():
                                     if stealth_data['turns_remaining'] <= 0:
                                         del char.status_effects['invisible']
                                         st.session_state.sandbox_v2_log.append(f"🌑 {char.name} redevient visible (furtivité expirée)")
+
+                # NOUVEAU : Décrémenter le stun pour les combattants étourdis qui n'ont PAS joué ce round
+                for combatant in st.session_state.sandbox_v2_combatants:
+                    char = combatant['character']
+                    combatant_id = combatant['id']
+
+                    # Si le combattant n'a PAS joué ce round (pas dans la liste)
+                    if combatant_id not in st.session_state.sandbox_v2_played_this_round and char.is_alive():
+                        # Vérifier s'il est étourdi
+                        if combatant['faction'] == 'enemy':
+                            is_stunned = hasattr(char, 'status_effects') and 'stunned' in char.status_effects
+                        elif combatant['faction'] == 'hero':
+                            is_stunned = hasattr(char, 'status_effects') and 'stunned' in char.status_effects
+                        else:
+                            is_stunned = False
+
+                        if is_stunned:
+                            stunned_data = char.status_effects['stunned']
+                            if isinstance(stunned_data, dict):
+                                current_duration = stunned_data.get('duration', 0)
+                                new_duration = max(0, current_duration - 1)
+                                if new_duration > 0:
+                                    stunned_data['duration'] = new_duration
+                                    st.session_state.sandbox_v2_log.append(f"  😵 {char.name} était étourdi et n'a pas joué ({new_duration} tour(s) restant(s))")
+                                else:
+                                    # Retirer l'effet
+                                    char.status_effects.pop('stunned', None)
+                                    st.session_state.sandbox_v2_log.append(f"  ✅ {char.name} n'est plus étourdi")
 
                 # Réinitialiser la liste des joueurs
                 st.session_state.sandbox_v2_played_this_round = []
