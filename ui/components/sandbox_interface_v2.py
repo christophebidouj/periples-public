@@ -2196,6 +2196,15 @@ def use_ability_action(char: Character, ability):
     RÉUTILISE AbilityEffectsManager pour exécuter les effets réels
     """
     if hasattr(char, 'use_ability'):
+        # NOUVEAU - Détecter si la capacité nécessite un ciblage manuel (Marque du chasseur P-4-2)
+        if hasattr(char, 'code') and char.code == "P-4" and hasattr(ability, 'ability_number') and ability.ability_number == 2:
+            # Activer mode ciblage (réutilise le système d'attaque)
+            st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ABILITY'
+            st.session_state.sandbox_v2_current_actor = char
+            st.session_state.sandbox_v2_current_ability = ability
+            st.rerun()
+            return
+
         # 1. Vérifications + consommation sorts (via Character.use_ability)
         action = char.use_ability(ability)
 
@@ -3138,6 +3147,44 @@ def display_combat_status():
                             disabled=True,
                             use_container_width=True
                         )
+                elif action_state == 'SELECTING_TARGET_ABILITY' and current_actor:
+                    # Capacité nécessitant ciblage : boutons sur les ennemis
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_ability_init_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True,
+                            help="Marquer cette cible"
+                        ):
+                            # Exécuter la capacité avec la cible choisie
+                            ability = st.session_state.sandbox_v2_current_ability
+                            adapter = st.session_state.sandbox_v2_adapter
+                            heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                            enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                            context = {
+                                'alive_enemies': [character],  # Cible choisie
+                                'current_enemies': [character],
+                                'heroes': heroes,
+                                'current_heroes': heroes,
+                                'spell_manager': adapter.spell_manager,
+                                'log': st.session_state.sandbox_v2_log,
+                                'player_count': len([h for h in heroes if h.is_alive()])
+                            }
+
+                            # Consommer et exécuter
+                            action = current_actor.use_ability(ability)
+                            if action.success:
+                                adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                            st.session_state.sandbox_v2_action_state = None
+                            st.session_state.sandbox_v2_current_actor = None
+                            st.session_state.sandbox_v2_current_ability = None
+                            save_game_state(f"{current_actor.name} utilise {ability.name}")
+                            st.rerun()
+                    elif combatant_data['faction'] in ['hero', 'pet']:
+                        st.button("⏸️ En attente...", key=f"disabled_ability_init_{combatant_data['id']}",disabled=True, use_container_width=True)
                 elif action_state == 'SELECTING_TARGET_ENEMY' and current_actor:
                     # Ennemi attaque héros : boutons sur les héros/pets
                     if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
@@ -3304,6 +3351,44 @@ def display_combat_status_team_mode():
                             disabled=True,
                             use_container_width=True
                         )
+                elif action_state == 'SELECTING_TARGET_ABILITY' and current_actor:
+                    # Capacité nécessitant ciblage : boutons sur les ennemis
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        if st.button(
+                            "🎯 Choisir cette cible",
+                            key=f"target_ability_manual_{combatant_data['id']}",
+                            type="primary",
+                            use_container_width=True,
+                            help="Marquer cette cible"
+                        ):
+                            # Exécuter la capacité avec la cible choisie
+                            ability = st.session_state.sandbox_v2_current_ability
+                            adapter = st.session_state.sandbox_v2_adapter
+                            heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                            enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                            context = {
+                                'alive_enemies': [character],  # Cible choisie
+                                'current_enemies': [character],
+                                'heroes': heroes,
+                                'current_heroes': heroes,
+                                'spell_manager': adapter.spell_manager,
+                                'log': st.session_state.sandbox_v2_log,
+                                'player_count': len([h for h in heroes if h.is_alive()])
+                            }
+
+                            # Consommer et exécuter
+                            action = current_actor.use_ability(ability)
+                            if action.success:
+                                adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                            st.session_state.sandbox_v2_action_state = None
+                            st.session_state.sandbox_v2_current_actor = None
+                            st.session_state.sandbox_v2_current_ability = None
+                            save_game_state(f"{current_actor.name} utilise {ability.name}")
+                            st.rerun()
+                    elif combatant_data['faction'] in ['hero', 'pet']:
+                        st.button("⏸️ En attente...", key=f"disabled_ability_manual_{combatant_data['id']}",disabled=True, use_container_width=True)
                 elif action_state == 'SELECTING_TARGET_ENEMY' and current_actor:
                     # Ennemi attaque héros : boutons sur les héros/pets
                     if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():

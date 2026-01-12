@@ -48,14 +48,13 @@ class KraorMarqueDuChasseur(BaseAbility):
                 log.append(f"⚠️ Marquage déjà utilisé ce combat")
                 return False
             
-            # 2. Sélectionner cible ennemie (priorité PV élevés)
-            enemies = self._get_all_enemies(caster, context)
-            if not enemies:
-                log.append(f"⚠️ Aucun ennemi à marquer")
+            # 2. Utiliser la cible sélectionnée par l'utilisateur
+            if not targets or len(targets) == 0:
+                log.append(f"⚠️ Aucune cible sélectionnée")
                 return False
-            
-            # Prioriser ennemi avec plus de PV (marquage plus rentable)
-            target = max(enemies, key=lambda e: e.current_health if e.current_health is not None else 0)
+
+            # Utiliser la cible choisie par l'utilisateur
+            target = targets[0]
             
             # 3. Appliquer marque avec champs EXISTANTS Enemy
             if not hasattr(target, 'marks'):

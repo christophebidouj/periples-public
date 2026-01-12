@@ -83,9 +83,10 @@ class AbilityEffectsManager:
                 }
                 context = {**base_context, **(context or {})}
 
-                # Déterminer les cibles (pour l'instant, le lanceur par défaut)
-                # TODO: Améliorer le système de ciblage dans les prochaines versions
-                targets = [hero]
+                # Déterminer les cibles via la méthode get_targets() de la capacité
+                all_heroes = context.get('current_heroes', context.get('heroes', [hero]))
+                all_enemies = context.get('current_enemies', context.get('alive_enemies', []))
+                targets = individual_ability.get_targets(hero, all_heroes, all_enemies, context)
 
                 # Initialiser le compteur de dégâts pour cette exécution
                 individual_ability._damage_counter = {'total': 0}
