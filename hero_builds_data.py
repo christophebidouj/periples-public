@@ -21,6 +21,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,  # Seule la capacité 1 acquise
             "potions": {"small": 1, "large": 0},  # Potion de guérison
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-2": {  # Liarie
@@ -41,6 +47,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 1, "large": 0},  # Potion de guérison
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-3": {  # Atucan
@@ -61,6 +73,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 1, "large": 0},  # Potion de guérison
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-4": {  # Kraor
@@ -81,6 +99,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 1, "large": 0},  # Potion de guérison
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-5": {  # Thordius
@@ -101,6 +125,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 0, "large": 0},
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-6": {  # Stèphe
@@ -121,6 +151,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 0, "large": 0},
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-7": {  # Lame
@@ -141,6 +177,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 1, "large": 0},  # Potion de guérison
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     },
     "P-8": {  # Raishi
@@ -161,6 +203,12 @@ HERO_BUILDS_DETAILED = {
             "abilities_level": 1,
             "potions": {"small": 1, "large": 0},  # Potion de guérison
             "name": "🔴 Build Spartiate"
+        },
+        "Vanilla": {
+            "equipment": [],  # Aucun équipement
+            "abilities_level": 0,  # Aucune capacité
+            "potions": {"small": 0, "large": 0},  # Aucune potion
+            "name": "⚪ Build Vanilla"
         }
     }
 }
@@ -189,7 +237,7 @@ def get_hero_detailed_build(hero_code: str, difficulty: str) -> dict:
         dict: Configuration avec equipment, abilities_level, potions, name
     """
     # Nettoyage de la difficulté (enlever emoji si présent)
-    clean_difficulty = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
+    clean_difficulty = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "").replace("⚪ ", "")
     
     return HERO_BUILDS_DETAILED.get(hero_code, {}).get(clean_difficulty, {
         "equipment": [],
@@ -208,12 +256,13 @@ def get_build_name_by_difficulty(difficulty: str) -> str:
     Returns:
         str: Nom du build avec emoji coloré
     """
-    clean_difficulty = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
-    
+    clean_difficulty = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "").replace("⚪ ", "")
+
     build_names = {
         "Facile": "🟢 Build Renforcé",
-        "Normal": "🔵 Build Standard", 
-        "Difficile": "🔴 Build Spartiate"
+        "Normal": "🔵 Build Standard",
+        "Difficile": "🔴 Build Spartiate",
+        "Vanilla": "⚪ Build Vanilla"
     }
     
     return build_names.get(clean_difficulty, "🔵 Build Standard")

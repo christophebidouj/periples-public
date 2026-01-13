@@ -123,26 +123,26 @@ def calculate_stats_from_equipment(hero: Character, equipment_codes: List[str], 
 
 def preload_hero_builds_for_all_difficulties(heroes_list: List, equipment_list: List, loader) -> Dict:
     """
-    Pré-calcule les 3 builds (Facile/Normal/Difficile) pour tous les héros
+    Pré-calcule les 4 builds (Facile/Normal/Difficile/Vanilla) pour tous les héros
     VERSION MIGRÉE : Calcul depuis équipements réels au lieu de stats hardcodées
-    
+
     Returns:
-        Dict: Structure {hero_code: [build_facile, build_normal, build_difficile]} avec détails complets
+        Dict: Structure {hero_code: [build_facile, build_normal, build_difficile, build_vanilla]} avec détails complets
     """
     from hero_builds_data import get_build_name_by_difficulty, get_hero_detailed_build, get_abilities_for_level
-    
+
     # Chargement des caches
     equipment_cache = load_equipment_details_cache()
     abilities_cache = load_abilities_details_cache(loader)
-    
+
     preloaded_builds = {}
-    difficulty_levels = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
+    difficulty_levels = ["🟢 Facile", "🔵 Normal", "🔴 Difficile", "⚪ Vanilla"]
     
     for hero in heroes_list:
         hero_builds = []
         
         for difficulty in difficulty_levels:
-            difficulty_clean = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "")
+            difficulty_clean = difficulty.replace("🟢 ", "").replace("🔵 ", "").replace("🔴 ", "").replace("⚪ ", "")
             build_name = get_build_name_by_difficulty(difficulty_clean)
             
             # NOUVEAU - Récupération build détaillé depuis hero_builds_data
@@ -384,8 +384,8 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
             st.session_state.selected_build_name = {}
         st.session_state.selected_build_name[hero.code] = new_build
 
-    # Options de builds: Par défaut (🟢🔵🔴) + Custom (🛠️)
-    build_options = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
+    # Options de builds: Par défaut (🟢🔵🔴⚪) + Custom (🛠️)
+    build_options = ["🟢 Facile", "🔵 Normal", "🔴 Difficile", "⚪ Vanilla"]
 
     # Ajouter builds custom pour ce héros
     hero_custom_builds = st.session_state.get('custom_builds', {}).get(hero.code, [])
@@ -412,11 +412,11 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
     )
 
     # Détermination du build selon le type (par défaut ou custom)
-    is_default_build = selected_build in ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
+    is_default_build = selected_build in ["🟢 Facile", "🔵 Normal", "🔴 Difficile", "⚪ Vanilla"]
 
     if is_default_build:
         # BUILD PAR DÉFAUT
-        difficulty_index = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"].index(selected_build)
+        difficulty_index = ["🟢 Facile", "🔵 Normal", "🔴 Difficile", "⚪ Vanilla"].index(selected_build)
         build_info = preloaded_builds[hero.code][difficulty_index]
     else:
         # BUILD CUSTOM

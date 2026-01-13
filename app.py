@@ -277,7 +277,7 @@ def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List
     selected_build_name = st.session_state.get('selected_build_name', {}).get(hero_code)
 
     # Détection du type de build
-    is_default_build = selected_build_name in ['🟢 Facile', '🔵 Normal', '🔴 Difficile', None]
+    is_default_build = selected_build_name in ['🟢 Facile', '🔵 Normal', '🔴 Difficile', '⚪ Vanilla', None]
 
     if not is_default_build and selected_build_name:
         # BUILD CUSTOM SÉLECTIONNÉ
@@ -290,13 +290,15 @@ def get_hero_final_stats(hero_code: str, heroes_list: List, equipment_list: List
         if build_data:
             return get_hero_build_info_from_data(hero_code, build_data, heroes_list, equipment_list, loader)
 
-    # BUILD PAR DÉFAUT (Facile/Normal/Difficile)
+    # BUILD PAR DÉFAUT (Facile/Normal/Difficile/Vanilla)
     if selected_build_name:
         # Extraire le nom de difficulté (sans emoji)
         if "Facile" in selected_build_name:
             difficulty = "Facile"
         elif "Difficile" in selected_build_name:
             difficulty = "Difficile"
+        elif "Vanilla" in selected_build_name:
+            difficulty = "Vanilla"
         else:
             difficulty = "Normal"
     else:
@@ -648,7 +650,7 @@ def tab_forge(data):
                 time.sleep(0.5)
                 st.rerun()
 
-    st.markdown("💡 *Les builds par défaut (Facile/Normal/Difficile) ne peuvent pas être modifiés.*")
+    st.markdown("💡 *Les builds par défaut (Facile/Normal/Difficile/Vanilla) ne peuvent pas être modifiés.*")
 
     # Stats de base du héros
     st.subheader("📊 Statistiques")
@@ -730,7 +732,7 @@ def tab_forge(data):
             build_name = name.strip() or 'Build Custom'
 
             # Validation du nom
-            reserved_names = ['Facile', 'Normal', 'Difficile', '🟢 Facile', '🔵 Normal', '🔴 Difficile']
+            reserved_names = ['Facile', 'Normal', 'Difficile', 'Vanilla', '🟢 Facile', '🔵 Normal', '🔴 Difficile', '⚪ Vanilla']
             if build_name in reserved_names:
                 st.error("❌ Ce nom est réservé aux builds par défaut")
                 st.stop()
