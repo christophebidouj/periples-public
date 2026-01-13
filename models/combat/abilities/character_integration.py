@@ -192,22 +192,19 @@ class CharacterAbilitiesIntegration:
         if not hasattr(character, 'temporary_buffs'):
             return modifiers
 
-        # Double dégâts (legacy + Lame Furtivité)
-        if character.temporary_buffs.get('double_next_attack', False):
-            modifiers['damage_multiplier'] = 2.0
+        # NOUVEAU - Lame Attaque furtive (P-7-1) : Auto-hit + ×2 dégâts one-time
+        if character.temporary_buffs.get('attaque_furtive_next_attack', {}).get('damage_multiplier', 1.0) > 1.0:
+            furtive_buff = character.temporary_buffs['attaque_furtive_next_attack']
+            modifiers['damage_multiplier'] = furtive_buff['damage_multiplier']
 
-        # NOUVEAU - Lame Assaut furieux (V3.0) : Auto-hit + ×2 dégâts permanent
-        if character.temporary_buffs.get('assaut_furieux_permanent', {}).get('damage_multiplier', 1.0) > 1.0:
+        # NOUVEAU - Lame Assaut furieux (P-7-6) : Auto-hit + ×2 dégâts permanent
+        elif character.temporary_buffs.get('assaut_furieux_permanent', {}).get('damage_multiplier', 1.0) > 1.0:
             assaut_buff = character.temporary_buffs['assaut_furieux_permanent']
             modifiers['damage_multiplier'] = assaut_buff['damage_multiplier']
 
-        # NOUVEAU - Lame Furtivité : Stealth next attack (si pas déjà double_next_attack)
-        if modifiers['damage_multiplier'] == 1.0 and 'lame_stealth_next' in character.temporary_buffs:
-            stealth_data = character.temporary_buffs['lame_stealth_next']
-            if isinstance(stealth_data, dict):
-                modifiers['damage_multiplier'] = stealth_data.get('damage_multiplier', 2.0)
-            else:
-                modifiers['damage_multiplier'] = 2.0
+        # Double dégâts (legacy - Elneha Forme de loup)
+        elif character.temporary_buffs.get('double_next_attack', False):
+            modifiers['damage_multiplier'] = 2.0
 
         # NOUVEAU - Raishi Méditation : Dégâts ×1.5 (si pas déjà un autre multiplicateur)
         if modifiers['damage_multiplier'] == 1.0 and 'meditation_damage_boost' in character.temporary_buffs:

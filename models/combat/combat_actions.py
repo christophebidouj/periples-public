@@ -32,12 +32,21 @@ class CombatActions:
         target = enemies[0]
         attack_modifiers = CharacterAbilitiesIntegration.check_attack_modifiers(hero)
 
-        # 🎯 NOUVEAU - Assaut furieux (Lame P-7-6) : Auto-hit (pas de dé)
+        # 🎯 NOUVEAU - Auto-hit detection (Attaque furtive P-7-1 + Assaut furieux P-7-6)
         auto_hit = False
+        auto_hit_source = None
         if hasattr(hero, 'temporary_buffs'):
-            assaut_buff = hero.temporary_buffs.get('assaut_furieux_permanent')
-            if assaut_buff and assaut_buff.get('auto_hit'):
+            # Attaque furtive (Lame P-7-1) : Auto-hit ONE-TIME
+            furtive_buff = hero.temporary_buffs.get('attaque_furtive_next_attack')
+            if furtive_buff and furtive_buff.get('auto_hit'):
                 auto_hit = True
+                auto_hit_source = 'attaque_furtive'
+                attack_roll = 20  # Considéré comme réussite automatique (pas critique)
+                log.append(f"  🌑 ATTAQUE FURTIVE : Attaque réussit automatiquement (ne rate JAMAIS)")
+            # Assaut furieux (Lame P-7-6) : Auto-hit PERMANENT
+            elif hero.temporary_buffs.get('assaut_furieux_permanent', {}).get('auto_hit'):
+                auto_hit = True
+                auto_hit_source = 'assaut_furieux'
                 attack_roll = 20  # Considéré comme réussite automatique (pas critique)
                 log.append(f"  ⚡ ASSAUT FURIEUX : Attaque réussit automatiquement (pas de dé)")
             else:
@@ -76,8 +85,13 @@ class CombatActions:
         elneha_wolf_used = False
 
         if hasattr(hero, 'temporary_buffs') and attack_modifiers['damage_multiplier'] > 1.0:
+            # Attaque furtive (Lame P-7-1) : One-time auto-hit + double dégâts
+            if hero.temporary_buffs.get('attaque_furtive_next_attack'):
+                damage_multiplier_source = "lame_attaque_furtive"
+                # Le buff sera consommé après l'attaque (voir plus bas)
+
             # Système ancien (avec compteur elneha_wolf_remaining)
-            if hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
+            elif hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
                 hero.temporary_buffs['elneha_wolf_remaining'] -= 1
                 # CORRECTION : Vérifier que c'est bien Elneha (P-1) avant de marquer le log
                 if hero.code == "P-1":
@@ -94,7 +108,7 @@ class CombatActions:
             elif hero.temporary_buffs.get('assaut_furieux_permanent'):
                 damage_multiplier_source = "lame_assaut_furieux"
 
-            # Système nouveau (Férocité du loup - individual ability ou Attaque furtive Lame)
+            # Système nouveau (Férocité du loup - individual ability)
             elif hero.temporary_buffs.get('double_next_attack', False):
                 # Consommer le buff après l'attaque
                 hero.temporary_buffs.pop('double_next_attack', None)
@@ -102,8 +116,6 @@ class CombatActions:
                 if hero.code == "P-1":  # Elneha
                     elneha_wolf_used = True
                     damage_multiplier_source = "elneha_wolf"
-                elif hero.code == "P-7":  # Lame
-                    damage_multiplier_source = "lame_furtivite"
                 else:
                     damage_multiplier_source = "generic_double"
         
@@ -148,8 +160,8 @@ class CombatActions:
             if damage_multiplier_source == "elneha_wolf":
                 remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                 log.append(f"  🐺 Forme de loup activée ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f} ({remaining} utilisations restantes)")
-            elif damage_multiplier_source == "lame_furtivite":
-                log.append(f"  🌑 Attaque furtive ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
+            elif damage_multiplier_source == "lame_attaque_furtive":
+                log.append(f"  🌑 ATTAQUE FURTIVE ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
             elif damage_multiplier_source == "lame_assaut_furieux":
                 log.append(f"  ⚡💀 Assaut furieux ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
             elif damage_multiplier_source == "generic_double":
@@ -232,6 +244,10 @@ class CombatActions:
 
             CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
 
+            # 🌑 NOUVEAU - Consommer le buff attaque_furtive après utilisation (one-time)
+            if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
+                hero.temporary_buffs.pop('attaque_furtive_next_attack')
+
             # Return attack result for stats tracking
             return {
                 'hit': True,
@@ -250,12 +266,16 @@ class CombatActions:
             # 🐺 Multiplicateur gaspillé en cas d'échec critique
             if damage_multiplier_source == "elneha_wolf":
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
-            elif damage_multiplier_source == "lame_furtivite":
+            elif damage_multiplier_source == "lame_attaque_furtive":
                 log.append(f"  🌑 Attaque furtive gaspillée par l'échec critique...")
             elif damage_multiplier_source in ["lame_assaut_furieux", "generic_double"]:
                 # Assaut furieux permanent n'est pas "gaspillé", juste inutile sur cet échec
                 pass
             self._handle_critical_failure(hero, target, log, player_count)
+
+            # 🌑 NOUVEAU - Consommer le buff attaque_furtive après utilisation (gaspillé)
+            if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
+                hero.temporary_buffs.pop('attaque_furtive_next_attack')
 
             # Return attack result for stats tracking
             return {
@@ -288,8 +308,8 @@ class CombatActions:
                 if damage_multiplier_source == "elneha_wolf":
                     remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
                     log.append(f"  🐺 Forme de loup activée ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f} ({remaining} utilisations restantes)")
-                elif damage_multiplier_source == "lame_furtivite":
-                    log.append(f"  🌑 Attaque furtive ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
+                elif damage_multiplier_source == "lame_attaque_furtive":
+                    log.append(f"  🌑 ATTAQUE FURTIVE ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
                 elif damage_multiplier_source == "lame_assaut_furieux":
                     log.append(f"  ⚡💀 Assaut furieux ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
                 elif damage_multiplier_source == "generic_double":
@@ -376,6 +396,10 @@ class CombatActions:
 
                 hero.action_taken_this_turn = True
 
+                # 🌑 NOUVEAU - Consommer le buff attaque_furtive après utilisation (one-time)
+                if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
+                    hero.temporary_buffs.pop('attaque_furtive_next_attack')
+
                 # Return attack result for stats tracking
                 return {
                     'hit': True,
@@ -392,7 +416,7 @@ class CombatActions:
                 # 🐺 Multiplicateur gaspillé en cas d'échec
                 if damage_multiplier_source == "elneha_wolf":
                     log.append(f"  🐺 Forme de loup gaspillée par l'échec...")
-                elif damage_multiplier_source == "lame_furtivite":
+                elif damage_multiplier_source == "lame_attaque_furtive":
                     log.append(f"  🌑 Attaque furtive gaspillée par l'échec...")
                 elif damage_multiplier_source in ["lame_assaut_furieux", "generic_double"]:
                     # Assaut furieux permanent n'est pas "gaspillé"
@@ -400,6 +424,10 @@ class CombatActions:
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
 
                 hero.action_taken_this_turn = True
+
+                # 🌑 NOUVEAU - Consommer le buff attaque_furtive après utilisation (gaspillé)
+                if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
+                    hero.temporary_buffs.pop('attaque_furtive_next_attack')
 
                 # Return attack result for stats tracking
                 return {

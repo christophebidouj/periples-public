@@ -65,15 +65,22 @@ class LameAttaqueFurtive(BaseAbility):
                 'source': 'lame_furtivite'
             }
 
-            # 3. Double dégâts tour suivant
-            caster.temporary_buffs['double_next_attack'] = True
+            # 3. Attaque furtive au prochain tour : auto-hit + double dégâts
+            caster.temporary_buffs['attaque_furtive_next_attack'] = {
+                'type': 'one_time_attack',
+                'auto_hit': True,           # Pas de jet de dé - réussit automatiquement
+                'damage_multiplier': 2,      # Double dégâts
+                'expires_on_attack': True,   # Se consomme après l'attaque
+                'source': 'lame_furtivite'
+            }
 
             # Marquer capacité utilisée ce tour
             caster.temporary_buffs['lame_ability_used_this_turn'] = True
 
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
             log.append(f"   👻 INVISIBLE pendant 2 tours - Les ennemis ne peuvent pas le cibler")
-            log.append(f"   ⚔️ Attaque bloquée ce tour, dégâts ×{self.damage_multiplier} au prochain tour")
+            log.append(f"   ⚔️ Attaque bloquée ce tour")
+            log.append(f"   🎯 Prochain tour : Attaque automatique (ne rate JAMAIS) avec dégâts ×{self.damage_multiplier}")
             log.append(f"   ⚠️ Furtivité se termine : si attaque OU après 2 tours")
 
             return True
