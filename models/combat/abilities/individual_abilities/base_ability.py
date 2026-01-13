@@ -57,6 +57,11 @@ class BaseAbility(ABC):
         if not spell_manager:
             return False
 
+        # ⚔️ NOUVEAU - Vérifier si cette capacité nécessite une attaque réussie ce tour
+        if self.requires_successful_attack():
+            if not getattr(caster, 'attack_succeeded_this_turn', False):
+                return False
+
         # Vérifier les utilisations restantes
         if hasattr(self, 'uses_remaining_combat') and self.uses_remaining_combat is not None:
             uses_remaining = getattr(self, 'uses_remaining_combat', None)
@@ -71,6 +76,16 @@ class BaseAbility(ABC):
             return current_spells >= self.spell_cost
 
         return True
+
+    def requires_successful_attack(self) -> bool:
+        """
+        Indique si cette capacité nécessite une attaque réussie ce tour pour être utilisée
+        À override dans les capacités post-attaque
+
+        Returns:
+            bool: True si la capacité nécessite une attaque réussie, False sinon (défaut)
+        """
+        return False
     
     def get_preview(self) -> str:
         """

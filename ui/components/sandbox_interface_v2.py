@@ -26,6 +26,7 @@ from ui.components.combat_results_display import display_combat_results_panel
 from models.combat.abilities.individual_abilities.heroes.atucan import auto_activate_aura_sacree, auto_activate_sens_de_la_justice
 from models.combat.abilities.individual_abilities.heroes.thordius import auto_activate_defense_sans_armure, auto_activate_critique_brutal
 from models.combat.abilities.individual_abilities.heroes.raishi import auto_activate_point_faible
+from models.combat.abilities.individual_abilities import get_ability
 
 # === CSS STYLE ARÈNE ===
 # ===tour par tour guidé ===
@@ -364,6 +365,12 @@ def restore_previous_state():
             char = combatant['character']
             ensure_character_attributes(char)
 
+            # CRITIQUE - Réinitialiser les flags d'attaque post-attaque (undo invalide ces références)
+            if hasattr(char, 'attack_succeeded_this_turn'):
+                char.attack_succeeded_this_turn = False
+            if hasattr(char, 'last_attacked_target'):
+                delattr(char, 'last_attacked_target')
+
         # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
         for combatant in st.session_state.sandbox_v2_combatants:
             char = combatant['character']
@@ -398,6 +405,12 @@ def restore_next_state():
         for combatant in st.session_state.sandbox_v2_combatants:
             char = combatant['character']
             ensure_character_attributes(char)
+
+            # CRITIQUE - Réinitialiser les flags d'attaque post-attaque (undo invalide ces références)
+            if hasattr(char, 'attack_succeeded_this_turn'):
+                char.attack_succeeded_this_turn = False
+            if hasattr(char, 'last_attacked_target'):
+                delattr(char, 'last_attacked_target')
 
         # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
         for combatant in st.session_state.sandbox_v2_combatants:
@@ -1071,6 +1084,11 @@ def next_turn():
             delattr(current_char, '_on_turn_start_triggered')
         if hasattr(current_char, '_before_attack_triggered'):
             delattr(current_char, '_before_attack_triggered')
+        # Reset des flags pour capacités post-attaque
+        if hasattr(current_char, 'attack_succeeded_this_turn'):
+            current_char.attack_succeeded_this_turn = False
+        if hasattr(current_char, 'last_attacked_target'):
+            delattr(current_char, 'last_attacked_target')
 
     # Enregistrer la fin du tour du combattant actuel (pour stats)
     current_turn_index = st.session_state.get('sandbox_v2_current_turn_index', -1)
@@ -1824,8 +1842,19 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     )
 
     # NOUVEAU - Vérifier si une attaque a été effectuée (règle p.24 - blocage bidirectionnel)
+    # EXCEPTION : Les capacités post-attaque sont autorisées après une attaque
     attack_already_done = getattr(char, 'attack_done_this_turn', False)
-    blocked_by_attack = prevents_attack and attack_already_done
+    is_post_attack_ability = False
+    if hasattr(ability, 'ability_number') and hasattr(char, 'code'):
+        try:
+            individual_ability = get_ability(char.code, ability.ability_number)
+            if individual_ability and hasattr(individual_ability, 'requires_successful_attack'):
+                is_post_attack_ability = individual_ability.requires_successful_attack()
+        except Exception as e:
+            # Silencieusement ignorer les erreurs d'import
+            pass
+
+    blocked_by_attack = prevents_attack and attack_already_done and not is_post_attack_ability
 
     # NOUVEAU - Vérifier si Parade a déjà été utilisée ce tour (limitation 1/tour)
     parade_already_used = False
@@ -1892,7 +1921,17 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
                 not getattr(char, 'can_attack_this_turn', True)
             )
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action and not is_aura_sacree
+    # NOUVEAU - Capacités post-attaque : Bloquer si aucune attaque réussie ce tour
+    requires_attack_success = False
+    # Récupérer l'implémentation individuelle pour vérifier requires_successful_attack()
+    if hasattr(ability, 'ability_number') and hasattr(char, 'code'):
+        individual_ability = get_ability(char.code, ability.ability_number)
+        if individual_ability and hasattr(individual_ability, 'requires_successful_attack'):
+            if individual_ability.requires_successful_attack():
+                attack_succeeded = getattr(char, 'attack_succeeded_this_turn', False)
+                requires_attack_success = not attack_succeeded
+
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action and not is_aura_sacree and not requires_attack_success
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 20 else ability.name[:17] + "..."
@@ -1995,6 +2034,8 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         button_label = f"{type_icon} {short_name}\n⚠️ Attaque faite"
     elif transformation_blocked_by_action:
         button_label = f"{type_icon} {short_name}\n⚠️ Action déjà prise"
+    elif requires_attack_success:
+        button_label = f"{type_icon} {short_name}\n⚠️ Attaque requise"
 
     # Tooltip avec description de la capacité
     tooltip_text = ability.description if hasattr(ability, 'description') else None
@@ -2205,6 +2246,19 @@ def use_ability_action(char: Character, ability):
             st.rerun()
             return
 
+        # 0. NOUVEAU - Vérifier can_execute() pour les capacités individuelles
+        if hasattr(ability, 'ability_number') and hasattr(char, 'code'):
+            individual_ability = get_ability(char.code, ability.ability_number)
+            if individual_ability:
+                # Préparer contexte minimal pour can_execute()
+                adapter = st.session_state.sandbox_v2_adapter
+                context = {'spell_manager': adapter.spell_manager}
+
+                # Vérifier si la capacité peut être exécutée
+                if not individual_ability.can_execute(char, context):
+                    st.error(f"❌ {ability.name} ne peut pas être utilisée pour le moment")
+                    return
+
         # 1. Vérifications + consommation sorts (via Character.use_ability)
         action = char.use_ability(ability)
 
@@ -2264,6 +2318,16 @@ def use_ability_action(char: Character, ability):
                 st.success(f"✅ {ability.name} utilisée avec succès !")
             else:
                 st.warning(f"⚠️ {ability.name} utilisée (vérifiez les logs pour détails)")
+
+            # 4.5. NOUVEAU - Réinitialiser flag post-attaque si capacité post-attaque utilisée avec succès
+            if success_flag and hasattr(ability, 'ability_number') and hasattr(char, 'code'):
+                individual_ability = get_ability(char.code, ability.ability_number)
+                if individual_ability and hasattr(individual_ability, 'requires_successful_attack'):
+                    if individual_ability.requires_successful_attack():
+                        # Réinitialiser le flag pour forcer une nouvelle attaque avant réutilisation
+                        char.attack_succeeded_this_turn = False
+                        if hasattr(char, 'last_attacked_target'):
+                            delattr(char, 'last_attacked_target')
 
             # 5. Sauvegarder état pour undo/redo
             save_game_state(f"{char.name} utilise {ability.name}")
@@ -3173,10 +3237,29 @@ def display_combat_status():
                                 'player_count': len([h for h in heroes if h.is_alive()])
                             }
 
+                            # NOUVEAU - Vérifier can_execute() pour les capacités individuelles
+                            can_execute_check = True
+                            if hasattr(ability, 'ability_number') and hasattr(current_actor, 'code'):
+                                individual_ability = get_ability(current_actor.code, ability.ability_number)
+                                if individual_ability:
+                                    if not individual_ability.can_execute(current_actor, context):
+                                        st.error(f"❌ {ability.name} ne peut pas être utilisée pour le moment")
+                                        can_execute_check = False
+
                             # Consommer et exécuter
-                            action = current_actor.use_ability(ability)
-                            if action.success:
-                                adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+                            if can_execute_check:
+                                action = current_actor.use_ability(ability)
+                                if action.success:
+                                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                                    # Réinitialiser flag post-attaque si nécessaire
+                                    if hasattr(ability, 'ability_number') and hasattr(current_actor, 'code'):
+                                        individual_ability = get_ability(current_actor.code, ability.ability_number)
+                                        if individual_ability and hasattr(individual_ability, 'requires_successful_attack'):
+                                            if individual_ability.requires_successful_attack():
+                                                current_actor.attack_succeeded_this_turn = False
+                                                if hasattr(current_actor, 'last_attacked_target'):
+                                                    delattr(current_actor, 'last_attacked_target')
 
                             st.session_state.sandbox_v2_action_state = None
                             st.session_state.sandbox_v2_current_actor = None
@@ -3377,10 +3460,29 @@ def display_combat_status_team_mode():
                                 'player_count': len([h for h in heroes if h.is_alive()])
                             }
 
+                            # NOUVEAU - Vérifier can_execute() pour les capacités individuelles
+                            can_execute_check = True
+                            if hasattr(ability, 'ability_number') and hasattr(current_actor, 'code'):
+                                individual_ability = get_ability(current_actor.code, ability.ability_number)
+                                if individual_ability:
+                                    if not individual_ability.can_execute(current_actor, context):
+                                        st.error(f"❌ {ability.name} ne peut pas être utilisée pour le moment")
+                                        can_execute_check = False
+
                             # Consommer et exécuter
-                            action = current_actor.use_ability(ability)
-                            if action.success:
-                                adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+                            if can_execute_check:
+                                action = current_actor.use_ability(ability)
+                                if action.success:
+                                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                                    # Réinitialiser flag post-attaque si nécessaire
+                                    if hasattr(ability, 'ability_number') and hasattr(current_actor, 'code'):
+                                        individual_ability = get_ability(current_actor.code, ability.ability_number)
+                                        if individual_ability and hasattr(individual_ability, 'requires_successful_attack'):
+                                            if individual_ability.requires_successful_attack():
+                                                current_actor.attack_succeeded_this_turn = False
+                                                if hasattr(current_actor, 'last_attacked_target'):
+                                                    delattr(current_actor, 'last_attacked_target')
 
                             st.session_state.sandbox_v2_action_state = None
                             st.session_state.sandbox_v2_current_actor = None

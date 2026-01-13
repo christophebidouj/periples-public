@@ -160,25 +160,45 @@ class ThordiusChargeDeTaureau(BaseAbility):
         self.spell_cost = 0
         self.uses_per_combat = 2
         self.uses_remaining_combat = 2
+        self.stun_duration = 1
+
+    def requires_successful_attack(self) -> bool:
+        """Cette capacité nécessite une attaque réussie ce tour"""
+        return True
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active Charge de taureau - la prochaine attaque réussie stunera la cible pour 1 tour"""
+        """Stun la dernière cible attaquée pour 1 tour"""
         try:
+            from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
+
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Charge de taureau déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            # Activer le buff pour la prochaine attaque (même pattern que Paume ouverte de Raishi)
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
+            # CRITIQUE - Vérifier que le héros a attaqué ce tour et que la cible existe
+            last_target = getattr(caster, 'last_attacked_target', None)
+            if not last_target:
+                log.append(f"⚠️ {caster.name} doit d'abord réussir une attaque ce tour !")
+                return False
 
-            caster.temporary_buffs['charge_taureau_ready'] = {
-                'stun_duration': 1,
-                'source': 'thordius_charge_taureau'
-            }
+            if not last_target.is_alive():
+                log.append(f"⚠️ La cible attaquée ({last_target.name}) est déjà vaincue")
+                return False
 
-            log.append(f"🐂 {caster.name} se prépare à CHARGER ! (Prochaine attaque réussie stun 1 tour)")
+            target = last_target
+
+            # Appliquer le stun (avec vérification d'immunité)
+            stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                target, duration=self.stun_duration, source='thordius_charge_taureau', log=log
+            )
+
+            if stunned:
+                log.append(f"🐂 {caster.name} CHARGE {target.name} !")
+                log.append(f"   💫 {target.name} assommé pour {self.stun_duration} tour")
+            else:
+                log.append(f"🐂 {caster.name} CHARGE {target.name} !")
+                log.append(f"   ⚠️ {target.name} résiste au stun (immunité)")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -190,10 +210,14 @@ class ThordiusChargeDeTaureau(BaseAbility):
             return False
 
     def get_preview(self) -> str:
-        return f"🐂 {self.name}: Prochaine attaque stun 1 tour ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"🐂 {self.name}: Stun {self.stun_duration} tour (après attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [caster]  # Cible soi-même pour activer le buff
+        """Cible la dernière cible attaquée par le héros"""
+        last_target = getattr(caster, 'last_attacked_target', None)
+        if last_target and last_target.is_alive():
+            return [last_target]
+        return [e for e in all_enemies if e.is_alive()]
 
 
 @register_ability

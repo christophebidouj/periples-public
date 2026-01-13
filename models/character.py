@@ -131,6 +131,8 @@ class Character(BaseModel):
     can_attack_this_turn: bool = True
     attack_done_this_turn: bool = False  # NOUVEAU - Pour bloquer capacités magiques après attaque (règle p.24)
     potion_used_this_turn: bool = False
+    attack_succeeded_this_turn: bool = False  # NOUVEAU - Pour capacités post-attaque réussie
+    last_attacked_target: Optional[Any] = None  # NOUVEAU - Cible de la dernière attaque réussie
     
     # Système de formes pour Elneha
     current_form: Optional[str] = Field(default=None)  # "bear", "wolf", "human"
@@ -1223,7 +1225,18 @@ class Character(BaseModel):
                 return action
 
             # NOUVEAU - Vérifier si une attaque a déjà été effectuée ce tour (règle p.24)
-            if self.attack_done_this_turn:
+            # EXCEPTION : Les capacités post-attaque sont autorisées après une attaque
+            is_post_attack_ability = False
+            if hasattr(ability, 'ability_number') and hasattr(self, 'code'):
+                try:
+                    from models.combat.abilities.individual_abilities import get_ability
+                    individual_ability = get_ability(self.code, ability.ability_number)
+                    if individual_ability and hasattr(individual_ability, 'requires_successful_attack'):
+                        is_post_attack_ability = individual_ability.requires_successful_attack()
+                except:
+                    pass  # Si erreur import, continuer sans exception
+
+            if self.attack_done_this_turn and not is_post_attack_ability:
                 action.success = False
                 action.message = "⚠️ Impossible d'utiliser une capacité magique après avoir attaqué !"
                 return action

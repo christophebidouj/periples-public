@@ -178,64 +178,6 @@ class CombatActions:
             if damage_result.get('form_reverted', False):
                 log.append(f"  💫 {target.name} perd sa forme animale et reprend forme humaine ({target.current_health}/{target.health} PV)")
 
-            # NOUVEAU - Châtiment divin : 2e frappe magique après attaque critique réussie
-            if hasattr(hero, 'temporary_buffs') and 'chatiment_divin_active' in hero.temporary_buffs:
-                chatiment_info = hero.temporary_buffs['chatiment_divin_active']
-                chatiment_damage = chatiment_info['damage']
-                # 2e frappe magique qui ignore parade (règles officielles)
-                chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True, is_magical_damage=True)
-                log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
-                # Consommer le buff après utilisation
-                hero.temporary_buffs.pop('chatiment_divin_active', None)
-
-            # NOUVEAU - Méditation (Raishi P-8-2) : 2e frappe avec dégâts / 2 après attaque réussie
-            if hasattr(hero, 'temporary_buffs') and 'meditation_double_hit' in hero.temporary_buffs:
-                meditation_info = hero.temporary_buffs['meditation_double_hit']
-                second_hit_multiplier = meditation_info.get('second_hit_multiplier', 0.5)
-                # Utiliser les dégâts de BASE (avant critique) divisés par 2
-                meditation_damage = int(damage_value * second_hit_multiplier)
-                # 2e frappe sur même cible (respecte parade)
-                ignore_parade_meditation = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
-                is_magical_dmg = (damage_type == 'magical')
-                meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation, is_magical_damage=is_magical_dmg)
-                log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
-                # Consommer le buff après utilisation
-                hero.temporary_buffs.pop('meditation_double_hit', None)
-
-            # NOUVEAU - Combo (Raishi P-8-5) : Stun ennemi 3 tours après attaque réussie
-            if hasattr(hero, 'temporary_buffs') and 'combo_ready' in hero.temporary_buffs:
-                combo_info = hero.temporary_buffs['combo_ready']
-                stun_duration = combo_info.get('stun_duration', 3)
-
-                # Effet stun Paume ouverte (AVEC vérification immunité)
-                stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    target, duration=stun_duration, source='raishi_paume_ouverte', log=log
-                )
-                if stunned:
-                    log.append(f"  🥋 Paume ouverte ! {target.name} assommé pour {stun_duration} tours")
-                else:
-                    log.append(f"  (effet annulé)")
-
-                # Consommer le buff après utilisation
-                hero.temporary_buffs.pop('combo_ready', None)
-
-            # NOUVEAU - Charge de taureau (Thordius P-5-3) : Stun ennemi 1 tour après attaque réussie
-            if hasattr(hero, 'temporary_buffs') and 'charge_taureau_ready' in hero.temporary_buffs:
-                charge_info = hero.temporary_buffs['charge_taureau_ready']
-                stun_duration = charge_info.get('stun_duration', 1)
-
-                # Effet stun Charge de taureau (AVEC vérification immunité)
-                stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    target, duration=stun_duration, source='thordius_charge_taureau', log=log
-                )
-                if stunned:
-                    log.append(f"  🐂 CHARGE DE TAUREAU ! {target.name} assommé pour {stun_duration} tour")
-                else:
-                    log.append(f"  (effet annulé)")
-
-                # Consommer le buff après utilisation
-                hero.temporary_buffs.pop('charge_taureau_ready', None)
-
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
 
@@ -247,6 +189,10 @@ class CombatActions:
             # 🌑 NOUVEAU - Consommer le buff attaque_furtive après utilisation (one-time)
             if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
                 hero.temporary_buffs.pop('attaque_furtive_next_attack')
+
+            # ⚔️ NOUVEAU - Marquer l'attaque comme réussie et stocker la cible (pour capacités post-attaque)
+            hero.attack_succeeded_this_turn = True
+            hero.last_attacked_target = target
 
             # Return attack result for stats tracking
             return {
@@ -328,64 +274,6 @@ class CombatActions:
                 if damage_result.get('form_reverted', False):
                     log.append(f"  💫 {target.name} perd sa forme animale et reprend forme humaine ({target.current_health}/{target.health} PV)")
 
-                # NOUVEAU - Châtiment divin : 2e frappe magique après attaque réussie
-                if hasattr(hero, 'temporary_buffs') and 'chatiment_divin_active' in hero.temporary_buffs:
-                    chatiment_info = hero.temporary_buffs['chatiment_divin_active']
-                    chatiment_damage = chatiment_info['damage']
-                    # 2e frappe magique qui ignore parade (règles officielles)
-                    chatiment_result = target.apply_damage_with_parade(chatiment_damage, ignore_parade=True, is_magical_damage=True)
-                    log.append(f"  ⚡ CHÂTIMENT DIVIN ! +{chatiment_result['health_damage']} dégâts magiques (ignore parade)")
-                    # Consommer le buff après utilisation
-                    hero.temporary_buffs.pop('chatiment_divin_active', None)
-
-                # NOUVEAU - Méditation (Raishi P-8-2) : 2e frappe avec dégâts / 2 après attaque réussie
-                if hasattr(hero, 'temporary_buffs') and 'meditation_double_hit' in hero.temporary_buffs:
-                    meditation_info = hero.temporary_buffs['meditation_double_hit']
-                    second_hit_multiplier = meditation_info.get('second_hit_multiplier', 0.5)
-                    # Utiliser les dégâts de BASE divisés par 2
-                    meditation_damage = int(damage_value * second_hit_multiplier)
-                    # 2e frappe sur même cible (respecte parade)
-                    ignore_parade_meditation = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
-                    is_magical_dmg = (damage_type == 'magical')
-                    meditation_result = target.apply_damage_with_parade(meditation_damage, ignore_parade=ignore_parade_meditation, is_magical_damage=is_magical_dmg)
-                    log.append(f"  🧘 MÉDITATION ! 2e frappe sur {target.name} : {meditation_result['health_damage']} dégâts (dégâts / 2)")
-                    # Consommer le buff après utilisation
-                    hero.temporary_buffs.pop('meditation_double_hit', None)
-
-                # NOUVEAU - Combo (Raishi P-8-5) : Stun ennemi 3 tours après attaque réussie
-                if hasattr(hero, 'temporary_buffs') and 'combo_ready' in hero.temporary_buffs:
-                    combo_info = hero.temporary_buffs['combo_ready']
-                    stun_duration = combo_info.get('stun_duration', 3)
-
-                    # Effet stun Paume ouverte (AVEC vérification immunité)
-                    stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                        target, duration=stun_duration, source='raishi_paume_ouverte', log=log
-                    )
-                    if stunned:
-                        log.append(f"  🥋 Paume ouverte ! {target.name} assommé pour {stun_duration} tours")
-                    else:
-                        log.append(f"  (effet annulé)")
-
-                    # Consommer le buff après utilisation
-                    hero.temporary_buffs.pop('combo_ready', None)
-
-                # NOUVEAU - Charge de taureau (Thordius P-5-3) : Stun ennemi 1 tour après attaque réussie
-                if hasattr(hero, 'temporary_buffs') and 'charge_taureau_ready' in hero.temporary_buffs:
-                    charge_info = hero.temporary_buffs['charge_taureau_ready']
-                    stun_duration = charge_info.get('stun_duration', 1)
-
-                    # Effet stun Charge de taureau (AVEC vérification immunité)
-                    stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                        target, duration=stun_duration, source='thordius_charge_taureau', log=log
-                    )
-                    if stunned:
-                        log.append(f"  🐂 CHARGE DE TAUREAU ! {target.name} assommé pour {stun_duration} tour")
-                    else:
-                        log.append(f"  (effet annulé)")
-
-                    # Consommer le buff après utilisation
-                    hero.temporary_buffs.pop('charge_taureau_ready', None)
-
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")
 
@@ -399,6 +287,10 @@ class CombatActions:
                 # 🌑 NOUVEAU - Consommer le buff attaque_furtive après utilisation (one-time)
                 if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
                     hero.temporary_buffs.pop('attaque_furtive_next_attack')
+
+                # ⚔️ NOUVEAU - Marquer l'attaque comme réussie et stocker la cible (pour capacités post-attaque)
+                hero.attack_succeeded_this_turn = True
+                hero.last_attacked_target = target
 
                 # Return attack result for stats tracking
                 return {

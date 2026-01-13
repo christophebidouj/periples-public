@@ -56,55 +56,84 @@ class RaishiPointFaible(BaseAbility):
 
 @register_ability
 class RaishiAttaquesMultiples(BaseAbility):
-    """P-8-2: Attaques multiples - Dégâts x1.5 sur prochaine attaque"""
+    """P-8-2: Attaques multiples - 2e frappe avec dégâts / 2 après attaque réussie"""
 
     hero_code = "P-8"
     ability_number = 2
     name = "Attaques multiples"
-    description = "La prochaine attaque inflige 150% des dégâts normaux (×1.5)."
+    description = "Après une attaque réussie, effectue une 2e frappe avec dégâts divisés par 2."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 0
         self.uses_per_combat = 2
         self.uses_remaining_combat = 2
-        self.damage_multiplier = 1.5
+        self.second_hit_multiplier = 0.5
+
+    def requires_successful_attack(self) -> bool:
+        """Cette capacité nécessite une attaque réussie ce tour"""
+        return True
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Prochaine attaque inflige x1.5 dégâts"""
+        """Effectue une 2e frappe avec dégâts / 2 sur la dernière cible attaquée"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Méditation déjà utilisée ({self.uses_per_combat} fois)")
+                log.append(f"⚠️ Attaques multiples déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            # Ajouter buff multiplicateur de dégâts
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
+            # CRITIQUE - Vérifier que le héros a attaqué ce tour et que la cible existe
+            last_target = getattr(caster, 'last_attacked_target', None)
+            if not last_target:
+                log.append(f"⚠️ {caster.name} doit d'abord réussir une attaque ce tour !")
+                return False
 
-            caster.temporary_buffs['meditation_damage_boost'] = {
-                'type': 'next_attack',
-                'damage_multiplier': self.damage_multiplier,
-                'source': 'raishi_meditation'
-            }
+            if not last_target.is_alive():
+                log.append(f"⚠️ La cible attaquée ({last_target.name}) est déjà vaincue")
+                return False
 
-            log.append(f"🧘 {caster.name} médite profondément...")
-            log.append(f"   💥 Prochaine attaque: dégâts ×{self.damage_multiplier}")
+            target = last_target
+
+            # Calculer les dégâts de la 2e frappe (dégâts de base / 2)
+            attack_info = caster.get_attack_damage_info()
+            base_damage = attack_info['damage_value']
+            damage_type = attack_info['damage_type']
+            meditation_damage = int(base_damage * self.second_hit_multiplier)
+
+            # Appliquer la 2e frappe (respecte parade)
+            damage_result = target.apply_damage_with_parade(
+                meditation_damage,
+                ignore_parade=(damage_type == 'magical'),
+                is_magical_damage=(damage_type == 'magical')
+            )
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
 
+            log.append(f"🧘 {caster.name} enchaîne avec une 2e FRAPPE !")
+            log.append(f"   💥 {damage_result['health_damage']} dégâts sur {target.name} (dégâts / 2)")
+
+            if damage_result['blocked_by_parade'] > 0:
+                log.append(f"   🛡️ {damage_result['blocked_by_parade']} bloqués par parade")
+
+            if not target.is_alive():
+                log.append(f"💀 {target.name} vaincu par la 2e frappe !")
+
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Méditation: {e}")
+            log.append(f"❌ Erreur Attaques multiples: {e}")
             return False
 
     def get_preview(self) -> str:
-        return f"🧘 {self.name}: Dégâts ×{self.damage_multiplier} ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"🧘 {self.name}: 2e frappe (dégâts / 2) (après attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [caster]
+        """Cible la dernière cible attaquée par le héros"""
+        last_target = getattr(caster, 'last_attacked_target', None)
+        if last_target and last_target.is_alive():
+            return [last_target]
+        return [e for e in all_enemies if e.is_alive()]
 
 
 @register_ability
@@ -227,26 +256,43 @@ class RaishiPaumeOuverte(BaseAbility):
         self.uses_remaining_combat = 2
         self.stun_duration = 3
 
+    def requires_successful_attack(self) -> bool:
+        """Cette capacité nécessite une attaque réussie ce tour"""
+        return True
+
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active Paume ouverte - Prochaine attaque réussie assomme l'ennemi 3 tours"""
+        """Stun la dernière cible attaquée pour 3 tours"""
         try:
+            from models.combat.abilities.character_integration import CharacterAbilitiesIntegration
+
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ {self.name} déjà utilisé ({self.uses_per_combat} fois)")
                 return False
 
-            # Ajouter buff pour prochaine attaque
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
+            # CRITIQUE - Vérifier que le héros a attaqué ce tour et que la cible existe
+            last_target = getattr(caster, 'last_attacked_target', None)
+            if not last_target:
+                log.append(f"⚠️ {caster.name} doit d'abord réussir une attaque ce tour !")
+                return False
 
-            caster.temporary_buffs['combo_ready'] = {
-                'type': 'next_attack',
-                'stun_duration': self.stun_duration,
-                'source': 'raishi_paume_ouverte'
-            }
+            if not last_target.is_alive():
+                log.append(f"⚠️ La cible attaquée ({last_target.name}) est déjà vaincue")
+                return False
 
-            log.append(f"🥋 {caster.name} active {self.name} !")
-            log.append(f"   ⚡ Prochaine attaque réussie assomme l'ennemi {self.stun_duration} tours")
+            target = last_target
+
+            # Appliquer le stun (avec vérification d'immunité)
+            stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
+                target, duration=self.stun_duration, source='raishi_paume_ouverte', log=log
+            )
+
+            if stunned:
+                log.append(f"🥋 {caster.name} frappe de sa PAUME OUVERTE {target.name} !")
+                log.append(f"   💫 {target.name} assommé pour {self.stun_duration} tours")
+            else:
+                log.append(f"🥋 {caster.name} frappe de sa PAUME OUVERTE {target.name} !")
+                log.append(f"   ⚠️ {target.name} résiste au stun (immunité)")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -254,14 +300,18 @@ class RaishiPaumeOuverte(BaseAbility):
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Combo: {e}")
+            log.append(f"❌ Erreur {self.name}: {e}")
             return False
 
     def get_preview(self) -> str:
-        return f"💥🥊 {self.name}: Prochaine attaque stun {self.stun_duration} tours ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"🥋 {self.name}: Stun {self.stun_duration} tours (après attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [caster]
+        """Cible la dernière cible attaquée par le héros"""
+        last_target = getattr(caster, 'last_attacked_target', None)
+        if last_target and last_target.is_alive():
+            return [last_target]
+        return [e for e in all_enemies if e.is_alive()]
 
 
 @register_ability

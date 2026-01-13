@@ -151,35 +151,53 @@ class AtucanChatimentDivin(BaseAbility):
         self.spell_cost = 1  # Coût officiel: 1 sort
         self.uses_per_combat = 1
         self.uses_remaining_combat = 1
-    
+        self.chatiment_damage = 4
+
+    def requires_successful_attack(self) -> bool:
+        """Cette capacité nécessite une attaque réussie ce tour"""
+        return True
+
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Active buff châtiment divin - 2e frappe magique après attaque réussie"""
+        """Applique +4 dégâts magiques sur la dernière cible attaquée"""
         try:
-            # 1. CORRIGÉ - Vérifier limitation combat AVANT de consommer sorts
+            # 1. Vérifier limitation combat AVANT de consommer sorts
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Châtiment divin déjà utilisé ce combat")
                 return False
 
-            # 2. Consommer coût sorts avec API officielle
+            # 2. CRITIQUE - Vérifier que le héros a attaqué ce tour et que la cible existe
+            last_target = getattr(caster, 'last_attacked_target', None)
+            if not last_target:
+                log.append(f"⚠️ {caster.name} doit d'abord réussir une attaque ce tour !")
+                return False
+
+            if not last_target.is_alive():
+                log.append(f"⚠️ La cible attaquée ({last_target.name}) est déjà vaincue")
+                return False
+
+            # 3. Consommer coût sorts avec API officielle
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
 
-            # 3. CORRIGÉ - Activer buff pour 2e frappe magique séparée (pas un simple bonus)
-            # La prochaine attaque réussie déclenchera 4 dégâts magiques supplémentaires
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
-            caster.temporary_buffs['chatiment_divin_active'] = {
-                'damage': 4,
-                'type': 'magical',
-                'ignore_parade': True
-            }
+            # 4. Utiliser la dernière cible attaquée
+            target = last_target
 
-            # 4. Décompter utilisation
+            # 5. Appliquer 4 dégâts magiques (ignore parade)
+            damage_result = target.apply_damage_with_parade(
+                self.chatiment_damage,
+                ignore_parade=True,
+                is_magical_damage=True
+            )
+
+            # 6. Décompter utilisation
             self.uses_remaining_combat -= 1
 
-            log.append(f"⚡ {caster.name} invoque le châtiment divin")
-            log.append(f"   🔥 Prochaine attaque réussie déclenchera +4 dégâts magiques (ignore parade)")
+            log.append(f"⚡ {caster.name} invoque le CHÂTIMENT DIVIN sur {target.name} !")
+            log.append(f"   🔥 +{damage_result['health_damage']} dégâts magiques (ignore parade)")
+
+            if not target.is_alive():
+                log.append(f"💀 {target.name} vaincu par le châtiment divin !")
 
             return True
 
@@ -188,11 +206,16 @@ class AtucanChatimentDivin(BaseAbility):
             return False
     
     def get_preview(self) -> str:
-        return f"⚡ {self.name}: +4 dégâts magiques après attaque (Coût: {self.spell_cost} sort, 1/combat)"
-    
+        return f"⚡ {self.name}: +{self.chatiment_damage} dégâts magiques (après attaque) (Coût: {self.spell_cost} sort, {self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        """Auto-cible Atucan (buff personnel)"""
-        return [caster]
+        """Cible la dernière cible attaquée par le héros"""
+        # Récupérer la dernière cible attaquée (stockée dans last_attacked_target)
+        last_target = getattr(caster, 'last_attacked_target', None)
+        if last_target and last_target.is_alive():
+            return [last_target]
+        # Fallback : retourner tous les ennemis vivants
+        return [e for e in all_enemies if e.is_alive()]
 
 
 @register_ability
