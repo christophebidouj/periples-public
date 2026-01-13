@@ -384,8 +384,8 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
             st.session_state.selected_build_name = {}
         st.session_state.selected_build_name[hero.code] = new_build
 
-    # Options de builds: Par défaut + Custom
-    build_options = ["🟢 Facile", "🔵 Normal", "🔴 Difficile", "─────────────"]
+    # Options de builds: Par défaut (🟢🔵🔴) + Custom (🛠️)
+    build_options = ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
 
     # Ajouter builds custom pour ce héros
     hero_custom_builds = st.session_state.get('custom_builds', {}).get(hero.code, [])
@@ -410,11 +410,6 @@ def display_hero_card(hero: Character, is_selected: bool, preloaded_builds: Dict
         on_change=on_build_change,
         label_visibility="collapsed"
     )
-
-    # Empêcher la sélection du séparateur
-    if selected_build == "─────────────":
-        st.session_state.selected_build_name[hero.code] = current_build
-        st.rerun()
 
     # Détermination du build selon le type (par défaut ou custom)
     is_default_build = selected_build in ["🟢 Facile", "🔵 Normal", "🔴 Difficile"]
