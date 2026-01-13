@@ -25,3 +25,4 @@ __pycache__/
 
 # Ignorer les configurations locales Claude
 .claude/
+tmpclaude-*-cwd
