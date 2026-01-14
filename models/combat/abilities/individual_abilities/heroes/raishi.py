@@ -189,12 +189,12 @@ class RaishiPurification(BaseAbility):
 
 @register_ability
 class RaishiDelugeDeCups(BaseAbility):
-    """P-8-4: Déluge de coups - 1 jet de toucher, si réussi applique sur tous ennemis"""
+    """P-8-4: Déluge de coups - Applique dégâts de l'attaque réussie à TOUS les ennemis"""
 
     hero_code = "P-8"
     ability_number = 4
     name = "Déluge de coups"
-    description = "Un seul jet de toucher est effectué. Si l'attaque réussit, les dégâts sont appliqués à tous les ennemis."
+    description = "Après une attaque réussie, applique les dégâts de cette attaque à tous les ennemis vivants."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -202,27 +202,60 @@ class RaishiDelugeDeCups(BaseAbility):
         self.uses_per_combat = 2
         self.uses_remaining_combat = 2
 
+    def requires_successful_attack(self) -> bool:
+        """Cette capacité nécessite une attaque réussie ce tour"""
+        return True
+
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Prochaine attaque: 1 seul jet de toucher, si réussi applique dégâts à TOUS les ennemis"""
+        """Applique les dégâts de la dernière attaque réussie à TOUS les ennemis vivants"""
         try:
             # Vérifier limitation
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Esquive parfaite déjà utilisée ({self.uses_per_combat} fois)")
+                log.append(f"⚠️ Déluge de coups déjà utilisé ({self.uses_per_combat} fois)")
                 return False
 
-            # Ajouter buff multi-attaque avec jet unique
-            if not hasattr(caster, 'temporary_buffs'):
-                caster.temporary_buffs = {}
+            # CRITIQUE - Vérifier que le héros a attaqué ce tour
+            last_target = getattr(caster, 'last_attacked_target', None)
+            if not last_target:
+                log.append(f"⚠️ {caster.name} doit d'abord réussir une attaque ce tour !")
+                return False
 
-            caster.temporary_buffs['esquive_parfaite_ready'] = {
-                'type': 'multi_target',
-                'applies_to': 'next_attack',
-                'single_roll': True,  # NOUVEAU: 1 seul jet pour tous les ennemis
-                'source': 'raishi_esquive_parfaite'
-            }
+            # Récupérer les dégâts RÉELS de la dernière attaque (après parade de la cible)
+            real_damage = getattr(caster, 'last_attack_damage', 0)
+            if real_damage <= 0:
+                log.append(f"⚠️ La dernière attaque n'a infligé aucun dégât (parade complète)")
+                return False
 
-            log.append(f"💫 {caster.name} prépare une Esquive parfaite !")
-            log.append(f"   ⚔️ 1 jet de toucher → Si réussi: dégâts sur TOUS les ennemis")
+            # Récupérer tous les ennemis vivants du contexte
+            all_enemies = context.get('all_enemies', [])
+            alive_enemies = [e for e in all_enemies if e.is_alive()]
+
+            if not alive_enemies:
+                log.append(f"⚠️ Aucun ennemi vivant à cibler")
+                return False
+
+            log.append(f"💫 {caster.name} déclenche un DÉLUGE DE COUPS !")
+            log.append(f"   ⚔️ Applique {real_damage} dégâts à TOUS les ennemis (ignore parade)")
+
+            # Appliquer les dégâts DIRECTS à TOUS les ennemis vivants (ignore parade)
+            enemies_defeated = []
+            for enemy in alive_enemies:
+                # Appliquer les dégâts DIRECTS (ignore complètement la parade)
+                damage_result = enemy.apply_damage_with_parade(
+                    real_damage,
+                    ignore_parade=True,  # Force l'ignorance de la parade
+                    is_magical_damage=False
+                )
+
+                # Logger les résultats pour chaque ennemi
+                log.append(f"   💥 {damage_result['health_damage']} dégâts directs sur {enemy.name}")
+
+                if not enemy.is_alive():
+                    enemies_defeated.append(enemy.name)
+
+            # Logger les ennemis vaincus
+            if enemies_defeated:
+                log.append(f"💀 Ennemis vaincus: {', '.join(enemies_defeated)}")
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -230,14 +263,15 @@ class RaishiDelugeDeCups(BaseAbility):
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Esquive parfaite: {e}")
+            log.append(f"❌ Erreur Déluge de coups: {e}")
             return False
 
     def get_preview(self) -> str:
-        return f"💫 {self.name}: 1 jet → tous ennemis ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
+        return f"💫 {self.name}: Dégâts sur tous ennemis (après attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        return [caster]
+        """Cible tous les ennemis vivants"""
+        return [e for e in all_enemies if e.is_alive()]
 
 
 @register_ability

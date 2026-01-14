@@ -133,6 +133,7 @@ class Character(BaseModel):
     potion_used_this_turn: bool = False
     attack_succeeded_this_turn: bool = False  # NOUVEAU - Pour capacités post-attaque réussie
     last_attacked_target: Optional[Any] = None  # NOUVEAU - Cible de la dernière attaque réussie
+    last_attack_damage: int = 0  # NOUVEAU - Dégâts réels infligés lors de la dernière attaque (après parade)
     
     # Système de formes pour Elneha
     current_form: Optional[str] = Field(default=None)  # "bear", "wolf", "human"

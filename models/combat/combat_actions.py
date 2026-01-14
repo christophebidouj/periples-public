@@ -190,9 +190,10 @@ class CombatActions:
             if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
                 hero.temporary_buffs.pop('attaque_furtive_next_attack')
 
-            # ⚔️ NOUVEAU - Marquer l'attaque comme réussie et stocker la cible (pour capacités post-attaque)
+            # ⚔️ NOUVEAU - Marquer l'attaque comme réussie et stocker la cible + dégâts réels (pour capacités post-attaque)
             hero.attack_succeeded_this_turn = True
             hero.last_attacked_target = target
+            hero.last_attack_damage = damage_result['health_damage']  # Dégâts réels après parade
 
             # Return attack result for stats tracking
             return {
@@ -288,9 +289,10 @@ class CombatActions:
                 if hasattr(hero, 'temporary_buffs') and 'attaque_furtive_next_attack' in hero.temporary_buffs:
                     hero.temporary_buffs.pop('attaque_furtive_next_attack')
 
-                # ⚔️ NOUVEAU - Marquer l'attaque comme réussie et stocker la cible (pour capacités post-attaque)
+                # ⚔️ NOUVEAU - Marquer l'attaque comme réussie et stocker la cible + dégâts réels (pour capacités post-attaque)
                 hero.attack_succeeded_this_turn = True
                 hero.last_attacked_target = target
+                hero.last_attack_damage = damage_result['health_damage']  # Dégâts réels après parade
 
                 # Return attack result for stats tracking
                 return {

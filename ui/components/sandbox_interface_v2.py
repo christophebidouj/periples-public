@@ -370,6 +370,8 @@ def restore_previous_state():
                 char.attack_succeeded_this_turn = False
             if hasattr(char, 'last_attacked_target'):
                 delattr(char, 'last_attacked_target')
+            if hasattr(char, 'last_attack_damage'):
+                delattr(char, 'last_attack_damage')
 
         # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
         for combatant in st.session_state.sandbox_v2_combatants:
@@ -411,6 +413,8 @@ def restore_next_state():
                 char.attack_succeeded_this_turn = False
             if hasattr(char, 'last_attacked_target'):
                 delattr(char, 'last_attacked_target')
+            if hasattr(char, 'last_attack_damage'):
+                delattr(char, 'last_attack_damage')
 
         # NOUVEAU - Valider l'intégrité de tous les combattants restaurés
         for combatant in st.session_state.sandbox_v2_combatants:
@@ -1089,6 +1093,8 @@ def next_turn():
             current_char.attack_succeeded_this_turn = False
         if hasattr(current_char, 'last_attacked_target'):
             delattr(current_char, 'last_attacked_target')
+        if hasattr(current_char, 'last_attack_damage'):
+            delattr(current_char, 'last_attack_damage')
 
     # Enregistrer la fin du tour du combattant actuel (pour stats)
     current_turn_index = st.session_state.get('sandbox_v2_current_turn_index', -1)
@@ -2271,6 +2277,7 @@ def use_ability_action(char: Character, ability):
             context = {
                 'alive_enemies': [e for e in enemies if e.is_alive()],
                 'current_enemies': [e for e in enemies if e.is_alive()],
+                'all_enemies': enemies,  # NOUVEAU - Pour capacités type "Déluge de coups"
                 'heroes': heroes,
                 'current_heroes': heroes,
                 'spell_manager': adapter.spell_manager,
@@ -2894,27 +2901,17 @@ def execute_attack_on_target(attacker: Character, target: Enemy):
     player_count = len([h for h in heroes_list if h.is_alive()])
     adapter = st.session_state.sandbox_v2_adapter
 
-    # Vérifier buffs multi-cibles (Kraor, Lame, Raishi)
+    # Vérifier buffs multi-cibles (Kraor, Lame)
     attack_all = hasattr(attacker, 'temporary_buffs') and (
         'attack_all_enemies' in attacker.temporary_buffs or
-        'assassination_ready' in attacker.temporary_buffs or
-        'esquive_parfaite_ready' in attacker.temporary_buffs
+        'assassination_ready' in attacker.temporary_buffs
     )
 
     if attack_all:
         # Attaquer TOUS les ennemis vivants
         alive_enemies = [e for e in enemies_list if e.is_alive()]
 
-        esquive_single_roll = False
-        if 'esquive_parfaite_ready' in attacker.temporary_buffs:
-            esquive_data = attacker.temporary_buffs['esquive_parfaite_ready']
-            if isinstance(esquive_data, dict):
-                esquive_single_roll = esquive_data.get('single_roll', False)
-
-        if esquive_single_roll:
-            st.session_state.sandbox_v2_log.append(f"⚔️ {attacker.name} déclenche Esquive parfaite ! (1 jet → tous ennemis)")
-        else:
-            st.session_state.sandbox_v2_log.append(f"⚔️ {attacker.name} déclenche une attaque multi-cible !")
+        st.session_state.sandbox_v2_log.append(f"⚔️ {attacker.name} déclenche une attaque multi-cible !")
 
         # Exécuter attaques et collecter résultats
         results = []
@@ -2953,7 +2950,6 @@ def execute_attack_on_target(attacker: Character, target: Enemy):
         if hasattr(attacker, 'temporary_buffs'):
             attacker.temporary_buffs.pop('attack_all_enemies', None)
             attacker.temporary_buffs.pop('assassination_ready', None)
-            attacker.temporary_buffs.pop('esquive_parfaite_ready', None)
 
         save_game_state(f"{attacker.name} attaque multi-cible ({len(alive_enemies)} ennemis)")
     else:
@@ -3260,6 +3256,8 @@ def display_combat_status():
                                                 current_actor.attack_succeeded_this_turn = False
                                                 if hasattr(current_actor, 'last_attacked_target'):
                                                     delattr(current_actor, 'last_attacked_target')
+                                                if hasattr(current_actor, 'last_attack_damage'):
+                                                    delattr(current_actor, 'last_attack_damage')
 
                             st.session_state.sandbox_v2_action_state = None
                             st.session_state.sandbox_v2_current_actor = None
@@ -3483,6 +3481,8 @@ def display_combat_status_team_mode():
                                                 current_actor.attack_succeeded_this_turn = False
                                                 if hasattr(current_actor, 'last_attacked_target'):
                                                     delattr(current_actor, 'last_attacked_target')
+                                                if hasattr(current_actor, 'last_attack_damage'):
+                                                    delattr(current_actor, 'last_attack_damage')
 
                             st.session_state.sandbox_v2_action_state = None
                             st.session_state.sandbox_v2_current_actor = None

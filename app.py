@@ -364,7 +364,7 @@ def init_app():
     defaults = {
         'selected_heroes': [],
         'selected_enemies': [],
-        'custom_builds': {},  # NOUVEAU - Builds custom chargés depuis CSV (format: {hero_code: [build1, build2, ...]})
+        'custom_builds': None,  # NOUVEAU - None = pas encore chargé (sera rempli depuis CSV dans main())
         'hero_difficulties': {},
         'hero_starting_health': {},  # Pourcentage de santé initiale par héros
         'selected_build_name': {},  # NOUVEAU - Build sélectionné par héros (défaut ou custom)
@@ -395,7 +395,7 @@ def load_data():
         'heroes': filter_heroes_to_main_8(loader.load_heroes()),  # NOUVEAU - Filtrage à 8 héros
         'enemies': loader.load_all_enemies(),  # MODIFIÉ - Charge officiels + personnalisés
         'equipment': loader.load_equipment(),
-        'custom_builds': loader.load_custom_builds(),  # NOUVEAU - Charge builds custom depuis CSV
+        # custom_builds retiré du cache (chargé dynamiquement dans main() ligne 914)
         'loader': loader
     }
 
@@ -908,8 +908,10 @@ def main():
     cleanup_removed_enemies_from_session(valid_enemy_codes)
 
     # NOUVEAU - Charger les builds custom depuis CSV dans session_state
-    if 'custom_builds' not in st.session_state or not st.session_state.custom_builds:
-        st.session_state.custom_builds = data['custom_builds']
+    # None = sentinelle "pas encore chargé" → charge depuis CSV
+    # Les sauvegardes/suppressions rechargent manuellement (lignes 648, 758)
+    if st.session_state.custom_builds is None:
+        st.session_state.custom_builds = data['loader'].load_custom_builds()
 
     # NOTE: Toutes les initialisations session_state sont faites dans init_app()
 
