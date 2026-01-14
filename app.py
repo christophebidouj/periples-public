@@ -883,9 +883,13 @@ def main():
     selected_theme = st.session_state.get('selected_theme', 'Professionnel')
     apply_fantasy_theme(selected_theme)
 
-    # Titre natif Streamlit
-    st.title("⚔️ Périples – Atelier d'Équilibrage ⚔️")
-    st.caption("🎲 **Périples** © **Bastien LIAUTY** | 💻 Développeur : **Christophe Bidouj** | Simulateur d'équilibrage du jeu de société Périples")
+    # Titre et sous-titre centrés
+    st.markdown("""
+        <h1 style='text-align: center; margin-bottom: 0;'>⚔️ Périples – Atelier d'Équilibrage ⚔️</h1>
+        <p style='text-align: center; font-size: 14px; color: #888; margin-top: 5px;'>
+            🎲 <strong>Périples</strong> © <strong>Bastien LIAUTY</strong> | 💻 Développeur : <strong>Christophe Bidouj</strong> | Simulateur d'équilibrage du jeu de société Périples
+        </p>
+    """, unsafe_allow_html=True)
     
     # Données avec cache
     try:
