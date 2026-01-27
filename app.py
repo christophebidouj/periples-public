@@ -369,8 +369,8 @@ def init_app():
         'hero_starting_health': {},  # Pourcentage de santé initiale par héros
         'selected_build_name': {},  # NOUVEAU - Build sélectionné par héros (défaut ou custom)
         'selected_theme': 'Professionnel',  # Thème par défaut
-        'initiative_setting': True,  # Initiative D20 activée par défaut
-        'criticals_setting': True,  # Critiques activés par défaut
+        'initiative_setting': False,  # Initiative D20 désactivée par défaut
+        'criticals_setting': False,  # Critiques désactivés par défaut
         'ui_state': {'needs_rerun': False}
     }
 
