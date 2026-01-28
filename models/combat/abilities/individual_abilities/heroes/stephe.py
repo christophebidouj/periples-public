@@ -245,6 +245,7 @@ class StepheInvisibilite(BaseAbility):
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
+        self.can_target_self = True  # Stèphe peut se rendre invisible elle-même
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Rend un allié invisible (ne peut être ciblé par ennemis)"""
@@ -254,14 +255,17 @@ class StepheInvisibilite(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
 
-            # Sélectionner allié cible (priorité plus blessé)
-            allies = self._get_all_allies(caster, context)
-            if not allies:
-                log.append(f"⚠️ Aucun allié à purifier")
-                return False
+            # NOUVEAU - Utiliser la cible choisie par l'utilisateur si fournie
+            target = context.get('target_ally')
 
-            # Prioriser allié le plus blessé (protection prioritaire)
-            target = min(allies, key=lambda a: a.current_health if a.current_health is not None else float('inf'))
+            if not target:
+                # Fallback: sélection automatique (pour compatibilité mode auto)
+                allies = self._get_all_allies(caster, context)
+                if not allies:
+                    log.append(f"⚠️ Aucun allié à rendre invisible")
+                    return False
+                # Prioriser allié le plus blessé (protection prioritaire)
+                target = min(allies, key=lambda a: a.current_health if a.current_health is not None else float('inf'))
 
             # Appliquer invisibilité
             if not hasattr(target, 'status_effects'):
@@ -269,16 +273,17 @@ class StepheInvisibilite(BaseAbility):
 
             target.status_effects['invisible'] = {
                 'type': 'untargetable',
-                'duration': 'permanent_combat',  # Dure tout le combat
-                'source': 'stephe_purification'
+                'duration': 'until_action',  # Dure jusqu'à ce que le héros agisse
+                'expires_on_action': True,  # Se termine si le héros effectue une action
+                'source': 'stephe_invisibilite'
             }
 
-            log.append(f"🌫️ {caster.name} purifie {target.name} - Invisible aux ennemis !")
+            log.append(f"🌫️ {caster.name} rend {target.name} invisible aux ennemis !")
 
             return True
 
         except Exception as e:
-            log.append(f"❌ Erreur Purification: {e}")
+            log.append(f"❌ Erreur Invisibilité: {e}")
             return False
 
     def get_preview(self) -> str:

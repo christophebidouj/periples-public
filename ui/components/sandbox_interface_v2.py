@@ -316,6 +316,25 @@ def reset_combat_state():
     st.session_state.sandbox_v2_phase = 'CONFIG'
     st.session_state.sandbox_v2_combatants = []
 
+def remove_stephe_invisibility_on_action(character, log: list):
+    """
+    Retire l'invisibilité de Stèphe quand le héros effectue une action (attaque, capacité).
+    L'invisibilité de Stèphe se termine dès que le héros invisible agit.
+
+    Args:
+        character: Le héros qui effectue une action
+        log: Liste de logs de combat
+    """
+    if not hasattr(character, 'status_effects'):
+        return
+
+    if 'invisible' in character.status_effects:
+        stealth_data = character.status_effects['invisible']
+        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'stephe_invisibilite':
+            if stealth_data.get('expires_on_action', False):
+                del character.status_effects['invisible']
+                log.append(f"🌫️ Invisibilité terminée - {character.name} redevient visible (action effectuée)")
+
 def save_game_state(description: str = "Action"):
     """Sauvegarde l'état pour Undo/Redo"""
     # Synchroniser les listes de héros/ennemis depuis les combattants avant de sauvegarder
@@ -2091,16 +2110,18 @@ def display_actions_and_potions(char: Character, combatant_id: str):
     # === GESTION MODE "FAIRE BOIRE" ===
     # État de sélection pour "faire boire"
     action_state = st.session_state.get('sandbox_v2_action_state', None)
+    current_actor = st.session_state.get('sandbox_v2_current_actor', None)
 
-    # MODE SÉLECTION: Faire boire une potion
-    if action_state == 'GIVING_POTION':
-        st.info("🤝 Sélectionnez le type de potion à donner:")
-
-        potions_summary = char.get_potions_summary()
+    # MODE SÉLECTION: Faire boire une potion - Étape 1 uniquement (choix du type)
+    # L'étape 2 (sélection de la cible) est gérée dans la boucle de rendu des cartes
+    if action_state == 'GIVING_POTION' and current_actor and current_actor.code == char.code:
         potion_type_selected = st.session_state.get('sandbox_v2_potion_type', None)
 
         if potion_type_selected is None:
             # Étape 1: Choisir le type de potion
+            st.info("🤝 Sélectionnez le type de potion à donner:")
+            potions_summary = char.get_potions_summary()
+
             col1, col2 = st.columns(2)
 
             with col1:
@@ -2110,7 +2131,7 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                         st.session_state.sandbox_v2_potion_type = PotionType.SMALL
                         st.rerun()
                 else:
-                    st.button(f"🩸 Petite\n0", disabled=True, use_container_width=True)
+                    st.button(f"🩸 Petite\n0", disabled=True, key=f"give_small_disabled_{combatant_id}", use_container_width=True)
 
             with col2:
                 large_count = potions_summary['large_count']
@@ -2119,64 +2140,15 @@ def display_actions_and_potions(char: Character, combatant_id: str):
                         st.session_state.sandbox_v2_potion_type = PotionType.LARGE
                         st.rerun()
                 else:
-                    st.button(f"❤️‍🩹 Grande\n0", disabled=True, use_container_width=True)
+                    st.button(f"❤️‍🩹 Grande\n0", disabled=True, key=f"give_large_disabled_{combatant_id}", use_container_width=True)
 
             if st.button("❌ Annuler", key=f"cancel_give_potion_{combatant_id}"):
                 st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_potion_type = None
                 st.rerun()
         else:
-            # Étape 2: Choisir la cible
-            st.info("👥 Sélectionnez le héros qui recevra la potion:")
-
-            # Liste des héros vivants (sauf soi-même)
-            all_combatants = st.session_state.sandbox_v2_combatants
-            available_heroes = [
-                c for c in all_combatants
-                if c['faction'] == 'hero'
-                and c['character'].is_alive()
-                and c['character'].code != char.code
-            ]
-
-            if not available_heroes:
-                st.warning("Aucun autre héros disponible")
-                if st.button("❌ Annuler", key=f"cancel_no_target_{combatant_id}"):
-                    st.session_state.sandbox_v2_action_state = None
-                    st.session_state.sandbox_v2_potion_type = None
-                    st.rerun()
-            else:
-                # Afficher boutons de sélection pour chaque héros
-                for target_data in available_heroes:
-                    target = target_data['character']
-
-                    # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
-                    is_target_animal_form = (target.code == "P-1" and
-                                             hasattr(target, 'current_form') and
-                                             target.current_form in ["bear", "wolf"])
-
-                    if is_target_animal_form:
-                        # Stats de la forme animale (brutes, sans équipements)
-                        target_max_hp = target.health
-                    else:
-                        # Stats normales (avec équipements)
-                        target_max_hp = target.get_total_health()
-
-                    health_pct = round((target.current_health / target_max_hp) * 100, 1)
-
-                    if st.button(
-                        f"🎯 {target.name} ({target.current_health}/{target_max_hp} PV - {health_pct}%)",
-                        key=f"give_to_{target_data['id']}",
-                        use_container_width=True
-                    ):
-                        # Exécuter l'action
-                        give_potion_to_ally_action(char, target, potion_type_selected)
-                        st.session_state.sandbox_v2_action_state = None
-                        st.session_state.sandbox_v2_potion_type = None
-                        st.rerun()
-
-                if st.button("❌ Annuler", key=f"cancel_targeting_potion_{combatant_id}"):
-                    st.session_state.sandbox_v2_action_state = None
-                    st.session_state.sandbox_v2_potion_type = None
-                    st.rerun()
+            # Étape 2: Message d'instruction - la sélection se fait sur les cartes des alliés
+            st.info("👥 Cliquez sur '🎯 Choisir' sous la carte de l'allié cible")
 
     # NOTE: La section Potions a été déplacée dans le header compact
     # pour gagner de l'espace vertical et améliorer l'ergonomie.
@@ -2243,10 +2215,19 @@ def use_ability_action(char: Character, ability):
     RÉUTILISE AbilityEffectsManager pour exécuter les effets réels
     """
     if hasattr(char, 'use_ability'):
-        # NOUVEAU - Détecter si la capacité nécessite un ciblage manuel (Marque du chasseur P-4-2)
+        # NOUVEAU - Détecter si la capacité nécessite un ciblage manuel d'ENNEMI (Marque du chasseur P-4-2)
         if hasattr(char, 'code') and char.code == "P-4" and hasattr(ability, 'ability_number') and ability.ability_number == 2:
-            # Activer mode ciblage (réutilise le système d'attaque)
+            # Activer mode ciblage ennemi
             st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ABILITY'
+            st.session_state.sandbox_v2_current_actor = char
+            st.session_state.sandbox_v2_current_ability = ability
+            st.rerun()
+            return
+
+        # NOUVEAU - Détecter si la capacité nécessite un ciblage manuel d'ALLIÉ (Invisibilité P-6-4)
+        if hasattr(char, 'code') and char.code == "P-6" and hasattr(ability, 'ability_number') and ability.ability_number == 4:
+            # Activer mode ciblage allié
+            st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ABILITY_ALLY'
             st.session_state.sandbox_v2_current_actor = char
             st.session_state.sandbox_v2_current_ability = ability
             st.rerun()
@@ -2335,6 +2316,9 @@ def use_ability_action(char: Character, ability):
                         char.attack_succeeded_this_turn = False
                         if hasattr(char, 'last_attacked_target'):
                             delattr(char, 'last_attacked_target')
+
+            # 4.6. NOUVEAU - Supprimer l'invisibilité de Stèphe si le héros utilise une capacité
+            remove_stephe_invisibility_on_action(char, st.session_state.sandbox_v2_log)
 
             # 5. Sauvegarder état pour undo/redo
             save_game_state(f"{char.name} utilise {ability.name}")
@@ -2507,19 +2491,31 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # NOUVEAU - Vérifier si héros est stunné (RÉUTILISE fonction centralisée)
     is_stunned, stunned_turns = is_character_stunned(hero)
 
-    # NOUVEAU - Vérifier si Lame est en mode furtif
+    # NOUVEAU - Vérifier si le héros est en mode furtif/invisible
     is_stealthy = False
     stealth_turns = 0
+    is_stephe_invisible = False
     if hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects:
         stealth_data = hero.status_effects['invisible']
-        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
-            is_stealthy = True
-            stealth_turns = stealth_data.get('turns_remaining', 0)
+        if isinstance(stealth_data, dict):
+            source = stealth_data.get('source', '')
+            if source == 'lame_furtivite':
+                is_stealthy = True
+                stealth_turns = stealth_data.get('turns_remaining', 0)
+            elif source == 'stephe_invisibilite':
+                is_stephe_invisible = True
+            elif source == 'ombre_mortelle':
+                # Assaut furieux de Lame - traité comme furtivité
+                is_stealthy = True
+                stealth_turns = stealth_data.get('turns_remaining', 0)
 
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn and is_stealthy:
         # NOUVEAU : Badge combiné FURTIF + C'EST SON TOUR (pour Lame)
         build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡🥷 SON TOUR<br/>(FURTIF {stealth_turns}T)</div>'
+    elif is_current_turn and is_stephe_invisible:
+        # NOUVEAU : Badge combiné INVISIBLE + C'EST SON TOUR (Stèphe P-6-4)
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡🌫️ SON TOUR<br/>(INVISIBLE)</div>'
     elif is_current_turn:
         build_content = '<div style="font-size: 1.1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡ C\'EST SON TOUR</div>'
     elif not is_alive and rage_active:
@@ -2536,6 +2532,9 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     elif is_stealthy:
         # NOUVEAU : Badge Furtivité active (Lame P-7-1)
         build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #6A0DAD; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🥷 FURTIF<br/>({stealth_turns} tours)</div>'
+    elif is_stephe_invisible:
+        # NOUVEAU : Badge Invisibilité (Stèphe P-6-4)
+        build_content = '<div style="font-size: 1rem; font-weight: bold; color: #87CEEB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🌫️ INVISIBLE</div>'
     elif rage_active:
         # NOUVEAU : Badge Rage active
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF0000; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🔥 RAGE ACTIVE</div>'
@@ -3011,6 +3010,9 @@ def execute_attack_on_target(attacker: Character, target: Enemy):
             attacker.temporary_buffs = {}
         attacker.temporary_buffs['parade_blocked_by_attack'] = True
 
+    # NOUVEAU - Supprimer l'invisibilité de Stèphe si le héros agit
+    remove_stephe_invisibility_on_action(attacker, st.session_state.sandbox_v2_log)
+
     # Désactiver le mode de sélection
     st.session_state.sandbox_v2_action_state = None
     st.rerun()
@@ -3339,6 +3341,93 @@ def display_combat_status():
                             disabled=True,
                             use_container_width=True
                         )
+                elif action_state == 'GIVING_POTION' and current_actor:
+                    # Donner potion à un allié : boutons sur les héros (sauf le donneur)
+                    potion_type = st.session_state.get('sandbox_v2_potion_type')
+                    if potion_type and combatant_data['faction'] == 'hero' and character.is_alive():
+                        # Ne pas afficher sur le donneur lui-même
+                        if character.code != current_actor.code:
+                            # Calculer infos santé pour l'affichage
+                            is_animal_form = (character.code == "P-1" and
+                                             hasattr(character, 'current_form') and
+                                             character.current_form in ["bear", "wolf"])
+                            max_hp = character.health if is_animal_form else character.get_total_health()
+                            health_pct = round((character.current_health / max_hp) * 100, 1)
+                            potion_name = "Petite" if potion_type == PotionType.SMALL else "Grande"
+
+                            if st.button(
+                                f"🎯 Choisir ({character.current_health}/{max_hp} PV)",
+                                key=f"give_potion_to_init_{combatant_data['id']}",
+                                type="primary",
+                                use_container_width=True,
+                                help=f"Donner {potion_name} potion à {character.name} ({health_pct}% PV)"
+                            ):
+                                give_potion_to_ally_action(current_actor, character, potion_type)
+                                st.session_state.sandbox_v2_action_state = None
+                                st.session_state.sandbox_v2_potion_type = None
+                                st.rerun()
+                        else:
+                            # Donneur : afficher "En cours..."
+                            st.button("🤝 Donne potion...", key=f"giving_potion_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif potion_type and combatant_data['faction'] == 'enemy':
+                        # Griser les ennemis
+                        st.button("⏸️ En attente...", key=f"disabled_enemy_potion_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+                elif action_state == 'SELECTING_TARGET_ABILITY_ALLY' and current_actor:
+                    # Capacité ciblant un allié : boutons sur les héros (sauf le lanceur selon la capacité)
+                    ability = st.session_state.get('sandbox_v2_current_ability')
+                    if combatant_data['faction'] == 'hero' and character.is_alive():
+                        # Vérifier si on peut cibler soi-même (certaines capacités le permettent)
+                        can_target_self = getattr(ability, 'can_target_self', True)
+                        is_self = (character.code == current_actor.code)
+
+                        if not is_self or can_target_self:
+                            # Calculer infos santé pour l'affichage
+                            is_animal_form = (character.code == "P-1" and
+                                             hasattr(character, 'current_form') and
+                                             character.current_form in ["bear", "wolf"])
+                            max_hp = character.health if is_animal_form else character.get_total_health()
+                            health_pct = round((character.current_health / max_hp) * 100, 1)
+
+                            if st.button(
+                                f"🎯 Choisir ({character.current_health}/{max_hp} PV)",
+                                key=f"target_ally_ability_init_{combatant_data['id']}",
+                                type="primary",
+                                use_container_width=True,
+                                help=f"Cibler {character.name} ({health_pct}% PV)"
+                            ):
+                                # Exécuter la capacité avec la cible choisie
+                                adapter = st.session_state.sandbox_v2_adapter
+                                heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                                enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                                context = {
+                                    'target_ally': character,  # Cible allié choisie
+                                    'alive_enemies': [e for e in enemies if e.is_alive()],
+                                    'current_enemies': [e for e in enemies if e.is_alive()],
+                                    'all_enemies': enemies,
+                                    'heroes': heroes,
+                                    'current_heroes': heroes,
+                                    'spell_manager': adapter.spell_manager,
+                                    'log': st.session_state.sandbox_v2_log,
+                                    'player_count': len([h for h in heroes if h.is_alive()])
+                                }
+
+                                # Consommer et exécuter
+                                action = current_actor.use_ability(ability)
+                                if action.success:
+                                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                                st.session_state.sandbox_v2_action_state = None
+                                st.session_state.sandbox_v2_current_actor = None
+                                st.session_state.sandbox_v2_current_ability = None
+                                save_game_state(f"{current_actor.name} utilise {ability.name} sur {character.name}")
+                                st.rerun()
+                        else:
+                            # Lanceur : afficher "En cours..."
+                            st.button("🔮 Lance capacité...", key=f"casting_ability_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif combatant_data['faction'] == 'enemy':
+                        # Griser les ennemis
+                        st.button("⏸️ En attente...", key=f"disabled_enemy_ability_ally_init_{combatant_data['id']}", disabled=True, use_container_width=True)
 
 def display_combat_status_team_mode():
     """
@@ -3564,6 +3653,93 @@ def display_combat_status_team_mode():
                             disabled=True,
                             use_container_width=True
                         )
+                elif action_state == 'GIVING_POTION' and current_actor:
+                    # Donner potion à un allié : boutons sur les héros (sauf le donneur)
+                    potion_type = st.session_state.get('sandbox_v2_potion_type')
+                    if potion_type and combatant_data['faction'] == 'hero' and character.is_alive():
+                        # Ne pas afficher sur le donneur lui-même
+                        if character.code != current_actor.code:
+                            # Calculer infos santé pour l'affichage
+                            is_animal_form = (character.code == "P-1" and
+                                             hasattr(character, 'current_form') and
+                                             character.current_form in ["bear", "wolf"])
+                            max_hp = character.health if is_animal_form else character.get_total_health()
+                            health_pct = round((character.current_health / max_hp) * 100, 1)
+                            potion_name = "Petite" if potion_type == PotionType.SMALL else "Grande"
+
+                            if st.button(
+                                f"🎯 Choisir ({character.current_health}/{max_hp} PV)",
+                                key=f"give_potion_to_manual_{combatant_data['id']}",
+                                type="primary",
+                                use_container_width=True,
+                                help=f"Donner {potion_name} potion à {character.name} ({health_pct}% PV)"
+                            ):
+                                give_potion_to_ally_action(current_actor, character, potion_type)
+                                st.session_state.sandbox_v2_action_state = None
+                                st.session_state.sandbox_v2_potion_type = None
+                                st.rerun()
+                        else:
+                            # Donneur : afficher "En cours..."
+                            st.button("🤝 Donne potion...", key=f"giving_potion_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif potion_type and combatant_data['faction'] == 'enemy':
+                        # Griser les ennemis
+                        st.button("⏸️ En attente...", key=f"disabled_enemy_potion_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+                elif action_state == 'SELECTING_TARGET_ABILITY_ALLY' and current_actor:
+                    # Capacité ciblant un allié : boutons sur les héros (sauf le lanceur selon la capacité)
+                    ability = st.session_state.get('sandbox_v2_current_ability')
+                    if combatant_data['faction'] == 'hero' and character.is_alive():
+                        # Vérifier si on peut cibler soi-même (certaines capacités le permettent)
+                        can_target_self = getattr(ability, 'can_target_self', True)
+                        is_self = (character.code == current_actor.code)
+
+                        if not is_self or can_target_self:
+                            # Calculer infos santé pour l'affichage
+                            is_animal_form = (character.code == "P-1" and
+                                             hasattr(character, 'current_form') and
+                                             character.current_form in ["bear", "wolf"])
+                            max_hp = character.health if is_animal_form else character.get_total_health()
+                            health_pct = round((character.current_health / max_hp) * 100, 1)
+
+                            if st.button(
+                                f"🎯 Choisir ({character.current_health}/{max_hp} PV)",
+                                key=f"target_ally_ability_manual_{combatant_data['id']}",
+                                type="primary",
+                                use_container_width=True,
+                                help=f"Cibler {character.name} ({health_pct}% PV)"
+                            ):
+                                # Exécuter la capacité avec la cible choisie
+                                adapter = st.session_state.sandbox_v2_adapter
+                                heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                                enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                                context = {
+                                    'target_ally': character,  # Cible allié choisie
+                                    'alive_enemies': [e for e in enemies if e.is_alive()],
+                                    'current_enemies': [e for e in enemies if e.is_alive()],
+                                    'all_enemies': enemies,
+                                    'heroes': heroes,
+                                    'current_heroes': heroes,
+                                    'spell_manager': adapter.spell_manager,
+                                    'log': st.session_state.sandbox_v2_log,
+                                    'player_count': len([h for h in heroes if h.is_alive()])
+                                }
+
+                                # Consommer et exécuter
+                                action = current_actor.use_ability(ability)
+                                if action.success:
+                                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                                st.session_state.sandbox_v2_action_state = None
+                                st.session_state.sandbox_v2_current_actor = None
+                                st.session_state.sandbox_v2_current_ability = None
+                                save_game_state(f"{current_actor.name} utilise {ability.name} sur {character.name}")
+                                st.rerun()
+                        else:
+                            # Lanceur : afficher "En cours..."
+                            st.button("🔮 Lance capacité...", key=f"casting_ability_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif combatant_data['faction'] == 'enemy':
+                        # Griser les ennemis
+                        st.button("⏸️ En attente...", key=f"disabled_enemy_ability_ally_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
                 else:
                     # Mode normal : afficher boutons "À son tour"
                     # Vérifier si le combattant a déjà joué ce round
