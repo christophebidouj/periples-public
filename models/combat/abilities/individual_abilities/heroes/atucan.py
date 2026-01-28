@@ -623,6 +623,10 @@ def auto_activate_sens_de_la_justice(heroes: List, log: List[str]) -> bool:
     if not atucan:
         return False
 
+    # Vérifier que la capacité 2 (Sens de la justice) est débloquée
+    if not hasattr(atucan, 'abilities_level') or atucan.abilities_level < 2:
+        return False
+
     # Initialiser temporary_buffs si nécessaire
     if not hasattr(atucan, 'temporary_buffs'):
         atucan.temporary_buffs = {}
@@ -669,6 +673,10 @@ def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
     atucan = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
 
     if not atucan:
+        return False
+
+    # Vérifier que la capacité 4 (Aura sacrée) est débloquée
+    if not hasattr(atucan, 'abilities_level') or atucan.abilities_level < 4:
         return False
 
     # Appliquer l'aura à tous les héros vivants (y compris Atucan lui-même)
