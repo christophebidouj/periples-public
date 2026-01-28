@@ -258,9 +258,9 @@ class LameAttaqueTournoyante(BaseAbility):
                 log.append(f"⚠️ Attaque tournoyante déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            # Récupérer les ennemis du contexte
-            enemies = context.get('enemies', [])
-            alive_enemies = [e for e in enemies if e.is_alive()]
+            # Récupérer les ennemis vivants du contexte
+            alive_enemies = context.get('alive_enemies', context.get('all_enemies', []))
+            alive_enemies = [e for e in alive_enemies if e.is_alive()]
 
             if not alive_enemies:
                 log.append(f"⚠️ Aucun ennemi vivant à cibler")
@@ -276,7 +276,9 @@ class LameAttaqueTournoyante(BaseAbility):
             for enemy in alive_enemies:
                 # Appliquer dégâts avec parade
                 initial_hp = enemy.current_health
-                damage_dealt, parade_used = enemy.apply_damage_with_parade(damage_roll)
+                result = enemy.apply_damage_with_parade(damage_roll)
+                damage_dealt = result['health_damage']
+                parade_used = result['blocked_by_parade']
                 final_hp = enemy.current_health
 
                 # Log détaillé
