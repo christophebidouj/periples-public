@@ -147,6 +147,11 @@ def init_sandbox_state():
         'sandbox_v2_history_index': -1,
         'sandbox_v2_action_state': None,  # Pour gérer le ciblage
         'sandbox_v2_current_actor': None,  # Personnage qui agit
+        'sandbox_v2_current_ability': None,  # Capacité en cours d'utilisation
+        'sandbox_v2_heal_targets': [],  # Cibles sélectionnées pour soins multi-cibles
+        'sandbox_v2_heal_budget': 0,  # Budget de soins restant
+        'sandbox_v2_damage_targets': [],  # Cibles sélectionnées pour dégâts multi-cibles
+        'sandbox_v2_damage_budget': 0,  # Budget de dégâts restant
         'sandbox_v2_last_selection': None,  # Mémoriser la dernière sélection
         'sandbox_v2_played_this_round': [],  # Liste des IDs qui ont joué ce round (mode manuel)
         'sandbox_v2_active_pets': []  # Liste des pets invoqués
@@ -2233,6 +2238,55 @@ def use_ability_action(char: Character, ability):
             st.rerun()
             return
 
+        # NOUVEAU - Détecter les capacités de SOIN SIMPLE (cible unique)
+        # P-3-1: Imposition des mains (Atucan), P-4-5: Soin mineur (Kraor)
+        if hasattr(char, 'code') and hasattr(ability, 'ability_number'):
+            is_heal_simple = (
+                (char.code == "P-3" and ability.ability_number == 1) or  # Imposition des mains
+                (char.code == "P-4" and ability.ability_number == 5)     # Soin mineur
+            )
+            if is_heal_simple:
+                st.session_state.sandbox_v2_action_state = 'SELECTING_TARGET_ABILITY_ALLY'
+                st.session_state.sandbox_v2_current_actor = char
+                st.session_state.sandbox_v2_current_ability = ability
+                st.rerun()
+                return
+
+        # NOUVEAU - Détecter les capacités de SOIN MULTI-CIBLES
+        # P-3-5: Soin supérieur (Atucan), P-6-5: Soin majeur (Stèphe)
+        if hasattr(char, 'code') and hasattr(ability, 'ability_number'):
+            is_heal_multi = (
+                (char.code == "P-3" and ability.ability_number == 5) or  # Soin supérieur
+                (char.code == "P-6" and ability.ability_number == 5)     # Soin majeur
+            )
+            if is_heal_multi:
+                # Déterminer le budget de soins
+                heal_budget = 8  # Les deux capacités ont 8 PV max
+                st.session_state.sandbox_v2_action_state = 'SELECTING_HEAL_TARGETS_MULTI'
+                st.session_state.sandbox_v2_current_actor = char
+                st.session_state.sandbox_v2_current_ability = ability
+                st.session_state.sandbox_v2_heal_targets = []
+                st.session_state.sandbox_v2_heal_budget = heal_budget
+                st.rerun()
+                return
+
+        # NOUVEAU - Détecter les capacités de DÉGÂTS MULTI-CIBLES
+        # P-2-1: Éclair magique (Liarie) - 4 dégâts répartis
+        if hasattr(char, 'code') and hasattr(ability, 'ability_number'):
+            is_damage_multi = (
+                (char.code == "P-2" and ability.ability_number == 1)  # Éclair magique
+            )
+            if is_damage_multi:
+                # Déterminer le budget de dégâts
+                damage_budget = 4  # Éclair magique = 4 dégâts
+                st.session_state.sandbox_v2_action_state = 'SELECTING_DAMAGE_TARGETS_MULTI'
+                st.session_state.sandbox_v2_current_actor = char
+                st.session_state.sandbox_v2_current_ability = ability
+                st.session_state.sandbox_v2_damage_targets = []
+                st.session_state.sandbox_v2_damage_budget = damage_budget
+                st.rerun()
+                return
+
         # 0. NOUVEAU - Vérifier can_execute() pour les capacités individuelles
         if hasattr(ability, 'ability_number') and hasattr(char, 'code'):
             individual_ability = get_ability(char.code, ability.ability_number)
@@ -3373,9 +3427,9 @@ def display_combat_status():
                         # Griser les ennemis
                         st.button("⏸️ En attente...", key=f"disabled_enemy_potion_init_{combatant_data['id']}", disabled=True, use_container_width=True)
                 elif action_state == 'SELECTING_TARGET_ABILITY_ALLY' and current_actor:
-                    # Capacité ciblant un allié : boutons sur les héros (sauf le lanceur selon la capacité)
+                    # Capacité ciblant un allié : boutons sur les héros ET pets (sauf le lanceur selon la capacité)
                     ability = st.session_state.get('sandbox_v2_current_ability')
-                    if combatant_data['faction'] == 'hero' and character.is_alive():
+                    if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
                         # Vérifier si on peut cibler soi-même (certaines capacités le permettent)
                         can_target_self = getattr(ability, 'can_target_self', True)
                         is_self = (character.code == current_actor.code)
@@ -3398,15 +3452,17 @@ def display_combat_status():
                                 # Exécuter la capacité avec la cible choisie
                                 adapter = st.session_state.sandbox_v2_adapter
                                 heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                                pets = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'pet']
+                                allies = heroes + pets  # Inclure les pets comme alliés
                                 enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
 
                                 context = {
-                                    'target_ally': character,  # Cible allié choisie
+                                    'target_ally': character,  # Cible allié choisie (héros ou pet)
                                     'alive_enemies': [e for e in enemies if e.is_alive()],
                                     'current_enemies': [e for e in enemies if e.is_alive()],
                                     'all_enemies': enemies,
-                                    'heroes': heroes,
-                                    'current_heroes': heroes,
+                                    'heroes': allies,  # Inclut héros + pets
+                                    'current_heroes': allies,
                                     'spell_manager': adapter.spell_manager,
                                     'log': st.session_state.sandbox_v2_log,
                                     'player_count': len([h for h in heroes if h.is_alive()])
@@ -3428,6 +3484,211 @@ def display_combat_status():
                     elif combatant_data['faction'] == 'enemy':
                         # Griser les ennemis
                         st.button("⏸️ En attente...", key=f"disabled_enemy_ability_ally_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+
+                elif action_state == 'SELECTING_HEAL_TARGETS_MULTI' and current_actor:
+                    # Soin multi-cibles : boutons de sélection sur les héros ET pets blessés
+                    ability = st.session_state.get('sandbox_v2_current_ability')
+                    heal_targets = st.session_state.get('sandbox_v2_heal_targets', [])
+
+                    if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
+                        max_hp = character.get_total_health()
+                        is_wounded = character.current_health < max_hp
+                        is_selected = character in heal_targets
+
+                        if is_wounded:
+                            if is_selected:
+                                # Déjà sélectionné - bouton pour désélectionner
+                                if st.button(
+                                    f"☑️ Sélectionné ({character.current_health}/{max_hp})",
+                                    key=f"heal_deselect_init_{combatant_data['id']}",
+                                    type="primary",
+                                    use_container_width=True
+                                ):
+                                    heal_targets.remove(character)
+                                    st.session_state.sandbox_v2_heal_targets = heal_targets
+                                    st.rerun()
+                            else:
+                                # Pas sélectionné - bouton pour sélectionner
+                                if st.button(
+                                    f"⬜ Choisir ({character.current_health}/{max_hp})",
+                                    key=f"heal_select_init_{combatant_data['id']}",
+                                    use_container_width=True
+                                ):
+                                    heal_targets.append(character)
+                                    st.session_state.sandbox_v2_heal_targets = heal_targets
+                                    st.rerun()
+                        else:
+                            # Pas blessé
+                            st.button(f"✅ Pleine vie", key=f"heal_full_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif combatant_data['faction'] == 'enemy':
+                        st.button("⏸️ En attente...", key=f"disabled_enemy_heal_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+
+                elif action_state == 'SELECTING_DAMAGE_TARGETS_MULTI' and current_actor:
+                    # Dégâts multi-cibles : chaque clic = 1 dégât assigné
+                    ability = st.session_state.get('sandbox_v2_current_ability')
+                    damage_assignments = st.session_state.get('sandbox_v2_damage_targets', [])  # Liste d'IDs
+                    damage_budget = st.session_state.get('sandbox_v2_damage_budget', 4)
+                    remaining = damage_budget - len(damage_assignments)
+
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        max_hp = character.max_health if hasattr(character, 'max_health') else character.current_health
+                        # Compter combien de dégâts assignés à cet ennemi
+                        damage_count = damage_assignments.count(combatant_data['id'])
+
+                        if remaining > 0:
+                            # Encore du budget - bouton pour ajouter 1 dégât
+                            label = f"⚡ +1 dégât ({damage_count})" if damage_count > 0 else f"⚡ +1 dégât"
+                            if st.button(
+                                label,
+                                key=f"damage_add_init_{combatant_data['id']}",
+                                type="primary" if damage_count > 0 else "secondary",
+                                use_container_width=True,
+                                help=f"{character.name}: {character.current_health}/{max_hp} PV"
+                            ):
+                                damage_assignments.append(combatant_data['id'])
+                                st.session_state.sandbox_v2_damage_targets = damage_assignments
+                                st.rerun()
+                        else:
+                            # Plus de budget - afficher le total assigné
+                            if damage_count > 0:
+                                st.button(f"⚡ {damage_count} dégât(s)", key=f"damage_done_init_{combatant_data['id']}", type="primary", disabled=True, use_container_width=True)
+                            else:
+                                st.button(f"— Pas ciblé", key=f"damage_none_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif combatant_data['faction'] in ['hero', 'pet']:
+                        st.button("⏸️ En attente...", key=f"disabled_ally_damage_init_{combatant_data['id']}", disabled=True, use_container_width=True)
+
+    # Afficher bandeau de validation pour soins multi-cibles (en dehors de la grille)
+    action_state = st.session_state.get('sandbox_v2_action_state')
+    if action_state == 'SELECTING_HEAL_TARGETS_MULTI':
+        current_actor = st.session_state.get('sandbox_v2_current_actor')
+        ability = st.session_state.get('sandbox_v2_current_ability')
+        heal_targets = st.session_state.get('sandbox_v2_heal_targets', [])
+        heal_budget = st.session_state.get('sandbox_v2_heal_budget', 8)
+
+        st.markdown("---")
+        cols = st.columns([3, 1, 1])
+        with cols[0]:
+            selected_names = [t.name for t in heal_targets] if heal_targets else ["Aucune"]
+            st.info(f"💚 **{ability.name}** - {heal_budget} PV à répartir | Cibles : {', '.join(selected_names)}")
+        with cols[1]:
+            if st.button("✅ Valider soins", type="primary", disabled=len(heal_targets) == 0, use_container_width=True):
+                # Exécuter le soin avec les cibles sélectionnées
+                adapter = st.session_state.sandbox_v2_adapter
+                heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                pets = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'pet']
+                allies = heroes + pets  # Inclure les pets comme alliés soignables
+                enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                context = {
+                    'heal_targets': heal_targets,  # Liste des cibles choisies
+                    'alive_enemies': [e for e in enemies if e.is_alive()],
+                    'all_enemies': enemies,
+                    'heroes': allies,  # Inclut héros + pets pour le fallback automatique
+                    'spell_manager': adapter.spell_manager,
+                    'log': st.session_state.sandbox_v2_log,
+                    'player_count': len([h for h in heroes if h.is_alive()])
+                }
+
+                # Consommer et exécuter
+                action = current_actor.use_ability(ability)
+                if action.success:
+                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                # Reset état
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_heal_targets = []
+                st.session_state.sandbox_v2_heal_budget = 0
+                save_game_state(f"{current_actor.name} utilise {ability.name}")
+                st.rerun()
+        with cols[2]:
+            if st.button("❌ Annuler", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_heal_targets = []
+                st.session_state.sandbox_v2_heal_budget = 0
+                st.rerun()
+
+    # Afficher bandeau de validation pour dégâts multi-cibles
+    if action_state == 'SELECTING_DAMAGE_TARGETS_MULTI':
+        current_actor = st.session_state.get('sandbox_v2_current_actor')
+        ability = st.session_state.get('sandbox_v2_current_ability')
+        damage_assignments = st.session_state.get('sandbox_v2_damage_targets', [])  # Liste d'IDs
+        damage_budget = st.session_state.get('sandbox_v2_damage_budget', 4)
+        remaining = damage_budget - len(damage_assignments)
+
+        # Construire le résumé des dégâts par cible
+        damage_summary = {}
+        for enemy_id in damage_assignments:
+            # Trouver le nom de l'ennemi
+            for c in st.session_state.sandbox_v2_combatants:
+                if c['id'] == enemy_id:
+                    name = c['character'].name
+                    damage_summary[name] = damage_summary.get(name, 0) + 1
+                    break
+
+        st.markdown("---")
+        cols = st.columns([3, 1, 1])
+        with cols[0]:
+            if damage_summary:
+                summary_text = ", ".join([f"{name} ({dmg})" for name, dmg in damage_summary.items()])
+            else:
+                summary_text = "Aucune"
+            st.warning(f"⚡ **{ability.name}** - {remaining}/{damage_budget} dégâts restants | Répartition : {summary_text}")
+        with cols[1]:
+            if st.button("⚡ Lancer sort", type="primary", disabled=len(damage_assignments) == 0, use_container_width=True):
+                # Convertir les IDs en liste de tuples (enemy, damage_count)
+                # Compter d'abord par ID
+                damage_count_by_id = {}
+                for enemy_id in damage_assignments:
+                    damage_count_by_id[enemy_id] = damage_count_by_id.get(enemy_id, 0) + 1
+
+                # Convertir en liste de tuples (objet, dégâts)
+                damage_list = []
+                for enemy_id, count in damage_count_by_id.items():
+                    for c in st.session_state.sandbox_v2_combatants:
+                        if c['id'] == enemy_id:
+                            damage_list.append((c['character'], count))
+                            break
+
+                # Exécuter le sort avec les cibles et dégâts
+                adapter = st.session_state.sandbox_v2_adapter
+                heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                context = {
+                    'damage_list': damage_list,  # Liste de tuples [(enemy, damage_count), ...]
+                    'alive_enemies': [e for e in enemies if e.is_alive()],
+                    'all_enemies': enemies,
+                    'heroes': heroes,
+                    'spell_manager': adapter.spell_manager,
+                    'log': st.session_state.sandbox_v2_log,
+                    'player_count': len([h for h in heroes if h.is_alive()])
+                }
+
+                # Consommer et exécuter
+                action = current_actor.use_ability(ability)
+                if action.success:
+                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                # Reset état
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_damage_targets = []
+                st.session_state.sandbox_v2_damage_budget = 0
+                save_game_state(f"{current_actor.name} utilise {ability.name}")
+                st.rerun()
+        with cols[2]:
+            if st.button("❌ Annuler", key="cancel_damage_init", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_damage_targets = []
+                st.session_state.sandbox_v2_damage_budget = 0
+                st.rerun()
 
 def display_combat_status_team_mode():
     """
@@ -3685,9 +3946,9 @@ def display_combat_status_team_mode():
                         # Griser les ennemis
                         st.button("⏸️ En attente...", key=f"disabled_enemy_potion_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
                 elif action_state == 'SELECTING_TARGET_ABILITY_ALLY' and current_actor:
-                    # Capacité ciblant un allié : boutons sur les héros (sauf le lanceur selon la capacité)
+                    # Capacité ciblant un allié : boutons sur les héros ET pets (sauf le lanceur selon la capacité)
                     ability = st.session_state.get('sandbox_v2_current_ability')
-                    if combatant_data['faction'] == 'hero' and character.is_alive():
+                    if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
                         # Vérifier si on peut cibler soi-même (certaines capacités le permettent)
                         can_target_self = getattr(ability, 'can_target_self', True)
                         is_self = (character.code == current_actor.code)
@@ -3710,15 +3971,17 @@ def display_combat_status_team_mode():
                                 # Exécuter la capacité avec la cible choisie
                                 adapter = st.session_state.sandbox_v2_adapter
                                 heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                                pets = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'pet']
+                                allies = heroes + pets  # Inclure les pets comme alliés
                                 enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
 
                                 context = {
-                                    'target_ally': character,  # Cible allié choisie
+                                    'target_ally': character,  # Cible allié choisie (héros ou pet)
                                     'alive_enemies': [e for e in enemies if e.is_alive()],
                                     'current_enemies': [e for e in enemies if e.is_alive()],
                                     'all_enemies': enemies,
-                                    'heroes': heroes,
-                                    'current_heroes': heroes,
+                                    'heroes': allies,  # Inclut héros + pets
+                                    'current_heroes': allies,
                                     'spell_manager': adapter.spell_manager,
                                     'log': st.session_state.sandbox_v2_log,
                                     'player_count': len([h for h in heroes if h.is_alive()])
@@ -3740,6 +4003,79 @@ def display_combat_status_team_mode():
                     elif combatant_data['faction'] == 'enemy':
                         # Griser les ennemis
                         st.button("⏸️ En attente...", key=f"disabled_enemy_ability_ally_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+
+                elif action_state == 'SELECTING_HEAL_TARGETS_MULTI' and current_actor:
+                    # Soin multi-cibles : boutons de sélection sur les héros ET pets blessés
+                    ability = st.session_state.get('sandbox_v2_current_ability')
+                    heal_targets = st.session_state.get('sandbox_v2_heal_targets', [])
+
+                    if combatant_data['faction'] in ['hero', 'pet'] and character.is_alive():
+                        max_hp = character.get_total_health()
+                        is_wounded = character.current_health < max_hp
+                        is_selected = character in heal_targets
+
+                        if is_wounded:
+                            if is_selected:
+                                # Déjà sélectionné - bouton pour désélectionner
+                                if st.button(
+                                    f"☑️ Sélectionné ({character.current_health}/{max_hp})",
+                                    key=f"heal_deselect_manual_{combatant_data['id']}",
+                                    type="primary",
+                                    use_container_width=True
+                                ):
+                                    heal_targets.remove(character)
+                                    st.session_state.sandbox_v2_heal_targets = heal_targets
+                                    st.rerun()
+                            else:
+                                # Pas sélectionné - bouton pour sélectionner
+                                if st.button(
+                                    f"⬜ Choisir ({character.current_health}/{max_hp})",
+                                    key=f"heal_select_manual_{combatant_data['id']}",
+                                    use_container_width=True
+                                ):
+                                    heal_targets.append(character)
+                                    st.session_state.sandbox_v2_heal_targets = heal_targets
+                                    st.rerun()
+                        else:
+                            # Pas blessé
+                            st.button(f"✅ Pleine vie", key=f"heal_full_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif combatant_data['faction'] == 'enemy':
+                        st.button("⏸️ En attente...", key=f"disabled_enemy_heal_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+
+                elif action_state == 'SELECTING_DAMAGE_TARGETS_MULTI' and current_actor:
+                    # Dégâts multi-cibles : chaque clic = 1 dégât assigné
+                    ability = st.session_state.get('sandbox_v2_current_ability')
+                    damage_assignments = st.session_state.get('sandbox_v2_damage_targets', [])  # Liste d'IDs
+                    damage_budget = st.session_state.get('sandbox_v2_damage_budget', 4)
+                    remaining = damage_budget - len(damage_assignments)
+
+                    if combatant_data['faction'] == 'enemy' and character.is_alive():
+                        max_hp = character.max_health if hasattr(character, 'max_health') else character.current_health
+                        # Compter combien de dégâts assignés à cet ennemi
+                        damage_count = damage_assignments.count(combatant_data['id'])
+
+                        if remaining > 0:
+                            # Encore du budget - bouton pour ajouter 1 dégât
+                            label = f"⚡ +1 dégât ({damage_count})" if damage_count > 0 else f"⚡ +1 dégât"
+                            if st.button(
+                                label,
+                                key=f"damage_add_manual_{combatant_data['id']}",
+                                type="primary" if damage_count > 0 else "secondary",
+                                use_container_width=True,
+                                help=f"{character.name}: {character.current_health}/{max_hp} PV"
+                            ):
+                                damage_assignments.append(combatant_data['id'])
+                                st.session_state.sandbox_v2_damage_targets = damage_assignments
+                                st.rerun()
+                        else:
+                            # Plus de budget - afficher le total assigné
+                            if damage_count > 0:
+                                st.button(f"⚡ {damage_count} dégât(s)", key=f"damage_done_manual_{combatant_data['id']}", type="primary", disabled=True, use_container_width=True)
+                            else:
+                                st.button(f"— Pas ciblé", key=f"damage_none_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+                    elif combatant_data['faction'] in ['hero', 'pet']:
+                        st.button("⏸️ En attente...", key=f"disabled_ally_damage_manual_{combatant_data['id']}", disabled=True, use_container_width=True)
+
                 else:
                     # Mode normal : afficher boutons "À son tour"
                     # Vérifier si le combattant a déjà joué ce round
@@ -3775,6 +4111,139 @@ def display_combat_status_team_mode():
                         ):
                             if not button_disabled:
                                 select_combatant_manually(combatant_data['id'])
+
+    # Afficher bandeau de validation pour soins multi-cibles (en dehors de la grille)
+    action_state = st.session_state.get('sandbox_v2_action_state')
+    if action_state == 'SELECTING_HEAL_TARGETS_MULTI':
+        current_actor = st.session_state.get('sandbox_v2_current_actor')
+        ability = st.session_state.get('sandbox_v2_current_ability')
+        heal_targets = st.session_state.get('sandbox_v2_heal_targets', [])
+        heal_budget = st.session_state.get('sandbox_v2_heal_budget', 8)
+
+        st.markdown("---")
+        cols = st.columns([3, 1, 1])
+        with cols[0]:
+            selected_names = [t.name for t in heal_targets] if heal_targets else ["Aucune"]
+            st.info(f"💚 **{ability.name}** - {heal_budget} PV à répartir | Cibles : {', '.join(selected_names)}")
+        with cols[1]:
+            if st.button("✅ Valider soins", key="validate_heal_manual", type="primary", disabled=len(heal_targets) == 0, use_container_width=True):
+                # Exécuter le soin avec les cibles sélectionnées
+                adapter = st.session_state.sandbox_v2_adapter
+                heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                pets = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'pet']
+                allies = heroes + pets  # Inclure les pets comme alliés soignables
+                enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                context = {
+                    'heal_targets': heal_targets,  # Liste des cibles choisies
+                    'alive_enemies': [e for e in enemies if e.is_alive()],
+                    'all_enemies': enemies,
+                    'heroes': allies,  # Inclut héros + pets pour le fallback automatique
+                    'spell_manager': adapter.spell_manager,
+                    'log': st.session_state.sandbox_v2_log,
+                    'player_count': len([h for h in heroes if h.is_alive()])
+                }
+
+                # Consommer et exécuter
+                action = current_actor.use_ability(ability)
+                if action.success:
+                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                # Reset état
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_heal_targets = []
+                st.session_state.sandbox_v2_heal_budget = 0
+                save_game_state(f"{current_actor.name} utilise {ability.name}")
+                st.rerun()
+        with cols[2]:
+            if st.button("❌ Annuler", key="cancel_heal_manual", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_heal_targets = []
+                st.session_state.sandbox_v2_heal_budget = 0
+                st.rerun()
+
+    # Afficher bandeau de validation pour dégâts multi-cibles
+    if action_state == 'SELECTING_DAMAGE_TARGETS_MULTI':
+        current_actor = st.session_state.get('sandbox_v2_current_actor')
+        ability = st.session_state.get('sandbox_v2_current_ability')
+        damage_assignments = st.session_state.get('sandbox_v2_damage_targets', [])  # Liste d'IDs
+        damage_budget = st.session_state.get('sandbox_v2_damage_budget', 4)
+        remaining = damage_budget - len(damage_assignments)
+
+        # Construire le résumé des dégâts par cible
+        damage_summary = {}
+        for enemy_id in damage_assignments:
+            # Trouver le nom de l'ennemi
+            for c in st.session_state.sandbox_v2_combatants:
+                if c['id'] == enemy_id:
+                    name = c['character'].name
+                    damage_summary[name] = damage_summary.get(name, 0) + 1
+                    break
+
+        st.markdown("---")
+        cols = st.columns([3, 1, 1])
+        with cols[0]:
+            if damage_summary:
+                summary_text = ", ".join([f"{name} ({dmg})" for name, dmg in damage_summary.items()])
+            else:
+                summary_text = "Aucune"
+            st.warning(f"⚡ **{ability.name}** - {remaining}/{damage_budget} dégâts restants | Répartition : {summary_text}")
+        with cols[1]:
+            if st.button("⚡ Lancer sort", key="cast_damage_manual", type="primary", disabled=len(damage_assignments) == 0, use_container_width=True):
+                # Convertir les IDs en liste de tuples (enemy, damage_count)
+                # Compter d'abord par ID
+                damage_count_by_id = {}
+                for enemy_id in damage_assignments:
+                    damage_count_by_id[enemy_id] = damage_count_by_id.get(enemy_id, 0) + 1
+
+                # Convertir en liste de tuples (objet, dégâts)
+                damage_list = []
+                for enemy_id, count in damage_count_by_id.items():
+                    for c in st.session_state.sandbox_v2_combatants:
+                        if c['id'] == enemy_id:
+                            damage_list.append((c['character'], count))
+                            break
+
+                # Exécuter le sort avec les cibles et dégâts
+                adapter = st.session_state.sandbox_v2_adapter
+                heroes = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'hero']
+                enemies = [c['character'] for c in st.session_state.sandbox_v2_combatants if c['faction'] == 'enemy']
+
+                context = {
+                    'damage_list': damage_list,  # Liste de tuples [(enemy, damage_count), ...]
+                    'alive_enemies': [e for e in enemies if e.is_alive()],
+                    'all_enemies': enemies,
+                    'heroes': heroes,
+                    'spell_manager': adapter.spell_manager,
+                    'log': st.session_state.sandbox_v2_log,
+                    'player_count': len([h for h in heroes if h.is_alive()])
+                }
+
+                # Consommer et exécuter
+                action = current_actor.use_ability(ability)
+                if action.success:
+                    adapter.ability_effects_manager.apply_ability_effects(current_actor, ability, st.session_state.sandbox_v2_log, context)
+
+                # Reset état
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_damage_targets = []
+                st.session_state.sandbox_v2_damage_budget = 0
+                save_game_state(f"{current_actor.name} utilise {ability.name}")
+                st.rerun()
+        with cols[2]:
+            if st.button("❌ Annuler", key="cancel_damage_manual", use_container_width=True):
+                st.session_state.sandbox_v2_action_state = None
+                st.session_state.sandbox_v2_current_actor = None
+                st.session_state.sandbox_v2_current_ability = None
+                st.session_state.sandbox_v2_damage_targets = []
+                st.session_state.sandbox_v2_damage_budget = 0
+                st.rerun()
 
 def select_combatant_manually(combatant_id: str):
     """

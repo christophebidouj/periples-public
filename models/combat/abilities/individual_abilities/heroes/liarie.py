@@ -39,47 +39,62 @@ class LiarieEclairMagique(BaseAbility):
         self.total_damage = 4
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Lance un éclair magique avec répartition intelligente des dégâts"""
+        """Lance un éclair magique avec répartition des dégâts - CIBLAGE MANUEL"""
         try:
             # Vérifier le coût en sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
-            # Récupérer tous les ennemis vivants
-            enemies = self._get_all_enemies(caster, context)
-            
-            if not enemies:
-                log.append(f"⚡ {caster.name} lance un éclair magique mais il n'y a aucun ennemi !")
+
+            # NOUVEAU - Utiliser la répartition choisie par l'utilisateur si fournie
+            # damage_list = [(enemy, damage_count), ...]
+            damage_list = context.get('damage_list')
+
+            if damage_list and len(damage_list) > 0:
+                # Mode ciblage manuel - appliquer les dégâts assignés par l'utilisateur
+                damage_details = []
+
+                for target, amount in damage_list:
+                    if amount > 0 and self._is_alive(target):
+                        actual_damage = self._apply_damage(target, amount, "magical", log)
+                        if actual_damage > 0:
+                            damage_details.append(f"{target.name} -{actual_damage}")
+
+                log.append(f"⚡ {caster.name} lance un éclair magique !")
+                log.append(f"   ⚡ {', '.join(damage_details)}")
+                log.append(f"   (Sans riposte)")
+
                 return True
-            
-            # Version simple : répartition équitable d'abord
-            remaining_damage = self.total_damage
-            targets_hit = []
-            
-            # Trier ennemis par PV croissants pour prioriser les éliminations
-            enemies_sorted = []
-            for i, enemy in enumerate(enemies):
-                enemies_sorted.append((enemy.current_health, i, enemy))
-            enemies_sorted.sort()  # Tri par (PV, index) évite comparaison d'objets
-            
-            # Appliquer dégâts
-            for health, _, enemy in enemies_sorted:
-                if remaining_damage <= 0:
-                    break
-                    
-                damage_to_apply = min(health, remaining_damage)
-                damage_dealt = self._apply_damage(enemy, damage_to_apply, "magical", log)
-                remaining_damage -= damage_to_apply
-                targets_hit.append(f"{enemy.name} ({damage_to_apply})")
-            
-            # Log descriptif
-            log.append(f"⚡ {caster.name} lance un éclair magique réparti !")
-            log.append(f"   Cibles: {', '.join(targets_hit)}")
-            log.append(f"   (Sans riposte)")
-            
-            return True
-            
+            else:
+                # Fallback: répartition automatique (tous les ennemis vivants)
+                enemies = self._get_all_enemies(caster, context)
+
+                if not enemies:
+                    log.append(f"⚡ {caster.name} lance un éclair magique mais il n'y a aucun ennemi !")
+                    return True
+
+                # Répartition automatique par PV croissants
+                remaining_damage = self.total_damage
+                damage_details = []
+
+                # Trier ennemis par PV croissants pour prioriser les éliminations
+                enemies_sorted = sorted(enemies, key=lambda e: e.current_health if e.current_health else 0)
+
+                for enemy in enemies_sorted:
+                    if remaining_damage <= 0:
+                        break
+
+                    damage_to_apply = min(enemy.current_health, remaining_damage)
+                    actual_damage = self._apply_damage(enemy, damage_to_apply, "magical", log)
+                    remaining_damage -= damage_to_apply
+                    damage_details.append(f"{enemy.name} -{actual_damage}")
+
+                log.append(f"⚡ {caster.name} lance un éclair magique !")
+                log.append(f"   ⚡ {', '.join(damage_details)}")
+                log.append(f"   (Sans riposte)")
+
+                return True
+
         except Exception as e:
             log.append(f"❌ Erreur éclair magique: {str(e)}")
             return False

@@ -60,23 +60,26 @@ class AtucanImpositionDesMains(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
 
-            # 2. Trouver cibles valides (alliés vivants SAUF Atucan lui-même - règle officielle)
-            allies = [hero for hero in self._get_all_allies(caster, context) if hero != caster]
-            if not allies:
-                log.append(f"⚠️ {caster.name} ne trouve personne à soigner (sauf lui-même)")
-                return False
+            # 2. NOUVEAU - Utiliser la cible choisie par l'utilisateur si fournie
+            target = context.get('target_ally')
+
+            if not target:
+                # Fallback: sélection automatique (pour compatibilité mode auto)
+                allies = [hero for hero in self._get_all_allies(caster, context) if hero != caster]
+                if not allies:
+                    log.append(f"⚠️ {caster.name} ne trouve personne à soigner (sauf lui-même)")
+                    return False
+                # Sélectionner allié le plus blessé (% vie restante)
+                target = min(allies, key=lambda ally: (ally.current_health / ally.get_total_health()) if ally.get_total_health() > 0 else float('inf'))
 
             # 3. Soins fixes de 2 PV (règle officielle V3.0)
             healing_amount = 2  # FIXE
 
-            # 4. Sélectionner cible (allié le plus blessé)
-            target = min(allies, key=lambda ally: ally.current_health if ally.current_health is not None else float('inf'))
-
-            # 5. Appliquer soins avec API OFFICIELLE BaseAbility
+            # 4. Appliquer soins avec API OFFICIELLE BaseAbility
             actual_healing = self._apply_healing(target, healing_amount, log)
 
             log.append(f"✨ {caster.name} impose ses mains sur {target.name}")
-            log.append(f"   💖 Soins = 2 PV (fixe)")
+            log.append(f"   💖 Soins = {actual_healing} PV")
 
             return True
 
@@ -340,71 +343,85 @@ class AtucanSoinSuperieur(BaseAbility):
         self.uses_remaining_combat = 1
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Soigne le groupe avec API _apply_healing CORRIGÉE"""
+        """Soigne le groupe avec API _apply_healing - CIBLAGE MANUEL MULTI-CIBLES"""
         try:
             # 1. Consommer coût sorts avec API officielle
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
-            
+
             # 2. Vérifier limitation combat
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Soin supérieur déjà utilisé ce combat")
                 return False
-            
-            # 3. Trouver alliés blessés - API RÉELLE
-            all_heroes = context.get('heroes', [])
-            wounded_heroes = []
-            
-            for hero in all_heroes:
-                if self._is_alive(hero):
-                    # API RÉELLE : current_health vs get_total_health()
-                    if hero.current_health < hero.get_total_health():
-                        wounded_heroes.append(hero)
-            
-            if not wounded_heroes:
-                # Si personne n'est blessé, cibler tout le monde quand même (soin préventif)
-                wounded_heroes = [hero for hero in all_heroes if self._is_alive(hero)]
-            
-            if not wounded_heroes:
-                log.append(f"⚠️ Aucun allié trouvé à soigner")
-                return False
-            
-            # 4. Répartir 8 PV intelligemment avec API officielle CORRIGÉE
+
+            # 3. NOUVEAU - Utiliser les cibles choisies par l'utilisateur si fournies
+            heal_targets = context.get('heal_targets')
+
+            if heal_targets and len(heal_targets) > 0:
+                # Mode ciblage manuel - répartition round-robin par % vie restante
+                selected_targets = [t for t in heal_targets if self._is_alive(t) and t.current_health < t.get_total_health()]
+                if not selected_targets:
+                    log.append(f"⚠️ Aucune cible sélectionnée n'a besoin de soins")
+                    return False
+            else:
+                # Fallback: sélection automatique (pour compatibilité mode auto)
+                all_heroes = context.get('heroes', [])
+                selected_targets = [hero for hero in all_heroes if self._is_alive(hero) and hero.current_health < hero.get_total_health()]
+
+                if not selected_targets:
+                    log.append(f"⚠️ Aucun allié blessé à soigner")
+                    return False
+
+            # 4. Répartition round-robin par % vie restante (plus blessé = % plus bas)
             total_healing = 8
-            healed_count = 0
-            healing_details = []
-            
-            # Trier par plus blessé en premier (moins de PV actuels)
-            wounded_heroes.sort(key=lambda hero: hero.current_health if hero.current_health is not None else 0)
-            
-            # Stratégie: priorité aux plus blessés
+            # Utiliser une liste parallèle au lieu d'un dict (Character non hashable)
+            healing_done = [0] * len(selected_targets)
             remaining_healing = total_healing
-            
-            for hero in wounded_heroes:
-                if remaining_healing <= 0:
-                    break
-                    
-                # Calculer soins optimaux - API RÉELLE
-                missing_health = hero.get_total_health() - hero.current_health
-                wounds_to_heal = min(missing_health, remaining_healing)
-                
-                if wounds_to_heal > 0:
-                    actual_healing = self._apply_healing(hero, wounds_to_heal, log)
+
+            while remaining_healing > 0:
+                # Trouver l'index de la cible la plus blessée qui peut encore recevoir des soins
+                best_idx = -1
+                best_ratio = float('inf')
+
+                for idx, target in enumerate(selected_targets):
+                    max_hp = target.get_total_health()
+                    if max_hp <= 0:
+                        continue
+                    current_with_heals = target.current_health + healing_done[idx]
+                    if current_with_heals < max_hp:
+                        ratio = current_with_heals / max_hp
+                        if ratio < best_ratio:
+                            best_ratio = ratio
+                            best_idx = idx
+
+                if best_idx == -1:
+                    break  # Plus personne à soigner
+
+                # Donner 1 PV au plus blessé
+                healing_done[best_idx] += 1
+                remaining_healing -= 1
+
+            # 5. Appliquer les soins calculés
+            healing_details = []
+            healed_count = 0
+
+            for idx, target in enumerate(selected_targets):
+                amount = healing_done[idx]
+                if amount > 0:
+                    actual_healing = self._apply_healing(target, amount, log)
                     if actual_healing > 0:
-                        healing_details.append(f"{hero.name}: {actual_healing} PV")
+                        healing_details.append(f"{target.name} +{actual_healing}")
                         healed_count += 1
-                        remaining_healing -= actual_healing
-            
-            # 5. Décompter utilisation
+
+            # 6. Décompter utilisation
             self.uses_remaining_combat -= 1
-            
+
             log.append(f"💖 {caster.name} dispense un soin supérieur divin")
-            log.append(f"   🏥 {healed_count} alliés soignés - {', '.join(healing_details)}")
-            log.append(f"   ✨ Total distribué: {total_healing - remaining_healing}/{total_healing} PV")
-            
+            log.append(f"   🏥 {', '.join(healing_details)}")
+
             return True
-            
+
         except Exception as e:
             log.append(f"❌ Erreur Soin supérieur: {e}")
             return False

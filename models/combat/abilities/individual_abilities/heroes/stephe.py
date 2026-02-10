@@ -308,47 +308,74 @@ class StepheSoinMajeur(BaseAbility):
         self.max_healing = 8
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Soigne jusqu'à 8 PV répartis entre alliés blessés"""
+        """Soigne jusqu'à 8 PV répartis - CIBLAGE MANUEL MULTI-CIBLES"""
         try:
             # Consommer coût sorts
             spell_manager = context.get('spell_manager')
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
 
-            # Récupérer alliés blessés
-            allies = self._get_all_allies(caster, context)
-            wounded_allies = [a for a in allies if a.current_health is not None and a.current_health < a.get_total_health()]
+            # NOUVEAU - Utiliser les cibles choisies par l'utilisateur si fournies
+            heal_targets = context.get('heal_targets')
 
-            if not wounded_allies:
-                log.append(f"⚠️ Aucun allié blessé à soigner")
-                return False
+            if heal_targets and len(heal_targets) > 0:
+                # Mode ciblage manuel - répartition round-robin par % vie restante
+                selected_targets = [t for t in heal_targets if self._is_alive(t) and t.current_health < t.get_total_health()]
+                if not selected_targets:
+                    log.append(f"⚠️ Aucune cible sélectionnée n'a besoin de soins")
+                    return False
+            else:
+                # Fallback: sélection automatique (pour compatibilité mode auto)
+                allies = self._get_all_allies(caster, context)
+                selected_targets = [a for a in allies if a.current_health is not None and a.current_health < a.get_total_health()]
 
-            # Trier par PV actuels (plus blessés en premier)
-            wounded_allies.sort(key=lambda a: a.current_health if a.current_health is not None else 0)
+                if not selected_targets:
+                    log.append(f"⚠️ Aucun allié blessé à soigner")
+                    return False
 
-            # Répartir soins (priorité aux plus blessés)
-            remaining_healing = self.max_healing
+            # Répartition round-robin par % vie restante (plus blessé = % plus bas)
+            total_healing = self.max_healing
+            # Utiliser une liste parallèle au lieu d'un dict (Character non hashable)
+            healing_done = [0] * len(selected_targets)
+            remaining_healing = total_healing
+
+            while remaining_healing > 0:
+                # Trouver l'index de la cible la plus blessée qui peut encore recevoir des soins
+                best_idx = -1
+                best_ratio = float('inf')
+
+                for idx, target in enumerate(selected_targets):
+                    max_hp = target.get_total_health()
+                    if max_hp <= 0:
+                        continue
+                    current_with_heals = target.current_health + healing_done[idx]
+                    if current_with_heals < max_hp:
+                        ratio = current_with_heals / max_hp
+                        if ratio < best_ratio:
+                            best_ratio = ratio
+                            best_idx = idx
+
+                if best_idx == -1:
+                    break  # Plus personne à soigner
+
+                # Donner 1 PV au plus blessé
+                healing_done[best_idx] += 1
+                remaining_healing -= 1
+
+            # Appliquer les soins calculés
+            healing_details = []
             healed_count = 0
-            total_healing = 0
 
-            log.append(f"💚 {caster.name} invoque Guérison de groupe ({self.max_healing} PV max)")
+            for idx, target in enumerate(selected_targets):
+                amount = healing_done[idx]
+                if amount > 0:
+                    actual_healing = self._apply_healing(target, amount, log)
+                    if actual_healing > 0:
+                        healing_details.append(f"{target.name} +{actual_healing}")
+                        healed_count += 1
 
-            for ally in wounded_allies:
-                if remaining_healing <= 0:
-                    break
-
-                # Calculer soins nécessaires
-                max_hp = ally.get_total_health()
-                missing_hp = max_hp - ally.current_health
-                heal_amount = min(missing_hp, remaining_healing)
-
-                if heal_amount > 0:
-                    actual_healing = self._apply_healing(ally, heal_amount, log)
-                    remaining_healing -= actual_healing
-                    total_healing += actual_healing
-                    healed_count += 1
-
-            log.append(f"   💖 {healed_count} alliés soignés ({total_healing} PV total)")
+            log.append(f"💚 {caster.name} invoque Guérison de groupe")
+            log.append(f"   💖 {', '.join(healing_details)}")
 
             return True
 

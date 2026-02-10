@@ -170,30 +170,33 @@ class KraorSoinMineur(BaseAbility):
         self.max_healing = 4  # Jusqu'à 4 blessures
     
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Soigne un allié avec API EXISTANTE _apply_healing"""
+        """Soigne un allié avec API EXISTANTE _apply_healing - CIBLAGE MANUEL"""
         try:
             # Pas de coût en sorts (capacité gratuite)
-            
+
             # 1. Vérifier limitation combat
             if self.uses_remaining_combat <= 0:
                 log.append(f"⚠️ Soins Kraor déjà utilisés ce combat")
                 return False
-            
-            # 2. Trouver cibles valides (tous alliés y compris Kraor)
-            all_heroes = context.get('heroes', [])
-            if not all_heroes:
-                log.append(f"⚠️ Aucun allié à soigner")
-                return False
-            
-            # Sélectionner allié le plus blessé
-            wounded_heroes = [hero for hero in all_heroes if self._is_alive(hero) and hero.current_health < hero.get_total_health()]
-            
-            if not wounded_heroes:
-                log.append(f"⚠️ Aucun allié blessé à soigner")
-                return False
-            
-            # Cible = allié avec moins de PV actuels
-            target = min(wounded_heroes, key=lambda hero: hero.current_health if hero.current_health is not None else float('inf'))
+
+            # 2. NOUVEAU - Utiliser la cible choisie par l'utilisateur si fournie
+            target = context.get('target_ally')
+
+            if not target:
+                # Fallback: sélection automatique (pour compatibilité mode auto)
+                all_heroes = context.get('heroes', [])
+                if not all_heroes:
+                    log.append(f"⚠️ Aucun allié à soigner")
+                    return False
+
+                # Sélectionner allié le plus blessé (% vie restante)
+                wounded_heroes = [hero for hero in all_heroes if self._is_alive(hero) and hero.current_health < hero.get_total_health()]
+
+                if not wounded_heroes:
+                    log.append(f"⚠️ Aucun allié blessé à soigner")
+                    return False
+
+                target = min(wounded_heroes, key=lambda hero: (hero.current_health / hero.get_total_health()) if hero.get_total_health() > 0 else float('inf'))
 
             # 3. Calculer soins nécessaires (jusqu'à 4 PV max)
             max_health = target.get_total_health()
@@ -202,25 +205,24 @@ class KraorSoinMineur(BaseAbility):
                 target_current = 0
             missing_health = max_health - target_current
             healing_amount = min(self.max_healing, missing_health)
-            
+
             if healing_amount <= 0:
                 log.append(f"⚠️ {target.name} n'a pas besoin de soins")
                 return False
-            
+
             # 4. Appliquer soins avec API EXISTANTE BaseAbility _apply_healing
             actual_healing = self._apply_healing(target, healing_amount, log)
-            
+
             # 5. Décompter utilisation
             self.uses_remaining_combat -= 1
-            
-            log.append(f"🏹 {caster.name} utilise ses compétences de survie pour soigner {target.name}")
-            log.append(f"   💚 Soins prodigués: {actual_healing} PV (max {self.max_healing})")
-            log.append(f"   🎯 Technique de chasseur appliquée")
-            
+
+            log.append(f"🏹 {caster.name} soigne {target.name}")
+            log.append(f"   💚 +{actual_healing} PV")
+
             return True
-            
+
         except Exception as e:
-            log.append(f"❌ Erreur Flèche explosive/Soins: {e}")
+            log.append(f"❌ Erreur Soin mineur: {e}")
             return False
     
     def get_preview(self) -> str:
