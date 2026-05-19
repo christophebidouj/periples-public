@@ -1,1 +1,1 @@
- $ conda activate rpg-simulator
+ $ conda activate rpg-simulator 
