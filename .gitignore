@@ -26,5 +26,7 @@ __pycache__/
 # Ignorer les configurations locales Claude
 .claude/
 tmpclaude-*-cwd
-# Ignorer le fichier de review
+# Ignorer les fichiers de review et de révisions
 dette_technique_periples.md
+fiche_revisions_periples.md
+Review_Plan.md
