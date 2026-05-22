@@ -731,12 +731,7 @@ def configure_combat():
         criticals_enabled = st.session_state.get('criticals_setting', True)
 
         # Architecture existante
-        rules = GameRules(
-            ranged_attacks=True,
-            magical_damage=True,
-            criticals=criticals_enabled,  # Lecture dynamique depuis checkbox Onglet 1
-            abilities_enabled=True
-        )
+        rules = GameRules(criticals=criticals_enabled)
 
         spell_manager = SpellManager()
         combat_actions = CombatActions(spell_manager, rules)

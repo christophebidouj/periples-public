@@ -14,7 +14,6 @@ import random
 from typing import List, Dict
 from models.character import Character, Enemy
 from models.combat.combat_engine import CombatEngine
-from models.rules_engine import GameRules
 from utils.data_loader import DataLoader, cleanup_removed_heroes_from_session
 from ui.styling import apply_fantasy_theme, get_combat_button_styles, get_waiting_combat_style
 from ui.components import *
