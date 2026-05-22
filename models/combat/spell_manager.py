@@ -12,7 +12,7 @@ class SpellManager:
         self.combatant_magic_abilities_this_turn = {}  # {combatant_id: count}
     
     def get_combatant_id(self, combatant) -> str:
-        """Génère un ID unique pour le combattant"""
+        """Retourne l'identifiant du combattant (code héros, ou owner_code + '_pet' pour les pets)"""
         if hasattr(combatant, 'owner_code'):  # Pet
             return f"{combatant.owner_code}_pet"
         return combatant.code
