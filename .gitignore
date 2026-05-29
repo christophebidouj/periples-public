@@ -28,5 +28,5 @@ __pycache__/
 tmpclaude-*-cwd
 # Ignorer les fichiers de review et de révisions
 dette_technique_periples.md
-fiche_revisions_periples.md
+technical_notes.md
 Review_Plan.md
