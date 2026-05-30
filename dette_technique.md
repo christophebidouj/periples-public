@@ -281,6 +281,23 @@ L'IA a optimisé pour la lisibilité immédiate du code au détriment de la robu
 
 ---
 
+### DT-015 — `safe_randint` mal placée et import mort
+
+| Champ | Détail |
+|---|---|
+| **Fichier** | `utils/data_loader.py` · `models/combat/combat_logger.py` |
+| **Méthode** | `safe_randint()` |
+| **Sévérité** | 🟡 Mineur |
+| **Type** | Architecture / Lisibilité |
+
+**Description :**
+`safe_randint` est une fonction utilitaire de calcul définie dans `data_loader.py` — une couche de chargement de données. Elle est importée dans `combat_logger.py` (ligne 162) mais n'est jamais appelée dans la fonction qui l'importe.
+
+**Problème :**
+Double problème : mauvais emplacement (une fonction de calcul dans la couche données) et import mort dans `combat_logger.py`. La fonction aurait sa place dans un module utilitaire dédié dans `models/` ou `utils/`.
+
+---
+
 ## Suivi
 
 | ID | Fichier | Sévérité | Statut |
@@ -299,7 +316,8 @@ L'IA a optimisé pour la lisibilité immédiate du code au détriment de la robu
 | DT-012 | `character.py` | 🟡 Mineur | ✅ Confirmé |
 | DT-013 | `sandbox_interface_v2.py` | 🟠 Significatif | ✅ Confirmé |
 | DT-014 | `persistent_effects.py` | 🟠 Significatif | ✅ Confirmé |
+| DT-015 | `data_loader.py` · `combat_logger.py` | 🟡 Mineur | ✅ Confirmé |
 
 ---
 
-*Dernière mise à jour : session review 4 H15 — 2026-05-30*
+*Dernière mise à jour : session review 5 H16 — 2026-05-30*
