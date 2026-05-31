@@ -298,6 +298,25 @@ Double problème : mauvais emplacement (une fonction de calcul dans la couche do
 
 ---
 
+### DT-016 — Champs `effects` et `target_type` peuplés par heuristiques, jamais consommés en combat
+
+| Champ | Détail |
+|---|---|
+| **Fichier** | `utils/abilities_loader.py` |
+| **Méthode** | `_create_simple_effects()` · `_guess_target_type()` |
+| **Sévérité** | 🟡 Mineur |
+| **Type** | Architecture / Lisibilité |
+
+**Description :**
+`_create_simple_effects` détecte des mots-clés dans la description ("soin", "dégât"...) pour créer des `AbilityEffect`. `_guess_target_type` fait de même pour déterminer le `TargetType`. Ces deux champs sont peuplés sur chaque objet `Ability` au chargement.
+
+**Problème :**
+Le moteur de combat (`AbilityEffectsManager`) appelle `BaseAbility.execute()` — il ignore complètement `Ability.effects` et `Ability.target_type`. Ces champs ne sont lus qu'à un seul endroit hors du loader : `enemy_editor.py:211` pour un affichage UI. Jamais pour du calcul.
+
+L'IA a "complété" l'objet `Ability` de façon exhaustive par réflexe, sans vérifier si ces champs étaient réellement consommés. Les heuristiques produisent des résultats approximatifs pour des données inutilisées.
+
+---
+
 ## Suivi
 
 | ID | Fichier | Sévérité | Statut |
@@ -317,7 +336,8 @@ Double problème : mauvais emplacement (une fonction de calcul dans la couche do
 | DT-013 | `sandbox_interface_v2.py` | 🟠 Significatif | ✅ Confirmé |
 | DT-014 | `persistent_effects.py` | 🟠 Significatif | ✅ Confirmé |
 | DT-015 | `data_loader.py` · `combat_logger.py` | 🟡 Mineur | ✅ Confirmé |
+| DT-016 | `abilities_loader.py` | 🟡 Mineur | ✅ Confirmé |
 
 ---
 
-*Dernière mise à jour : session review 5 H16 — 2026-05-30*
+*Dernière mise à jour : session review 5 H17 — 2026-05-31*
