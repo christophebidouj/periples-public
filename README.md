@@ -1,6 +1,6 @@
 # Périples Balance Workshop
 
-**Outil professionnel d'équilibrage pour le jeu de société "Périples"**
+**Outil d'équilibrage pour le jeu de société "Périples"**
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.47+-FF4B4B.svg)](https://streamlit.io)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org)
@@ -147,9 +147,9 @@ pydantic==2.11.7       # Validation des modèles de données
 
 Implémentation fidèle des règles V3.0 (page 26 du livre de règles).
 
-**Fonctionnement :** Chaque héros/ennemi commence avec **N jetons** (N = nombre de personnages dans le camp adverse). Lors d'une attaque réussie, la cible peut dépenser 1 jeton pour annuler les dégâts. Au début du tour d'un personnage, ses jetons sont réinitialisés au maximum.
+**Fonctionnement :** Chaque combattant dispose d'un nombre fixe de jetons de parade. Pour les héros, ce nombre est égal au **bonus de défense de leurs équipements**. Pour les ennemis, il est défini dans le **CSV des ennemis** (stat `Defense_Xj`, scalée selon le nombre de joueurs). Lors d'une attaque physique réussie, les jetons disponibles absorbent automatiquement les dégâts **point par point** — chaque jeton bloque 1 point de dégât. Au début de son tour, le combattant recharge ses jetons au maximum. Les dégâts magiques ignorent complètement la parade (`ignore_parade=True`).
 
-**Impact stratégique :** Les héros en infériorité numérique ont plus de jetons (meilleure défense), les ennemis nombreux ont moins de jetons (plus vulnérables individuellement). Encourage la coordination des attaques pour épuiser les jetons.
+**Exemple :** Un héros avec 3 jetons subit 5 dégâts physiques → 3 dégâts bloqués, 2 dégâts aux PV, 0 jeton restant jusqu'au prochain tour.
 
 ### Objets magiques (O-1 à O-4)
 
@@ -162,17 +162,16 @@ Les 4 objets magiques permettent de tester des mécaniques avancées avec effets
 | **O-3** | Kraor | Médaillon d'appel – Invoque un Pet (Précision 4, Dégâts magiques 4, Santé 15) |
 | **O-4** | Stèphe | Lyre phœnix – +4 sorts maximum + toutes les attaques en dégâts magiques |
 
-### Métriques d'équilibrage
+### Récapitulatif de combat
 
-**Combat équilibré en difficulté Normal :**
-- Taux de victoire : **60-75%** | Durée : **4-8 rounds** | Survivants : **2-3 sur 3** héros
-- Consommation de ressources : **50-80%** (sorts + potions)
+À la fin de chaque combat, l'application génère automatiquement un bilan complet :
 
-**Signaux de déséquilibre :**
-- ⚠️ Victoire en <3 rounds → Ennemi trop faible
-- ⚠️ Défaite avec 0 survivant → Ennemi trop fort
-- ⚠️ Aucune ressource consommée → Héros sur-équipés
-- ⚠️ Héros bloqués (ne peuvent pas attaquer) → Capacités ennemies trop puissantes
+- **Courbe d'évolution des PV** – suivi des points de vie de tous les combattants, tour par tour
+- **Dégâts infligés par héros** – histogramme comparatif pour identifier les contributions déséquilibrées
+- **Dégâts encaissés par héros** – PV perdus + dégâts absorbés par parade, pour identifier qui a tanké
+- **Tableau héros** – DPT (dégâts par tour), précision, contribution % à l'équipe, tank %
+- **Tableau ennemis** – DPT, Danger Rating (rapport dégâts infligés / dégâts reçus × durée)
+- **Détection de déséquilibres** – alertes automatiques sur les anomalies (héros mort en victoire, ennemi trop résistant, etc.)
 
 ---
 
@@ -320,6 +319,6 @@ Le contenu du jeu (règles, personnages, équipements, illustrations) est la pro
 <div align="center">
 
 **Périples Balance Workshop**
-*Dernière mise à jour : Janvier 2026*
+*Dernière mise à jour : Juin 2026*
 
 </div>
