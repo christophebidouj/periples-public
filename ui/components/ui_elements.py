@@ -17,14 +17,14 @@ if TYPE_CHECKING:
 def get_hero_icon(hero_name: str) -> str:
     """Retourne l'icône correspondant au héros"""
     icon_mapping = {
-        "Elneha": "🐻",
-        "Liarie": "🔮", 
-        "Atucan": "🛡️",
-        "Kraor": "🏹",
-        "Thordius": "⚔️",
-        "Stephe": "🎵",  # Stephe le Barde - SANS ACCENT
-        "Lame": "🗡️",
-        "Raishi": "👊"
+        "Druide": "🐻",
+        "Mage": "🔮", 
+        "Paladin": "🛡️",
+        "Chasseur": "🏹",
+        "Barbare": "⚔️",
+        "Barde": "🎵",  # Barde le Barde - SANS ACCENT
+        "Roublard": "🗡️",
+        "Pugiliste": "👊"
     }
     return icon_mapping.get(hero_name, "⚔️")
 
@@ -72,13 +72,13 @@ def get_hero_image_path(hero_name: str, current_form: Optional[str] = None) -> O
 
     Args:
         hero_name: Nom du héros
-        current_form: Forme actuelle (pour Elneha uniquement) : "bear", "wolf", "human"
+        current_form: Forme actuelle (pour Druide uniquement) : "bear", "wolf", "human"
 
     Returns:
         Chemin vers l'image appropriée (chemin absolu pour portabilité)
     """
-    # CAS SPÉCIAL ELNEHA : Images selon forme de transformation
-    if hero_name == "Elneha" and current_form:
+    # CAS SPÉCIAL DRUIDE : Images selon forme de transformation
+    if hero_name == "Druide" and current_form:
         if current_form == "bear":
             return get_image_path("Ours.jpg")
         elif current_form == "wolf":
@@ -87,14 +87,14 @@ def get_hero_image_path(hero_name: str, current_form: Optional[str] = None) -> O
 
     # Mapping direct vers les fichiers JPG - SANS ACCENT pour éviter les erreurs
     image_mapping = {
-        "Elneha": get_image_path("Elneha_-_Druidesse.jpg"),
-        "Liarie": get_image_path("Liarie_-_Mage.jpg"),
-        "Atucan": get_image_path("Atucan_-_Paladin.jpg"),
-        "Kraor": get_image_path("Kraor_-_Rodeur.jpg"),
-        "Thordius": get_image_path("Thordius_-_Barbare.jpg"),
-        "Stephe": get_image_path("Stephe_-_Barde.jpg"),  # SANS ACCENT - Mapping direct
-        "Lame": get_image_path("Lame_-_Roublarde.jpg"),
-        "Raishi": get_image_path("Raishi_-_Pugiliste.jpg")
+        "Druide": get_image_path("Druide_-_Druidesse.jpg"),
+        "Mage": get_image_path("Mage_-_Mage.jpg"),
+        "Paladin": get_image_path("Paladin_-_Paladin.jpg"),
+        "Chasseur": get_image_path("Chasseur_-_Rodeur.jpg"),
+        "Barbare": get_image_path("Barbare_-_Barbare.jpg"),
+        "Barde": get_image_path("Barde_-_Barde.jpg"),  # SANS ACCENT - Mapping direct
+        "Roublard": get_image_path("Roublard_-_Roublarde.jpg"),
+        "Pugiliste": get_image_path("Pugiliste_-_Pugiliste.jpg")
     }
 
     return image_mapping.get(hero_name)

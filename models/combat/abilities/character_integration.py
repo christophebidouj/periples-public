@@ -44,7 +44,7 @@ class CharacterAbilitiesIntegration:
         if not hasattr(character, 'status_effects'):
             character.status_effects = {}
         
-        # Marques appliquées (pour systèmes comme Kraor)
+        # Marques appliquées (pour systèmes comme Chasseur)
         if not hasattr(character, 'marks'):
             character.marks = {}
     
@@ -84,7 +84,7 @@ class CharacterAbilitiesIntegration:
         if hasattr(character, 'temporary_buffs'):
             temp_bonus = character.temporary_buffs.get('damage_bonus_next_attack', 0)
         
-        # Marques sur les ennemis (pour Kraor)
+        # Marques sur les ennemis (pour Chasseur)
         mark_bonus = CharacterAbilitiesIntegration._get_mark_damage_bonus(character)
         
         return base_damage + persistent_bonus + temp_bonus + mark_bonus
@@ -123,7 +123,7 @@ class CharacterAbilitiesIntegration:
         character.reset_turn_state()
         character.magic_abilities_used_this_turn = 0
 
-        # NOUVEAU - Reset compteur de relances pour Sens de la justice (Atucan P-3-2 passif)
+        # NOUVEAU - Reset compteur de relances pour Sens de la justice (Paladin P-3-2 passif)
         if hasattr(character, 'temporary_buffs') and 'sens_de_la_justice_active' in character.temporary_buffs:
             character.temporary_buffs['sens_de_la_justice_active']['rerolls_used_this_turn'] = 0
 
@@ -192,31 +192,31 @@ class CharacterAbilitiesIntegration:
         if not hasattr(character, 'temporary_buffs'):
             return modifiers
 
-        # NOUVEAU - Lame Attaque furtive (P-7-1) : Auto-hit + ×2 dégâts one-time
+        # NOUVEAU - Roublard Attaque furtive (P-7-1) : Auto-hit + ×2 dégâts one-time
         if character.temporary_buffs.get('attaque_furtive_next_attack', {}).get('damage_multiplier', 1.0) > 1.0:
             furtive_buff = character.temporary_buffs['attaque_furtive_next_attack']
             modifiers['damage_multiplier'] = furtive_buff['damage_multiplier']
 
-        # NOUVEAU - Lame Assaut furieux (P-7-6) : Auto-hit + ×2 dégâts permanent
+        # NOUVEAU - Roublard Assaut furieux (P-7-6) : Auto-hit + ×2 dégâts permanent
         elif character.temporary_buffs.get('assaut_furieux_permanent', {}).get('damage_multiplier', 1.0) > 1.0:
             assaut_buff = character.temporary_buffs['assaut_furieux_permanent']
             modifiers['damage_multiplier'] = assaut_buff['damage_multiplier']
 
-        # Double dégâts (legacy - Elneha Forme de loup)
+        # Double dégâts (legacy - Druide Forme de loup)
         elif character.temporary_buffs.get('double_next_attack', False):
             modifiers['damage_multiplier'] = 2.0
 
-        # NOUVEAU - Raishi Méditation : Dégâts ×1.5 (si pas déjà un autre multiplicateur)
+        # NOUVEAU - Pugiliste Méditation : Dégâts ×1.5 (si pas déjà un autre multiplicateur)
         if modifiers['damage_multiplier'] == 1.0 and 'meditation_damage_boost' in character.temporary_buffs:
             meditation_data = character.temporary_buffs['meditation_damage_boost']
             if isinstance(meditation_data, dict):
                 modifiers['damage_multiplier'] = meditation_data.get('damage_multiplier', 1.5)
 
-        # Bonus de dégâts (legacy + Thordius Frappe puissante)
+        # Bonus de dégâts (legacy + Barbare Frappe puissante)
         if 'damage_bonus_next_attack' in character.temporary_buffs:
             modifiers['damage_bonus'] = character.temporary_buffs['damage_bonus_next_attack']
 
-        # NOUVEAU - Raishi Art martial : Ignore parade ennemis
+        # NOUVEAU - Pugiliste Art martial : Ignore parade ennemis
         if 'ignore_parade' in character.temporary_buffs:
             modifiers['ignore_parade'] = True
 
@@ -312,7 +312,7 @@ class CharacterAbilitiesIntegration:
         Args:
             target: Cible à étourdir (Enemy ou Character)
             duration: Durée du stun en tours
-            source: Source du stun (ex: 'elneha_eclair', 'raishi_combo')
+            source: Source du stun (ex: 'druide_eclair', 'pugiliste_combo')
             log: Liste de logs pour messages
 
         Returns:

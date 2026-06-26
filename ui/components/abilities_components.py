@@ -79,7 +79,7 @@ def display_hero_abilities_detailed(hero: Character, key_suffix: str = "") -> No
     </div>
     """, unsafe_allow_html=True)
 
-    # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+    # FIX BUG DRUIDE - En forme animale, utiliser stats brutes (sans équipements)
     is_animal_form = (hero.code == "P-1" and
                       hasattr(hero, 'current_form') and
                       hero.current_form in ["bear", "wolf"])
@@ -344,7 +344,7 @@ def display_combat_abilities_panel(heroes: List[Character]) -> Dict[str, Any]:
         
         st.markdown(f"#### 🧙‍♂️ {hero.name}")
 
-        # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+        # FIX BUG DRUIDE - En forme animale, utiliser stats brutes (sans équipements)
         is_animal_form = (hero.code == "P-1" and
                           hasattr(hero, 'current_form') and
                           hero.current_form in ["bear", "wolf"])
@@ -435,7 +435,7 @@ def display_abilities_status_sidebar(heroes: List[Character]) -> None:
             if not hasattr(hero, 'abilities') or not hero.abilities:
                 continue
 
-            # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+            # FIX BUG DRUIDE - En forme animale, utiliser stats brutes (sans équipements)
             is_animal_form = (hero.code == "P-1" and
                               hasattr(hero, 'current_form') and
                               hero.current_form in ["bear", "wolf"])
@@ -590,7 +590,7 @@ def get_abilities_summary_for_ui(heroes: List[Character]) -> Dict[str, Any]:
     
     for hero in heroes:
         if hasattr(hero, 'abilities') and hero.abilities:
-            # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+            # FIX BUG DRUIDE - En forme animale, utiliser stats brutes (sans équipements)
             is_animal_form = (hero.code == "P-1" and
                               hasattr(hero, 'current_form') and
                               hero.current_form in ["bear", "wolf"])

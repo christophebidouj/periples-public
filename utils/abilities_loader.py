@@ -126,7 +126,7 @@ class AbilitiesLoader:
         if len(row) < 4:
             return None
 
-        # Colonne 0: Extraction héros + numéro (ex: "Atucan 1")
+        # Colonne 0: Extraction héros + numéro (ex: "Paladin 1")
         name_and_number = str(row.iloc[0]).strip()
         if not name_and_number or name_and_number.lower() in ['niveau', 'nom', 'nan']:
             return None
@@ -174,17 +174,19 @@ class AbilitiesLoader:
     
     def _parse_hero_info(self, name_and_number: str) -> tuple[str, int]:
         """
-        Parse "Elneha 1" → ("P-1", 1)
+        Parse "Druide 1" → ("P-1", 1)
         FONCTION SIMPLE - Mapping de base
         """
         import re
         
         text = name_and_number.lower().strip()
         
-        # Mapping simple
+        # Mapping simple — nouveaux noms (version publique) + anciens noms (Sorts.xlsx pas encore mis à jour)
         heroes = {
+            'druide': 'P-1', 'mage': 'P-2', 'paladin': 'P-3', 'chasseur': 'P-4',
+            'barbare': 'P-5', 'barde': 'P-6', 'roublard': 'P-7', 'pugiliste': 'P-8',
             'elneha': 'P-1', 'liarie': 'P-2', 'atucan': 'P-3', 'kraor': 'P-4',
-            'thordius': 'P-5', 'stephe': 'P-6', 'stèphe': 'P-6', 'lame': 'P-7', 'raishi': 'P-8'
+            'thordius': 'P-5', 'stephe': 'P-6', 'stèphe': 'P-6', 'lame': 'P-7', 'raishi': 'P-8',
         }
         
         # Cas spéciaux formes
@@ -313,7 +315,7 @@ class AbilitiesLoader:
         print("🔄 Utilisation capacités de test...")
         
         test_abilities = {
-            'P-1': [  # Elneha
+            'P-1': [  # Druide
                 Ability(
                     hero_code='P-1', ability_number=1, name='Forme d\'Ours', spell_cost=1,
                     description='Se métamorphose en Ours pour plus de défense',
@@ -327,7 +329,7 @@ class AbilitiesLoader:
                     target_type=TargetType.ALLY, is_unlocked=False
                 )
             ],
-            'P-3': [  # Atucan
+            'P-3': [  # Paladin
                 Ability(
                     hero_code='P-3', ability_number=1, name='Soin Proportionnel', spell_cost=1,
                     description='Soigne la moitié des PV max du personnage', uses_per_combat=1,

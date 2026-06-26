@@ -239,7 +239,7 @@ class DataLoader:
         abilities = [deepcopy(ability) for ability in original_abilities]
 
         # NOUVEAU - Ajouter capacités exclusives depuis ability_registry
-        # Pour Elneha (P-1): capacités 101 et 102 (formes animales)
+        # Pour Druide (P-1): capacités 101 et 102 (formes animales)
         try:
             from models.combat.abilities.individual_abilities.ability_registry import ABILITY_REGISTRY
 
@@ -379,7 +379,7 @@ class DataLoader:
     
     def _add_abilities_to_hero(self, hero: Character):
         """Ajoute les capacités à un héros (filtre capacités hors-combat)"""
-        # CORRIGÉ: Utiliser get_hero_abilities() qui inclut les capacités exclusives (101, 102 pour Elneha)
+        # CORRIGÉ: Utiliser get_hero_abilities() qui inclut les capacités exclusives (101, 102 pour Druide)
         hero_abilities = self.get_hero_abilities(hero.code)
         if hero_abilities and hasattr(hero, 'add_abilities'):
             # FILTRER les capacités "Pas utile en combat"
@@ -536,14 +536,14 @@ class DataLoader:
         """Retourne l'équipement standard pour un héros - VERSION 8 HÉROS"""
         # Équipements par défaut pour chaque héros (P-9 à P-12 SUPPRIMÉS)
         standard_equipment = {
-            'P-1': ['E-1', 'E-7', 'E-13'],   # Elneha
-            'P-2': ['E-2', 'E-8', 'E-14'],   # Liarie
-            'P-3': ['E-3', 'E-9', 'E-15'],   # Atucan
-            'P-4': ['E-4', 'E-10', 'E-16'],  # Kraor
-            'P-5': ['E-5', 'E-11', 'E-17'],  # Thordius
-            'P-6': ['E-6', 'E-12', 'E-18'],  # Stephe
-            'P-7': ['E-1', 'E-7', 'E-13'],   # Lame
-            'P-8': ['E-2', 'E-8', 'E-14']    # Raishi
+            'P-1': ['E-1', 'E-7', 'E-13'],   # Druide
+            'P-2': ['E-2', 'E-8', 'E-14'],   # Mage
+            'P-3': ['E-3', 'E-9', 'E-15'],   # Paladin
+            'P-4': ['E-4', 'E-10', 'E-16'],  # Chasseur
+            'P-5': ['E-5', 'E-11', 'E-17'],  # Barbare
+            'P-6': ['E-6', 'E-12', 'E-18'],  # Barde
+            'P-7': ['E-1', 'E-7', 'E-13'],   # Roublard
+            'P-8': ['E-2', 'E-8', 'E-14']    # Pugiliste
         }
         
         codes = standard_equipment.get(hero_code, [])
@@ -622,7 +622,7 @@ class DataLoader:
         # Héros par défaut (8 héros uniquement)
         heroes_data = {
             'Code': ['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7', 'P-8'],
-            'Nom': ['Elneha', 'Liarie', 'Atucan', 'Kraor', 'Thordius', 'Stephe', 'Lame', 'Raishi'],
+            'Nom': ['Druide', 'Mage', 'Paladin', 'Chasseur', 'Barbare', 'Barde', 'Roublard', 'Pugiliste'],
             'Precision': [6, 0, 3, 5, 3, 4, 7, 8],
             'Damage': [2, 0, 2, 3, 3, 1, 4, 3],
             'Spells': [3, 10, 2, 1, 0, 4, 0, 0],
@@ -662,14 +662,14 @@ class DataLoader:
     def _create_default_heroes(self) -> List[Character]:
         """Crée des héros par défaut en cas d'erreur - VERSION 8 HÉROS"""
         heroes_data = [
-            {'code': 'P-1', 'name': 'Elneha', 'precision': 6, 'damage': 2, 'spells': 3, 'health': 5},
-            {'code': 'P-2', 'name': 'Liarie', 'precision': 0, 'damage': 0, 'spells': 10, 'health': 6},
-            {'code': 'P-3', 'name': 'Atucan', 'precision': 3, 'damage': 2, 'spells': 2, 'health': 9},
-            {'code': 'P-4', 'name': 'Kraor', 'precision': 5, 'damage': 3, 'spells': 1, 'health': 7},
-            {'code': 'P-5', 'name': 'Thordius', 'precision': 3, 'damage': 3, 'spells': 0, 'health': 10},
-            {'code': 'P-6', 'name': 'Stephe', 'precision': 4, 'damage': 1, 'spells': 4, 'health': 4},
-            {'code': 'P-7', 'name': 'Lame', 'precision': 7, 'damage': 4, 'spells': 0, 'health': 6},
-            {'code': 'P-8', 'name': 'Raishi', 'precision': 8, 'damage': 3, 'spells': 0, 'health': 5}
+            {'code': 'P-1', 'name': 'Druide', 'precision': 6, 'damage': 2, 'spells': 3, 'health': 5},
+            {'code': 'P-2', 'name': 'Mage', 'precision': 0, 'damage': 0, 'spells': 10, 'health': 6},
+            {'code': 'P-3', 'name': 'Paladin', 'precision': 3, 'damage': 2, 'spells': 2, 'health': 9},
+            {'code': 'P-4', 'name': 'Chasseur', 'precision': 5, 'damage': 3, 'spells': 1, 'health': 7},
+            {'code': 'P-5', 'name': 'Barbare', 'precision': 3, 'damage': 3, 'spells': 0, 'health': 10},
+            {'code': 'P-6', 'name': 'Barde', 'precision': 4, 'damage': 1, 'spells': 4, 'health': 4},
+            {'code': 'P-7', 'name': 'Roublard', 'precision': 7, 'damage': 4, 'spells': 0, 'health': 6},
+            {'code': 'P-8', 'name': 'Pugiliste', 'precision': 8, 'damage': 3, 'spells': 0, 'health': 5}
         ]
         
         heroes = []

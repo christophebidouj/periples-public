@@ -1,7 +1,7 @@
-# lame.py - Capacités individuelles de Lame (P-7) - Assassin
+# roublard.py - Capacités individuelles de Roublard (P-7) - Assassin
 """
-Capacités individuelles pour le héros Lame (P-7)
-Lame est un assassin spécialisé dans les dégâts burst, l'esquive et la furtivité.
+Capacités individuelles pour le héros Roublard (P-7)
+Roublard est un assassin spécialisé dans les dégâts burst, l'esquive et la furtivité.
 Ses capacités se concentrent sur les dégâts massifs et la survie par l'esquive.
 
 ✅ DONNÉES OFFICIELLES V3.0:
@@ -20,11 +20,11 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 
 # ========================================
-# CAPACITÉS LAME (P-7) - ASSASSIN
+# CAPACITÉS ROUBLARD (P-7) - ASSASSIN
 # ========================================
 
 @register_ability
-class LameAttaqueFurtive(BaseAbility):
+class RoublardAttaqueFurtive(BaseAbility):
     """P-7-1: Attaque furtive - Esquive totale ce tour + double dégâts tour suivant"""
 
     hero_code = "P-7"
@@ -40,11 +40,11 @@ class LameAttaqueFurtive(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active furtivité - empêche attaque ce tour, esquive totale, double dégâts tour suivant"""
         try:
-            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Roublard
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+            if caster.temporary_buffs.get('roublard_ability_used_this_turn', False):
                 log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
                 return False
 
@@ -58,11 +58,11 @@ class LameAttaqueFurtive(BaseAbility):
 
             caster.status_effects['invisible'] = {
                 'type': 'untargetable',
-                'expires_on_damage_dealt': True,  # Se termine si Lame inflige des dégâts
+                'expires_on_damage_dealt': True,  # Se termine si Roublard inflige des dégâts
                 'expires_end_of_turn': False,      # Ne se termine PAS à la fin du tour
                 'duration_turns': 2,               # Dure 2 tours (tour actuel + prochain tour)
                 'turns_remaining': 2,              # Compteur de tours restants
-                'source': 'lame_furtivite'
+                'source': 'roublard_furtivite'
             }
 
             # 3. Attaque furtive au prochain tour : auto-hit + double dégâts
@@ -71,11 +71,11 @@ class LameAttaqueFurtive(BaseAbility):
                 'auto_hit': True,           # Pas de jet de dé - réussit automatiquement
                 'damage_multiplier': 2,      # Double dégâts
                 'expires_on_attack': True,   # Se consomme après l'attaque
-                'source': 'lame_furtivite'
+                'source': 'roublard_furtivite'
             }
 
             # Marquer capacité utilisée ce tour
-            caster.temporary_buffs['lame_ability_used_this_turn'] = True
+            caster.temporary_buffs['roublard_ability_used_this_turn'] = True
 
             log.append(f"🌑 {caster.name} se faufile dans l'ombre...")
             log.append(f"   👻 INVISIBLE pendant 2 tours - Les ennemis ne peuvent pas le cibler")
@@ -97,7 +97,7 @@ class LameAttaqueFurtive(BaseAbility):
 
 
 @register_ability
-class LameDerobade(BaseAbility):
+class RoublardDerobade(BaseAbility):
     """P-7-2: Dérobade - Esquive/ignore dégâts prochaine attaque adverse"""
 
     hero_code = "P-7"
@@ -114,11 +114,11 @@ class LameDerobade(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active esquive - prochaine attaque subie est annulée"""
         try:
-            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Roublard
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+            if caster.temporary_buffs.get('roublard_ability_used_this_turn', False):
                 log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
                 return False
 
@@ -127,14 +127,14 @@ class LameDerobade(BaseAbility):
                 log.append(f"⚠️ Attaque sournoise déjà utilisée ({self.uses_per_combat} fois)")
                 return False
 
-            caster.temporary_buffs['lame_dodge_ready'] = {
+            caster.temporary_buffs['roublard_dodge_ready'] = {
                 'type': 'damage_negation',
                 'charges': 1,  # Annule 1 attaque
                 'source': 'attaque_sournoise'
             }
 
             # Marquer capacité utilisée ce tour
-            caster.temporary_buffs['lame_ability_used_this_turn'] = True
+            caster.temporary_buffs['roublard_ability_used_this_turn'] = True
 
             log.append(f"💨 {caster.name} prépare une esquive sournoise !")
             log.append(f"   🛡️ Prochaine attaque subie sera ignorée")
@@ -160,7 +160,7 @@ class LameDerobade(BaseAbility):
 
 
 @register_ability
-class LameBombeFumigene(BaseAbility):
+class RoublardBombeFumigene(BaseAbility):
     """P-7-4: Bombe fumigène - Tous ennemis paralysés 2 tours"""
 
     hero_code = "P-7"
@@ -178,11 +178,11 @@ class LameBombeFumigene(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Paralyse tous les ennemis pour 2 tours (AoE stun)"""
         try:
-            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Roublard
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+            if caster.temporary_buffs.get('roublard_ability_used_this_turn', False):
                 log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
                 return False
 
@@ -201,12 +201,12 @@ class LameBombeFumigene(BaseAbility):
             for enemy in enemies:
                 # Effet stun (AVEC vérification immunité)
                 if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    enemy, duration=self.stun_duration, source='lame_paralysie', log=log
+                    enemy, duration=self.stun_duration, source='roublard_paralysie', log=log
                 ):
                     paralyzed_count += 1
 
             # Marquer capacité utilisée ce tour
-            caster.temporary_buffs['lame_ability_used_this_turn'] = True
+            caster.temporary_buffs['roublard_ability_used_this_turn'] = True
 
             log.append(f"🕷️ {caster.name} empoisonne TOUS les ennemis !")
             log.append(f"   😵 {paralyzed_count} ennemis paralysés pour {self.stun_duration} tours")
@@ -228,7 +228,7 @@ class LameBombeFumigene(BaseAbility):
 
 
 @register_ability
-class LameAttaqueTournoyante(BaseAbility):
+class RoublardAttaqueTournoyante(BaseAbility):
     """P-7-5: Attaque tournoyante - Dégâts attaque sur tous les ennemis"""
 
     hero_code = "P-7"
@@ -245,11 +245,11 @@ class LameAttaqueTournoyante(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Attaque tournoyante - Touche automatiquement TOUS les ennemis vivants à 100%"""
         try:
-            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Lame
+            # NOUVEAU - Vérifier limitation 1 capacité par tour pour Roublard
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+            if caster.temporary_buffs.get('roublard_ability_used_this_turn', False):
                 log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
                 return False
 
@@ -296,7 +296,7 @@ class LameAttaqueTournoyante(BaseAbility):
             caster.attack_done_this_turn = True
 
             # Marquer capacité utilisée ce tour
-            caster.temporary_buffs['lame_ability_used_this_turn'] = True
+            caster.temporary_buffs['roublard_ability_used_this_turn'] = True
 
             # Décompter utilisation
             self.uses_remaining_combat -= 1
@@ -315,7 +315,7 @@ class LameAttaqueTournoyante(BaseAbility):
 
 
 @register_ability
-class LameAssautFurieux(BaseAbility):
+class RoublardAssautFurieux(BaseAbility):
     """P-7-6: Assaut furieux - Auto-hit + ×2 dégâts permanent"""
 
     hero_code = "P-7"
@@ -332,11 +332,11 @@ class LameAssautFurieux(BaseAbility):
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
         """Active auto-hit + ×2 dégâts PERMANENT pour tout le combat"""
         try:
-            # Vérifier limitation 1 capacité par tour pour Lame
+            # Vérifier limitation 1 capacité par tour pour Roublard
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            if caster.temporary_buffs.get('lame_ability_used_this_turn', False):
+            if caster.temporary_buffs.get('roublard_ability_used_this_turn', False):
                 log.append(f"⚠️ {caster.name} a déjà utilisé une capacité ce tour (limite: 1/tour)")
                 return False
 
@@ -350,11 +350,11 @@ class LameAssautFurieux(BaseAbility):
                 'type': 'permanent_combat',  # Dure tout le combat
                 'auto_hit': True,  # Pas de jet de dé - réussit automatiquement
                 'damage_multiplier': 2,  # Double dégâts
-                'source': 'lame_assaut_furieux'
+                'source': 'roublard_assaut_furieux'
             }
 
             # Marquer capacité utilisée ce tour
-            caster.temporary_buffs['lame_ability_used_this_turn'] = True
+            caster.temporary_buffs['roublard_ability_used_this_turn'] = True
 
             log.append(f"⚡💀 {caster.name} déclenche l'ASSAUT FURIEUX !")
             log.append(f"   🎯 PERMANENT : Toutes attaques réussissent automatiquement (pas de dé)")

@@ -23,9 +23,9 @@ from ui.styling import get_hero_card_style
 from ui.components.combat_stats_tracker import CombatStatsTracker
 from ui.components.combat_stats_analyzer import analyze_combat_results, generate_balance_recommendations
 from ui.components.combat_results_display import display_combat_results_panel
-from models.combat.abilities.individual_abilities.heroes.atucan import auto_activate_aura_sacree, auto_activate_sens_de_la_justice
-from models.combat.abilities.individual_abilities.heroes.thordius import auto_activate_defense_sans_armure, auto_activate_critique_brutal
-from models.combat.abilities.individual_abilities.heroes.raishi import auto_activate_point_faible
+from models.combat.abilities.individual_abilities.heroes.paladin import auto_activate_aura_sacree, auto_activate_sens_de_la_justice
+from models.combat.abilities.individual_abilities.heroes.barbare import auto_activate_defense_sans_armure, auto_activate_critique_brutal
+from models.combat.abilities.individual_abilities.heroes.pugiliste import auto_activate_point_faible
 from models.combat.abilities.individual_abilities import get_ability
 
 # === CSS STYLE ARÈNE ===
@@ -321,7 +321,7 @@ def reset_combat_state():
     st.session_state.sandbox_v2_phase = 'CONFIG'
     st.session_state.sandbox_v2_combatants = []
 
-def remove_stephe_invisibility_on_action(character, log: list):
+def remove_barde_invisibility_on_action(character, log: list):
     """
     Retire l'invisibilité de Stèphe quand le héros effectue une action (attaque, capacité).
     L'invisibilité de Stèphe se termine dès que le héros invisible agit.
@@ -335,7 +335,7 @@ def remove_stephe_invisibility_on_action(character, log: list):
 
     if 'invisible' in character.status_effects:
         stealth_data = character.status_effects['invisible']
-        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'stephe_invisibilite':
+        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'barde_invisibilite':
             if stealth_data.get('expires_on_action', False):
                 del character.status_effects['invisible']
                 log.append(f"🌫️ Invisibilité terminée - {character.name} redevient visible (action effectuée)")
@@ -522,7 +522,7 @@ class ManualTargeting:
 
         # Liste héros avec cartes stylées
         for hero in alive_heroes:
-            # NOUVEAU - Vérifier invisibilité (Lame Furtivité, Stephe Purification)
+            # NOUVEAU - Vérifier invisibilité (Roublard Furtivité, Barde Purification)
             # FIX: status_effects['invisible'] est un dict, pas un booléen
             is_invisible = hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects
 
@@ -530,7 +530,7 @@ class ManualTargeting:
             parade = hero.current_parade_tokens
             damage_after_parade = max(0, stats['damage'] - parade)
 
-            # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+            # FIX BUG DRUIDE - En forme animale, utiliser stats brutes (sans équipements)
             is_animal_form = (hero.code == "P-1" and
                               hasattr(hero, 'current_form') and
                               hero.current_form in ["bear", "wolf"])
@@ -590,7 +590,7 @@ class SandboxTurnManagerAdapter:
         """Tour héros avec ciblage manuel - Retourne True si action effectuée"""
         hero.start_hero_turn()
 
-        # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+        # NOUVEAU - Log invisibilité automatique (Roublard P-7-6 Assaut furieux)
         if hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects:
             if hero.status_effects['invisible'].get('source') == 'ombre_mortelle':
                 hero_name = getattr(hero, 'display_name', hero.name)
@@ -752,7 +752,7 @@ def configure_combat():
         # Initialiser log
         st.session_state.sandbox_v2_log = ["=== DÉBUT DU COMBAT ==="]
 
-        # NOUVEAU - Activation automatique Aura sacrée d'Atucan (BUSINESS LOGIC)
+        # NOUVEAU - Activation automatique Aura sacrée d'Paladin (BUSINESS LOGIC)
         heroes = [c['character'] for c in hero_combatants]
         auto_activate_aura_sacree(heroes, st.session_state.sandbox_v2_log)
 
@@ -764,16 +764,16 @@ def configure_combat():
             turn_manager.combat_initialized = True
 
 
-        # NOUVEAU - Activation automatique Sens de la justice d'Atucan (PASSIF PERMANENT)
+        # NOUVEAU - Activation automatique Sens de la justice d'Paladin (PASSIF PERMANENT)
         auto_activate_sens_de_la_justice(heroes, st.session_state.sandbox_v2_log)
 
-        # NOUVEAU - Activation automatique Défense sans armure de Thordius (PASSIF PERMANENT)
+        # NOUVEAU - Activation automatique Défense sans armure de Barbare (PASSIF PERMANENT)
         auto_activate_defense_sans_armure(heroes, st.session_state.sandbox_v2_log)
 
-        # NOUVEAU - Activation automatique Critique brutal de Thordius (PASSIF PERMANENT)
+        # NOUVEAU - Activation automatique Critique brutal de Barbare (PASSIF PERMANENT)
         auto_activate_critique_brutal(heroes, st.session_state.sandbox_v2_log)
 
-        # NOUVEAU - Activation automatique Point faible de Raishi (PASSIF PERMANENT)
+        # NOUVEAU - Activation automatique Point faible de Pugiliste (PASSIF PERMANENT)
         auto_activate_point_faible(heroes, st.session_state.sandbox_v2_log)
 
         # Sauvegarder l'état initial
@@ -854,35 +854,35 @@ def log_active_persistent_effects():
 
     Structure attendue dans le log:
         === ROUND X ===
-        ✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)
+        ✨ Aura sacrée d'Paladin active (-1 blessure/attaque pour tous)
         [autres effets persistants futurs...]
         🛡️ Phase des Héros + Pets
 
     Vérifie:
-        - Aura sacrée d'Atucan (tant qu'il est vivant)
+        - Aura sacrée d'Paladin (tant qu'il est vivant)
         - Autres effets persistants peuvent être ajoutés ici
     """
     combatants = st.session_state.sandbox_v2_combatants
     heroes = [c['character'] for c in combatants if c['faction'] == 'hero' and c['character'].is_alive()]
 
-    # Vérifier Aura sacrée d'Atucan (P-3)
-    atucan = next((h for h in heroes if h.code == "P-3"), None)
-    if atucan and atucan.is_alive():
+    # Vérifier Aura sacrée d'Paladin (P-3)
+    paladin = next((h for h in heroes if h.code == "P-3"), None)
+    if paladin and paladin.is_alive():
         # Vérifier si l'aura est effectivement active sur au moins un héros
         aura_active = any(
             hasattr(h, 'temporary_buffs') and 'aura_protection' in h.temporary_buffs
             for h in heroes
         )
         if aura_active:
-            st.session_state.sandbox_v2_log.append("✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)")
+            st.session_state.sandbox_v2_log.append("✨ Aura sacrée d'Paladin active (-1 blessure/attaque pour tous)")
 
-        # Vérifier Sens de la justice d'Atucan (P-3)
+        # Vérifier Sens de la justice d'Paladin (P-3)
         sens_justice_active = (
-            hasattr(atucan, 'temporary_buffs') and
-            'sens_de_la_justice_active' in atucan.temporary_buffs
+            hasattr(paladin, 'temporary_buffs') and
+            'sens_de_la_justice_active' in paladin.temporary_buffs
         )
         if sens_justice_active:
-            st.session_state.sandbox_v2_log.append("⚖️ Sens de la justice d'Atucan active (relance dé d'attaque 1-2, 1×/tour)")
+            st.session_state.sandbox_v2_log.append("⚖️ Sens de la justice d'Paladin active (relance dé d'attaque 1-2, 1×/tour)")
 
     # Espace réservé pour d'autres effets persistants futurs
     # Exemple: buffs de groupe, malédictions permanentes, etc.
@@ -1196,9 +1196,9 @@ def next_turn():
                                 del char.temporary_buffs['aura_protection']
                                 st.session_state.sandbox_v2_log.append(f"✨ Aura sacrée de {char.name} a expiré")
 
-                    # NOUVEAU : Recharger Raishi Maîtrise absolue (au début de chaque round pour TOUS les héros)
-                    if 'raishi_maitrise_charges' in char.temporary_buffs:
-                        maitrise = char.temporary_buffs['raishi_maitrise_charges']
+                    # NOUVEAU : Recharger Pugiliste Maîtrise absolue (au début de chaque round pour TOUS les héros)
+                    if 'pugiliste_maitrise_charges' in char.temporary_buffs:
+                        maitrise = char.temporary_buffs['pugiliste_maitrise_charges']
                         if isinstance(maitrise, dict) and maitrise.get('auto_recharge', False):
                             max_charges = maitrise.get('max_charges', 2)
                             old_charges = maitrise.get('charges', 0)
@@ -1206,12 +1206,12 @@ def next_turn():
                             if old_charges < max_charges:
                                 st.session_state.sandbox_v2_log.append(f"🛡️✨ {char.name} - Maîtrise absolue rechargée ({max_charges} charges)")
 
-                # NOUVEAU : Décrémenter compteur furtivité de Lame au début du round (pour tous les héros)
+                # NOUVEAU : Décrémenter compteur furtivité de Roublard au début du round (pour tous les héros)
                 if combatant['faction'] == 'hero' and hasattr(char, 'status_effects'):
                     if 'invisible' in char.status_effects:
                         stealth_data = char.status_effects['invisible']
-                        # Vérifier si c'est la furtivité de Lame avec compteur de tours
-                        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
+                        # Vérifier si c'est la furtivité de Roublard avec compteur de tours
+                        if isinstance(stealth_data, dict) and stealth_data.get('source') == 'roublard_furtivite':
                             if 'turns_remaining' in stealth_data:
                                 stealth_data['turns_remaining'] -= 1
                                 # Si compteur atteint 0, supprimer la furtivité
@@ -1232,7 +1232,7 @@ def next_turn():
             if current['faction'] == 'hero':
                 char.start_hero_turn()
 
-                # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+                # NOUVEAU - Log invisibilité automatique (Roublard P-7-6 Assaut furieux)
                 if hasattr(char, 'status_effects') and 'invisible' in char.status_effects:
                     if char.status_effects['invisible'].get('source') == 'ombre_mortelle':
                         char_name = getattr(char, 'display_name', char.name)
@@ -1371,7 +1371,7 @@ def display_hero_interface(combatant: Dict):
 
             if can_attack:
                 if st.button("⚔️ Attaquer", key=f"header_attack_{combatant['id']}", type="primary", use_container_width=True):
-                    # Vérifier si attack_all_enemies est actif (Kraor capacité 4)
+                    # Vérifier si attack_all_enemies est actif (Chasseur capacité 4)
                     attack_all = hasattr(char, 'temporary_buffs') and 'attack_all_enemies' in char.temporary_buffs
 
                     if attack_all:
@@ -1420,12 +1420,12 @@ def display_hero_interface(combatant: Dict):
                 st.button("⚔️ Attaquer (déjà fait)", key=f"header_attack_{combatant['id']}", disabled=True, use_container_width=True)
 
         # Potions (3 boutons sur une seule ligne - ultra compact)
-        # Vérifier si Elneha est en forme animale (pas de potions)
-        is_elneha_animal = (char.code == "P-1" and
+        # Vérifier si Druide est en forme animale (pas de potions)
+        is_druide_animal = (char.code == "P-1" and
                            hasattr(char, 'current_form') and
                            char.current_form in ["bear", "wolf"])
 
-        if is_elneha_animal:
+        if is_druide_animal:
             st.caption("⚠️ Potions indisponibles (forme animale)")
         elif hasattr(char, 'health_potions') and char.health_potions:
             potions_summary = char.get_potions_summary()
@@ -1476,7 +1476,7 @@ def display_hero_interface(combatant: Dict):
     with col_abilities:
         display_abilities_grid(char, combatant['id'])
 
-        # NOUVEAU - Bouton Invocation Pet pour Kraor (P-4) avec Médaillon d'Appel (O-3)
+        # NOUVEAU - Bouton Invocation Pet pour Chasseur (P-4) avec Médaillon d'Appel (O-3)
         if hasattr(char, 'code') and char.code == "P-4" and char.can_summon_pet():
             # Vérifier si un pet est déjà invoqué
             pet_already_summoned = any(
@@ -1484,7 +1484,7 @@ def display_hero_interface(combatant: Dict):
                 for p in st.session_state.sandbox_v2_active_pets
             )
 
-            # Vérifier si Kraor peut encore agir ce tour
+            # Vérifier si Chasseur peut encore agir ce tour
             can_summon = not getattr(char, 'action_taken_this_turn', False)
             can_summon = can_summon and getattr(char, 'can_attack_this_turn', True)
             can_summon = can_summon and not getattr(char, 'potion_used_this_turn', False)
@@ -1747,7 +1747,7 @@ def display_pet_interface(combatant: Dict):
                 st.rerun()
 
 def display_abilities_grid(char: Character, combatant_id: str):
-    """Grille capacités style Arène - Gère formes animales Elneha"""
+    """Grille capacités style Arène - Gère formes animales Druide"""
     if not hasattr(char, 'abilities') or not char.abilities:
         st.markdown("### 🔮 Capacités Spéciales")
         st.info("Aucune capacité disponible")
@@ -1764,13 +1764,13 @@ def display_abilities_grid(char: Character, combatant_id: str):
         st.error(f"🚫 **Capacités bloquées par {source_name}** - Vous ne pouvez pas utiliser de capacités durant ce combat !")
         return
 
-    # CAS SPÉCIAL ELNEHA : Filtrer capacités selon forme
+    # CAS SPÉCIAL DRUIDE : Filtrer capacités selon forme
     abilities_to_display = char.abilities
-    is_elneha_animal_form = (char.code == "P-1" and
+    is_druide_animal_form = (char.code == "P-1" and
                              hasattr(char, 'current_form') and
                              char.current_form in ["bear", "wolf"])
 
-    if is_elneha_animal_form:
+    if is_druide_animal_form:
         # En forme animale : Bouton désactivation + capacité exclusive
         abilities_to_display = []
 
@@ -1836,7 +1836,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     can_use = ability.ability_number in getattr(char, 'unlocked_abilities', [])
     current_spells = getattr(char, 'current_spells', None)
     if current_spells is None:
-        # FIX BUG ELNEHA - En forme animale, utiliser stats brutes (sans équipements)
+        # FIX BUG DRUIDE - En forme animale, utiliser stats brutes (sans équipements)
         is_animal_form = (char.code == "P-1" and
                           hasattr(char, 'current_form') and
                           char.current_form in ["bear", "wolf"])
@@ -1897,10 +1897,10 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     combat_uses_exhausted = False
     combat_uses_remaining = None
 
-    # CAS SPÉCIAL - Rage de berserker (Thordius P-5-2) : Vérifier via temporary_buffs
+    # CAS SPÉCIAL - Rage de berserker (Barbare P-5-2) : Vérifier via temporary_buffs
     is_rage_berserker = (char.code == "P-5" and ability.ability_number == 2)
     if is_rage_berserker:
-        if hasattr(char, 'temporary_buffs') and char.temporary_buffs.get('thordius_rage_used', False):
+        if hasattr(char, 'temporary_buffs') and char.temporary_buffs.get('barbare_rage_used', False):
             combat_uses_exhausted = True
             combat_uses_remaining = 0
         else:
@@ -1911,7 +1911,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         combat_uses_remaining = ability.uses_remaining_combat
         combat_uses_exhausted = (ability.uses_remaining_combat <= 0)
 
-    # NOUVEAU - Aura sacrée d'Atucan : Capacité automatique (toujours désactivée)
+    # NOUVEAU - Aura sacrée d'Paladin : Capacité automatique (toujours désactivée)
     is_aura_sacree = (ability.name == "Aura sacrée")
 
     # NOUVEAU - Désactiver capacités "Pas utile en combat"
@@ -1919,12 +1919,12 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if hasattr(ability, 'description') and ability.description:
         not_useful_in_combat = "Pas utile en combat" in ability.description or "pas utile en combat" in ability.description
 
-    # NOUVEAU - Lame (P-7): Limitation 1 capacité par tour
-    lame_ability_already_used = False
+    # NOUVEAU - Roublard (P-7): Limitation 1 capacité par tour
+    roublard_ability_already_used = False
     if char.code == "P-7" and hasattr(char, 'temporary_buffs'):
-        lame_ability_already_used = char.temporary_buffs.get('lame_ability_used_this_turn', False)
+        roublard_ability_already_used = char.temporary_buffs.get('roublard_ability_used_this_turn', False)
 
-    # NOUVEAU - Elneha transformations : Bloquer si action déjà prise
+    # NOUVEAU - Druide transformations : Bloquer si action déjà prise
     transformation_blocked_by_action = False
     is_transformation = (char.code == "P-1" and ability.ability_number in [1, 3])
     if is_transformation:
@@ -1956,14 +1956,14 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
                 attack_succeeded = getattr(char, 'attack_succeeded_this_turn', False)
                 requires_attack_success = not attack_succeeded
 
-    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not lame_ability_already_used and not transformation_blocked_by_action and not is_aura_sacree and not requires_attack_success
+    is_available = can_use and has_spells and not magic_already_used and not blocked_by_attack and not parade_already_used and not parade_blocked_by_attack and not armure_mage_already_used and not combat_uses_exhausted and not not_useful_in_combat and not roublard_ability_already_used and not transformation_blocked_by_action and not is_aura_sacree and not requires_attack_success
 
     type_icon = "🔮" if ability.spell_cost > 0 else "⚔️"
     short_name = ability.name if len(ability.name) <= 20 else ability.name[:17] + "..."
 
     button_key = f"sandbox_ability_{combatant_id}_{ability_index}"
 
-    # NOUVEAU - Elneha transformations : Modifier label si forme active
+    # NOUVEAU - Druide transformations : Modifier label si forme active
     is_form_active = False
     if is_transformation:
         current_form = getattr(char, 'current_form', 'human')
@@ -1983,17 +1983,17 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
     if combat_uses_remaining is not None:
         button_label = f"{type_icon} {short_name}\n• {ability.spell_cost} ✨ • {combat_uses_remaining}/{ability.uses_per_combat} ⚡"
 
-    # NOUVEAU - Elneha transformations : Label spécial si forme active (retour gratuit)
+    # NOUVEAU - Druide transformations : Label spécial si forme active (retour gratuit)
     if is_form_active:
         button_label = f"{type_icon} {short_name}\n• Gratuit"
 
-    # NOUVEAU - Sens de la justice (Atucan P-3-2) : Capacité passive auto-activée
+    # NOUVEAU - Sens de la justice (Paladin P-3-2) : Capacité passive auto-activée
     is_sens_de_la_justice = (char.code == "P-3" and ability.ability_number == 2)
     if is_sens_de_la_justice:
         button_label = f"🟣 {ability.name}\n⚡ Auto"  # Nom complet pour capacités passives
         is_available = False  # Capacité passive (non cliquable mais active)
 
-    # NOUVEAU - Défense sans armure (Thordius P-5-1) : Capacité passive avec statut visuel
+    # NOUVEAU - Défense sans armure (Barbare P-5-1) : Capacité passive avec statut visuel
     is_defense_sans_armure = (char.code == "P-5" and ability.ability_number == 1)
     defense_sans_armure_active = False
     if is_defense_sans_armure:
@@ -2017,7 +2017,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
 
         is_available = False  # Capacité passive (non cliquable mais informative)
 
-    # NOUVEAU - Critique brutal (Thordius P-5-5) : Capacité passive avec statut visuel
+    # NOUVEAU - Critique brutal (Barbare P-5-5) : Capacité passive avec statut visuel
     is_critique_brutal = (char.code == "P-5" and ability.ability_number == 5)
     if is_critique_brutal:
         # Vérifier si le buff est actif
@@ -2027,7 +2027,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
             button_label = f"🔴 {ability.name}\n⚠️ Inactif"  # Rouge = inactif
         is_available = False  # Capacité passive (non cliquable mais informative)
 
-    # NOUVEAU - Point faible (Raishi P-8-1) : Capacité passive avec statut visuel
+    # NOUVEAU - Point faible (Pugiliste P-8-1) : Capacité passive avec statut visuel
     is_point_faible = (char.code == "P-8" and ability.ability_number == 1)
     if is_point_faible:
         # Vérifier si le buff est actif
@@ -2045,7 +2045,7 @@ def display_ability_card(char: Character, ability, combatant_id: str, ability_in
         button_label = f"{type_icon} {short_name}\n✅ Active"
     elif is_rage_berserker and combat_uses_exhausted:
         button_label = f"⚡ {short_name}\n✅ Active"  # Rage active (bonus permanent)
-    elif lame_ability_already_used:
+    elif roublard_ability_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ 1 capacité/tour"
     elif parade_already_used:
         button_label = f"{type_icon} {short_name}\n⚠️ Déjà utilisée"
@@ -2081,13 +2081,13 @@ def display_actions_and_potions(char: Character, combatant_id: str):
     """Colonne actions + potions style Arène
     NOTE: Les actions principales et potions sont maintenant dans le header compact
     NOTE: Le ciblage d'attaque se fait maintenant directement sur les cartes
-    Cette fonction gère uniquement les modes spéciaux (Rage Thordius, Faire boire potion)
+    Cette fonction gère uniquement les modes spéciaux (Rage Barbare, Faire boire potion)
     """
     # NOTE: Le code de ciblage d'attaque (SELECTING_TARGET_HERO) a été supprimé
     # Le ciblage se fait maintenant directement sur les cartes via execute_attack_on_target()
     # Voir display_combat_status() et display_combat_status_team_mode() pour la nouvelle implémentation
 
-    # NOUVEAU - Bouton Rage pour Thordius (P-5) si Berserker débloqué
+    # NOUVEAU - Bouton Rage pour Barbare (P-5) si Berserker débloqué
     if hasattr(char, 'code') and char.code == "P-5":
         berserker_unlocked = hasattr(char, 'temporary_buffs') and char.temporary_buffs.get('berserker_unlocked', False)
 
@@ -2158,7 +2158,7 @@ def display_actions_and_potions(char: Character, combatant_id: str):
 
 def use_summon_pet_action(char: Character):
     """
-    Invoque le pet de Kraor ET le fait attaquer immédiatement
+    Invoque le pet de Chasseur ET le fait attaquer immédiatement
     Termine le tour après l'invocation et l'attaque
     """
     from models.character import Pet
@@ -2234,7 +2234,7 @@ def use_ability_action(char: Character, ability):
             return
 
         # NOUVEAU - Détecter les capacités de SOIN SIMPLE (cible unique)
-        # P-3-1: Imposition des mains (Atucan), P-4-5: Soin mineur (Kraor)
+        # P-3-1: Imposition des mains (Paladin), P-4-5: Soin mineur (Chasseur)
         if hasattr(char, 'code') and hasattr(ability, 'ability_number'):
             is_heal_simple = (
                 (char.code == "P-3" and ability.ability_number == 1) or  # Imposition des mains
@@ -2248,7 +2248,7 @@ def use_ability_action(char: Character, ability):
                 return
 
         # NOUVEAU - Détecter les capacités de SOIN MULTI-CIBLES
-        # P-3-5: Soin supérieur (Atucan), P-6-5: Soin majeur (Stèphe)
+        # P-3-5: Soin supérieur (Paladin), P-6-5: Soin majeur (Stèphe)
         if hasattr(char, 'code') and hasattr(ability, 'ability_number'):
             is_heal_multi = (
                 (char.code == "P-3" and ability.ability_number == 5) or  # Soin supérieur
@@ -2266,7 +2266,7 @@ def use_ability_action(char: Character, ability):
                 return
 
         # NOUVEAU - Détecter les capacités de DÉGÂTS MULTI-CIBLES
-        # P-2-1: Éclair magique (Liarie) - 4 dégâts répartis
+        # P-2-1: Éclair magique (Mage) - 4 dégâts répartis
         if hasattr(char, 'code') and hasattr(ability, 'ability_number'):
             is_damage_multi = (
                 (char.code == "P-2" and ability.ability_number == 1)  # Éclair magique
@@ -2367,7 +2367,7 @@ def use_ability_action(char: Character, ability):
                             delattr(char, 'last_attacked_target')
 
             # 4.6. NOUVEAU - Supprimer l'invisibilité de Stèphe si le héros utilise une capacité
-            remove_stephe_invisibility_on_action(char, st.session_state.sandbox_v2_log)
+            remove_barde_invisibility_on_action(char, st.session_state.sandbox_v2_log)
 
             # 5. Sauvegarder état pour undo/redo
             save_game_state(f"{char.name} utilise {ability.name}")
@@ -2499,7 +2499,7 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         border_color = "#27ae60"  # Vert pour vivant en attente
 
     # Récupérer image (RÉUTILISE API ui_elements.py)
-    # Pour Elneha, passer la forme actuelle pour afficher l'image correcte
+    # Pour Druide, passer la forme actuelle pour afficher l'image correcte
     current_form = getattr(hero, 'current_form', None) if hero.code == "P-1" else None
     image_path = get_hero_image_path(hero.name, current_form)
     background_style = ""
@@ -2524,15 +2524,15 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     wolf_form_active = False
     wolf_remaining = 0
     if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
-        wolf_remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
+        wolf_remaining = hero.temporary_buffs.get('druide_wolf_remaining', 0)
         wolf_form_active = wolf_remaining > 0
 
-    # NOUVEAU - Vérifier buff Pluie de flèches (Kraor P-4-6)
+    # NOUVEAU - Vérifier buff Pluie de flèches (Chasseur P-4-6)
     pluie_active = False
     if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
         pluie_active = 'double_attacks_permanent' in hero.temporary_buffs
 
-    # NOUVEAU - Vérifier rage Berserker (Thordius P-5-6)
+    # NOUVEAU - Vérifier rage Berserker (Barbare P-5-6)
     rage_active = False
     if hasattr(hero, 'temporary_buffs') and hero.temporary_buffs:
         rage_active = hero.temporary_buffs.get('berserker_rage_active', False)
@@ -2543,26 +2543,26 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
     # NOUVEAU - Vérifier si le héros est en mode furtif/invisible
     is_stealthy = False
     stealth_turns = 0
-    is_stephe_invisible = False
+    is_barde_invisible = False
     if hasattr(hero, 'status_effects') and 'invisible' in hero.status_effects:
         stealth_data = hero.status_effects['invisible']
         if isinstance(stealth_data, dict):
             source = stealth_data.get('source', '')
-            if source == 'lame_furtivite':
+            if source == 'roublard_furtivite':
                 is_stealthy = True
                 stealth_turns = stealth_data.get('turns_remaining', 0)
-            elif source == 'stephe_invisibilite':
-                is_stephe_invisible = True
+            elif source == 'barde_invisibilite':
+                is_barde_invisible = True
             elif source == 'ombre_mortelle':
-                # Assaut furieux de Lame - traité comme furtivité
+                # Assaut furieux de Roublard - traité comme furtivité
                 is_stealthy = True
                 stealth_turns = stealth_data.get('turns_remaining', 0)
 
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn and is_stealthy:
-        # NOUVEAU : Badge combiné FURTIF + C'EST SON TOUR (pour Lame)
+        # NOUVEAU : Badge combiné FURTIF + C'EST SON TOUR (pour Roublard)
         build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡🥷 SON TOUR<br/>(FURTIF {stealth_turns}T)</div>'
-    elif is_current_turn and is_stephe_invisible:
+    elif is_current_turn and is_barde_invisible:
         # NOUVEAU : Badge combiné INVISIBLE + C'EST SON TOUR (Stèphe P-6-4)
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FFD700; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">⚡🌫️ SON TOUR<br/>(INVISIBLE)</div>'
     elif is_current_turn:
@@ -2579,9 +2579,9 @@ def display_hero_combat_card(hero: Character, is_current_turn: bool = False):
         else:
             build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">😵 Assommé ({stunned_turns} tours)</div>'
     elif is_stealthy:
-        # NOUVEAU : Badge Furtivité active (Lame P-7-1)
+        # NOUVEAU : Badge Furtivité active (Roublard P-7-1)
         build_content = f'<div style="font-size: 1rem; font-weight: bold; color: #6A0DAD; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🥷 FURTIF<br/>({stealth_turns} tours)</div>'
-    elif is_stephe_invisible:
+    elif is_barde_invisible:
         # NOUVEAU : Badge Invisibilité (Stèphe P-6-4)
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #87CEEB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🌫️ INVISIBLE</div>'
     elif rage_active:
@@ -2658,10 +2658,10 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     # Vérifier si l'ennemi est étourdi (RÉUTILISE fonction centralisée)
     is_stunned, stunned_turns = is_enemy_stunned(enemy)
 
-    # NOUVEAU - Vérifier si l'ennemi est marqué par Kraor (Piège)
-    is_marked_by_kraor = False
+    # NOUVEAU - Vérifier si l'ennemi est marqué par Chasseur (Piège)
+    is_marked_by_chasseur = False
     if hasattr(enemy, 'status_effects') and enemy.status_effects:
-        is_marked_by_kraor = 'kraor_marked' in enemy.status_effects
+        is_marked_by_chasseur = 'chasseur_marked' in enemy.status_effects
 
     # Préparer build_content (remplacé par status pour le combat)
     if is_current_turn:
@@ -2671,8 +2671,8 @@ def display_enemy_combat_card(enemy: Enemy, is_current_turn: bool = False):
     elif is_stunned:
         # NOUVEAU : Badge visuel pour ennemi étourdi (cohérent avec mode manuel)
         build_content = f'<div style="font-size: 1.1rem; font-weight: bold; color: #9370DB; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">😵 Étourdi ({stunned_turns} tours)</div>'
-    elif is_marked_by_kraor:
-        # NOUVEAU : Badge visuel pour ennemi marqué par Kraor (Piège +2 dégâts groupe)
+    elif is_marked_by_chasseur:
+        # NOUVEAU : Badge visuel pour ennemi marqué par Chasseur (Piège +2 dégâts groupe)
         build_content = '<div style="font-size: 1rem; font-weight: bold; color: #FF6347; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 2px 2px 6px rgba(0,0,0,0.8);">🎯 MARQUÉ<br/>+2 dégâts groupe</div>'
     else:
         build_content = '&nbsp;'  # Espace invisible - pas de label par défaut
@@ -2715,7 +2715,7 @@ def display_pet_combat_card(pet: 'Pet', is_current_turn: bool = False):
     # Charger image du familier (RÉUTILISE même approche que héros/ennemis)
     import base64
     import os
-    pet_image_path = get_image_path("familier_kraor.jpg")
+    pet_image_path = get_image_path("familier_chasseur.jpg")
     background_style = ""
 
     if os.path.exists(pet_image_path):
@@ -2843,7 +2843,7 @@ def display_combat_log_colored():
         line_stripped = line.strip()
 
         # Liste des 8 héros de Périples
-        HERO_NAMES = ["Atucan", "Liarie", "Kraor", "Elneha", "Vahid", "Vega", "Ayana", "Myla"]
+        HERO_NAMES = ["Paladin", "Mage", "Chasseur", "Druide", "Vahid", "Vega", "Ayana", "Myla"]
 
         # Ligne vide
         if not line_stripped:
@@ -2949,7 +2949,7 @@ def execute_attack_on_target(attacker: Character, target: Enemy):
     player_count = len([h for h in heroes_list if h.is_alive()])
     adapter = st.session_state.sandbox_v2_adapter
 
-    # Vérifier buffs multi-cibles (Kraor, Lame)
+    # Vérifier buffs multi-cibles (Chasseur, Roublard)
     attack_all = hasattr(attacker, 'temporary_buffs') and (
         'attack_all_enemies' in attacker.temporary_buffs or
         'assassination_ready' in attacker.temporary_buffs
@@ -3053,14 +3053,14 @@ def execute_attack_on_target(attacker: Character, target: Enemy):
 
     attacker.attack_done_this_turn = True
 
-    # Si Atucan attaque, désactiver Parade pour ce tour
-    if hasattr(attacker, 'code') and attacker.code == "P-3":  # Atucan
+    # Si Paladin attaque, désactiver Parade pour ce tour
+    if hasattr(attacker, 'code') and attacker.code == "P-3":  # Paladin
         if not hasattr(attacker, 'temporary_buffs'):
             attacker.temporary_buffs = {}
         attacker.temporary_buffs['parade_blocked_by_attack'] = True
 
     # NOUVEAU - Supprimer l'invisibilité de Stèphe si le héros agit
-    remove_stephe_invisibility_on_action(attacker, st.session_state.sandbox_v2_log)
+    remove_barde_invisibility_on_action(attacker, st.session_state.sandbox_v2_log)
 
     # Désactiver le mode de sélection
     st.session_state.sandbox_v2_action_state = None
@@ -4255,7 +4255,7 @@ def select_combatant_manually(combatant_id: str):
             if combatant['faction'] == 'hero':
                 char.start_hero_turn()
 
-                # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+                # NOUVEAU - Log invisibilité automatique (Roublard P-7-6 Assaut furieux)
                 if hasattr(char, 'status_effects') and 'invisible' in char.status_effects:
                     if char.status_effects['invisible'].get('source') == 'ombre_mortelle':
                         char_name = getattr(char, 'display_name', char.name)
@@ -4618,9 +4618,9 @@ def main_sandbox_v2():
                                     del char.temporary_buffs['aura_protection']
                                     st.session_state.sandbox_v2_log.append(f"✨ Aura sacrée de {char.name} a expiré")
 
-                        # NOUVEAU : Recharger Raishi Maîtrise absolue (au début de chaque round pour TOUS les héros)
-                        if 'raishi_maitrise_charges' in char.temporary_buffs:
-                            maitrise = char.temporary_buffs['raishi_maitrise_charges']
+                        # NOUVEAU : Recharger Pugiliste Maîtrise absolue (au début de chaque round pour TOUS les héros)
+                        if 'pugiliste_maitrise_charges' in char.temporary_buffs:
+                            maitrise = char.temporary_buffs['pugiliste_maitrise_charges']
                             if isinstance(maitrise, dict) and maitrise.get('auto_recharge', False):
                                 max_charges = maitrise.get('max_charges', 2)
                                 old_charges = maitrise.get('charges', 0)
@@ -4628,12 +4628,12 @@ def main_sandbox_v2():
                                 if old_charges < max_charges:
                                     st.session_state.sandbox_v2_log.append(f"🛡️✨ {char.name} - Maîtrise absolue rechargée ({max_charges} charges)")
 
-                    # NOUVEAU : Décrémenter compteur furtivité de Lame au début du round (pour tous les héros)
+                    # NOUVEAU : Décrémenter compteur furtivité de Roublard au début du round (pour tous les héros)
                     if combatant['faction'] == 'hero' and hasattr(char, 'status_effects'):
                         if 'invisible' in char.status_effects:
                             stealth_data = char.status_effects['invisible']
-                            # Vérifier si c'est la furtivité de Lame avec compteur de tours
-                            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
+                            # Vérifier si c'est la furtivité de Roublard avec compteur de tours
+                            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'roublard_furtivite':
                                 if 'turns_remaining' in stealth_data:
                                     stealth_data['turns_remaining'] -= 1
                                     # Si compteur atteint 0, supprimer la furtivité

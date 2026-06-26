@@ -69,7 +69,7 @@ class TurnManager:
             if is_stunned:
                 continue  # Skip ce tour
 
-            # NOUVEAU - Log invisibilité automatique (Lame P-7-6 Assaut furieux)
+            # NOUVEAU - Log invisibilité automatique (Roublard P-7-6 Assaut furieux)
             if hasattr(ally, 'status_effects') and 'invisible' in ally.status_effects:
                 if ally.status_effects['invisible'].get('source') == 'ombre_mortelle':
                     ally_name = getattr(ally, 'display_name', ally.name)

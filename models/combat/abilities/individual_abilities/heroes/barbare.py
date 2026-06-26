@@ -1,7 +1,7 @@
-# thordius.py - Capacités individuelles de Thordius (P-5) - Guerrier Berserker
+# barbare.py - Capacités individuelles de Barbare (P-5) - Guerrier Berserker
 """
-Capacités individuelles pour le héros Thordius (P-5)
-Thordius est un guerrier berserker spécialisé dans les dégâts physiques bruts et la rage.
+Capacités individuelles pour le héros Barbare (P-5)
+Barbare est un guerrier berserker spécialisé dans les dégâts physiques bruts et la rage.
 Ses capacités se concentrent sur l'augmentation de puissance et la survie en rage.
 
 ✅ DONNÉES OFFICIELLES Sorts.xlsx:
@@ -20,11 +20,11 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 
 # ========================================
-# CAPACITÉS THORDIUS (P-5) - GUERRIER BERSERKER
+# CAPACITÉS BARBARE (P-5) - GUERRIER BERSERKER
 # ========================================
 
 @register_ability
-class ThordiusDefenseSansArmure(BaseAbility):
+class BarbareDefenseSansArmure(BaseAbility):
     """P-5-1: Défense sans armure - PASSIF : +2 parade permanents si pas d'armure/bouclier équipé"""
 
     hero_code = "P-5"
@@ -85,7 +85,7 @@ class ThordiusDefenseSansArmure(BaseAbility):
 
 
 @register_ability
-class ThordiusRageDeBerserker(BaseAbility):
+class BarbareRageDeBerserker(BaseAbility):
     """P-5-2: Rage de berserker - +3 dégâts physiques permanent pour le combat"""
 
     hero_code = "P-5"
@@ -108,12 +108,12 @@ class ThordiusRageDeBerserker(BaseAbility):
                 caster.temporary_buffs = {}
 
             # CORRECTION : Vérifier limitation via temporary_buffs (persiste avec undo/redo)
-            if caster.temporary_buffs.get('thordius_rage_used', False):
+            if caster.temporary_buffs.get('barbare_rage_used', False):
                 log.append(f"⚠️ Rage de berserker déjà utilisée ce combat")
                 return False
 
             # Ajouter buff permanent de dégâts
-            caster.temporary_buffs['thordius_charge_damage'] = {
+            caster.temporary_buffs['barbare_charge_damage'] = {
                 'type': 'permanent_combat',
                 'damage_bonus': self.damage_bonus,
                 'source': 'rage_berserker'
@@ -128,7 +128,7 @@ class ThordiusRageDeBerserker(BaseAbility):
             log.append(f"⚡ {caster.name} entre en RAGE DE BERSERKER ! (+{self.damage_bonus} dégâts permanent)")
 
             # CORRECTION : Marquer comme utilisée via temporary_buffs (persiste avec undo/redo)
-            caster.temporary_buffs['thordius_rage_used'] = True
+            caster.temporary_buffs['barbare_rage_used'] = True
 
             # Décompter utilisation (pour l'affichage dans le preview)
             self.uses_remaining_combat -= 1
@@ -147,7 +147,7 @@ class ThordiusRageDeBerserker(BaseAbility):
 
 
 @register_ability
-class ThordiusChargeDeTaureau(BaseAbility):
+class BarbareChargeDeTaureau(BaseAbility):
     """P-5-3: Charge de taureau - Stun ennemi après attaque réussie"""
 
     hero_code = "P-5"
@@ -190,7 +190,7 @@ class ThordiusChargeDeTaureau(BaseAbility):
 
             # Appliquer le stun (avec vérification d'immunité)
             stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                target, duration=self.stun_duration, source='thordius_charge_taureau', log=log
+                target, duration=self.stun_duration, source='barbare_charge_taureau', log=log
             )
 
             if stunned:
@@ -221,7 +221,7 @@ class ThordiusChargeDeTaureau(BaseAbility):
 
 
 @register_ability
-class ThordiusTemerité(BaseAbility):
+class BarbareTemerité(BaseAbility):
     """P-5-4: Témérité - Convertit parade en bonus dégâts"""
 
     hero_code = "P-5"
@@ -283,7 +283,7 @@ class ThordiusTemerité(BaseAbility):
 
 
 @register_ability
-class ThordiusCritiqueBrutal(BaseAbility):
+class BarbareCritiqueBrutal(BaseAbility):
     """P-5-5: Critique brutal - Critiques sur 18-19-20 au lieu de 20 seul (PASSIF)"""
 
     hero_code = "P-5"
@@ -315,13 +315,13 @@ class ThordiusCritiqueBrutal(BaseAbility):
 
 
 @register_ability
-class ThordiusRageInsatiable(BaseAbility):
+class BarbareRageInsatiable(BaseAbility):
     """P-5-6: Rage insatiable - Continue à combattre même inconscient"""
 
     hero_code = "P-5"
     ability_number = 6
     name = "Rage insatiable"
-    description = "Tant qu'il est en rage, Thordius continue de combattre même s'il atteint le maximum de points de blessures."
+    description = "Tant qu'il est en rage, Barbare continue de combattre même s'il atteint le maximum de points de blessures."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -371,13 +371,13 @@ class ThordiusRageInsatiable(BaseAbility):
 
 def auto_activate_defense_sans_armure(heroes: List, log: List[str]) -> bool:
     """
-    Active automatiquement Défense sans armure si Thordius (P-5) est présent, vivant,
+    Active automatiquement Défense sans armure si Barbare (P-5) est présent, vivant,
     et ne porte ni armure ni bouclier.
     Appelé au début du combat par l'interface UI.
 
-    RÈGLE: Défense sans armure de Thordius est une capacité passive permanente qui s'active
+    RÈGLE: Défense sans armure de Barbare est une capacité passive permanente qui s'active
     automatiquement dès le début du combat si les conditions sont remplies (pas d'armure/bouclier)
-    et reste active tant que Thordius est vivant et ne change pas d'équipement.
+    et reste active tant que Barbare est vivant et ne change pas d'équipement.
 
     Args:
         heroes: Liste des héros participant au combat
@@ -387,59 +387,59 @@ def auto_activate_defense_sans_armure(heroes: List, log: List[str]) -> bool:
         bool: True si le buff a été activé, False sinon
 
     Effet:
-        Ajoute +2 jetons de parade permanents à Thordius si pas d'armure/bouclier équipé
+        Ajoute +2 jetons de parade permanents à Barbare si pas d'armure/bouclier équipé
     """
-    # Chercher Thordius (P-5) parmi les héros vivants
-    thordius = next((h for h in heroes if h.code == "P-5" and h.is_alive()), None)
+    # Chercher Barbare (P-5) parmi les héros vivants
+    barbare = next((h for h in heroes if h.code == "P-5" and h.is_alive()), None)
 
-    if not thordius:
+    if not barbare:
         return False
 
     # Vérifier équipement : aucune armure/bouclier
     has_armor_or_shield = False
-    if hasattr(thordius, 'equipment') and thordius.equipment:
-        for item in thordius.equipment:
+    if hasattr(barbare, 'equipment') and barbare.equipment:
+        for item in barbare.equipment:
             if hasattr(item, 'type') and item.type == 'armure':
                 has_armor_or_shield = True
                 break
 
     # Si armure/bouclier équipé, ne pas activer
     if has_armor_or_shield:
-        log.append(f"⚠️ Défense sans armure inactive (Thordius porte une armure/bouclier)")
+        log.append(f"⚠️ Défense sans armure inactive (Barbare porte une armure/bouclier)")
         return False
 
     # Initialiser temporary_buffs si nécessaire
-    if not hasattr(thordius, 'temporary_buffs'):
-        thordius.temporary_buffs = {}
+    if not hasattr(barbare, 'temporary_buffs'):
+        barbare.temporary_buffs = {}
 
     # Appliquer le buff permanent
-    thordius.temporary_buffs['defense_sans_armure_active'] = {
+    barbare.temporary_buffs['defense_sans_armure_active'] = {
         'parade_bonus': 2,
         'type': 'passive_permanent',
-        'source': 'thordius_defense_sans_armure'
+        'source': 'barbare_defense_sans_armure'
     }
 
     # Appliquer directement le bonus aux jetons de parade max
-    if hasattr(thordius, 'max_parade_tokens'):
-        thordius.max_parade_tokens += 2
+    if hasattr(barbare, 'max_parade_tokens'):
+        barbare.max_parade_tokens += 2
 
     # Recharger les jetons de parade pour refléter la nouvelle valeur max
-    if hasattr(thordius, 'current_parade_tokens') and hasattr(thordius, 'max_parade_tokens'):
-        thordius.current_parade_tokens = thordius.max_parade_tokens
+    if hasattr(barbare, 'current_parade_tokens') and hasattr(barbare, 'max_parade_tokens'):
+        barbare.current_parade_tokens = barbare.max_parade_tokens
 
     # Logger l'activation
-    log.append(f"💪 Défense sans armure de Thordius active (+2 jetons de parade permanents)")
+    log.append(f"💪 Défense sans armure de Barbare active (+2 jetons de parade permanents)")
 
     return True
 
 
 def auto_activate_critique_brutal(heroes: List, log: List[str]) -> bool:
     """
-    AUTO-ACTIVATION: Active automatiquement "Critique brutal" pour Thordius dès le début du combat.
+    AUTO-ACTIVATION: Active automatiquement "Critique brutal" pour Barbare dès le début du combat.
 
     Critique brutal est un passif permanent qui élargit la plage de critique à 18-19-20
     au lieu de 20 seul. Cette capacité s'active automatiquement dès le début du combat
-    et reste active tant que Thordius est vivant.
+    et reste active tant que Barbare est vivant.
 
     Args:
         heroes: Liste des héros participant au combat
@@ -451,24 +451,24 @@ def auto_activate_critique_brutal(heroes: List, log: List[str]) -> bool:
     Effet:
         Permet les critiques sur 18-19-20 au lieu de 20 seul
     """
-    # Chercher Thordius (P-5) parmi les héros vivants
-    thordius = next((h for h in heroes if h.code == "P-5" and h.is_alive()), None)
+    # Chercher Barbare (P-5) parmi les héros vivants
+    barbare = next((h for h in heroes if h.code == "P-5" and h.is_alive()), None)
 
-    if not thordius:
+    if not barbare:
         return False
 
     # Initialiser temporary_buffs si nécessaire
-    if not hasattr(thordius, 'temporary_buffs'):
-        thordius.temporary_buffs = {}
+    if not hasattr(barbare, 'temporary_buffs'):
+        barbare.temporary_buffs = {}
 
     # Appliquer le buff permanent
-    thordius.temporary_buffs['expanded_crit_range'] = {
+    barbare.temporary_buffs['expanded_crit_range'] = {
         'type': 'passive_permanent',
         'critical_rolls': [18, 19, 20],
         'source': 'critique_brutal'
     }
 
     # Logger l'activation
-    log.append(f"🔥 Critique brutal de Thordius actif (Critiques: 18-19-20)")
+    log.append(f"🔥 Critique brutal de Barbare actif (Critiques: 18-19-20)")
 
     return True

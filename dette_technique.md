@@ -91,7 +91,7 @@ Note : `st.session_state.current_enemies` est lu à 5 endroits dans `sandbox_int
 | **Type** | Lisibilité |
 
 **Description :**
-Lors de la refactorisation du système de transformations d'Elneha, l'ancien code a été conservé par sécurité pendant la transition. Le nouveau système fonctionne via les `individual_abilities`.
+Lors de la refactorisation du système de transformations d'Druide, l'ancien code a été conservé par sécurité pendant la transition. Le nouveau système fonctionne via les `individual_abilities`.
 
 **Problème :**
 ✅ **Confirmé dead code** — `set_form()` porte le tag `# LEGACY` et n'est appelée nulle part dans le projet.
@@ -190,7 +190,7 @@ Même pattern que DT-008 — méthodes utilitaires anticipatoires générées de
 
 ---
 
-### DT-010 — Rustine d'initialisation des capacités 101/102 d'Elneha
+### DT-010 — Rustine d'initialisation des capacités 101/102 d'Druide
 
 | Champ | Détail |
 |---|---|
@@ -200,7 +200,7 @@ Même pattern que DT-008 — méthodes utilitaires anticipatoires générées de
 | **Type** | Architecture |
 
 **Description :**
-`start_new_combat` ajoute 101 et 102 dans `unlocked_abilities` alors qu'Elneha est en forme humaine. Ces capacités sont pourtant exclusives à leurs formes (ours/loup) et protégées par `can_use_ability()` dans chaque classe. Deux mécanismes font la même chose.
+`start_new_combat` ajoute 101 et 102 dans `unlocked_abilities` alors qu'Druide est en forme humaine. Ces capacités sont pourtant exclusives à leurs formes (ours/loup) et protégées par `can_use_ability()` dans chaque classe. Deux mécanismes font la même chose.
 
 **Problème :**
 `unlocked_abilities` est censé être la source de vérité sur ce qui est disponible en UI, mais la vraie barrière est dans `can_use_ability()`. Le guard défensif dans `start_new_combat` est redondant. `start_new_combat` ne devrait pas avoir à connaître les numéros 101 et 102.
@@ -217,12 +217,12 @@ Même pattern que DT-008 — méthodes utilitaires anticipatoires générées de
 | **Type** | Logique métier / Lisibilité |
 
 **Description :**
-`Enemy.is_alive()` contient un check `berserker_rage_active` dans `temporary_buffs` avec le commentaire "Berserker rage (Thordius P-5-6)". La rage du berserker est une capacité du héros Thordius — elle lui permet de continuer à attaquer même à 0 PV.
+`Enemy.is_alive()` contient un check `berserker_rage_active` dans `temporary_buffs` avec le commentaire "Berserker rage (Barbare P-5-6)". La rage du berserker est une capacité du héros Barbare — elle lui permet de continuer à attaquer même à 0 PV.
 
 **Problème :**
 `Enemy` ne déclare pas de champ `temporary_buffs` (ses champs d'effets sont `debuffs`, `status_effects`, `marks`). `hasattr(self, 'temporary_buffs')` est donc **toujours `False`** sur un ennemi — le check ne se déclenche jamais. Dead code.
 
-Le pattern a été copié de `Character` dans `Enemy` sans adaptation au contexte. Le commentaire lui-même ("Thordius P-5-6") révèle que la logique ciblait le héros, pas l'ennemi.
+Le pattern a été copié de `Character` dans `Enemy` sans adaptation au contexte. Le commentaire lui-même ("Barbare P-5-6") révèle que la logique ciblait le héros, pas l'ennemi.
 
 ---
 

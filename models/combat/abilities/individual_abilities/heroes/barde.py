@@ -1,7 +1,7 @@
-# stephe.py - Capacités individuelles de Stephe (P-6) - Support/Debuffer
+# barde.py - Capacités individuelles de Barde (P-6) - Support/Debuffer
 """
-Capacités individuelles pour le héros Stephe (P-6)
-Stephe est un support spécialisé dans les debuffs ennemis, les buffs alliés et les soins.
+Capacités individuelles pour le héros Barde (P-6)
+Barde est un support spécialisé dans les debuffs ennemis, les buffs alliés et les soins.
 Ses capacités se concentrent sur l'affaiblissement des ennemis et le renforcement du groupe.
 
 ✅ DONNÉES OFFICIELLES Sorts.xlsx:
@@ -20,11 +20,11 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 
 # ========================================
-# CAPACITÉS STEPHE (P-6) - SUPPORT/DEBUFFER
+# CAPACITÉS BARDE (P-6) - SUPPORT/DEBUFFER
 # ========================================
 
 @register_ability
-class StepheAffaiblissement(BaseAbility):
+class BardeAffaiblissement(BaseAbility):
     """P-6-1: Affaiblissement (en réalité debuff) - Réduit DEF et HP max ennemi"""
 
     hero_code = "P-6"
@@ -97,7 +97,7 @@ class StepheAffaiblissement(BaseAbility):
 
 
 @register_ability
-class StepheAccordInterdit(BaseAbility):
+class BardeAccordInterdit(BaseAbility):
     """P-6-2: Accord interdit - Tous ennemis perdent action ce tour (AoE stun)"""
 
     hero_code = "P-6"
@@ -134,7 +134,7 @@ class StepheAccordInterdit(BaseAbility):
             for enemy in enemies:
                 # Effet stun (AVEC vérification immunité)
                 if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    enemy, duration=1, source='stephe_benediction', log=log
+                    enemy, duration=1, source='barde_benediction', log=log
                 ):
                     stunned_count += 1
 
@@ -158,7 +158,7 @@ class StepheAccordInterdit(BaseAbility):
 
 
 @register_ability
-class StepheInspiration(BaseAbility):
+class BardeInspiration(BaseAbility):
     """P-6-3: Inspiration - +2 précision +1 dégâts tous alliés permanent"""
 
     hero_code = "P-6"
@@ -194,7 +194,7 @@ class StepheInspiration(BaseAbility):
                 if not hasattr(ally, 'temporary_buffs'):
                     ally.temporary_buffs = {}
 
-                ally.temporary_buffs['stephe_protection'] = {
+                ally.temporary_buffs['barde_protection'] = {
                     'type': 'permanent_combat',
                     'precision': self.precision_bonus,
                     'damage': self.damage_bonus,
@@ -234,7 +234,7 @@ class StepheInspiration(BaseAbility):
 
 
 @register_ability
-class StepheInvisibilite(BaseAbility):
+class BardeInvisibilite(BaseAbility):
     """P-6-4: Invisibilité - Rend allié invisible (ne peut être ciblé)"""
 
     hero_code = "P-6"
@@ -275,7 +275,7 @@ class StepheInvisibilite(BaseAbility):
                 'type': 'untargetable',
                 'duration': 'until_action',  # Dure jusqu'à ce que le héros agisse
                 'expires_on_action': True,  # Se termine si le héros effectue une action
-                'source': 'stephe_invisibilite'
+                'source': 'barde_invisibilite'
             }
 
             log.append(f"🌫️ {caster.name} rend {target.name} invisible aux ennemis !")
@@ -294,7 +294,7 @@ class StepheInvisibilite(BaseAbility):
 
 
 @register_ability
-class StepheSoinMajeur(BaseAbility):
+class BardeSoinMajeur(BaseAbility):
     """P-6-5: Soin majeur - Soigne jusqu'à 8 PV répartis"""
 
     hero_code = "P-6"
@@ -391,7 +391,7 @@ class StepheSoinMajeur(BaseAbility):
 
 
 @register_ability
-class StepheMotDeMort(BaseAbility):
+class BardeMotDeMort(BaseAbility):
     """P-6-6: Mot de mort - Kill instantané ennemi <30 HP"""
 
     hero_code = "P-6"

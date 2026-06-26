@@ -68,7 +68,7 @@ class InitiativeManager:
 
         Example:
             >>> log_lines = InitiativeManager.get_initiative_order_log(combatants)
-            >>> # ['=== ORDRE D'INITIATIVE ===', '1. 🦸 Atucan: 18', '2. 👹 Gobelin: 12', ...]
+            >>> # ['=== ORDRE D'INITIATIVE ===', '1. 🦸 Paladin: 18', '2. 👹 Gobelin: 12', ...]
         """
         log_lines = ["=== ORDRE D'INITIATIVE ==="]
 
@@ -109,7 +109,7 @@ class InitiativeManager:
 
         Example:
             >>> summary = InitiativeManager.get_turn_order_summary(combatants)
-            >>> # "Atucan (18) > Gobelin (12) > Liarie (8)"
+            >>> # "Paladin (18) > Gobelin (12) > Mage (8)"
         """
         parts = []
         for combatant in combatants:

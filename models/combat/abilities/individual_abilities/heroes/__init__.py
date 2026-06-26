@@ -1,121 +1,121 @@
 # heroes/__init__.py - Point d'entrée des capacités par héros
 """
 Point d'entrée pour toutes les capacités individuelles des héros
-Phase 3+: Elneha (6/6) + Liarie (6/6) + Atucan (6/6) + Kraor (4/6) = 22 capacités totales
+Phase 3+: Druide (6/6) + Mage (6/6) + Paladin (6/6) + Chasseur (4/6) = 22 capacités totales
 
 Structure:
-- Elneha (P-1): Druide transformations et soins (6 capacités)
-- Liarie (P-2): Mage élémentaire offensive/défensive (6 capacités)
-- Atucan (P-3): Paladin défensif protection/soins divins (6 capacités)
-- Kraor (P-4): Chasseur tactique support/utility (4 capacités combat)
+- Druide (P-1): Druide transformations et soins (6 capacités)
+- Mage (P-2): Mage élémentaire offensive/défensive (6 capacités)
+- Paladin (P-3): Paladin défensif protection/soins divins (6 capacités)
+- Chasseur (P-4): Chasseur tactique support/utility (4 capacités combat)
 """
 
 # ========================================
 # IMPORTS DES CAPACITÉS PAR HÉROS
 # ========================================
 
-# Import des capacités d'Elneha (P-1)
+# Import des capacités d'Druide (P-1)
 try:
-    from .elneha import (
-        ElnehaFormeOurs, ElnehaSoinMineur, ElnehaFormeLoup,
-        ElnehaSoinMultiple, ElnehaOndeTonnante, ElnehaResurrection,
-        get_elneha_abilities_count, get_elneha_abilities_summary
+    from .druide import (
+        DruideFormeOurs, DruideSoinMineur, DruideFormeLoup,
+        DruideSoinMultiple, DruideOndeTonnante, DruideResurrection,
+        get_druide_abilities_count, get_druide_abilities_summary
     )
-    ELNEHA_LOADED = True
-    print("✅ Capacités d'Elneha (P-1) chargées avec succès")
+    DRUIDE_LOADED = True
+    print("✅ Capacités d'Druide (P-1) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités d'Elneha: {e}")
-    ELNEHA_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités d'Druide: {e}")
+    DRUIDE_LOADED = False
 
-# Import des capacités de Liarie (P-2)
+# Import des capacités de Mage (P-2)
 try:
-    from .liarie import (
-        LiarieEclairMagique, LiarieArmureDuMage, LiarieMurDeGlace,
-        LiarieBouleDeFeu, LiarieVolDeVie, LiariePluieDeMetéores,
-        get_liarie_abilities_count, get_liarie_abilities_summary,
-        get_liarie_spell_costs, get_liarie_damage_output, get_liarie_tactical_analysis
+    from .mage import (
+        MageEclairMagique, MageArmureDuMage, MageMurDeGlace,
+        MageBouleDeFeu, MageVolDeVie, MagePluieDeMetéores,
+        get_mage_abilities_count, get_mage_abilities_summary,
+        get_mage_spell_costs, get_mage_damage_output, get_mage_tactical_analysis
     )
-    LIARIE_LOADED = True
-    print("✅ Capacités de Liarie (P-2) chargées avec succès")
+    MAGE_LOADED = True
+    print("✅ Capacités de Mage (P-2) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités de Liarie: {e}")
-    LIARIE_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités de Mage: {e}")
+    MAGE_LOADED = False
 
-# Import des capacités d'Atucan (P-3)
+# Import des capacités d'Paladin (P-3)
 try:
-    from .atucan import (
-        AtucanImpositionDesMains, AtucanSensDeLaJustice, AtucanChatimentDivin,
-        AtucanAuraSacree, AtucanSoinSuperieur, AtucanJugementDernier,
-        get_atucan_abilities_count, get_atucan_abilities_summary,
-        get_atucan_spell_costs, get_atucan_tactical_analysis
+    from .paladin import (
+        PaladinImpositionDesMains, PaladinSensDeLaJustice, PaladinChatimentDivin,
+        PaladinAuraSacree, PaladinSoinSuperieur, PaladinJugementDernier,
+        get_paladin_abilities_count, get_paladin_abilities_summary,
+        get_paladin_spell_costs, get_paladin_tactical_analysis
     )
-    ATUCAN_LOADED = True
-    print("✅ Capacités d'Atucan (P-3) chargées avec succès")
+    PALADIN_LOADED = True
+    print("✅ Capacités d'Paladin (P-3) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités d'Atucan: {e}")
-    ATUCAN_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités d'Paladin: {e}")
+    PALADIN_LOADED = False
 
-# Import des capacités de Kraor (P-4) - NOUVEAU PHASE 3+
+# Import des capacités de Chasseur (P-4) - NOUVEAU PHASE 3+
 try:
-    from .kraor import (
-        KraorMarqueDuChasseur, KraorPluieDeProjectiles, KraorSoinMineur, KraorTirRapide,
-        get_kraor_abilities_count, get_kraor_abilities_summary,
-        get_kraor_spell_costs, get_kraor_combat_limitations, get_kraor_tactical_analysis,
-        validate_kraor_implementation, get_kraor_debug_info
+    from .chasseur import (
+        ChasseurMarqueDuChasseur, ChasseurPluieDeProjectiles, ChasseurSoinMineur, ChasseurTirRapide,
+        get_chasseur_abilities_count, get_chasseur_abilities_summary,
+        get_chasseur_spell_costs, get_chasseur_combat_limitations, get_chasseur_tactical_analysis,
+        validate_chasseur_implementation, get_chasseur_debug_info
     )
-    KRAOR_LOADED = True
-    print("✅ Capacités de Kraor (P-4) chargées avec succès")
+    CHASSEUR_LOADED = True
+    print("✅ Capacités de Chasseur (P-4) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités de Kraor: {e}")
-    KRAOR_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités de Chasseur: {e}")
+    CHASSEUR_LOADED = False
 
-# Import des capacités de Thordius (P-5) - NOUVEAU PHASE 4
+# Import des capacités de Barbare (P-5) - NOUVEAU PHASE 4
 try:
-    from .thordius import (
-        ThordiusDefenseSansArmure, ThordiusRageDeBerserker, ThordiusChargeDeTaureau,
-        ThordiusTemerité, ThordiusCritiqueBrutal, ThordiusRageInsatiable
+    from .barbare import (
+        BarbareDefenseSansArmure, BarbareRageDeBerserker, BarbareChargeDeTaureau,
+        BarbareTemerité, BarbareCritiqueBrutal, BarbareRageInsatiable
     )
-    THORDIUS_LOADED = True
-    print("✅ Capacités de Thordius (P-5) chargées avec succès")
+    BARBARE_LOADED = True
+    print("✅ Capacités de Barbare (P-5) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités de Thordius: {e}")
-    THORDIUS_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités de Barbare: {e}")
+    BARBARE_LOADED = False
 
-# Import des capacités de Stephe (P-6) - NOUVEAU PHASE 4
+# Import des capacités de Barde (P-6) - NOUVEAU PHASE 4
 try:
-    from .stephe import (
-        StepheAffaiblissement, StepheAccordInterdit, StepheInspiration,
-        StepheInvisibilite, StepheSoinMajeur, StepheMotDeMort
+    from .barde import (
+        BardeAffaiblissement, BardeAccordInterdit, BardeInspiration,
+        BardeInvisibilite, BardeSoinMajeur, BardeMotDeMort
     )
-    STEPHE_LOADED = True
-    print("✅ Capacités de Stephe (P-6) chargées avec succès")
+    BARDE_LOADED = True
+    print("✅ Capacités de Barde (P-6) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités de Stephe: {e}")
-    STEPHE_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités de Barde: {e}")
+    BARDE_LOADED = False
 
-# Import des capacités de Lame (P-7) - NOUVEAU PHASE 4
+# Import des capacités de Roublard (P-7) - NOUVEAU PHASE 4
 try:
-    from .lame import (
-        LameAttaqueFurtive, LameDerobade, LameBombeFumigene,
-        LameAttaqueTournoyante, LameAssautFurieux
+    from .roublard import (
+        RoublardAttaqueFurtive, RoublardDerobade, RoublardBombeFumigene,
+        RoublardAttaqueTournoyante, RoublardAssautFurieux
     )
-    LAME_LOADED = True
-    print("✅ Capacités de Lame (P-7) chargées avec succès")
+    ROUBLARD_LOADED = True
+    print("✅ Capacités de Roublard (P-7) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités de Lame: {e}")
-    LAME_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités de Roublard: {e}")
+    ROUBLARD_LOADED = False
 
-# Import des capacités de Raishi (P-8) - NOUVEAU PHASE 4
+# Import des capacités de Pugiliste (P-8) - NOUVEAU PHASE 4
 try:
-    from .raishi import (
-        RaishiPointFaible, RaishiAttaquesMultiples, RaishiPurification,
-        RaishiDelugeDeCups, RaishiPaumeOuverte, RaishiZuiQuan
+    from .pugiliste import (
+        PugilistePointFaible, PugilisteAttaquesMultiples, PugilistePurification,
+        PugilisteDelugeDeCups, PugilistePaumeOuverte, PugilisteZuiQuan
     )
-    RAISHI_LOADED = True
-    print("✅ Capacités de Raishi (P-8) chargées avec succès")
+    PUGILISTE_LOADED = True
+    print("✅ Capacités de Pugiliste (P-8) chargées avec succès")
 except ImportError as e:
-    print(f"⚠️ Impossible de charger les capacités de Raishi: {e}")
-    RAISHI_LOADED = False
+    print(f"⚠️ Impossible de charger les capacités de Pugiliste: {e}")
+    PUGILISTE_LOADED = False
 
 # ========================================
 # EXPORTS PUBLICS
@@ -123,59 +123,59 @@ except ImportError as e:
 
 __all__ = []
 
-# Elneha exports
-if ELNEHA_LOADED:
+# Druide exports
+if DRUIDE_LOADED:
     __all__.extend([
-        'ElnehaFormeOurs', 'ElnehaSoinMineur', 'ElnehaFormeLoup',
-        'ElnehaSoinMultiple', 'ElnehaOndeTonnante', 'ElnehaResurrection'
+        'DruideFormeOurs', 'DruideSoinMineur', 'DruideFormeLoup',
+        'DruideSoinMultiple', 'DruideOndeTonnante', 'DruideResurrection'
     ])
 
-# Liarie exports
-if LIARIE_LOADED:
+# Mage exports
+if MAGE_LOADED:
     __all__.extend([
-        'LiarieEclairMagique', 'LiarieArmureDuMage', 'LiarieMurDeGlace',
-        'LiarieBouleDeFeu', 'LiarieVolDeVie', 'LiariePluieDeMetéores'
+        'MageEclairMagique', 'MageArmureDuMage', 'MageMurDeGlace',
+        'MageBouleDeFeu', 'MageVolDeVie', 'MagePluieDeMetéores'
     ])
 
-# Atucan exports
-if ATUCAN_LOADED:
+# Paladin exports
+if PALADIN_LOADED:
     __all__.extend([
-        'AtucanImpositionDesMains', 'AtucanSensDeLaJustice', 'AtucanChatimentDivin',
-        'AtucanAuraSacree', 'AtucanSoinSuperieur', 'AtucanJugementDernier'
+        'PaladinImpositionDesMains', 'PaladinSensDeLaJustice', 'PaladinChatimentDivin',
+        'PaladinAuraSacree', 'PaladinSoinSuperieur', 'PaladinJugementDernier'
     ])
 
-# Kraor exports - NOUVEAU
-if KRAOR_LOADED:
+# Chasseur exports - NOUVEAU
+if CHASSEUR_LOADED:
     __all__.extend([
-        'KraorMarqueDuChasseur', 'KraorPluieDeProjectiles', 'KraorSoinMineur', 'KraorTirRapide'
+        'ChasseurMarqueDuChasseur', 'ChasseurPluieDeProjectiles', 'ChasseurSoinMineur', 'ChasseurTirRapide'
     ])
 
-# Thordius exports - NOUVEAU PHASE 4
-if THORDIUS_LOADED:
+# Barbare exports - NOUVEAU PHASE 4
+if BARBARE_LOADED:
     __all__.extend([
-        'ThordiusDefenseSansArmure', 'ThordiusRageDeBerserker', 'ThordiusChargeDeTaureau',
-        'ThordiusTemerité', 'ThordiusCritiqueBrutal', 'ThordiusRageInsatiable'
+        'BarbareDefenseSansArmure', 'BarbareRageDeBerserker', 'BarbareChargeDeTaureau',
+        'BarbareTemerité', 'BarbareCritiqueBrutal', 'BarbareRageInsatiable'
     ])
 
-# Stephe exports - NOUVEAU PHASE 4
-if STEPHE_LOADED:
+# Barde exports - NOUVEAU PHASE 4
+if BARDE_LOADED:
     __all__.extend([
-        'StepheAffaiblissement', 'StepheAccordInterdit', 'StepheInspiration',
-        'StepheInvisibilite', 'StepheSoinMajeur', 'StepheMotDeMort'
+        'BardeAffaiblissement', 'BardeAccordInterdit', 'BardeInspiration',
+        'BardeInvisibilite', 'BardeSoinMajeur', 'BardeMotDeMort'
     ])
 
-# Lame exports - NOUVEAU PHASE 4
-if LAME_LOADED:
+# Roublard exports - NOUVEAU PHASE 4
+if ROUBLARD_LOADED:
     __all__.extend([
-        'LameAttaqueFurtive', 'LameDerobade', 'LameBombeFumigene',
-        'LameAttaqueTournoyante', 'LameAssautFurieux'
+        'RoublardAttaqueFurtive', 'RoublardDerobade', 'RoublardBombeFumigene',
+        'RoublardAttaqueTournoyante', 'RoublardAssautFurieux'
     ])
 
-# Raishi exports - NOUVEAU PHASE 4
-if RAISHI_LOADED:
+# Pugiliste exports - NOUVEAU PHASE 4
+if PUGILISTE_LOADED:
     __all__.extend([
-        'RaishiPointFaible', 'RaishiAttaquesMultiples', 'RaishiPurification',
-        'RaishiDelugeDeCups', 'RaishiPaumeOuverte', 'RaishiZuiQuan'
+        'PugilistePointFaible', 'PugilisteAttaquesMultiples', 'PugilistePurification',
+        'PugilisteDelugeDeCups', 'PugilistePaumeOuverte', 'PugilisteZuiQuan'
     ])
 
 # ========================================
@@ -185,63 +185,63 @@ if RAISHI_LOADED:
 def get_phase2_statistics() -> dict:
     """Retourne les statistiques complètes - MISE À JOUR PHASE 4 avec 8 héros"""
 
-    elneha_count = get_elneha_abilities_count() if ELNEHA_LOADED else 0
-    liarie_count = get_liarie_abilities_count() if LIARIE_LOADED else 0
-    atucan_count = get_atucan_abilities_count() if ATUCAN_LOADED else 0
-    kraor_count = get_kraor_abilities_count() if KRAOR_LOADED else 0
-    thordius_count = 6 if THORDIUS_LOADED else 0  # NOUVEAU PHASE 4
-    stephe_count = 6 if STEPHE_LOADED else 0      # NOUVEAU PHASE 4
-    lame_count = 5 if LAME_LOADED else 0          # NOUVEAU PHASE 4 (5 capacités, P-7-3 désactivée)
-    raishi_count = 6 if RAISHI_LOADED else 0      # NOUVEAU PHASE 4
-    total_count = elneha_count + liarie_count + atucan_count + kraor_count + thordius_count + stephe_count + lame_count + raishi_count
+    druide_count = get_druide_abilities_count() if DRUIDE_LOADED else 0
+    mage_count = get_mage_abilities_count() if MAGE_LOADED else 0
+    paladin_count = get_paladin_abilities_count() if PALADIN_LOADED else 0
+    chasseur_count = get_chasseur_abilities_count() if CHASSEUR_LOADED else 0
+    barbare_count = 6 if BARBARE_LOADED else 0  # NOUVEAU PHASE 4
+    barde_count = 6 if BARDE_LOADED else 0      # NOUVEAU PHASE 4
+    roublard_count = 5 if ROUBLARD_LOADED else 0          # NOUVEAU PHASE 4 (5 capacités, P-7-3 désactivée)
+    pugiliste_count = 6 if PUGILISTE_LOADED else 0      # NOUVEAU PHASE 4
+    total_count = druide_count + mage_count + paladin_count + chasseur_count + barbare_count + barde_count + roublard_count + pugiliste_count
     
     heroes_completed = []
-    if ELNEHA_LOADED and elneha_count == 6:
-        heroes_completed.append("P-1 (Elneha)")
-    if LIARIE_LOADED and liarie_count == 6:
-        heroes_completed.append("P-2 (Liarie)")
-    if ATUCAN_LOADED and atucan_count == 6:
-        heroes_completed.append("P-3 (Atucan)")
-    if KRAOR_LOADED and kraor_count == 4:
-        heroes_completed.append("P-4 (Kraor)")
-    if THORDIUS_LOADED and thordius_count == 6:  # NOUVEAU
-        heroes_completed.append("P-5 (Thordius)")
-    if STEPHE_LOADED and stephe_count == 6:  # NOUVEAU
-        heroes_completed.append("P-6 (Stephe)")
-    if LAME_LOADED and lame_count == 5:  # NOUVEAU (5 car P-7-3 désactivée)
-        heroes_completed.append("P-7 (Lame)")
-    if RAISHI_LOADED and raishi_count == 6:  # NOUVEAU
-        heroes_completed.append("P-8 (Raishi)")
+    if DRUIDE_LOADED and druide_count == 6:
+        heroes_completed.append("P-1 (Druide)")
+    if MAGE_LOADED and mage_count == 6:
+        heroes_completed.append("P-2 (Mage)")
+    if PALADIN_LOADED and paladin_count == 6:
+        heroes_completed.append("P-3 (Paladin)")
+    if CHASSEUR_LOADED and chasseur_count == 4:
+        heroes_completed.append("P-4 (Chasseur)")
+    if BARBARE_LOADED and barbare_count == 6:  # NOUVEAU
+        heroes_completed.append("P-5 (Barbare)")
+    if BARDE_LOADED and barde_count == 6:  # NOUVEAU
+        heroes_completed.append("P-6 (Barde)")
+    if ROUBLARD_LOADED and roublard_count == 5:  # NOUVEAU (5 car P-7-3 désactivée)
+        heroes_completed.append("P-7 (Roublard)")
+    if PUGILISTE_LOADED and pugiliste_count == 6:  # NOUVEAU
+        heroes_completed.append("P-8 (Pugiliste)")
 
     return {
         "phase": "4",  # PHASE 4 COMPLÈTE avec 8 héros
         "heroes_completed": heroes_completed,
         "total_abilities": total_count,
-        "elneha_abilities": elneha_count,
-        "liarie_abilities": liarie_count,
-        "atucan_abilities": atucan_count,
-        "kraor_abilities": kraor_count,
-        "thordius_abilities": thordius_count,  # NOUVEAU
-        "stephe_abilities": stephe_count,      # NOUVEAU
-        "lame_abilities": lame_count,          # NOUVEAU
-        "raishi_abilities": raishi_count,      # NOUVEAU
+        "druide_abilities": druide_count,
+        "mage_abilities": mage_count,
+        "paladin_abilities": paladin_count,
+        "chasseur_abilities": chasseur_count,
+        "barbare_abilities": barbare_count,  # NOUVEAU
+        "barde_abilities": barde_count,      # NOUVEAU
+        "roublard_abilities": roublard_count,          # NOUVEAU
+        "pugiliste_abilities": pugiliste_count,      # NOUVEAU
         "progress_percentage": round((total_count / 59) * 100, 1),
         "mechanical_abilities_estimate": total_count + 2,
         "next_phase_target": 59,  # Phase 5 objectif = toutes capacités
         "loading_status": {
-            "elneha_loaded": ELNEHA_LOADED,
-            "liarie_loaded": LIARIE_LOADED,
-            "atucan_loaded": ATUCAN_LOADED,
-            "kraor_loaded": KRAOR_LOADED,
-            "thordius_loaded": THORDIUS_LOADED,  # NOUVEAU
-            "stephe_loaded": STEPHE_LOADED,      # NOUVEAU
-            "lame_loaded": LAME_LOADED,          # NOUVEAU
-            "raishi_loaded": RAISHI_LOADED       # NOUVEAU
+            "druide_loaded": DRUIDE_LOADED,
+            "mage_loaded": MAGE_LOADED,
+            "paladin_loaded": PALADIN_LOADED,
+            "chasseur_loaded": CHASSEUR_LOADED,
+            "barbare_loaded": BARBARE_LOADED,  # NOUVEAU
+            "barde_loaded": BARDE_LOADED,      # NOUVEAU
+            "roublard_loaded": ROUBLARD_LOADED,          # NOUVEAU
+            "pugiliste_loaded": PUGILISTE_LOADED       # NOUVEAU
         }
     }
 
 def print_phase2_summary():
-    """Affiche un résumé complet - MISE À JOUR PHASE 3+ avec Kraor"""
+    """Affiche un résumé complet - MISE À JOUR PHASE 3+ avec Chasseur"""
     stats = get_phase2_statistics()
     
     print("\n" + "="*60)
@@ -257,36 +257,36 @@ def print_phase2_summary():
         print(f"   ✅ {hero}")
     
     print(f"\n📊 Détail par héros:")
-    print(f"   🐻 Elneha (P-1): {stats['elneha_abilities']}/6 capacités")
-    print(f"   🔮 Liarie (P-2): {stats['liarie_abilities']}/6 capacités")
-    if ATUCAN_LOADED:
-        print(f"   ⚔️ Atucan (P-3): {stats['atucan_abilities']}/6 capacités")
-    if KRAOR_LOADED:
-        print(f"   🏹 Kraor (P-4): {stats['kraor_abilities']}/4 capacités combat")  # NOUVEAU
+    print(f"   🐻 Druide (P-1): {stats['druide_abilities']}/6 capacités")
+    print(f"   🔮 Mage (P-2): {stats['mage_abilities']}/6 capacités")
+    if PALADIN_LOADED:
+        print(f"   ⚔️ Paladin (P-3): {stats['paladin_abilities']}/6 capacités")
+    if CHASSEUR_LOADED:
+        print(f"   🏹 Chasseur (P-4): {stats['chasseur_abilities']}/4 capacités combat")  # NOUVEAU
     
     print(f"\n⚙️ Capacités mécaniques estimées: ~{stats['mechanical_abilities_estimate']}")
     print(f"🚀 Prochaine étape: Phase 4 vers {stats['next_phase_target']} capacités")
     
     # Afficher les résumés détaillés si disponibles
-    if ELNEHA_LOADED:
-        print(f"\n{get_elneha_abilities_summary()}")
+    if DRUIDE_LOADED:
+        print(f"\n{get_druide_abilities_summary()}")
     
-    if LIARIE_LOADED:
-        print(f"\n{get_liarie_abilities_summary()}")
+    if MAGE_LOADED:
+        print(f"\n{get_mage_abilities_summary()}")
     
-    if ATUCAN_LOADED:
-        print(f"\n{get_atucan_abilities_summary()}")
+    if PALADIN_LOADED:
+        print(f"\n{get_paladin_abilities_summary()}")
     
-    if KRAOR_LOADED:  # NOUVEAU
-        print(f"\n{get_kraor_abilities_summary()}")
+    if CHASSEUR_LOADED:  # NOUVEAU
+        print(f"\n{get_chasseur_abilities_summary()}")
     
     print("\n" + "="*60)
     if stats['total_abilities'] >= 22:
         print("🎉 PHASE 3+ TERMINÉE AVEC SUCCÈS !")
-        print("📋 Prochaine étape: Implémenter P-5 Thordius pour Phase 4")
+        print("📋 Prochaine étape: Implémenter P-5 Barbare pour Phase 4")
     elif stats['total_abilities'] >= 18:
-        print("🎉 PHASE 3 PARTIELLEMENT TERMINÉE - Kraor en cours !")
-        print("🏹 Finaliser Kraor pour compléter Phase 3+")
+        print("🎉 PHASE 3 PARTIELLEMENT TERMINÉE - Chasseur en cours !")
+        print("🏹 Finaliser Chasseur pour compléter Phase 3+")
     elif stats['total_abilities'] >= 12:
         print("🎉 PHASE 2 TERMINÉE - Phase 3+ en cours !")
     else:
@@ -294,29 +294,29 @@ def print_phase2_summary():
     print("="*60)
 
 def get_all_heroes_summary() -> str:
-    """Retourne un résumé de tous les héros implémentés - MISE À JOUR PHASE 3+ avec Kraor"""
+    """Retourne un résumé de tous les héros implémentés - MISE À JOUR PHASE 3+ avec Chasseur"""
     stats = get_phase2_statistics()
     
     summary = f"📚 HÉROS IMPLÉMENTÉS - PHASE 3+:\n\n"
     
-    if ELNEHA_LOADED:
-        summary += get_elneha_abilities_summary() + "\n"
+    if DRUIDE_LOADED:
+        summary += get_druide_abilities_summary() + "\n"
     
-    if LIARIE_LOADED:
-        summary += get_liarie_abilities_summary() + "\n"
+    if MAGE_LOADED:
+        summary += get_mage_abilities_summary() + "\n"
     
-    if ATUCAN_LOADED:
-        summary += get_atucan_abilities_summary() + "\n"
+    if PALADIN_LOADED:
+        summary += get_paladin_abilities_summary() + "\n"
     
-    if KRAOR_LOADED:  # NOUVEAU
-        summary += get_kraor_abilities_summary() + "\n"
+    if CHASSEUR_LOADED:  # NOUVEAU
+        summary += get_chasseur_abilities_summary() + "\n"
     
     summary += f"🔮 TOTAL: {stats['total_abilities']} capacités individuelles sur 59 ({stats['progress_percentage']}%)\n"
     
     return summary
 
 def get_tactical_analysis() -> dict:
-    """Analyse tactique des héros disponibles - MISE À JOUR PHASE 3+ avec Kraor"""
+    """Analyse tactique des héros disponibles - MISE À JOUR PHASE 3+ avec Chasseur"""
     analysis = {
         "phase": "3+",
         "heroes_available": [],
@@ -324,124 +324,124 @@ def get_tactical_analysis() -> dict:
         "combat_roles": {}
     }
     
-    if ELNEHA_LOADED:
-        analysis["heroes_available"].append("Elneha (P-1)")
-        analysis["combat_roles"]["Elneha"] = {
+    if DRUIDE_LOADED:
+        analysis["heroes_available"].append("Druide (P-1)")
+        analysis["combat_roles"]["Druide"] = {
             "primary": "Tank/Healer",
             "secondary": "Shapeshifter",
             "strengths": ["Transformations", "Area healing", "Resurrection"],
             "spell_costs": "1-2 sorts par capacité"
         }
     
-    if LIARIE_LOADED:
-        analysis["heroes_available"].append("Liarie (P-2)")
-        analysis["combat_roles"]["Liarie"] = {
+    if MAGE_LOADED:
+        analysis["heroes_available"].append("Mage (P-2)")
+        analysis["combat_roles"]["Mage"] = {
             "primary": "DPS/Control",
             "secondary": "Support",
             "strengths": ["High damage", "No retaliation", "Self-sustain"],
             "spell_costs": "1-4 sorts par capacité"
         }
     
-    if ATUCAN_LOADED:
-        analysis["heroes_available"].append("Atucan (P-3)")
-        analysis["combat_roles"]["Atucan"] = {
+    if PALADIN_LOADED:
+        analysis["heroes_available"].append("Paladin (P-3)")
+        analysis["combat_roles"]["Paladin"] = {
             "primary": "Tank/Support",
             "secondary": "Divine DPS",
             "strengths": ["Defensive buffs", "Group healing", "Divine damage"],
             "spell_costs": "1-3 sorts par capacité"
         }
     
-    if KRAOR_LOADED:  # NOUVEAU
-        analysis["heroes_available"].append("Kraor (P-4)")
-        analysis["combat_roles"]["Kraor"] = {
+    if CHASSEUR_LOADED:  # NOUVEAU
+        analysis["heroes_available"].append("Chasseur (P-4)")
+        analysis["combat_roles"]["Chasseur"] = {
             "primary": "Utility/Support",
             "secondary": "Tactical DPS",
             "strengths": ["Zero spell costs", "Group damage boost", "Multi-target attacks", "Emergency healing"],
             "spell_costs": "0 sorts (toutes gratuites)"
         }
     
-    # Synergies mises à jour avec Kraor
+    # Synergies mises à jour avec Chasseur
     synergies = []
-    if ELNEHA_LOADED and LIARIE_LOADED:
-        synergies.append("Elneha tank + Liarie DPS = équipe équilibrée")
-        synergies.append("Soin multiple d'Elneha + Vol de vie de Liarie = sustain optimal")
+    if DRUIDE_LOADED and MAGE_LOADED:
+        synergies.append("Druide tank + Mage DPS = équipe équilibrée")
+        synergies.append("Soin multiple d'Druide + Vol de vie de Mage = sustain optimal")
     
-    if ATUCAN_LOADED and ELNEHA_LOADED:
-        synergies.append("Atucan parade + transformations Elneha = tank ultime")
-        synergies.append("Double soins: Elneha shapeshifter + Atucan paladin")
+    if PALADIN_LOADED and DRUIDE_LOADED:
+        synergies.append("Paladin parade + transformations Druide = tank ultime")
+        synergies.append("Double soins: Druide shapeshifter + Paladin paladin")
     
-    if ATUCAN_LOADED and LIARIE_LOADED:
-        synergies.append("Atucan support + Liarie DPS = protection + dégâts")
+    if PALADIN_LOADED and MAGE_LOADED:
+        synergies.append("Paladin support + Mage DPS = protection + dégâts")
         synergies.append("Châtiment divin + sorts sans riposte = combo magique")
     
-    if KRAOR_LOADED and ELNEHA_LOADED:  # NOUVEAU
-        synergies.append("Kraor marquage + transformations Elneha = DPS boosté")
-        synergies.append("Soins Kraor + résurrection Elneha = support complet")
+    if CHASSEUR_LOADED and DRUIDE_LOADED:  # NOUVEAU
+        synergies.append("Chasseur marquage + transformations Druide = DPS boosté")
+        synergies.append("Soins Chasseur + résurrection Druide = support complet")
     
-    if KRAOR_LOADED and LIARIE_LOADED:  # NOUVEAU
-        synergies.append("Kraor multi-cible + Liarie AoE = contrôle battlefield")
-        synergies.append("Kraor gratuit + Liarie coûteuse = équilibre sorts")
+    if CHASSEUR_LOADED and MAGE_LOADED:  # NOUVEAU
+        synergies.append("Chasseur multi-cible + Mage AoE = contrôle battlefield")
+        synergies.append("Chasseur gratuit + Mage coûteuse = équilibre sorts")
     
-    if KRAOR_LOADED and ATUCAN_LOADED:  # NOUVEAU
-        synergies.append("Kraor double attaque + Atucan buffs = DPS soutenu")
-        synergies.append("Kraor tactique + Atucan défensif = support polyvalent")
+    if CHASSEUR_LOADED and PALADIN_LOADED:  # NOUVEAU
+        synergies.append("Chasseur double attaque + Paladin buffs = DPS soutenu")
+        synergies.append("Chasseur tactique + Paladin défensif = support polyvalent")
     
-    if ELNEHA_LOADED and LIARIE_LOADED and ATUCAN_LOADED and KRAOR_LOADED:  # NOUVEAU
-        synergies.append("Quatuor complet: Tank (Elneha), DPS (Liarie), Support (Atucan), Utility (Kraor)")
+    if DRUIDE_LOADED and MAGE_LOADED and PALADIN_LOADED and CHASSEUR_LOADED:  # NOUVEAU
+        synergies.append("Quatuor complet: Tank (Druide), DPS (Mage), Support (Paladin), Utility (Chasseur)")
         synergies.append("Soins quadruples: Naturels + Magiques + Divins + Tactiques")
-        synergies.append("Économie sorts optimale: Kraor gratuit libère sorts pour les autres")
+        synergies.append("Économie sorts optimale: Chasseur gratuit libère sorts pour les autres")
     
     analysis["synergies"] = synergies
     
     return analysis
 
 # ========================================
-# VALIDATION ET TESTS - MISE À JOUR KRAOR
+# VALIDATION ET TESTS - MISE À JOUR CHASSEUR
 # ========================================
 
 def validate_phase2_implementation() -> bool:
     """Valide que toutes les capacités Phase 3+ sont correctement implémentées"""
     try:
         # Vérifier les compteurs
-        elneha_count = get_elneha_abilities_count() if ELNEHA_LOADED else 0
-        liarie_count = get_liarie_abilities_count() if LIARIE_LOADED else 0
-        atucan_count = get_atucan_abilities_count() if ATUCAN_LOADED else 0
-        kraor_count = get_kraor_abilities_count() if KRAOR_LOADED else 0  # NOUVEAU
+        druide_count = get_druide_abilities_count() if DRUIDE_LOADED else 0
+        mage_count = get_mage_abilities_count() if MAGE_LOADED else 0
+        paladin_count = get_paladin_abilities_count() if PALADIN_LOADED else 0
+        chasseur_count = get_chasseur_abilities_count() if CHASSEUR_LOADED else 0  # NOUVEAU
         
         # Vérifications
         success = True
         
-        if not ELNEHA_LOADED:
-            print(f"❌ Elneha: Module non chargé")
+        if not DRUIDE_LOADED:
+            print(f"❌ Druide: Module non chargé")
             success = False
-        elif elneha_count != 6:
-            print(f"❌ Elneha: {elneha_count}/6 capacités")
-            success = False
-        
-        if not LIARIE_LOADED:
-            print(f"❌ Liarie: Module non chargé")
-            success = False
-        elif liarie_count != 6:
-            print(f"❌ Liarie: {liarie_count}/6 capacités")
+        elif druide_count != 6:
+            print(f"❌ Druide: {druide_count}/6 capacités")
             success = False
         
-        if not ATUCAN_LOADED:
-            print(f"❌ Atucan: Module non chargé")
+        if not MAGE_LOADED:
+            print(f"❌ Mage: Module non chargé")
             success = False
-        elif atucan_count != 6:
-            print(f"❌ Atucan: {atucan_count}/6 capacités")
+        elif mage_count != 6:
+            print(f"❌ Mage: {mage_count}/6 capacités")
             success = False
         
-        if not KRAOR_LOADED:  # NOUVEAU
-            print(f"❌ Kraor: Module non chargé")
+        if not PALADIN_LOADED:
+            print(f"❌ Paladin: Module non chargé")
             success = False
-        elif kraor_count != 4:  # Kraor a 4 capacités, pas 6
-            print(f"❌ Kraor: {kraor_count}/4 capacités")
+        elif paladin_count != 6:
+            print(f"❌ Paladin: {paladin_count}/6 capacités")
+            success = False
+        
+        if not CHASSEUR_LOADED:  # NOUVEAU
+            print(f"❌ Chasseur: Module non chargé")
+            success = False
+        elif chasseur_count != 4:  # Chasseur a 4 capacités, pas 6
+            print(f"❌ Chasseur: {chasseur_count}/4 capacités")
             success = False
         
         if success:
-            total = elneha_count + liarie_count + atucan_count + kraor_count  # Kraor ajouté
-            print(f"✅ Validation réussie: Elneha {elneha_count}/6, Liarie {liarie_count}/6, Atucan {atucan_count}/6, Kraor {kraor_count}/4")
+            total = druide_count + mage_count + paladin_count + chasseur_count  # Chasseur ajouté
+            print(f"✅ Validation réussie: Druide {druide_count}/6, Mage {mage_count}/6, Paladin {paladin_count}/6, Chasseur {chasseur_count}/4")
             print(f"🎯 Total Phase 3+: {total}/22 capacités")
         
         return success
@@ -454,22 +454,22 @@ def get_loaded_heroes():
     """Retourne la liste des héros avec capacités chargées"""
     loaded = []
 
-    if ELNEHA_LOADED:
-        loaded.append("P-1 (Elneha)")
-    if LIARIE_LOADED:
-        loaded.append("P-2 (Liarie)")
-    if ATUCAN_LOADED:
-        loaded.append("P-3 (Atucan)")
-    if KRAOR_LOADED:
-        loaded.append("P-4 (Kraor)")
-    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-5 (Thordius)")
-    if STEPHE_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-6 (Stephe)")
-    if LAME_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-7 (Lame)")
-    if RAISHI_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-8 (Raishi)")
+    if DRUIDE_LOADED:
+        loaded.append("P-1 (Druide)")
+    if MAGE_LOADED:
+        loaded.append("P-2 (Mage)")
+    if PALADIN_LOADED:
+        loaded.append("P-3 (Paladin)")
+    if CHASSEUR_LOADED:
+        loaded.append("P-4 (Chasseur)")
+    if BARBARE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-5 (Barbare)")
+    if BARDE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-6 (Barde)")
+    if ROUBLARD_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-7 (Roublard)")
+    if PUGILISTE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-8 (Pugiliste)")
 
     return loaded
 
@@ -477,27 +477,27 @@ def get_loaded_abilities_count():
     """Retourne le nombre de capacités individuelles chargées"""
     count = 0
 
-    if ELNEHA_LOADED:
-        count += get_elneha_abilities_count()
-    if LIARIE_LOADED:
-        count += get_liarie_abilities_count()
-    if ATUCAN_LOADED:
-        count += get_atucan_abilities_count()
-    if KRAOR_LOADED:
-        count += get_kraor_abilities_count()
-    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
+    if DRUIDE_LOADED:
+        count += get_druide_abilities_count()
+    if MAGE_LOADED:
+        count += get_mage_abilities_count()
+    if PALADIN_LOADED:
+        count += get_paladin_abilities_count()
+    if CHASSEUR_LOADED:
+        count += get_chasseur_abilities_count()
+    if BARBARE_LOADED:  # NOUVEAU PHASE 4
         count += 6
-    if STEPHE_LOADED:  # NOUVEAU PHASE 4
+    if BARDE_LOADED:  # NOUVEAU PHASE 4
         count += 6
-    if LAME_LOADED:  # NOUVEAU PHASE 4
+    if ROUBLARD_LOADED:  # NOUVEAU PHASE 4
         count += 5  # P-7-3 désactivée
-    if RAISHI_LOADED:  # NOUVEAU PHASE 4
+    if PUGILISTE_LOADED:  # NOUVEAU PHASE 4
         count += 6
 
     return count
 
 # ========================================
-# INFORMATION DE CHARGEMENT - MISE À JOUR KRAOR
+# INFORMATION DE CHARGEMENT - MISE À JOUR CHASSEUR
 # ========================================
 
 # Afficher un résumé lors de l'import
@@ -511,9 +511,9 @@ def _print_loading_summary():
     print(f"   ⚡ Capacités: {total_loaded}/59 ({round(total_loaded/59*100, 1)}%)")
     
     if total_loaded >= 22:
-        print(f"   🎉 Phase 3+ complète avec Kraor !")
+        print(f"   🎉 Phase 3+ complète avec Chasseur !")
     elif total_loaded >= 18:
-        print(f"   🏹 Phase 3+ avec Kraor en cours...")
+        print(f"   🏹 Phase 3+ avec Chasseur en cours...")
     elif total_loaded >= 12:
         print(f"   🎉 Phase 2 complète, Phase 3+ en cours...")
     elif total_loaded >= 2:
@@ -536,7 +536,7 @@ __all__.extend([
 ])
 
 def print_phase2_summary():
-    """Affiche un résumé complet - MISE À JOUR PHASE 3+ avec Kraor"""
+    """Affiche un résumé complet - MISE À JOUR PHASE 3+ avec Chasseur"""
     stats = get_phase2_statistics()
     
     print("\n" + "="*60)
@@ -552,36 +552,36 @@ def print_phase2_summary():
         print(f"   ✅ {hero}")
     
     print(f"\n📊 Détail par héros:")
-    print(f"   🐻 Elneha (P-1): {stats['elneha_abilities']}/6 capacités")
-    print(f"   🔮 Liarie (P-2): {stats['liarie_abilities']}/6 capacités")
-    if ATUCAN_LOADED:
-        print(f"   ⚔️ Atucan (P-3): {stats['atucan_abilities']}/6 capacités")
-    if KRAOR_LOADED:
-        print(f"   🏹 Kraor (P-4): {stats['kraor_abilities']}/4 capacités combat")  # NOUVEAU
+    print(f"   🐻 Druide (P-1): {stats['druide_abilities']}/6 capacités")
+    print(f"   🔮 Mage (P-2): {stats['mage_abilities']}/6 capacités")
+    if PALADIN_LOADED:
+        print(f"   ⚔️ Paladin (P-3): {stats['paladin_abilities']}/6 capacités")
+    if CHASSEUR_LOADED:
+        print(f"   🏹 Chasseur (P-4): {stats['chasseur_abilities']}/4 capacités combat")  # NOUVEAU
     
     print(f"\n⚙️ Capacités mécaniques estimées: ~{stats['mechanical_abilities_estimate']}")
     print(f"🚀 Prochaine étape: Phase 4 vers {stats['next_phase_target']} capacités")
     
     # Afficher les résumés détaillés si disponibles
-    if ELNEHA_LOADED:
-        print(f"\n{get_elneha_abilities_summary()}")
+    if DRUIDE_LOADED:
+        print(f"\n{get_druide_abilities_summary()}")
     
-    if LIARIE_LOADED:
-        print(f"\n{get_liarie_abilities_summary()}")
+    if MAGE_LOADED:
+        print(f"\n{get_mage_abilities_summary()}")
     
-    if ATUCAN_LOADED:
-        print(f"\n{get_atucan_abilities_summary()}")
+    if PALADIN_LOADED:
+        print(f"\n{get_paladin_abilities_summary()}")
     
-    if KRAOR_LOADED:  # NOUVEAU
-        print(f"\n{get_kraor_abilities_summary()}")
+    if CHASSEUR_LOADED:  # NOUVEAU
+        print(f"\n{get_chasseur_abilities_summary()}")
     
     print("\n" + "="*60)
     if stats['total_abilities'] >= 22:
         print("🎉 PHASE 3+ TERMINÉE AVEC SUCCÈS !")
-        print("📋 Prochaine étape: Implémenter P-5 Thordius pour Phase 4")
+        print("📋 Prochaine étape: Implémenter P-5 Barbare pour Phase 4")
     elif stats['total_abilities'] >= 18:
-        print("🎉 PHASE 3 PARTIELLEMENT TERMINÉE - Kraor en cours !")
-        print("🏹 Finaliser Kraor pour compléter Phase 3+")
+        print("🎉 PHASE 3 PARTIELLEMENT TERMINÉE - Chasseur en cours !")
+        print("🏹 Finaliser Chasseur pour compléter Phase 3+")
     elif stats['total_abilities'] >= 12:
         print("🎉 PHASE 2 TERMINÉE - Phase 3+ en cours !")
     else:
@@ -589,29 +589,29 @@ def print_phase2_summary():
     print("="*60)
 
 def get_all_heroes_summary() -> str:
-    """Retourne un résumé de tous les héros implémentés - MISE À JOUR PHASE 3+ avec Kraor"""
+    """Retourne un résumé de tous les héros implémentés - MISE À JOUR PHASE 3+ avec Chasseur"""
     stats = get_phase2_statistics()
     
     summary = f"📚 HÉROS IMPLÉMENTÉS - PHASE 3+:\n\n"
     
-    if ELNEHA_LOADED:
-        summary += get_elneha_abilities_summary() + "\n"
+    if DRUIDE_LOADED:
+        summary += get_druide_abilities_summary() + "\n"
     
-    if LIARIE_LOADED:
-        summary += get_liarie_abilities_summary() + "\n"
+    if MAGE_LOADED:
+        summary += get_mage_abilities_summary() + "\n"
     
-    if ATUCAN_LOADED:
-        summary += get_atucan_abilities_summary() + "\n"
+    if PALADIN_LOADED:
+        summary += get_paladin_abilities_summary() + "\n"
     
-    if KRAOR_LOADED:  # NOUVEAU
-        summary += get_kraor_abilities_summary() + "\n"
+    if CHASSEUR_LOADED:  # NOUVEAU
+        summary += get_chasseur_abilities_summary() + "\n"
     
     summary += f"🔮 TOTAL: {stats['total_abilities']} capacités individuelles sur 59 ({stats['progress_percentage']}%)\n"
     
     return summary
 
 def get_tactical_analysis() -> dict:
-    """Analyse tactique des héros disponibles - MISE À JOUR PHASE 3+ avec Kraor"""
+    """Analyse tactique des héros disponibles - MISE À JOUR PHASE 3+ avec Chasseur"""
     analysis = {
         "phase": "3+",
         "heroes_available": [],
@@ -619,124 +619,124 @@ def get_tactical_analysis() -> dict:
         "combat_roles": {}
     }
     
-    if ELNEHA_LOADED:
-        analysis["heroes_available"].append("Elneha (P-1)")
-        analysis["combat_roles"]["Elneha"] = {
+    if DRUIDE_LOADED:
+        analysis["heroes_available"].append("Druide (P-1)")
+        analysis["combat_roles"]["Druide"] = {
             "primary": "Tank/Healer",
             "secondary": "Shapeshifter",
             "strengths": ["Transformations", "Area healing", "Resurrection"],
             "spell_costs": "1-2 sorts par capacité"
         }
     
-    if LIARIE_LOADED:
-        analysis["heroes_available"].append("Liarie (P-2)")
-        analysis["combat_roles"]["Liarie"] = {
+    if MAGE_LOADED:
+        analysis["heroes_available"].append("Mage (P-2)")
+        analysis["combat_roles"]["Mage"] = {
             "primary": "DPS/Control",
             "secondary": "Support",
             "strengths": ["High damage", "No retaliation", "Self-sustain"],
             "spell_costs": "1-4 sorts par capacité"
         }
     
-    if ATUCAN_LOADED:
-        analysis["heroes_available"].append("Atucan (P-3)")
-        analysis["combat_roles"]["Atucan"] = {
+    if PALADIN_LOADED:
+        analysis["heroes_available"].append("Paladin (P-3)")
+        analysis["combat_roles"]["Paladin"] = {
             "primary": "Tank/Support",
             "secondary": "Divine DPS",
             "strengths": ["Defensive buffs", "Group healing", "Divine damage"],
             "spell_costs": "1-3 sorts par capacité"
         }
     
-    if KRAOR_LOADED:  # NOUVEAU
-        analysis["heroes_available"].append("Kraor (P-4)")
-        analysis["combat_roles"]["Kraor"] = {
+    if CHASSEUR_LOADED:  # NOUVEAU
+        analysis["heroes_available"].append("Chasseur (P-4)")
+        analysis["combat_roles"]["Chasseur"] = {
             "primary": "Utility/Support",
             "secondary": "Tactical DPS",
             "strengths": ["Zero spell costs", "Group damage boost", "Multi-target attacks", "Emergency healing"],
             "spell_costs": "0 sorts (toutes gratuites)"
         }
     
-    # Synergies mises à jour avec Kraor
+    # Synergies mises à jour avec Chasseur
     synergies = []
-    if ELNEHA_LOADED and LIARIE_LOADED:
-        synergies.append("Elneha tank + Liarie DPS = équipe équilibrée")
-        synergies.append("Soin multiple d'Elneha + Vol de vie de Liarie = sustain optimal")
+    if DRUIDE_LOADED and MAGE_LOADED:
+        synergies.append("Druide tank + Mage DPS = équipe équilibrée")
+        synergies.append("Soin multiple d'Druide + Vol de vie de Mage = sustain optimal")
     
-    if ATUCAN_LOADED and ELNEHA_LOADED:
-        synergies.append("Atucan parade + transformations Elneha = tank ultime")
-        synergies.append("Double soins: Elneha shapeshifter + Atucan paladin")
+    if PALADIN_LOADED and DRUIDE_LOADED:
+        synergies.append("Paladin parade + transformations Druide = tank ultime")
+        synergies.append("Double soins: Druide shapeshifter + Paladin paladin")
     
-    if ATUCAN_LOADED and LIARIE_LOADED:
-        synergies.append("Atucan support + Liarie DPS = protection + dégâts")
+    if PALADIN_LOADED and MAGE_LOADED:
+        synergies.append("Paladin support + Mage DPS = protection + dégâts")
         synergies.append("Châtiment divin + sorts sans riposte = combo magique")
     
-    if KRAOR_LOADED and ELNEHA_LOADED:  # NOUVEAU
-        synergies.append("Kraor marquage + transformations Elneha = DPS boosté")
-        synergies.append("Soins Kraor + résurrection Elneha = support complet")
+    if CHASSEUR_LOADED and DRUIDE_LOADED:  # NOUVEAU
+        synergies.append("Chasseur marquage + transformations Druide = DPS boosté")
+        synergies.append("Soins Chasseur + résurrection Druide = support complet")
     
-    if KRAOR_LOADED and LIARIE_LOADED:  # NOUVEAU
-        synergies.append("Kraor multi-cible + Liarie AoE = contrôle battlefield")
-        synergies.append("Kraor gratuit + Liarie coûteuse = équilibre sorts")
+    if CHASSEUR_LOADED and MAGE_LOADED:  # NOUVEAU
+        synergies.append("Chasseur multi-cible + Mage AoE = contrôle battlefield")
+        synergies.append("Chasseur gratuit + Mage coûteuse = équilibre sorts")
     
-    if KRAOR_LOADED and ATUCAN_LOADED:  # NOUVEAU
-        synergies.append("Kraor double attaque + Atucan buffs = DPS soutenu")
-        synergies.append("Kraor tactique + Atucan défensif = support polyvalent")
+    if CHASSEUR_LOADED and PALADIN_LOADED:  # NOUVEAU
+        synergies.append("Chasseur double attaque + Paladin buffs = DPS soutenu")
+        synergies.append("Chasseur tactique + Paladin défensif = support polyvalent")
     
-    if ELNEHA_LOADED and LIARIE_LOADED and ATUCAN_LOADED and KRAOR_LOADED:  # NOUVEAU
-        synergies.append("Quatuor complet: Tank (Elneha), DPS (Liarie), Support (Atucan), Utility (Kraor)")
+    if DRUIDE_LOADED and MAGE_LOADED and PALADIN_LOADED and CHASSEUR_LOADED:  # NOUVEAU
+        synergies.append("Quatuor complet: Tank (Druide), DPS (Mage), Support (Paladin), Utility (Chasseur)")
         synergies.append("Soins quadruples: Naturels + Magiques + Divins + Tactiques")
-        synergies.append("Économie sorts optimale: Kraor gratuit libère sorts pour les autres")
+        synergies.append("Économie sorts optimale: Chasseur gratuit libère sorts pour les autres")
     
     analysis["synergies"] = synergies
     
     return analysis
 
 # ========================================
-# VALIDATION ET TESTS - MISE À JOUR KRAOR
+# VALIDATION ET TESTS - MISE À JOUR CHASSEUR
 # ========================================
 
 def validate_phase2_implementation() -> bool:
     """Valide que toutes les capacités Phase 3+ sont correctement implémentées"""
     try:
         # Vérifier les compteurs
-        elneha_count = get_elneha_abilities_count() if ELNEHA_LOADED else 0
-        liarie_count = get_liarie_abilities_count() if LIARIE_LOADED else 0
-        atucan_count = get_atucan_abilities_count() if ATUCAN_LOADED else 0
-        kraor_count = get_kraor_abilities_count() if KRAOR_LOADED else 0  # NOUVEAU
+        druide_count = get_druide_abilities_count() if DRUIDE_LOADED else 0
+        mage_count = get_mage_abilities_count() if MAGE_LOADED else 0
+        paladin_count = get_paladin_abilities_count() if PALADIN_LOADED else 0
+        chasseur_count = get_chasseur_abilities_count() if CHASSEUR_LOADED else 0  # NOUVEAU
         
         # Vérifications
         success = True
         
-        if not ELNEHA_LOADED:
-            print(f"❌ Elneha: Module non chargé")
+        if not DRUIDE_LOADED:
+            print(f"❌ Druide: Module non chargé")
             success = False
-        elif elneha_count != 6:
-            print(f"❌ Elneha: {elneha_count}/6 capacités")
-            success = False
-        
-        if not LIARIE_LOADED:
-            print(f"❌ Liarie: Module non chargé")
-            success = False
-        elif liarie_count != 6:
-            print(f"❌ Liarie: {liarie_count}/6 capacités")
+        elif druide_count != 6:
+            print(f"❌ Druide: {druide_count}/6 capacités")
             success = False
         
-        if not ATUCAN_LOADED:
-            print(f"❌ Atucan: Module non chargé")
+        if not MAGE_LOADED:
+            print(f"❌ Mage: Module non chargé")
             success = False
-        elif atucan_count != 6:
-            print(f"❌ Atucan: {atucan_count}/6 capacités")
+        elif mage_count != 6:
+            print(f"❌ Mage: {mage_count}/6 capacités")
             success = False
         
-        if not KRAOR_LOADED:  # NOUVEAU
-            print(f"❌ Kraor: Module non chargé")
+        if not PALADIN_LOADED:
+            print(f"❌ Paladin: Module non chargé")
             success = False
-        elif kraor_count != 4:  # Kraor a 4 capacités, pas 6
-            print(f"❌ Kraor: {kraor_count}/4 capacités")
+        elif paladin_count != 6:
+            print(f"❌ Paladin: {paladin_count}/6 capacités")
+            success = False
+        
+        if not CHASSEUR_LOADED:  # NOUVEAU
+            print(f"❌ Chasseur: Module non chargé")
+            success = False
+        elif chasseur_count != 4:  # Chasseur a 4 capacités, pas 6
+            print(f"❌ Chasseur: {chasseur_count}/4 capacités")
             success = False
         
         if success:
-            total = elneha_count + liarie_count + atucan_count + kraor_count  # Kraor ajouté
-            print(f"✅ Validation réussie: Elneha {elneha_count}/6, Liarie {liarie_count}/6, Atucan {atucan_count}/6, Kraor {kraor_count}/4")
+            total = druide_count + mage_count + paladin_count + chasseur_count  # Chasseur ajouté
+            print(f"✅ Validation réussie: Druide {druide_count}/6, Mage {mage_count}/6, Paladin {paladin_count}/6, Chasseur {chasseur_count}/4")
             print(f"🎯 Total Phase 3+: {total}/22 capacités")
         
         return success
@@ -749,22 +749,22 @@ def get_loaded_heroes():
     """Retourne la liste des héros avec capacités chargées"""
     loaded = []
 
-    if ELNEHA_LOADED:
-        loaded.append("P-1 (Elneha)")
-    if LIARIE_LOADED:
-        loaded.append("P-2 (Liarie)")
-    if ATUCAN_LOADED:
-        loaded.append("P-3 (Atucan)")
-    if KRAOR_LOADED:
-        loaded.append("P-4 (Kraor)")
-    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-5 (Thordius)")
-    if STEPHE_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-6 (Stephe)")
-    if LAME_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-7 (Lame)")
-    if RAISHI_LOADED:  # NOUVEAU PHASE 4
-        loaded.append("P-8 (Raishi)")
+    if DRUIDE_LOADED:
+        loaded.append("P-1 (Druide)")
+    if MAGE_LOADED:
+        loaded.append("P-2 (Mage)")
+    if PALADIN_LOADED:
+        loaded.append("P-3 (Paladin)")
+    if CHASSEUR_LOADED:
+        loaded.append("P-4 (Chasseur)")
+    if BARBARE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-5 (Barbare)")
+    if BARDE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-6 (Barde)")
+    if ROUBLARD_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-7 (Roublard)")
+    if PUGILISTE_LOADED:  # NOUVEAU PHASE 4
+        loaded.append("P-8 (Pugiliste)")
 
     return loaded
 
@@ -772,27 +772,27 @@ def get_loaded_abilities_count():
     """Retourne le nombre de capacités individuelles chargées"""
     count = 0
 
-    if ELNEHA_LOADED:
-        count += get_elneha_abilities_count()
-    if LIARIE_LOADED:
-        count += get_liarie_abilities_count()
-    if ATUCAN_LOADED:
-        count += get_atucan_abilities_count()
-    if KRAOR_LOADED:
-        count += get_kraor_abilities_count()
-    if THORDIUS_LOADED:  # NOUVEAU PHASE 4
+    if DRUIDE_LOADED:
+        count += get_druide_abilities_count()
+    if MAGE_LOADED:
+        count += get_mage_abilities_count()
+    if PALADIN_LOADED:
+        count += get_paladin_abilities_count()
+    if CHASSEUR_LOADED:
+        count += get_chasseur_abilities_count()
+    if BARBARE_LOADED:  # NOUVEAU PHASE 4
         count += 6
-    if STEPHE_LOADED:  # NOUVEAU PHASE 4
+    if BARDE_LOADED:  # NOUVEAU PHASE 4
         count += 6
-    if LAME_LOADED:  # NOUVEAU PHASE 4
+    if ROUBLARD_LOADED:  # NOUVEAU PHASE 4
         count += 5  # P-7-3 désactivée
-    if RAISHI_LOADED:  # NOUVEAU PHASE 4
+    if PUGILISTE_LOADED:  # NOUVEAU PHASE 4
         count += 6
 
     return count
 
 # ========================================
-# INFORMATION DE CHARGEMENT - MISE À JOUR KRAOR
+# INFORMATION DE CHARGEMENT - MISE À JOUR CHASSEUR
 # ========================================
 
 # Afficher un résumé lors de l'import
@@ -806,9 +806,9 @@ def _print_loading_summary():
     print(f"   ⚡ Capacités: {total_loaded}/59 ({round(total_loaded/59*100, 1)}%)")
     
     if total_loaded >= 22:
-        print(f"   🎉 Phase 3+ complète avec Kraor !")
+        print(f"   🎉 Phase 3+ complète avec Chasseur !")
     elif total_loaded >= 18:
-        print(f"   🏹 Phase 3+ avec Kraor en cours...")
+        print(f"   🏹 Phase 3+ avec Chasseur en cours...")
     elif total_loaded >= 12:
         print(f"   🎉 Phase 2 complète, Phase 3+ en cours...")
     elif total_loaded >= 2:

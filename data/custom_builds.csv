@@ -1,8 +1,8 @@
-﻿hero_code,build_name,equipment_codes,abilities,potions_small,potions_large
+hero_code,build_name,equipment_codes,abilities,potions_small,potions_large
 P-2,no equip level 6,,"1,2,3,4,5,6",0,0
 P-1,test nouveau build,O-15,,0,0
 P-5,test nouveau build 2,,,1,0
 P-1,nouveau build 4,,"1,101,102",0,1
 P-2,test 7,,,0,1
 P-2,test 8,,,1,0
-P-1,Elneha la tricheuse,"O-73,O-82,O-13,O-38",,0,0
+P-1,Druide la tricheuse,"O-73,O-82,O-13,O-38",,0,0

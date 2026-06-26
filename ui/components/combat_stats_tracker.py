@@ -103,7 +103,7 @@ class CombatStatsTracker:
             'effects_applied': {
                 'stunned': 0,
                 'invisible_turns': 0,
-                'kraor_marked': 0,
+                'chasseur_marked': 0,
                 'damage_buffs_used': 0
             },
             'effects_received': {
@@ -144,7 +144,7 @@ class CombatStatsTracker:
             # Effets reçus
             'effects_received': {
                 'stunned_turns': 0,
-                'kraor_marked_turns': 0
+                'chasseur_marked_turns': 0
             },
 
             # Ciblage
@@ -249,7 +249,7 @@ class CombatStatsTracker:
 
         Args:
             caster: Personnage qui applique l'effet
-            effect_type: Type d'effet ('stunned', 'invisible', 'kraor_marked', 'damage_buff', 'dodge')
+            effect_type: Type d'effet ('stunned', 'invisible', 'chasseur_marked', 'damage_buff', 'dodge')
             target: Cible de l'effet (si applicable)
         """
         if caster.code in self.stats['heroes']:
@@ -259,8 +259,8 @@ class CombatStatsTracker:
                 effects['stunned'] += 1
             elif effect_type == 'invisible':
                 effects['invisible_turns'] += 1
-            elif effect_type == 'kraor_marked':
-                effects['kraor_marked'] += 1
+            elif effect_type == 'chasseur_marked':
+                effects['chasseur_marked'] += 1
             elif effect_type == 'damage_buff':
                 effects['damage_buffs_used'] += 1
 
@@ -284,8 +284,8 @@ class CombatStatsTracker:
             elif effect_type == 'dodge' and is_hero:
                 effects['dodges_triggered'] += 1
                 effects['damage_dodged'] += value
-            elif effect_type == 'kraor_marked' and not is_hero:
-                effects['kraor_marked_turns'] += value
+            elif effect_type == 'chasseur_marked' and not is_hero:
+                effects['chasseur_marked_turns'] += value
 
     def record_potion_used(self, hero: Character, potion_type: str, healing: int):
         """

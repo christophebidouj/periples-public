@@ -1,8 +1,8 @@
 # combat_actions.py
 """
 Gestionnaire des actions de combat (attaques, capacités, potions)
-VERSION CORRIGÉE - Fix IA logique + optimisation + transformations intelligentes + SUPPORT FORMES ELNEHA via temporary_buffs
-CORRECTION KRAOR: Utilise marks/status_effects existants au lieu de is_marked/marked_by
+VERSION CORRIGÉE - Fix IA logique + optimisation + transformations intelligentes + SUPPORT FORMES DRUIDE via temporary_buffs
+CORRECTION CHASSEUR: Utilise marks/status_effects existants au lieu de is_marked/marked_by
 """
 
 import random
@@ -36,14 +36,14 @@ class CombatActions:
         auto_hit = False
         auto_hit_source = None
         if hasattr(hero, 'temporary_buffs'):
-            # Attaque furtive (Lame P-7-1) : Auto-hit ONE-TIME
+            # Attaque furtive (Roublard P-7-1) : Auto-hit ONE-TIME
             furtive_buff = hero.temporary_buffs.get('attaque_furtive_next_attack')
             if furtive_buff and furtive_buff.get('auto_hit'):
                 auto_hit = True
                 auto_hit_source = 'attaque_furtive'
                 attack_roll = 20  # Considéré comme réussite automatique (pas critique)
                 log.append(f"  🌑 ATTAQUE FURTIVE : Attaque réussit automatiquement (ne rate JAMAIS)")
-            # Assaut furieux (Lame P-7-6) : Auto-hit PERMANENT
+            # Assaut furieux (Roublard P-7-6) : Auto-hit PERMANENT
             elif hero.temporary_buffs.get('assaut_furieux_permanent', {}).get('auto_hit'):
                 auto_hit = True
                 auto_hit_source = 'assaut_furieux'
@@ -54,7 +54,7 @@ class CombatActions:
         else:
             attack_roll = random.randint(1, 20)
 
-        # ⚖️ NOUVEAU - Sens de la justice (Atucan P-3-2) : Relance dé si 1 ou 2
+        # ⚖️ NOUVEAU - Sens de la justice (Paladin P-3-2) : Relance dé si 1 ou 2
         if not auto_hit and hasattr(hero, 'temporary_buffs'):
             justice_buff = hero.temporary_buffs.get('sens_de_la_justice_active')
             if justice_buff:
@@ -82,46 +82,46 @@ class CombatActions:
 
         # 🐺 NOUVEAU: Détection source multiplicateur de dégâts pour logs explicites
         damage_multiplier_source = None  # Stocke la source du multiplicateur
-        elneha_wolf_used = False
+        druide_wolf_used = False
 
         if hasattr(hero, 'temporary_buffs') and attack_modifiers['damage_multiplier'] > 1.0:
-            # Attaque furtive (Lame P-7-1) : One-time auto-hit + double dégâts
+            # Attaque furtive (Roublard P-7-1) : One-time auto-hit + double dégâts
             if hero.temporary_buffs.get('attaque_furtive_next_attack'):
-                damage_multiplier_source = "lame_attaque_furtive"
+                damage_multiplier_source = "roublard_attaque_furtive"
                 # Le buff sera consommé après l'attaque (voir plus bas)
 
-            # Système ancien (avec compteur elneha_wolf_remaining)
-            elif hero.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
-                hero.temporary_buffs['elneha_wolf_remaining'] -= 1
-                # CORRECTION : Vérifier que c'est bien Elneha (P-1) avant de marquer le log
+            # Système ancien (avec compteur druide_wolf_remaining)
+            elif hero.temporary_buffs.get('druide_wolf_remaining', 0) > 0:
+                hero.temporary_buffs['druide_wolf_remaining'] -= 1
+                # CORRECTION : Vérifier que c'est bien Druide (P-1) avant de marquer le log
                 if hero.code == "P-1":
-                    elneha_wolf_used = True
-                    damage_multiplier_source = "elneha_wolf"
+                    druide_wolf_used = True
+                    damage_multiplier_source = "druide_wolf"
                 # Réactiver pour prochaine attaque si compteur > 0
-                if hero.temporary_buffs['elneha_wolf_remaining'] > 0:
+                if hero.temporary_buffs['druide_wolf_remaining'] > 0:
                     hero.temporary_buffs['double_next_attack'] = True
                 else:
                     # Plus d'utilisations, retirer le flag
                     hero.temporary_buffs.pop('double_next_attack', None)
 
-            # Assaut furieux (Lame P-7-6) - permanent
+            # Assaut furieux (Roublard P-7-6) - permanent
             elif hero.temporary_buffs.get('assaut_furieux_permanent'):
-                damage_multiplier_source = "lame_assaut_furieux"
+                damage_multiplier_source = "roublard_assaut_furieux"
 
             # Système nouveau (Férocité du loup - individual ability)
             elif hero.temporary_buffs.get('double_next_attack', False):
                 # Consommer le buff après l'attaque
                 hero.temporary_buffs.pop('double_next_attack', None)
                 # Identifier la source selon le héros
-                if hero.code == "P-1":  # Elneha
-                    elneha_wolf_used = True
-                    damage_multiplier_source = "elneha_wolf"
+                if hero.code == "P-1":  # Druide
+                    druide_wolf_used = True
+                    damage_multiplier_source = "druide_wolf"
                 else:
                     damage_multiplier_source = "generic_double"
         
         combatant_name = getattr(hero, 'display_name', hero.name)
 
-        # Vérifier plage de critiques étendue (Thordius Cri de guerre)
+        # Vérifier plage de critiques étendue (Barbare Cri de guerre)
         is_critical = False
         if self.rules.criticals:
             if hasattr(hero, 'temporary_buffs') and 'expanded_crit_range' in hero.temporary_buffs:
@@ -137,7 +137,7 @@ class CombatActions:
                 final_damage = damage_value  # Pas de ×2 critique (déjà ×2 par Assaut furieux)
             else:
                 final_damage = damage_value * 2  # Critique normal ×2
-            # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
+            # Dégâts magiques ignorent la parade (règles officielles p.26) + Pugiliste Art martial
             ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
             is_magical_dmg = (damage_type == 'magical')
             damage_result = target.apply_damage_with_parade(final_damage, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
@@ -147,7 +147,7 @@ class CombatActions:
             damage_type_emoji = "✨" if damage_type == "magical" else "💥"
 
             log_parts = [f"{damage_type_emoji} CRITIQUE ! {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] → {target.name}({damage_result['health_damage']})"]
-            self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
+            self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, druide_wolf_used)
             log.append(' '.join(log_parts))
 
             # 🔥 Log Cri de guerre si critique sur 18-19 (pas 20)
@@ -157,12 +157,12 @@ class CombatActions:
             self._add_conversion_logs(log, attack_info, final_damage)
 
             # 🐺 Log multiplicateur de dégâts selon la source
-            if damage_multiplier_source == "elneha_wolf":
-                remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
+            if damage_multiplier_source == "druide_wolf":
+                remaining = hero.temporary_buffs.get('druide_wolf_remaining', 0)
                 log.append(f"  🐺 Forme de loup activée ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f} ({remaining} utilisations restantes)")
-            elif damage_multiplier_source == "lame_attaque_furtive":
+            elif damage_multiplier_source == "roublard_attaque_furtive":
                 log.append(f"  🌑 ATTAQUE FURTIVE ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
-            elif damage_multiplier_source == "lame_assaut_furieux":
+            elif damage_multiplier_source == "roublard_assaut_furieux":
                 log.append(f"  ⚡💀 Assaut furieux ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
             elif damage_multiplier_source == "generic_double":
                 log.append(f"  ⚔️ Dégâts multipliés ×{attack_modifiers['damage_multiplier']:.0f}")
@@ -174,14 +174,14 @@ class CombatActions:
             if damage_result['blocked_by_parade'] > 0:
                 log.append(f"  🛡️ {damage_result['blocked_by_parade']} bloqués, {damage_result['health_damage']} aux PV")
 
-            # NOUVEAU - Elneha formes animales : Log retour forme humaine si santé à 0
+            # NOUVEAU - Druide formes animales : Log retour forme humaine si santé à 0
             if damage_result.get('form_reverted', False):
                 log.append(f"  💫 {target.name} perd sa forme animale et reprend forme humaine ({target.current_health}/{target.health} PV)")
 
             if not target.is_alive():
                 log.append(f"💀 {target.name} vaincu !")
 
-            # NOUVEAU - Retirer furtivité de Lame si dégâts infligés
+            # NOUVEAU - Retirer furtivité de Roublard si dégâts infligés
             self._remove_stealth_on_damage(hero, log)
 
             CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
@@ -211,11 +211,11 @@ class CombatActions:
             precision_bonus = hero.get_total_precision()
             log.append(f"{damage_type_emoji} ÉCHEC ! {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] attaque {target.name}")
             # 🐺 Multiplicateur gaspillé en cas d'échec critique
-            if damage_multiplier_source == "elneha_wolf":
+            if damage_multiplier_source == "druide_wolf":
                 log.append(f"  🐺 Forme de loup gaspillée par l'échec critique...")
-            elif damage_multiplier_source == "lame_attaque_furtive":
+            elif damage_multiplier_source == "roublard_attaque_furtive":
                 log.append(f"  🌑 Attaque furtive gaspillée par l'échec critique...")
-            elif damage_multiplier_source in ["lame_assaut_furieux", "generic_double"]:
+            elif damage_multiplier_source in ["roublard_assaut_furieux", "generic_double"]:
                 # Assaut furieux permanent n'est pas "gaspillé", juste inutile sur cet échec
                 pass
             self._handle_critical_failure(hero, target, log, player_count)
@@ -239,25 +239,25 @@ class CombatActions:
             precision_bonus = hero.get_total_precision()
 
             if total_attack >= target.defense:
-                # Dégâts magiques ignorent la parade (règles officielles p.26) + Raishi Art martial
+                # Dégâts magiques ignorent la parade (règles officielles p.26) + Pugiliste Art martial
                 ignore_parade = (damage_type == 'magical') or attack_modifiers.get('ignore_parade', False)
                 is_magical_dmg = (damage_type == 'magical')
                 damage_result = target.apply_damage_with_parade(damage_value, ignore_parade=ignore_parade, is_magical_damage=is_magical_dmg)
                 damage_type_emoji = "✨" if damage_type == "magical" else "⚔️"
 
                 log_parts = [f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] → {target.name}({damage_result['health_damage']})"]
-                self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, elneha_wolf_used)
+                self._add_modifier_logs(log_parts, attack_modifiers, self._get_mark_bonus_for_target(hero, target), damage_value, base_damage, druide_wolf_used)
                 log.append(' '.join(log_parts))
 
                 self._add_conversion_logs(log, attack_info, damage_value)
 
                 # 🐺 Log multiplicateur de dégâts selon la source
-                if damage_multiplier_source == "elneha_wolf":
-                    remaining = hero.temporary_buffs.get('elneha_wolf_remaining', 0)
+                if damage_multiplier_source == "druide_wolf":
+                    remaining = hero.temporary_buffs.get('druide_wolf_remaining', 0)
                     log.append(f"  🐺 Forme de loup activée ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f} ({remaining} utilisations restantes)")
-                elif damage_multiplier_source == "lame_attaque_furtive":
+                elif damage_multiplier_source == "roublard_attaque_furtive":
                     log.append(f"  🌑 ATTAQUE FURTIVE ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
-                elif damage_multiplier_source == "lame_assaut_furieux":
+                elif damage_multiplier_source == "roublard_assaut_furieux":
                     log.append(f"  ⚡💀 Assaut furieux ! Dégâts ×{attack_modifiers['damage_multiplier']:.0f}")
                 elif damage_multiplier_source == "generic_double":
                     log.append(f"  ⚔️ Dégâts multipliés ×{attack_modifiers['damage_multiplier']:.0f}")
@@ -271,14 +271,14 @@ class CombatActions:
                 else:
                     log.append(f"  💥 {damage_result['health_damage']} aux PV")
 
-                # NOUVEAU - Elneha formes animales : Log retour forme humaine si santé à 0
+                # NOUVEAU - Druide formes animales : Log retour forme humaine si santé à 0
                 if damage_result.get('form_reverted', False):
                     log.append(f"  💫 {target.name} perd sa forme animale et reprend forme humaine ({target.current_health}/{target.health} PV)")
 
                 if not target.is_alive():
                     log.append(f"💀 {target.name} vaincu !")
 
-                # NOUVEAU - Retirer furtivité de Lame si dégâts infligés
+                # NOUVEAU - Retirer furtivité de Roublard si dégâts infligés
                 self._remove_stealth_on_damage(hero, log)
 
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, damage_result['health_damage'])
@@ -308,11 +308,11 @@ class CombatActions:
                 precision_bonus = hero.get_total_precision()
                 log.append(f"{damage_type_emoji} {combatant_name}[🎲{attack_roll}+{precision_bonus}={total_attack}] vs DEF[{target.defense}] → Échec")
                 # 🐺 Multiplicateur gaspillé en cas d'échec
-                if damage_multiplier_source == "elneha_wolf":
+                if damage_multiplier_source == "druide_wolf":
                     log.append(f"  🐺 Forme de loup gaspillée par l'échec...")
-                elif damage_multiplier_source == "lame_attaque_furtive":
+                elif damage_multiplier_source == "roublard_attaque_furtive":
                     log.append(f"  🌑 Attaque furtive gaspillée par l'échec...")
-                elif damage_multiplier_source in ["lame_assaut_furieux", "generic_double"]:
+                elif damage_multiplier_source in ["roublard_assaut_furieux", "generic_double"]:
                     # Assaut furieux permanent n'est pas "gaspillé"
                     pass
                 CharacterAbilitiesIntegration.enhance_hero_attack(hero, target, 0)
@@ -335,39 +335,39 @@ class CombatActions:
 
     def _get_mark_bonus_for_target(self, hero, target) -> int:
         """
-        Calcule le bonus de dégâts contre une cible marquée par Kraor
+        Calcule le bonus de dégâts contre une cible marquée par Chasseur
         IMPORTANT: Le bonus s'applique à TOUS les alliés qui attaquent la cible marquée
         CORRIGÉ: Utilise status_effects/marks existants au lieu de is_marked/marked_by
         """
-        # CORRECTION: Tous les alliés bénéficient du bonus, pas seulement Kraor
+        # CORRECTION: Tous les alliés bénéficient du bonus, pas seulement Chasseur
         # La capacité dit: "Tous les dégâts infligés sur ce dernier, par n'importe quel membre du groupe"
 
-        # Vérifier dans status_effects (écrit par kraor.py)
+        # Vérifier dans status_effects (écrit par chasseur.py)
         if hasattr(target, 'status_effects') and target.status_effects:
-            if 'kraor_marked' in target.status_effects:
-                mark_info = target.status_effects['kraor_marked']
+            if 'chasseur_marked' in target.status_effects:
+                mark_info = target.status_effects['chasseur_marked']
                 return mark_info.get('bonus_damage', 2)
 
         # Fallback: vérifier dans marks
         if hasattr(target, 'marks') and target.marks:
-            if 'kraor_hunter_mark' in target.marks:
-                mark_info = target.marks['kraor_hunter_mark']
+            if 'chasseur_hunter_mark' in target.marks:
+                mark_info = target.marks['chasseur_hunter_mark']
                 return mark_info.get('bonus_damage', 2)
 
         return 0
 
     def _remove_stealth_on_damage(self, hero, log: list):
         """
-        Retire le statut de furtivité de Lame quand il inflige des dégâts
-        (Règle: Furtivité se termine si Lame attaque ou utilise une capacité qui inflige des dégâts)
+        Retire le statut de furtivité de Roublard quand il inflige des dégâts
+        (Règle: Furtivité se termine si Roublard attaque ou utilise une capacité qui inflige des dégâts)
         """
         if not hasattr(hero, 'status_effects'):
             return
 
         if 'invisible' in hero.status_effects:
             stealth_data = hero.status_effects['invisible']
-            # Vérifier si c'est la furtivité de Lame (source = lame_furtivite) et qu'elle expire sur dégâts
-            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
+            # Vérifier si c'est la furtivité de Roublard (source = roublard_furtivite) et qu'elle expire sur dégâts
+            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'roublard_furtivite':
                 if stealth_data.get('expires_on_damage_dealt', False):
                     del hero.status_effects['invisible']
                     log.append(f"  🌑 Furtivité terminée - {hero.name} redevient visible (dégâts infligés)")
@@ -391,7 +391,7 @@ class CombatActions:
         except Exception as e:
             log.append(f"    ⚠️ Erreur riposte échec critique: {str(e)}")
 
-    def _add_modifier_logs(self, log_parts: list, attack_modifiers: dict, mark_bonus: int, damage_value: int, base_damage: int, elneha_wolf_used: bool = False):
+    def _add_modifier_logs(self, log_parts: list, attack_modifiers: dict, mark_bonus: int, damage_value: int, base_damage: int, druide_wolf_used: bool = False):
         """Ajoute les logs des modificateurs d'attaque - MODIFIÉ pour inclure forme de loup"""
         modifiers = []
         
@@ -402,7 +402,7 @@ class CombatActions:
         if mark_bonus > 0:
             modifiers.append(f"+{mark_bonus}marquage")
         # 🐺 NOUVEAU: Indicateur forme de loup dans les modificateurs
-        if elneha_wolf_used:
+        if druide_wolf_used:
             modifiers.append("🐺x2loup")
         
         if modifiers:
@@ -577,7 +577,7 @@ class CombatActions:
     
     def try_ability_with_summon(self, hero, enemies: list, log: list, active_pets: list) -> bool:
         """
-        IA capacités intelligente + gestion invocations + transformations Elneha
+        IA capacités intelligente + gestion invocations + transformations Druide
         CORRIGÉ: Logique tactique avec buffing prioritaire
         """
         self._current_alive_enemies = [e for e in enemies if e.is_alive()]
@@ -590,7 +590,7 @@ class CombatActions:
         if not available:
             return False
         
-        # Priorité 1 : Invocation si pas de Pet actuel pour Kraor
+        # Priorité 1 : Invocation si pas de Pet actuel pour Chasseur
         if hero.code == "P-4" and hero.can_summon_pet():
             current_pets = [p for p in active_pets if hasattr(p, 'owner_code') and p.owner_code == hero.code]
             if not current_pets:
@@ -613,7 +613,7 @@ class CombatActions:
         
         # LOGIQUE IA CORRIGÉE
         
-        # PRIORITÉ ABSOLUE : Transformations Elneha (buffs permanents)
+        # PRIORITÉ ABSOLUE : Transformations Druide (buffs permanents)
         if hasattr(hero, 'current_form') and hero.current_form == 'human':  # Pas encore transformé
             transform_abilities = [a for a in usable_abilities 
                       if 'forme' in a.name.lower() and 
@@ -771,7 +771,7 @@ class CombatActions:
         if not alive_targets:
             return None
 
-        # NOUVEAU - Filtrer les héros invisibles/non-ciblables (Lame Furtivité, etc.)
+        # NOUVEAU - Filtrer les héros invisibles/non-ciblables (Roublard Furtivité, etc.)
         targetable_heroes = []
         for target in alive_targets:
             is_untargetable = False

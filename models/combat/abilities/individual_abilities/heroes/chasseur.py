@@ -1,6 +1,6 @@
-# kraor.py - Capacités individuelles de Kraor (P-4) - VERSION CORRIGÉE APIS EXISTANTES
+# chasseur.py - Capacités individuelles de Chasseur (P-4) - VERSION CORRIGÉE APIS EXISTANTES
 """
-Capacités individuelles pour le héros Kraor (P-4)
+Capacités individuelles pour le héros Chasseur (P-4)
 Phase 4: 4 capacités COMBAT implémentées selon DONNÉES OFFICIELLES Sorts.xlsx
 
 ✅ RÈGLES STRICTES RESPECTÉES:
@@ -19,11 +19,11 @@ from ..ability_registry import register_ability
 
 
 # ========================================
-# CAPACITÉS KRAOR (P-4) - 4 CAPACITÉS COMBAT UTILISABLES
+# CAPACITÉS CHASSEUR (P-4) - 4 CAPACITÉS COMBAT UTILISABLES
 # ========================================
 
 @register_ability
-class KraorMarqueDuChasseur(BaseAbility):
+class ChasseurMarqueDuChasseur(BaseAbility):
     """P-4-2: Marque du chasseur - Marque un ennemi pour +2 dégâts de groupe"""
 
     hero_code = "P-4"
@@ -63,14 +63,14 @@ class KraorMarqueDuChasseur(BaseAbility):
                 target.status_effects = {}
 
             # Utiliser marks (le champ approprié pour le marquage)
-            target.marks['kraor_hunter_mark'] = {
+            target.marks['chasseur_hunter_mark'] = {
                 'bonus_damage': self.mark_bonus,
                 'source': caster.code,
                 'target_marked': True
             }
 
             # Aussi ajouter dans status_effects pour compatibilité double
-            target.status_effects['kraor_marked'] = {
+            target.status_effects['chasseur_marked'] = {
                 'bonus_damage': self.mark_bonus,
                 'source': caster.code
             }
@@ -97,7 +97,7 @@ class KraorMarqueDuChasseur(BaseAbility):
 
 
 @register_ability
-class KraorPluieDeProjectiles(BaseAbility):
+class ChasseurPluieDeProjectiles(BaseAbility):
     """P-4-4: Pluie de projectiles - Cible tous les ennemis lors d'attaque"""
 
     hero_code = "P-4"
@@ -129,7 +129,7 @@ class KraorPluieDeProjectiles(BaseAbility):
             caster.temporary_buffs['attack_all_enemies'] = {
                 'type': 'multi_target',
                 'applies_to': 'next_attack',
-                'source': 'kraor_poison'
+                'source': 'chasseur_poison'
             }
             
             # 3. Décompter utilisation
@@ -149,12 +149,12 @@ class KraorPluieDeProjectiles(BaseAbility):
         return f"🏹 {self.name}: Prochaine attaque cible TOUS les ennemis (Gratuit, 1/combat)"
     
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        """Auto-cible Kraor (buff personnel)"""
+        """Auto-cible Chasseur (buff personnel)"""
         return [caster]
 
 
 @register_ability
-class KraorSoinMineur(BaseAbility):
+class ChasseurSoinMineur(BaseAbility):
     """P-4-5: Soin mineur - Soigner jusqu'à 4 blessures"""
 
     hero_code = "P-4"
@@ -176,7 +176,7 @@ class KraorSoinMineur(BaseAbility):
 
             # 1. Vérifier limitation combat
             if self.uses_remaining_combat <= 0:
-                log.append(f"⚠️ Soins Kraor déjà utilisés ce combat")
+                log.append(f"⚠️ Soins Chasseur déjà utilisés ce combat")
                 return False
 
             # 2. NOUVEAU - Utiliser la cible choisie par l'utilisateur si fournie
@@ -238,7 +238,7 @@ class KraorSoinMineur(BaseAbility):
 
 
 @register_ability
-class KraorTirRapide(BaseAbility):
+class ChasseurTirRapide(BaseAbility):
     """P-4-6: Tir rapide - Attaque 2 fois par tour pendant tout le combat"""
 
     hero_code = "P-4"
@@ -270,7 +270,7 @@ class KraorTirRapide(BaseAbility):
             caster.temporary_buffs['double_attacks_permanent'] = {
                 'type': 'permanent_combat',
                 'attacks_per_turn': 2,
-                'source': 'kraor_rain_arrows',
+                'source': 'chasseur_rain_arrows',
                 'independent_attacks': True  # Chaque attaque séparée
             }
             
@@ -292,23 +292,23 @@ class KraorTirRapide(BaseAbility):
         return f"🏹 {self.name}: 2 attaques/tour tout le combat (Gratuit, 1/combat)"
     
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        """Auto-cible Kraor (buff permanent personnel)"""
+        """Auto-cible Chasseur (buff permanent personnel)"""
         return [caster]
 
 
 # ========================================
-# FONCTIONS UTILITAIRES KRAOR
+# FONCTIONS UTILITAIRES CHASSEUR
 # ========================================
 
-def get_kraor_abilities_count() -> int:
-    """Retourne le nombre de capacités de combat Kraor"""
+def get_chasseur_abilities_count() -> int:
+    """Retourne le nombre de capacités de combat Chasseur"""
     return 4  # Seulement les capacités utilisables en combat
 
 
-def get_kraor_abilities_summary() -> str:
-    """Retourne un résumé des capacités de Kraor (DONNÉES OFFICIELLES SORTS.XLSX)"""
+def get_chasseur_abilities_summary() -> str:
+    """Retourne un résumé des capacités de Chasseur (DONNÉES OFFICIELLES SORTS.XLSX)"""
     return """
-    🎭 KRAOR (P-4) - 4 capacités combat complètes (DONNÉES OFFICIELLES SORTS.XLSX):
+    🎭 CHASSEUR (P-4) - 4 capacités combat complètes (DONNÉES OFFICIELLES SORTS.XLSX):
     ❌ P-4-1: "Pas utile en combat" (EXCLUE)
     ✅ P-4-2: Piège/Marquage (Gratuit, 1/combat) - Groupe +2 dégâts sur cible
     ❌ P-4-3: "Pas utile en combat" (EXCLUE) 
@@ -318,8 +318,8 @@ def get_kraor_abilities_summary() -> str:
     """
 
 
-def get_kraor_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités de Kraor (DONNÉES OFFICIELLES SORTS.XLSX)"""
+def get_chasseur_spell_costs() -> dict:
+    """Retourne les coûts en sorts des capacités de Chasseur (DONNÉES OFFICIELLES SORTS.XLSX)"""
     return {
         "Piège": 0,               # P-4-2 - Marquage
         "Poison": 0,              # P-4-4 - Multi-cible  
@@ -328,8 +328,8 @@ def get_kraor_spell_costs() -> dict:
     }
 
 
-def get_kraor_combat_limitations() -> dict:
-    """Retourne les limitations de combat des capacités Kraor"""
+def get_chasseur_combat_limitations() -> dict:
+    """Retourne les limitations de combat des capacités Chasseur"""
     return {
         "Piège": "1/combat",
         "Poison": "1/combat",
@@ -338,8 +338,8 @@ def get_kraor_combat_limitations() -> dict:
     }
 
 
-def get_kraor_tactical_analysis() -> dict:
-    """Analyse tactique des capacités de Kraor selon données officielles SORTS.XLSX"""
+def get_chasseur_tactical_analysis() -> dict:
+    """Analyse tactique des capacités de Chasseur selon données officielles SORTS.XLSX"""
     return {
         "role": "Chasseur tactique - Support/Utility",
         "strengths": [
@@ -370,8 +370,8 @@ def get_kraor_tactical_analysis() -> dict:
     }
 
 
-def get_kraor_equipment_requirements() -> dict:
-    """Analyse des besoins en équipement de Kraor"""
+def get_chasseur_equipment_requirements() -> dict:
+    """Analyse des besoins en équipement de Chasseur"""
     return {
         "essential": {
             "arc": "Nécessaire pour attaques à distance (symbole ⚹)"
@@ -384,8 +384,8 @@ def get_kraor_equipment_requirements() -> dict:
     }
 
 
-def validate_kraor_implementation() -> dict:
-    """Valide que toutes les capacités Kraor utilisent les DONNÉES OFFICIELLES SORTS.XLSX + APIs EXISTANTES"""
+def validate_chasseur_implementation() -> dict:
+    """Valide que toutes les capacités Chasseur utilisent les DONNÉES OFFICIELLES SORTS.XLSX + APIs EXISTANTES"""
     return {
         "hero_code": "P-4",
         "total_abilities": 4,  # Seulement les utilisables en combat
@@ -403,8 +403,8 @@ def validate_kraor_implementation() -> dict:
     }
 
 
-def get_kraor_debug_info() -> dict:
-    """Informations de debug pour les capacités de Kraor - APIs EXISTANTES UNIQUEMENT"""
+def get_chasseur_debug_info() -> dict:
+    """Informations de debug pour les capacités de Chasseur - APIs EXISTANTES UNIQUEMENT"""
     return {
         "api_compliance": {
             "healing": "✅ _apply_healing() EXISTANTE dans BaseAbility",
@@ -439,23 +439,23 @@ def get_kraor_debug_info() -> dict:
     }
 
 
-def print_kraor_development_summary():
-    """Affiche un résumé du développement des capacités de Kraor - VERSION CORRIGÉE APIs EXISTANTES"""
+def print_chasseur_development_summary():
+    """Affiche un résumé du développement des capacités de Chasseur - VERSION CORRIGÉE APIs EXISTANTES"""
     print("\n" + "="*60)
-    print("🏹 KRAOR (P-4) - RÉSUMÉ DÉVELOPPEMENT CORRIGÉ")
+    print("🏹 CHASSEUR (P-4) - RÉSUMÉ DÉVELOPPEMENT CORRIGÉ")
     print("="*60)
     
-    summary = get_kraor_abilities_summary()
+    summary = get_chasseur_abilities_summary()
     print(summary)
     
-    validation = validate_kraor_implementation()
+    validation = validate_chasseur_implementation()
     print(f"\n✅ Validation: {validation['total_abilities']} capacités - APIs EXISTANTES UNIQUEMENT")
     print(f"🔧 Correction: Utilisation is_marked/marked_by au lieu d'invention status_effects")
     
-    debug = get_kraor_debug_info()
+    debug = get_chasseur_debug_info()
     print(f"\n📋 APIs utilisées:")
     for ability, api in debug['apis_used'].items():
         print(f"   {ability}: {api}")
     
-    print("\n🎉 P-4 KRAOR CORRIGÉ - AUCUNE INVENTION D'API !")
+    print("\n🎉 P-4 CHASSEUR CORRIGÉ - AUCUNE INVENTION D'API !")
     print("="*60)

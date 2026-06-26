@@ -3,7 +3,7 @@
 # Basé sur le fichier Excel "Build persos.xlsx"
 
 HERO_BUILDS_DETAILED = {
-    "P-1": {  # Elneha
+    "P-1": {  # Druide
         "Facile": {
             "equipment": ["O-32", "O-29", "O-1", "O-39"],  # Vétement de cuir, Rondache de bois, Gemme de pouvoir, Couronne de santé
             "abilities_level": 6,  # Niveau max de capacités (1-6 acquises)
@@ -29,7 +29,7 @@ HERO_BUILDS_DETAILED = {
             "name": "⚪ Build Vanilla"
         }
     },
-    "P-2": {  # Liarie
+    "P-2": {  # Mage
         "Facile": {
             "equipment": ["O-42", "O-2"],  # Pierre de mémoire, Baton de puissance
             "abilities_level": 6,
@@ -55,7 +55,7 @@ HERO_BUILDS_DETAILED = {
             "name": "⚪ Build Vanilla"
         }
     },
-    "P-3": {  # Atucan
+    "P-3": {  # Paladin
         "Facile": {
             "equipment": ["O-73", "O-36", "O-31", "O-41"],  # Marteau du juste, Armure de plate, Bouclier de fer, Ceinture de parade
             "abilities_level": 6,
@@ -81,7 +81,7 @@ HERO_BUILDS_DETAILED = {
             "name": "⚪ Build Vanilla"
         }
     },
-    "P-4": {  # Kraor
+    "P-4": {  # Chasseur
         "Facile": {
             "equipment": ["O-11", "O-35", "O-3", "O-40"],  # Arc long, Armure de cuir, Médaillon d'appel, Bague d'impact
             "abilities_level": 6,
@@ -107,7 +107,7 @@ HERO_BUILDS_DETAILED = {
             "name": "⚪ Build Vanilla"
         }
     },
-    "P-5": {  # Thordius
+    "P-5": {  # Barbare
         "Facile": {
             "equipment": ["O-75", "O-38", "O-41"],  # Implacable, Gants de précision, Ceinture de parade
             "abilities_level": 6,
@@ -159,7 +159,7 @@ HERO_BUILDS_DETAILED = {
             "name": "⚪ Build Vanilla"
         }
     },
-    "P-7": {  # Lame
+    "P-7": {  # Roublard
         "Facile": {
             "equipment": ["O-78", "O-35", "O-30", "O-28"],  # Dagues jumelles, Armure de cuir, Bouclier de bois, Arbalète légère
             "abilities_level": 6,
@@ -185,7 +185,7 @@ HERO_BUILDS_DETAILED = {
             "name": "⚪ Build Vanilla"
         }
     },
-    "P-8": {  # Raishi
+    "P-8": {  # Pugiliste
         "Facile": {
             "equipment": ["O-77", "O-35", "O-29", "O-38"],  # Poings de feu, Armure de cuir, Rondache de bois, Gants de précision
             "abilities_level": 6,
@@ -215,14 +215,14 @@ HERO_BUILDS_DETAILED = {
 
 # Mapping héros code → nom pour référence
 HERO_CODE_MAPPING = {
-    "P-1": "Elneha",
-    "P-2": "Liarie", 
-    "P-3": "Atucan",
-    "P-4": "Kraor",
-    "P-5": "Thordius",
+    "P-1": "Druide",
+    "P-2": "Mage", 
+    "P-3": "Paladin",
+    "P-4": "Chasseur",
+    "P-5": "Barbare",
     "P-6": "Stèphe",
-    "P-7": "Lame",
-    "P-8": "Raishi"
+    "P-7": "Roublard",
+    "P-8": "Pugiliste"
 }
 
 def get_hero_detailed_build(hero_code: str, difficulty: str) -> dict:
@@ -285,7 +285,7 @@ def get_abilities_for_level(hero_code: str, abilities_level: int) -> list:
     max_abilities = min(abilities_level, 6)
     abilities = list(range(1, max_abilities + 1))
 
-    # CORRECTION: Ajouter capacités exclusives pour Elneha (formes animales)
+    # CORRECTION: Ajouter capacités exclusives pour Druide (formes animales)
     if hero_code == "P-1" and abilities_level >= 1:
         # Ajouter les capacités exclusives des formes (101: Ours, 102: Loup)
         abilities.extend([101, 102])

@@ -1,9 +1,9 @@
-# liarie.py - Capacités individuelles de Liarie (P-2)
+# mage.py - Capacités individuelles de Mage (P-2)
 """
-Capacités individuelles pour le héros Liarie (P-2)
+Capacités individuelles pour le héros Mage (P-2)
 Phase 2: Toutes les 6 capacités implémentées - VERSION CORRIGÉE SORTS.XLSX
 
-Liarie est une mage spécialisée dans la magie offensive et défensive.
+Mage est une mage spécialisée dans la magie offensive et défensive.
 Ses capacités se concentrent sur les sorts élémentaires et la protection magique.
 
 P-2-1: Éclair magique ✅
@@ -21,11 +21,11 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 
 # ========================================
-# CAPACITÉS LIARIE (P-2) - MAGE ÉLÉMENTAIRE
+# CAPACITÉS MAGE (P-2) - MAGE ÉLÉMENTAIRE
 # ========================================
 
 @register_ability
-class LiarieEclairMagique(BaseAbility):
+class MageEclairMagique(BaseAbility):
     """P-2-1: Éclair magique - 4 dégâts magiques répartis intelligemment"""
     
     hero_code = "P-2"
@@ -145,7 +145,7 @@ class LiarieEclairMagique(BaseAbility):
 
 
 @register_ability
-class LiarieArmureDuMage(BaseAbility):
+class MageArmureDuMage(BaseAbility):
     """P-2-2: Armure du mage - Bouclier de parade permanent - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
@@ -211,7 +211,7 @@ class LiarieArmureDuMage(BaseAbility):
 
 
 @register_ability
-class LiarieMurDeGlace(BaseAbility):
+class MageMurDeGlace(BaseAbility):
     """P-2-3: Mur de glace - Gèle les ennemis (effet stun) - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
@@ -251,7 +251,7 @@ class LiarieMurDeGlace(BaseAbility):
             for enemy in enemies:
                 # Effet stun (AVEC vérification immunité)
                 if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    enemy, duration=1, source='liarie_blizzard', log=log
+                    enemy, duration=1, source='mage_blizzard', log=log
                 ):
                     frozen_count += 1
 
@@ -289,7 +289,7 @@ class LiarieMurDeGlace(BaseAbility):
 
 
 @register_ability
-class LiarieBouleDeFeu(BaseAbility):
+class MageBouleDeFeu(BaseAbility):
     """P-2-4: Boule de feu - 6 dégâts magiques à tous sans riposte - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
@@ -366,13 +366,13 @@ class LiarieBouleDeFeu(BaseAbility):
 
 
 @register_ability
-class LiarieVolDeVie(BaseAbility):
+class MageVolDeVie(BaseAbility):
     """P-2-5: Vol de vie - 4 dégâts magiques + soins équivalents sans riposte"""
     
     hero_code = "P-2"
     ability_number = 5
     name = "Vol de vie"
-    description = "Inflige 4 dégâts magiques à 1 ennemi, et soigne Liarie de 4 blessures."
+    description = "Inflige 4 dégâts magiques à 1 ennemi, et soigne Mage de 4 blessures."
     
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
@@ -424,7 +424,7 @@ class LiarieVolDeVie(BaseAbility):
 
 
 @register_ability
-class LiariePluieDeMetéores(BaseAbility):
+class MagePluieDeMetéores(BaseAbility):
     """P-2-6: Pluie de météores - 10 dégâts magiques à tous + stun - VERSION CORRIGÉE"""
     
     hero_code = "P-2"
@@ -503,15 +503,15 @@ class LiariePluieDeMetéores(BaseAbility):
 # FONCTIONS UTILITAIRES ET STATISTIQUES
 # ========================================
 
-def get_liarie_abilities_count() -> int:
-    """Retourne le nombre de capacités de Liarie enregistrées"""
+def get_mage_abilities_count() -> int:
+    """Retourne le nombre de capacités de Mage enregistrées"""
     return 6
 
 
-def get_liarie_abilities_summary() -> str:
-    """Retourne un résumé des capacités de Liarie - VERSION CORRIGÉE"""
+def get_mage_abilities_summary() -> str:
+    """Retourne un résumé des capacités de Mage - VERSION CORRIGÉE"""
     return """
-    🎭 LIARIE (P-2) - 6 capacités corrigées selon Sorts.xlsx:
+    🎭 MAGE (P-2) - 6 capacités corrigées selon Sorts.xlsx:
     ✅ P-2-1: Éclair magique (4 dégâts magiques répartis, coût 1)
     ✅ P-2-2: Armure du mage (+2 parade permanent, coût 1)
     ✅ P-2-3: Mur de glace (gel/stun tous ennemis, coût 1, 2/combat)
@@ -521,8 +521,8 @@ def get_liarie_abilities_summary() -> str:
     """
 
 
-def get_liarie_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités de Liarie selon Sorts.xlsx"""
+def get_mage_spell_costs() -> dict:
+    """Retourne les coûts en sorts des capacités de Mage selon Sorts.xlsx"""
     return {
         "Éclair magique": 1,     # ✅ Correct
         "Armure du mage": 1,     # ✅ Correct
@@ -533,7 +533,7 @@ def get_liarie_spell_costs() -> dict:
     }
 
 
-def get_liarie_damage_output() -> dict:
+def get_mage_damage_output() -> dict:
     """Retourne les dégâts potentiels des sorts offensifs selon Sorts.xlsx"""
     return {
         "Éclair magique": {"distributed": 4, "type": "magical"},
@@ -544,8 +544,8 @@ def get_liarie_damage_output() -> dict:
     }
 
 
-def get_liarie_tactical_analysis() -> dict:
-    """Analyse tactique des capacités de Liarie selon données officielles"""
+def get_mage_tactical_analysis() -> dict:
+    """Analyse tactique des capacités de Mage selon données officielles"""
     return {
         "role": "Mage élémentaire - DPS/Support/Control",
         "strengths": [

@@ -44,14 +44,14 @@ ENABLE_IMAGES = True
 def get_standard_equipment_codes(hero_code: str) -> List[str]:
     """Retourne les codes équipements standard pour un héros - VERSION 8 HÉROS"""
     standard_equipment = {
-        'P-1': ['E-1', 'E-7', 'E-13'],   # Elneha
-        'P-2': ['E-2', 'E-8', 'E-14'],   # Liarie
-        'P-3': ['E-3', 'E-9', 'E-15'],   # Atucan
-        'P-4': ['E-4', 'E-10', 'E-16'],  # Kraor
-        'P-5': ['E-5', 'E-11', 'E-17'],  # Thordius
-        'P-6': ['E-6', 'E-12', 'E-18'],  # Stephe
-        'P-7': ['E-1', 'E-7', 'E-13'],   # Lame
-        'P-8': ['E-2', 'E-8', 'E-14']    # Raishi
+        'P-1': ['E-1', 'E-7', 'E-13'],   # Druide
+        'P-2': ['E-2', 'E-8', 'E-14'],   # Mage
+        'P-3': ['E-3', 'E-9', 'E-15'],   # Paladin
+        'P-4': ['E-4', 'E-10', 'E-16'],  # Chasseur
+        'P-5': ['E-5', 'E-11', 'E-17'],  # Barbare
+        'P-6': ['E-6', 'E-12', 'E-18'],  # Barde
+        'P-7': ['E-1', 'E-7', 'E-13'],   # Roublard
+        'P-8': ['E-2', 'E-8', 'E-14']    # Pugiliste
     }
     return standard_equipment.get(hero_code, [])
 
@@ -79,8 +79,8 @@ def toggle_hero_selection(hero_code: str):
     if hero_code in selected:
         selected.remove(hero_code)
     else:
-        # Nettoyage Elneha avant ajout (pas de formes multiples maintenant)
-        if hero_code == 'P-1':  # Elneha principale
+        # Nettoyage Druide avant ajout (pas de formes multiples maintenant)
+        if hero_code == 'P-1':  # Druide principale
             selected = [code for code in selected if code != 'P-1']
         selected.append(hero_code)
     
@@ -489,7 +489,7 @@ def tab_selection(data):
     
     # Info simplifiée
     if 'P-1' in st.session_state.selected_heroes:
-        st.info("🐻 Elneha sélectionnée (formes d'animal gérées en combat)")
+        st.info("🐻 Druide sélectionnée (formes d'animal gérées en combat)")
     
     # PRÉ-CALCUL DES BUILDS (mise en cache)
     preloaded_builds = get_preloaded_builds(heroes, data['equipment'], loader)

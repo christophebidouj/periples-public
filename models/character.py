@@ -135,7 +135,7 @@ class Character(BaseModel):
     last_attacked_target: Optional[Any] = None  # NOUVEAU - Cible de la dernière attaque réussie
     last_attack_damage: int = 0  # NOUVEAU - Dégâts réels infligés lors de la dernière attaque (après parade)
     
-    # Système de formes pour Elneha
+    # Système de formes pour Druide
     current_form: Optional[str] = Field(default=None)  # "bear", "wolf", "human"
     human_stats: Optional[Dict[str, int]] = Field(default=None)  # Stats humaines sauvegardées avant transformation
     
@@ -158,7 +158,7 @@ class Character(BaseModel):
     # Effets de statut
     status_effects: Dict[str, Any] = Field(default_factory=dict)
     
-    # Marques appliquées (pour systèmes comme Kraor)
+    # Marques appliquées (pour systèmes comme Chasseur)
     marks: Dict[str, Any] = Field(default_factory=dict)
     
     def model_post_init(self, __context):
@@ -175,7 +175,7 @@ class Character(BaseModel):
         # Initialiser parade selon équipements
         self._update_parade_from_equipment()
 
-        # IMPORTANT - Initialiser forme pour Elneha (FORCER à "human" au début)
+        # IMPORTANT - Initialiser forme pour Druide (FORCER à "human" au début)
         if self.code == "P-1":
             # TOUJOURS forcer à "human" au début (reset complet)
             self.current_form = "human"
@@ -217,7 +217,7 @@ class Character(BaseModel):
         if not hasattr(self, 'status_effects'):
             self.status_effects = {}
         
-        # Marques appliquées (pour systèmes comme Kraor)
+        # Marques appliquées (pour systèmes comme Chasseur)
         if not hasattr(self, 'marks'):
             self.marks = {}
     
@@ -231,24 +231,24 @@ class Character(BaseModel):
         """Retourne les effets spéciaux actifs"""
         effects = {
             'lyre_phoenix': False,      # O-4 - Stèphe attaques magiques
-            'gemme_pouvoir': False,     # O-1 - Elneha formes magiques  
-            'baton_puissance': False,   # O-2 - Liarie +1 capacités
-            'medaillon_appel': False    # O-3 - Kraor invocation Pet
+            'gemme_pouvoir': False,     # O-1 - Druide formes magiques  
+            'baton_puissance': False,   # O-2 - Mage +1 capacités
+            'medaillon_appel': False    # O-3 - Chasseur invocation Pet
         }
         
         # O-4 Lyre phoenix - Stèphe (P-6)
         if self.code == "P-6" and self.has_equipment("O-4"):
             effects['lyre_phoenix'] = True
         
-        # O-1 Gemme de pouvoir - Elneha (P-1)  
+        # O-1 Gemme de pouvoir - Druide (P-1)  
         if self.code == "P-1" and self.has_equipment("O-1"):
             effects['gemme_pouvoir'] = True
         
-        # O-2 Baton de puissance - Liarie (P-2)
+        # O-2 Baton de puissance - Mage (P-2)
         if self.code == "P-2" and self.has_equipment("O-2"):
             effects['baton_puissance'] = True
         
-        # O-3 Médaillon d'appel - Kraor (P-4)
+        # O-3 Médaillon d'appel - Chasseur (P-4)
         if self.code == "P-4" and self.has_equipment("O-3"):
             effects['medaillon_appel'] = True
         
@@ -259,10 +259,10 @@ class Character(BaseModel):
         effects = self.get_special_equipment_effects()
         return effects['lyre_phoenix']
     
-    # === SYSTÈME DE FORMES (ELNEHA) - VERSION COMPLÈTE ===
+    # === SYSTÈME DE FORMES (DRUIDE) - VERSION COMPLÈTE ===
 
     def _save_human_stats(self):
-        """Sauvegarde les stats humaines avant transformation (Elneha uniquement)"""
+        """Sauvegarde les stats humaines avant transformation (Druide uniquement)"""
         if self.code != "P-1":
             return
 
@@ -277,7 +277,7 @@ class Character(BaseModel):
         }
 
     def _restore_human_stats(self):
-        """Restaure les stats humaines après transformation (Elneha uniquement)"""
+        """Restaure les stats humaines après transformation (Druide uniquement)"""
         if self.code != "P-1" or not self.human_stats:
             return
 
@@ -292,7 +292,7 @@ class Character(BaseModel):
 
     def transform_to_bear(self) -> bool:
         """
-        Transforme Elneha en ours (P-9)
+        Transforme Druide en ours (P-9)
         Stats officielles : Précision 4, Dégâts 2, Sorts 0, Santé 12, Parade 2
 
         Returns:
@@ -330,7 +330,7 @@ class Character(BaseModel):
 
     def transform_to_wolf(self) -> bool:
         """
-        Transforme Elneha en loup (P-10)
+        Transforme Druide en loup (P-10)
         Stats officielles : Précision 6, Dégâts 4, Sorts 0, Santé 8, Parade 0
 
         Returns:
@@ -388,7 +388,7 @@ class Character(BaseModel):
         # Marquer la transformation
         self.current_form = "human"
 
-        # Réinitialiser les flags d'action pour permettre à Elneha d'agir normalement
+        # Réinitialiser les flags d'action pour permettre à Druide d'agir normalement
         self.action_taken_this_turn = False
         self.can_attack_this_turn = True
         self.magic_abilities_used_this_turn = 0
@@ -399,7 +399,7 @@ class Character(BaseModel):
     def handle_form_death(self) -> bool:
         """
         Gère la "mort" en forme animale : retour automatique en forme humaine
-        Elneha ne meurt pas en forme animale, elle reprend forme humaine
+        Druide ne meurt pas en forme animale, elle reprend forme humaine
 
         Returns:
             bool: True si retour automatique effectué
@@ -423,12 +423,12 @@ class Character(BaseModel):
         return False
 
     def is_in_animal_form(self) -> bool:
-        """Vérifie si Elneha est en forme animale"""
+        """Vérifie si Druide est en forme animale"""
         return self.code == "P-1" and self.current_form in ["bear", "wolf"]
 
     def set_form(self, form: str):
-        """Change la forme actuelle (pour Elneha) - LEGACY, utiliser transform_to_X()"""
-        if self.code == "P-1":  # Seule Elneha peut changer de forme
+        """Change la forme actuelle (pour Druide) - LEGACY, utiliser transform_to_X()"""
+        if self.code == "P-1":  # Seule Druide peut changer de forme
             self.current_form = form
 
     def get_form_display(self) -> str:
@@ -463,7 +463,7 @@ class Character(BaseModel):
             'is_animal_form': self.is_in_animal_form()
         }
     
-    # === SYSTÈME D'INVOCATION (KRAOR) ===
+    # === SYSTÈME D'INVOCATION (CHASSEUR) ===
     
     def can_summon_pet(self) -> bool:
         """Vérifie si le héros peut invoquer un Pet"""
@@ -474,9 +474,9 @@ class Character(BaseModel):
         if not self.can_summon_pet():
             return None
         
-        # Kraor avec O-3 Médaillon d'appel
+        # Chasseur avec O-3 Médaillon d'appel
         if self.code == "P-4" and self.has_equipment("O-3"):
-            return Pet.create_kraor_pet(self)
+            return Pet.create_chasseur_pet(self)
         
         return None
     
@@ -517,7 +517,7 @@ class Character(BaseModel):
             if self.permanent_buffs.get('defense_sans_armure', False):
                 permanent_bonus += 1
 
-        # NOUVEAU - Buffs temporaires (Parade d'Atucan, Armure du Mage de Liarie, etc.)
+        # NOUVEAU - Buffs temporaires (Parade d'Paladin, Armure du Mage de Mage, etc.)
         temporary_bonus = 0
         if hasattr(self, 'temporary_buffs'):
             temporary_bonus = self.temporary_buffs.get('temporary_defense_bonus', 0)
@@ -529,9 +529,9 @@ class Character(BaseModel):
                 armure_bonus = self.max_parade_tokens - base_parade - persistent_bonus - permanent_bonus
                 temporary_bonus += max(0, armure_bonus)  # S'assurer que c'est positif
 
-        # PARADE D'ATUCAN - Si actif, utiliser max_parade_tokens directement
+        # PARADE D'PALADIN - Si actif, utiliser max_parade_tokens directement
         if hasattr(self, 'temporary_buffs') and 'parade_original_max' in self.temporary_buffs:
-            # Parade d'Atucan est actif, retourner la valeur modifiée directement
+            # Parade d'Paladin est actif, retourner la valeur modifiée directement
             return self.max_parade_tokens
 
         return base_parade + persistent_bonus + permanent_bonus + temporary_bonus
@@ -583,21 +583,21 @@ class Character(BaseModel):
         Returns:
             Dict avec détails de l'application des dégâts
         """
-        # NOUVEAU : Vérifier esquive (Lame Attaque sournoise, Raishi Maîtrise absolue)
+        # NOUVEAU : Vérifier esquive (Roublard Attaque sournoise, Pugiliste Maîtrise absolue)
         dodge_negated = False
         if hasattr(self, 'temporary_buffs') and self.temporary_buffs:
-            # Lame Attaque sournoise : Esquive 1 attaque
-            if 'lame_dodge_ready' in self.temporary_buffs:
-                dodge_data = self.temporary_buffs['lame_dodge_ready']
+            # Roublard Attaque sournoise : Esquive 1 attaque
+            if 'roublard_dodge_ready' in self.temporary_buffs:
+                dodge_data = self.temporary_buffs['roublard_dodge_ready']
                 if isinstance(dodge_data, dict) and dodge_data.get('charges', 0) > 0:
                     dodge_negated = True
                     dodge_data['charges'] -= 1
                     if dodge_data['charges'] <= 0:
-                        self.temporary_buffs.pop('lame_dodge_ready', None)
+                        self.temporary_buffs.pop('roublard_dodge_ready', None)
 
-            # Raishi Maîtrise absolue : Absorbe 2 attaques (permanent combat, auto-recharge)
-            elif 'raishi_maitrise_charges' in self.temporary_buffs:
-                maitrise_data = self.temporary_buffs['raishi_maitrise_charges']
+            # Pugiliste Maîtrise absolue : Absorbe 2 attaques (permanent combat, auto-recharge)
+            elif 'pugiliste_maitrise_charges' in self.temporary_buffs:
+                maitrise_data = self.temporary_buffs['pugiliste_maitrise_charges']
                 if isinstance(maitrise_data, dict) and maitrise_data.get('charges', 0) > 0:
                     dodge_negated = True
                     maitrise_data['charges'] -= 1
@@ -606,7 +606,7 @@ class Character(BaseModel):
                 elif isinstance(maitrise_data, int) and maitrise_data > 0:
                     # Legacy : charges directement en int
                     dodge_negated = True
-                    self.temporary_buffs['raishi_maitrise_charges'] -= 1
+                    self.temporary_buffs['pugiliste_maitrise_charges'] -= 1
                     # ✅ NE PAS supprimer le buff legacy non plus
 
         if dodge_negated:
@@ -620,7 +620,7 @@ class Character(BaseModel):
                 'dodged': True  # Nouveau flag
             }
 
-        # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Atucan)
+        # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Paladin)
         aura_reduction = 0
         if hasattr(self, 'temporary_buffs') and 'aura_protection' in self.temporary_buffs:
             aura_info = self.temporary_buffs['aura_protection']
@@ -651,7 +651,7 @@ class Character(BaseModel):
         self.current_health = max(0, self.current_health - remaining)
         actual_health_damage = old_health - self.current_health
 
-        # NOUVEAU - Elneha formes animales : Gérer "mort" en forme animale
+        # NOUVEAU - Druide formes animales : Gérer "mort" en forme animale
         form_reverted = False
         if self.current_health <= 0:
             form_reverted = self.handle_form_death()
@@ -921,7 +921,7 @@ class Character(BaseModel):
         self.current_defense = self.max_parade_tokens  # ← Utilise la parade max
         self.current_precision = self.precision
 
-        # Reset forme pour Elneha
+        # Reset forme pour Druide
         if self.code == "P-1":
             self.current_form = "human"
             self.human_stats = None  # Réinitialiser aussi les stats sauvegardées
@@ -979,7 +979,7 @@ class Character(BaseModel):
         if hasattr(self, 'temporary_buffs'):
             temp_bonus = self.temporary_buffs.get('damage_bonus_next_attack', 0)
         
-        # Marques sur les ennemis (pour Kraor)
+        # Marques sur les ennemis (pour Chasseur)
         mark_bonus = self._get_mark_damage_bonus()
         
         return base_damage + persistent_bonus + temp_bonus + mark_bonus
@@ -1047,7 +1047,7 @@ class Character(BaseModel):
     
     def get_attack_damage_info(self) -> Dict:
         """Infos sur le type de dégâts d'attaque (physique ou magique)"""
-        # NOUVEAU - Elneha formes animales : Utiliser stats brutes (sans équipement)
+        # NOUVEAU - Druide formes animales : Utiliser stats brutes (sans équipement)
         is_animal_form = (self.code == "P-1" and
                          hasattr(self, 'current_form') and
                          self.current_form in ["bear", "wolf"])
@@ -1127,9 +1127,9 @@ class Character(BaseModel):
             self.unlock_ability(1)
     
     def unlock_ability(self, ability_number: int) -> bool:
-        # NOUVEAU - Gérer capacités spéciales Elneha (101, 102)
+        # NOUVEAU - Gérer capacités spéciales Druide (101, 102)
         if ability_number in [101, 102]:
-            # Capacités exclusives formes : toujours débloquées pour Elneha
+            # Capacités exclusives formes : toujours débloquées pour Druide
             if self.code == "P-1":
                 if ability_number not in self.unlocked_abilities:
                     self.unlocked_abilities.append(ability_number)
@@ -1154,7 +1154,7 @@ class Character(BaseModel):
 
         self.unlocked_abilities.append(ability_number)
 
-        # NOUVEAU - Pour Elneha, débloquer aussi 101 et 102 automatiquement
+        # NOUVEAU - Pour Druide, débloquer aussi 101 et 102 automatiquement
         if self.code == "P-1" and ability_number == 1:
             # Quand on débloque la capacité 1, débloquer aussi les capacités exclusives
             for special_num in [101, 102]:
@@ -1183,7 +1183,7 @@ class Character(BaseModel):
             if not ability.is_unlocked:
                 continue
             
-            # Exclusion Kraor
+            # Exclusion Chasseur
             if self.code == "P-4" and ability.ability_number in [1, 3]:
                 continue
             
@@ -1242,8 +1242,8 @@ class Character(BaseModel):
                 action.message = "⚠️ Impossible d'utiliser une capacité magique après avoir attaqué !"
                 return action
 
-        # SUPPRIMÉ - Ancien système de gestion des formes d'Elneha
-        # Les transformations sont maintenant gérées par les individual abilities (ElnehaFormeOurs, ElnehaFormeLoup)
+        # SUPPRIMÉ - Ancien système de gestion des formes d'Druide
+        # Les transformations sont maintenant gérées par les individual abilities (DruideFormeOurs, DruideFormeLoup)
         # Lignes 1182-1188 désactivées car elles causaient un conflit avec le nouveau système
 
         # Consommation sorts (seulement pour Ability normales)
@@ -1323,8 +1323,8 @@ class Character(BaseModel):
 
         # CORRIGÉ - Ne PAS consommer double_next_attack si c'est Forme de loup (géré par combat_actions)
         if 'double_next_attack' in self.temporary_buffs:
-            # Vérifier si c'est Forme de loup d'Elneha (compteur personnalisé)
-            is_wolf_form = self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0
+            # Vérifier si c'est Forme de loup d'Druide (compteur personnalisé)
+            is_wolf_form = self.temporary_buffs.get('druide_wolf_remaining', 0) > 0
             if not is_wolf_form:
                 consumed_buffs.append('double_next_attack')
         
@@ -1483,7 +1483,7 @@ class Character(BaseModel):
     
     def start_new_combat(self):
         """MODIFIÉ - Prépare nouveau combat + reset stats"""
-        # CRITIQUE - Reset forme Elneha AVANT tout le reste
+        # CRITIQUE - Reset forme Druide AVANT tout le reste
         if self.code == "P-1":
             self.current_form = "human"
             self.human_stats = None
@@ -1515,7 +1515,7 @@ class Character(BaseModel):
         for ability in self.abilities:
             ability.reset_combat_uses()
 
-        # O-2 Baton de puissance : +1 utilisation capacités magiques (Liarie)
+        # O-2 Baton de puissance : +1 utilisation capacités magiques (Mage)
         if self.code == "P-2" and self.has_equipment("O-2"):
             self._apply_baton_puissance_bonus()
 
@@ -1538,7 +1538,7 @@ class Character(BaseModel):
         # Reset état du tour standard (inclut magic_abilities_used_this_turn)
         self.reset_turn_state()
 
-        # NOUVEAU - Restaurer jetons de parade originaux (Parade d'Atucan)
+        # NOUVEAU - Restaurer jetons de parade originaux (Parade d'Paladin)
         if hasattr(self, 'temporary_buffs') and 'parade_original_max' in self.temporary_buffs:
             self.max_parade_tokens = self.temporary_buffs['parade_original_max']
             self.temporary_buffs.pop('parade_original_max', None)
@@ -1548,15 +1548,15 @@ class Character(BaseModel):
             self.temporary_buffs.pop('parade_used_this_turn', None)
             self.temporary_buffs.pop('parade_blocked_by_attack', None)  # NOUVEAU - Reset blocage Parade par attaque
             self.temporary_buffs.pop('cannot_attack_this_turn', None)
-            self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Atucan (affichage)
-            self.temporary_buffs.pop('attacks_this_turn', None)  # Reset compteur attaques Kraor
-            self.temporary_buffs.pop('lame_ability_used_this_turn', None)  # Reset limitation 1 capacité/tour pour Lame
+            self.temporary_buffs.pop('temporary_defense_bonus', None)  # Reset Parade d'Paladin (affichage)
+            self.temporary_buffs.pop('attacks_this_turn', None)  # Reset compteur attaques Chasseur
+            self.temporary_buffs.pop('roublard_ability_used_this_turn', None)  # Reset limitation 1 capacité/tour pour Roublard
 
-        # NOUVEAU - Retirer statut furtivité de Lame si expire (legacy - normalement géré dans sandbox)
+        # NOUVEAU - Retirer statut furtivité de Roublard si expire (legacy - normalement géré dans sandbox)
         if hasattr(self, 'status_effects') and 'invisible' in self.status_effects:
             stealth_data = self.status_effects['invisible']
-            # Vérifier si c'est la furtivité de Lame avec compteur de tours
-            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'lame_furtivite':
+            # Vérifier si c'est la furtivité de Roublard avec compteur de tours
+            if isinstance(stealth_data, dict) and stealth_data.get('source') == 'roublard_furtivite':
                 if 'turns_remaining' in stealth_data:
                     stealth_data['turns_remaining'] -= 1
                     # Si compteur atteint 0, supprimer la furtivité
@@ -1565,27 +1565,27 @@ class Character(BaseModel):
 
         if hasattr(self, 'temporary_buffs'):
             # NOUVEAU - Réactiver Forme de loup si compteur actif (protection nouveau round)
-            if self.temporary_buffs.get('elneha_wolf_remaining', 0) > 0:
+            if self.temporary_buffs.get('druide_wolf_remaining', 0) > 0:
                 self.temporary_buffs['double_next_attack'] = True
 
-            # NOUVEAU - Lame P-7-6 Assaut furieux : Réappliquer invisibilité automatiquement chaque tour
+            # NOUVEAU - Roublard P-7-6 Assaut furieux : Réappliquer invisibilité automatiquement chaque tour
             if 'permanent_stealth' in self.temporary_buffs:
                 if not hasattr(self, 'status_effects'):
                     self.status_effects = {}
                 self.status_effects['invisible'] = {
                     'type': 'untargetable',
-                    'expires_on_damage_dealt': True,  # Disparaît quand Lame attaque
+                    'expires_on_damage_dealt': True,  # Disparaît quand Roublard attaque
                     'source': 'ombre_mortelle'
                 }
 
-            # NOUVEAU - Raishi Maîtrise absolue : Recharger 2 charges par tour (auto-recharge)
-            if 'raishi_maitrise_charges' in self.temporary_buffs:
-                maitrise = self.temporary_buffs['raishi_maitrise_charges']
+            # NOUVEAU - Pugiliste Maîtrise absolue : Recharger 2 charges par tour (auto-recharge)
+            if 'pugiliste_maitrise_charges' in self.temporary_buffs:
+                maitrise = self.temporary_buffs['pugiliste_maitrise_charges']
                 if isinstance(maitrise, dict) and maitrise.get('auto_recharge', False):
                     max_charges = maitrise.get('max_charges', 2)
                     maitrise['charges'] = max_charges  # Recharge complète à chaque tour
 
-        # NOUVEAU - Kraor Pluie de flèches : Reset compteur attaques par tour
+        # NOUVEAU - Chasseur Pluie de flèches : Reset compteur attaques par tour
         if hasattr(self, 'attacks_this_turn'):
             self.attacks_this_turn = 0
 
@@ -1647,7 +1647,7 @@ class Pet(Character):
     """Familier invoqué avec système de jetons parade + héritage Character + gestion sorts + effets"""
     
     owner_code: str  # Code du héros qui l'a invoqué (ex: "P-4")
-    owner_name: str  # Nom du héros qui l'a invoqué (ex: "Kraor")
+    owner_name: str  # Nom du héros qui l'a invoqué (ex: "Chasseur")
     pet_type: str = "summoned"  # Type de Pet pour extensions futures
     
     # NOUVEAU - Attributs sorts pour Pets
@@ -1661,8 +1661,8 @@ class Pet(Character):
         return f"Familier de {self.owner_name}"
     
     @classmethod
-    def create_kraor_pet(cls, owner: 'Character') -> 'Pet':
-        """Crée le Pet de Kraor selon les stats définies"""
+    def create_chasseur_pet(cls, owner: 'Character') -> 'Pet':
+        """Crée le Pet de Chasseur selon les stats définies"""
         return cls(
             code=f"{owner.code}_pet",
             name="Familier Invoqué",
@@ -1686,7 +1686,7 @@ class Pet(Character):
         )
     
     def get_total_magical_damage(self) -> int:
-        """Pet de Kraor fait 4 dégâts magiques"""
+        """Pet de Chasseur fait 4 dégâts magiques"""
         if self.owner_code == "P-4":
             return 4
         return super().get_total_magical_damage()
@@ -1792,7 +1792,7 @@ class Enemy(BaseModel):
         return self.get_stats_for_players(self.combat_player_count)
     
     def is_alive(self) -> bool:
-        # NOUVEAU - Berserker rage (Thordius P-5-6) : Continue à combattre même inconscient
+        # NOUVEAU - Berserker rage (Barbare P-5-6) : Continue à combattre même inconscient
         if hasattr(self, 'temporary_buffs') and self.temporary_buffs.get('berserker_rage_active', False):
             return True  # Rage active = immortel
 
@@ -1838,7 +1838,7 @@ class Enemy(BaseModel):
         Returns:
             Dict avec détails de l'application des dégâts
         """
-        # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Atucan) - Les ennemis n'ont pas ce buff normalement
+        # NOUVEAU : Vérifier buff aura_protection (Aura sacrée d'Paladin) - Les ennemis n'ont pas ce buff normalement
         aura_reduction = 0
         if hasattr(self, 'temporary_buffs') and 'aura_protection' in self.temporary_buffs:
             aura_info = self.temporary_buffs['aura_protection']

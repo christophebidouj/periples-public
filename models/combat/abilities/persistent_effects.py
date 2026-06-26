@@ -46,7 +46,7 @@ class PersistentEffectsSystem:
     def _initialize_effect_definitions(self) -> Dict[str, Dict]:
         """Définit tous les effets persistants possibles"""
         return {
-            # Liarie P-2
+            # Mage P-2
             'armure_mage': {
                 'type': 'buff',
                 'trigger': EffectTrigger.PARADE_REFRESH,
@@ -54,7 +54,7 @@ class PersistentEffectsSystem:
                 'description': 'Gagne +1 jeton parade par tour'
             },
             
-            # Thordius P-5
+            # Barbare P-5
             'rage_berserker': {
                 'type': 'buff_debuff',
                 'trigger': EffectTrigger.TURN_START,
@@ -83,7 +83,7 @@ class PersistentEffectsSystem:
                 'description': 'Prochaine attaque doublée + parade ce tour'
             },
             
-            # Raishi P-8
+            # Pugiliste P-8
             'zui_quan': {
                 'type': 'buff',
                 'trigger': EffectTrigger.TURN_START,
@@ -91,7 +91,7 @@ class PersistentEffectsSystem:
                 'description': '+1 dégât et +1 parade cumulatifs'
             },
             
-            # Stephe P-6
+            # Barde P-6
             'inspiration': {
                 'type': 'buff',
                 'trigger': EffectTrigger.ATTACK,

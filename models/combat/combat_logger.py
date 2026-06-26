@@ -140,7 +140,7 @@ class CombatLogger:
             effects = hero.get_special_equipment_effects()
             active = [name for name, active in effects.items() if active]
             if active:
-                # Ajout info formes pour Elneha
+                # Ajout info formes pour Druide
                 if hero.code == "P-1" and hasattr(hero, 'current_form'):
                     form_info = f"forme:{hero.current_form}"
                     active.append(form_info)

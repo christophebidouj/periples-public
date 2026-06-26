@@ -1,9 +1,9 @@
-# elneha.py - Capacités individuelles d'Elneha (P-1)
+# druide.py - Capacités individuelles d'Druide (P-1)
 """
-Capacités individuelles pour le héros Elneha (P-1)
+Capacités individuelles pour le héros Druide (P-1)
 CORRIGÉ: Basé sur données officielles Sorts.xlsx + système temporary_buffs
 
-Elneha est une druide spécialisée dans les transformations et les soins.
+Druide est une druide spécialisée dans les transformations et les soins.
 Ses capacités se concentrent sur les métamorphoses animales et la guérison.
 
 P-1-1: Forme d'ours ✅ (Coût: 1 sort) - Ignore prochaine attaque via temporary_buffs
@@ -21,24 +21,24 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 
 # ========================================
-# CAPACITÉS ELNEHA (P-1) - DRUIDE TRANSFORMATIONS
+# CAPACITÉS DRUIDE (P-1) - DRUIDE TRANSFORMATIONS
 # ========================================
 
 @register_ability
-class ElnehaFormeOurs(BaseAbility):
+class DruideFormeOurs(BaseAbility):
     """P-1-1: Forme d'ours - Transformation complète avec changement de stats"""
 
     hero_code = "P-1"
     ability_number = 1
     name = "Forme d'ours"
-    description = "Permet à Elneha de se métamorphoser en Ours (Stats: Pré 4, Dég 2, Par 2, PV 12)."
+    description = "Permet à Druide de se métamorphoser en Ours (Stats: Pré 4, Dég 2, Par 2, PV 12)."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en ours OU revient en forme humaine"""
+        """Transforme Druide en ours OU revient en forme humaine"""
         try:
             spell_manager = context.get('spell_manager')
 
@@ -85,7 +85,7 @@ class ElnehaFormeOurs(BaseAbility):
 
 
 @register_ability
-class ElnehaSoinMineur(BaseAbility):
+class DruideSoinMineur(BaseAbility):
     """P-1-2: Soin mineur - Soigne 4 PV à un personnage"""
     
     hero_code = "P-1"
@@ -105,7 +105,7 @@ class ElnehaSoinMineur(BaseAbility):
             if not self._consume_spell_cost(caster, self.spell_cost, spell_manager, log):
                 return False
             
-            # Intelligence de ciblage - Même logique qu'Atucan
+            # Intelligence de ciblage - Même logique qu'Paladin
             all_allies = self._get_all_allies(caster, context)
             all_candidates = list(all_allies) + [caster]  # Inclure le caster
             
@@ -143,20 +143,20 @@ class ElnehaSoinMineur(BaseAbility):
 
 
 @register_ability
-class ElnehaFormeLoup(BaseAbility):
+class DruideFormeLoup(BaseAbility):
     """P-1-3: Forme de loup - Transformation complète avec changement de stats"""
 
     hero_code = "P-1"
     ability_number = 3
     name = "Forme de loup"
-    description = "Permet à Elneha de se métamorphoser en Loup (Stats: Pré 6, Dég 4, Par 0, PV 8)."
+    description = "Permet à Druide de se métamorphoser en Loup (Stats: Pré 6, Dég 4, Par 0, PV 8)."
 
     def __init__(self):
         super().__init__(self.hero_code, self.ability_number, self.name, self.description)
         self.spell_cost = 1
 
     def execute(self, caster, targets: List, context: Dict[str, Any], log: List[str]) -> bool:
-        """Transforme Elneha en loup OU revient en forme humaine"""
+        """Transforme Druide en loup OU revient en forme humaine"""
         try:
             spell_manager = context.get('spell_manager')
 
@@ -203,7 +203,7 @@ class ElnehaFormeLoup(BaseAbility):
 
 
 @register_ability
-class ElnehaSoinMultiple(BaseAbility):
+class DruideSoinMultiple(BaseAbility):
     """P-1-4: Soin multiple - Soigne 4 PV à tous les personnages"""
     
     hero_code = "P-1"
@@ -248,7 +248,7 @@ class ElnehaSoinMultiple(BaseAbility):
 
 
 @register_ability
-class ElnehaOndeTonnante(BaseAbility):
+class DruideOndeTonnante(BaseAbility):
     """P-1-5: Onde tonnante - 4 dégâts magiques à tous + perte d'action (1/combat)"""
     
     hero_code = "P-1"
@@ -292,7 +292,7 @@ class ElnehaOndeTonnante(BaseAbility):
 
                 # Effet stun (AVEC vérification immunité)
                 if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    enemy, duration=1, source='elneha_eclair', log=log
+                    enemy, duration=1, source='druide_eclair', log=log
                 ):
                     stunned_enemies.append(enemy.name)
             
@@ -316,7 +316,7 @@ class ElnehaOndeTonnante(BaseAbility):
 
 
 @register_ability
-class ElnehaResurrection(BaseAbility):
+class DruideResurrection(BaseAbility):
     """P-1-6: Résurrection - Soigne complètement un personnage inconscient"""
     
     hero_code = "P-1"
@@ -402,7 +402,7 @@ class ElnehaResurrection(BaseAbility):
 # ========================================
 
 @register_ability
-class ElnehaBearResistance(BaseAbility):
+class DruideBearResistance(BaseAbility):
     """Capacité exclusive Ours : Résistance d'ours - Ignore les dégâts d'une attaque (1/combat)"""
 
     hero_code = "P-1"
@@ -460,7 +460,7 @@ class ElnehaBearResistance(BaseAbility):
 
 
 @register_ability
-class ElnehaWolfFerocity(BaseAbility):
+class DruideWolfFerocity(BaseAbility):
     """Capacité exclusive Loup : Férocité du loup - Double les dégâts d'une attaque réussie (2/combat)"""
 
     hero_code = "P-1"
@@ -521,15 +521,15 @@ class ElnehaWolfFerocity(BaseAbility):
 # FONCTIONS UTILITAIRES ET STATISTIQUES
 # ========================================
 
-def get_elneha_abilities_count() -> int:
-    """Retourne le nombre de capacités d'Elneha enregistrées"""
+def get_druide_abilities_count() -> int:
+    """Retourne le nombre de capacités d'Druide enregistrées"""
     return 6
 
 
-def get_elneha_abilities_summary() -> str:
-    """Retourne un résumé des capacités d'Elneha (CORRIGÉ)"""
+def get_druide_abilities_summary() -> str:
+    """Retourne un résumé des capacités d'Druide (CORRIGÉ)"""
     return """
-    🎭 ELNEHA (P-1) - 6 capacités complètes (DONNÉES OFFICIELLES + temporary_buffs):
+    🎭 DRUIDE (P-1) - 6 capacités complètes (DONNÉES OFFICIELLES + temporary_buffs):
     ✅ P-1-1: Forme d'ours (1 sort, 1/combat) - Ignore prochaine attaque via temporary_buffs
     ✅ P-1-2: Soin mineur (1 sort) - 4 PV à une cible
     ✅ P-1-3: Forme de loup (1 sort) - Double dégâts 2 attaques via temporary_buffs  
@@ -539,8 +539,8 @@ def get_elneha_abilities_summary() -> str:
     """
 
 
-def get_elneha_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités d'Elneha (selon Sorts.xlsx)"""
+def get_druide_spell_costs() -> dict:
+    """Retourne les coûts en sorts des capacités d'Druide (selon Sorts.xlsx)"""
     return {
         "Forme d'ours": 1,
         "Soin mineur": 1,
@@ -551,8 +551,8 @@ def get_elneha_spell_costs() -> dict:
     }
 
 
-def get_elneha_tactical_analysis() -> dict:
-    """Analyse tactique des capacités d'Elneha (CORRIGÉE)"""
+def get_druide_tactical_analysis() -> dict:
+    """Analyse tactique des capacités d'Druide (CORRIGÉE)"""
     return {
         "role": "Druide shapeshifter - Support défensif/offensif",
         "strengths": [
@@ -575,8 +575,8 @@ def get_elneha_tactical_analysis() -> dict:
     }
 
 
-def validate_elneha_implementation() -> dict:
-    """Valide que toutes les capacités Elneha sont correctement implémentées"""
+def validate_druide_implementation() -> dict:
+    """Valide que toutes les capacités Druide sont correctement implémentées"""
     return {
         "hero_code": "P-1",
         "total_abilities": 6,

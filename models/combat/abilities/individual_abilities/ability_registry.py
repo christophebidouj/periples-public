@@ -100,7 +100,7 @@ class AbilityRegistry:
             if ability:
                 abilities.append(ability)
 
-        # NOUVEAU - Elneha capacités exclusives formes (101, 102)
+        # NOUVEAU - Druide capacités exclusives formes (101, 102)
         if hero_code == "P-1":
             for ability_number in [101, 102]:
                 ability = self.get_ability_instance(hero_code, ability_number)

@@ -157,9 +157,9 @@ Les 4 objets magiques permettent de tester des mécaniques avancées avec effets
 
 | Code | Héros | Effet magique |
 |------|-------|---------------|
-| **O-1** | Elneha | Gemme de pouvoir – Convertit les attaques Ours/Loup en dégâts magiques |
-| **O-2** | Liarie | Bâton de puissance – +1 utilisation pour toutes les capacités magiques |
-| **O-3** | Kraor | Médaillon d'appel – Invoque un Pet (Précision 4, Dégâts magiques 4, Santé 15) |
+| **O-1** | Druide | Gemme de pouvoir – Convertit les attaques Ours/Loup en dégâts magiques |
+| **O-2** | Mage | Bâton de puissance – +1 utilisation pour toutes les capacités magiques |
+| **O-3** | Chasseur | Médaillon d'appel – Invoque un Pet (Précision 4, Dégâts magiques 4, Santé 15) |
 | **O-4** | Stèphe | Lyre phœnix – +4 sorts maximum + toutes les attaques en dégâts magiques |
 
 ### Récapitulatif de combat

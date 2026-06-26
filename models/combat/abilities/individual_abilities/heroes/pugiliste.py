@@ -1,7 +1,7 @@
-# raishi.py - Capacités individuelles de Raishi (P-8) - Moine
+# pugiliste.py - Capacités individuelles de Pugiliste (P-8) - Moine
 """
-Capacités individuelles pour le héros Raishi (P-8)
-Raishi est un moine spécialisé dans les arts martiaux, la défense parfaite et les combos.
+Capacités individuelles pour le héros Pugiliste (P-8)
+Pugiliste est un moine spécialisé dans les arts martiaux, la défense parfaite et les combos.
 Ses capacités se concentrent sur la précision, l'esquive et les enchaînements.
 
 ✅ DONNÉES OFFICIELLES Sorts.xlsx:
@@ -19,11 +19,11 @@ from ..ability_registry import register_ability
 
 
 # ========================================
-# CAPACITÉS RAISHI (P-8) - MOINE
+# CAPACITÉS PUGILISTE (P-8) - MOINE
 # ========================================
 
 @register_ability
-class RaishiPointFaible(BaseAbility):
+class PugilistePointFaible(BaseAbility):
     """P-8-1: Point faible - Ignore parade ennemis (PASSIF)"""
 
     hero_code = "P-8"
@@ -55,7 +55,7 @@ class RaishiPointFaible(BaseAbility):
 
 
 @register_ability
-class RaishiAttaquesMultiples(BaseAbility):
+class PugilisteAttaquesMultiples(BaseAbility):
     """P-8-2: Attaques multiples - 2e frappe avec dégâts / 2 après attaque réussie"""
 
     hero_code = "P-8"
@@ -137,7 +137,7 @@ class RaishiAttaquesMultiples(BaseAbility):
 
 
 @register_ability
-class RaishiPurification(BaseAbility):
+class PugilistePurification(BaseAbility):
     """P-8-3: Purification (AUTO-SOIN UNIQUEMENT) - Soigne 4 PV sur soi-même, empêche attaque"""
 
     hero_code = "P-8"
@@ -161,7 +161,7 @@ class RaishiPurification(BaseAbility):
                 return False
 
             # IMPORTANT: AUTO-SOIN UNIQUEMENT - ignore les targets, soigne toujours le caster
-            # Cette capacité ne peut PAS soigner d'autres héros, seulement Raishi
+            # Cette capacité ne peut PAS soigner d'autres héros, seulement Pugiliste
             actual_healing = self._apply_healing(caster, self.heal_amount, log)
 
             # Empêcher attaque ce tour
@@ -183,12 +183,12 @@ class RaishiPurification(BaseAbility):
         return f"💚 {self.name}: Auto-soin {self.heal_amount} PV (pas d'attaque) ({self.uses_remaining_combat}/{self.uses_per_combat} rest.)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        # AUTO-CIBLAGE UNIQUEMENT - retourne toujours le caster (Raishi ne peut soigner que lui-même)
+        # AUTO-CIBLAGE UNIQUEMENT - retourne toujours le caster (Pugiliste ne peut soigner que lui-même)
         return [caster]
 
 
 @register_ability
-class RaishiDelugeDeCups(BaseAbility):
+class PugilisteDelugeDeCups(BaseAbility):
     """P-8-4: Déluge de coups - Applique dégâts de l'attaque réussie à TOUS les ennemis"""
 
     hero_code = "P-8"
@@ -275,7 +275,7 @@ class RaishiDelugeDeCups(BaseAbility):
 
 
 @register_ability
-class RaishiPaumeOuverte(BaseAbility):
+class PugilistePaumeOuverte(BaseAbility):
     """P-8-5: Paume ouverte - Stun ennemi 3 tours après attaque"""
 
     hero_code = "P-8"
@@ -318,7 +318,7 @@ class RaishiPaumeOuverte(BaseAbility):
 
             # Appliquer le stun (avec vérification d'immunité)
             stunned = CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                target, duration=self.stun_duration, source='raishi_paume_ouverte', log=log
+                target, duration=self.stun_duration, source='pugiliste_paume_ouverte', log=log
             )
 
             if stunned:
@@ -349,7 +349,7 @@ class RaishiPaumeOuverte(BaseAbility):
 
 
 @register_ability
-class RaishiZuiQuan(BaseAbility):
+class PugilisteZuiQuan(BaseAbility):
     """P-8-6: Zui quan - Absorbe 2 attaques par tour (recharge automatique)"""
 
     hero_code = "P-8"
@@ -376,7 +376,7 @@ class RaishiZuiQuan(BaseAbility):
             if not hasattr(caster, 'temporary_buffs'):
                 caster.temporary_buffs = {}
 
-            caster.temporary_buffs['raishi_maitrise_charges'] = {
+            caster.temporary_buffs['pugiliste_maitrise_charges'] = {
                 'type': 'permanent_combat',
                 'charges': self.charges_per_turn,
                 'max_charges': self.charges_per_turn,  # NOUVEAU: Pour recharge auto
@@ -411,11 +411,11 @@ class RaishiZuiQuan(BaseAbility):
 
 def auto_activate_point_faible(heroes: List, log: List[str]) -> bool:
     """
-    AUTO-ACTIVATION: Active automatiquement "Point faible" pour Raishi dès le début du combat.
+    AUTO-ACTIVATION: Active automatiquement "Point faible" pour Pugiliste dès le début du combat.
 
-    Point faible est un passif permanent qui permet à Raishi d'ignorer la parade des ennemis.
+    Point faible est un passif permanent qui permet à Pugiliste d'ignorer la parade des ennemis.
     Cette capacité s'active automatiquement dès le début du combat et reste active tant que
-    Raishi est vivant.
+    Pugiliste est vivant.
 
     Args:
         heroes: Liste des héros participant au combat
@@ -427,23 +427,23 @@ def auto_activate_point_faible(heroes: List, log: List[str]) -> bool:
     Effet:
         Ignore la parade des ennemis lors des attaques
     """
-    # Chercher Raishi (P-8) parmi les héros vivants
-    raishi = next((h for h in heroes if h.code == "P-8" and h.is_alive()), None)
+    # Chercher Pugiliste (P-8) parmi les héros vivants
+    pugiliste = next((h for h in heroes if h.code == "P-8" and h.is_alive()), None)
 
-    if not raishi:
+    if not pugiliste:
         return False
 
     # Initialiser temporary_buffs si nécessaire
-    if not hasattr(raishi, 'temporary_buffs'):
-        raishi.temporary_buffs = {}
+    if not hasattr(pugiliste, 'temporary_buffs'):
+        pugiliste.temporary_buffs = {}
 
     # Appliquer le buff permanent
-    raishi.temporary_buffs['ignore_parade'] = {
+    pugiliste.temporary_buffs['ignore_parade'] = {
         'type': 'passive_permanent',
-        'source': 'raishi_point_faible'
+        'source': 'pugiliste_point_faible'
     }
 
     # Logger l'activation
-    log.append(f"🥋 Point faible de Raishi actif (Ignore parade ennemis)")
+    log.append(f"🥋 Point faible de Pugiliste actif (Ignore parade ennemis)")
 
     return True

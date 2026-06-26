@@ -1,9 +1,9 @@
-# atucan.py - Capacités individuelles d'Atucan (P-3) - VERSION COMPLÈTE
+# paladin.py - Capacités individuelles d'Paladin (P-3) - VERSION COMPLÈTE
 """
-Capacités individuelles pour le héros Atucan (P-3)
+Capacités individuelles pour le héros Paladin (P-3)
 Phase 3: Toutes les 6 capacités implémentées selon DONNÉES OFFICIELLES
 
-Atucan est un paladin spécialisé dans la défense et les soins divins.
+Paladin est un paladin spécialisé dans la défense et les soins divins.
 Ses capacités se concentrent sur la protection du groupe et les soins sacrés.
 
 ❌ PROBLÈMES CORRIGÉS DE L'ANCIENNE VERSION:
@@ -36,11 +36,11 @@ from models.combat.abilities.character_integration import CharacterAbilitiesInte
 
 
 # ========================================
-# CAPACITÉS ATUCAN (P-3) - DONNÉES OFFICIELLES
+# CAPACITÉS PALADIN (P-3) - DONNÉES OFFICIELLES
 # ========================================
 
 @register_ability
-class AtucanImpositionDesMains(BaseAbility):
+class PaladinImpositionDesMains(BaseAbility):
     """P-3-1: Imposition des mains - Soigne 2 blessures fixes"""
 
     hero_code = "P-3"
@@ -91,12 +91,12 @@ class AtucanImpositionDesMains(BaseAbility):
         return f"💖 {self.name}: Soigne 2 PV (Coût: {self.spell_cost} sort)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        """Cible les alliés vivants SAUF Atucan (règle officielle)"""
+        """Cible les alliés vivants SAUF Paladin (règle officielle)"""
         return [hero for hero in all_heroes if hero != caster and self._is_alive(hero)]
 
 
 @register_ability
-class AtucanSensDeLaJustice(BaseAbility):
+class PaladinSensDeLaJustice(BaseAbility):
     """P-3-2: Sens de la justice - Relance dé d'attaque si 1 ou 2"""
 
     hero_code = "P-3"
@@ -120,7 +120,7 @@ class AtucanSensDeLaJustice(BaseAbility):
                 'reroll_on': [1, 2],  # Relance si dé = 1 ou 2
                 'max_rerolls_per_turn': 1,  # 1 seule relance par tour
                 'rerolls_used_this_turn': 0,  # Compteur
-                'source': 'atucan_sens_justice'
+                'source': 'paladin_sens_justice'
             }
 
             log.append(f"⚖️ {caster.name} invoque le Sens de la justice")
@@ -136,12 +136,12 @@ class AtucanSensDeLaJustice(BaseAbility):
         return f"⚖️ {self.name}: Relance dé si 1-2 (1/tour, Gratuit)"
 
     def get_targets(self, caster, all_heroes: List, all_enemies: List, context: Dict[str, Any]) -> List:
-        """Auto-cible Atucan"""
+        """Auto-cible Paladin"""
         return [caster]
 
 
 @register_ability
-class AtucanChatimentDivin(BaseAbility):
+class PaladinChatimentDivin(BaseAbility):
     """P-3-3: Châtiment divin - 4 dégâts magiques après attaque réussie"""
     
     hero_code = "P-3"
@@ -222,7 +222,7 @@ class AtucanChatimentDivin(BaseAbility):
 
 
 @register_ability
-class AtucanAuraSacree(BaseAbility):
+class PaladinAuraSacree(BaseAbility):
     """P-3-4: Aura sacrée - Tous ignorent 1 blessure par attaque"""
 
     hero_code = "P-3"
@@ -265,7 +265,7 @@ class AtucanAuraSacree(BaseAbility):
                 log.append(f"   Traceback: {traceback.format_exc()}")
                 return False
 
-            # 3. Appliquer à tous les alliés (y compris Atucan)
+            # 3. Appliquer à tous les alliés (y compris Paladin)
             try:
                 all_heroes = context.get('heroes', [])
                 if not all_heroes:
@@ -328,7 +328,7 @@ class AtucanAuraSacree(BaseAbility):
 
 
 @register_ability
-class AtucanSoinSuperieur(BaseAbility):
+class PaladinSoinSuperieur(BaseAbility):
     """P-3-5: Soin supérieur - 8 PV répartis sur le groupe"""
     
     hero_code = "P-3"
@@ -439,7 +439,7 @@ class AtucanSoinSuperieur(BaseAbility):
 
 
 @register_ability
-class AtucanJugementDernier(BaseAbility):
+class PaladinJugementDernier(BaseAbility):
     """P-3-6: Jugement dernier - 6 dégâts tous ennemis + stun 2 tours"""
     
     hero_code = "P-3"
@@ -486,7 +486,7 @@ class AtucanJugementDernier(BaseAbility):
                 
                 # Effet stun (AVEC vérification immunité)
                 if CharacterAbilitiesIntegration.apply_stun_with_immunity_check(
-                    enemy, duration=2, source='atucan_jugement_dernier', log=log
+                    enemy, duration=2, source='paladin_jugement_dernier', log=log
                 ):
                     stunned_enemies.append(enemy.name)
             
@@ -513,18 +513,18 @@ class AtucanJugementDernier(BaseAbility):
 
 
 # ========================================
-# FONCTIONS UTILITAIRES ATUCAN
+# FONCTIONS UTILITAIRES PALADIN
 # ========================================
 
-def get_atucan_abilities_count() -> int:
-    """Retourne le nombre de capacités d'Atucan"""
+def get_paladin_abilities_count() -> int:
+    """Retourne le nombre de capacités d'Paladin"""
     return 6
 
 
-def get_atucan_abilities_summary() -> str:
-    """Retourne un résumé des capacités d'Atucan (DONNÉES OFFICIELLES V3.0)"""
+def get_paladin_abilities_summary() -> str:
+    """Retourne un résumé des capacités d'Paladin (DONNÉES OFFICIELLES V3.0)"""
     return """
-    🎭 ATUCAN (P-3) - 6 capacités complètes (DONNÉES OFFICIELLES V3.0):
+    🎭 PALADIN (P-3) - 6 capacités complètes (DONNÉES OFFICIELLES V3.0):
     ✅ P-3-1: Imposition des mains (1 sort) - Soigne 2 PV fixes
     ✅ P-3-2: Sens de la justice (0 sort) - Relance dé si 1-2 (1/tour)
     ✅ P-3-3: Châtiment divin (1 sort, 1/combat) - +4 dégâts magiques après attaque
@@ -534,8 +534,8 @@ def get_atucan_abilities_summary() -> str:
     """
 
 
-def get_atucan_spell_costs() -> dict:
-    """Retourne les coûts en sorts des capacités d'Atucan (DONNÉES OFFICIELLES V3.0)"""
+def get_paladin_spell_costs() -> dict:
+    """Retourne les coûts en sorts des capacités d'Paladin (DONNÉES OFFICIELLES V3.0)"""
     return {
         "Imposition des mains": 1,
         "Sens de la justice": 0,
@@ -546,8 +546,8 @@ def get_atucan_spell_costs() -> dict:
     }
 
 
-def get_atucan_damage_output() -> dict:
-    """Analyse des dégâts potentiels d'Atucan"""
+def get_paladin_damage_output() -> dict:
+    """Analyse des dégâts potentiels d'Paladin"""
     return {
         "direct_damage": {
             "Jugement dernier": "6 dégâts magiques AoE (ultimate)"
@@ -566,8 +566,8 @@ def get_atucan_damage_output() -> dict:
     }
 
 
-def get_atucan_tactical_analysis() -> dict:
-    """Analyse tactique des capacités d'Atucan (DONNÉES OFFICIELLES)"""
+def get_paladin_tactical_analysis() -> dict:
+    """Analyse tactique des capacités d'Paladin (DONNÉES OFFICIELLES)"""
     return {
         "role": "Paladin défensif - Tank/Support/Guérisseur",
         "strengths": [
@@ -598,8 +598,8 @@ def get_atucan_tactical_analysis() -> dict:
     }
 
 
-def get_atucan_equipment_requirements() -> dict:
-    """Analyse des besoins en équipement d'Atucan (V3.0)"""
+def get_paladin_equipment_requirements() -> dict:
+    """Analyse des besoins en équipement d'Paladin (V3.0)"""
     return {
         "essential": {
             "arme_physique": "Nécessaire pour attaques (bénéficie Sens de la justice + Châtiment)"
@@ -614,11 +614,11 @@ def get_atucan_equipment_requirements() -> dict:
 
 def auto_activate_sens_de_la_justice(heroes: List, log: List[str]) -> bool:
     """
-    Active automatiquement le Sens de la justice si Atucan (P-3) est présent et vivant.
+    Active automatiquement le Sens de la justice si Paladin (P-3) est présent et vivant.
     Appelé au début du combat par l'interface UI.
 
-    RÈGLE: Le Sens de la justice d'Atucan est une capacité passive permanente qui s'active
-    automatiquement dès le début du combat et reste active tant qu'Atucan est vivant.
+    RÈGLE: Le Sens de la justice d'Paladin est une capacité passive permanente qui s'active
+    automatiquement dès le début du combat et reste active tant qu'Paladin est vivant.
 
     Args:
         heroes: Liste des héros participant au combat
@@ -628,49 +628,49 @@ def auto_activate_sens_de_la_justice(heroes: List, log: List[str]) -> bool:
         bool: True si le buff a été activé, False sinon
 
     Effet:
-        Applique le buff 'sens_de_la_justice_active' à Atucan:
+        Applique le buff 'sens_de_la_justice_active' à Paladin:
         - reroll_on: [1, 2] (relance si dé = 1 ou 2)
         - max_rerolls_per_turn: 1
         - type: 'passive_permanent'
         - Permanent (reste actif tout le combat)
     """
-    # Chercher Atucan (P-3) parmi les héros vivants
-    atucan = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
+    # Chercher Paladin (P-3) parmi les héros vivants
+    paladin = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
 
-    if not atucan:
+    if not paladin:
         return False
 
     # Vérifier que la capacité 2 (Sens de la justice) est débloquée
-    if not hasattr(atucan, 'abilities_level') or atucan.abilities_level < 2:
+    if not hasattr(paladin, 'abilities_level') or paladin.abilities_level < 2:
         return False
 
     # Initialiser temporary_buffs si nécessaire
-    if not hasattr(atucan, 'temporary_buffs'):
-        atucan.temporary_buffs = {}
+    if not hasattr(paladin, 'temporary_buffs'):
+        paladin.temporary_buffs = {}
 
     # Appliquer le buff de sens de la justice (permanent)
-    atucan.temporary_buffs['sens_de_la_justice_active'] = {
+    paladin.temporary_buffs['sens_de_la_justice_active'] = {
         'reroll_on': [1, 2],  # Relance si dé = 1 ou 2
         'max_rerolls_per_turn': 1,  # 1 seule relance par tour
         'rerolls_used_this_turn': 0,  # Compteur (reset chaque tour)
         'type': 'passive_permanent',
-        'source': 'atucan_sens_justice_passif'
+        'source': 'paladin_sens_justice_passif'
         # Pas de 'rounds_remaining' → effet permanent jusqu'à fin du combat
     }
 
     # Logger l'activation
-    log.append(f"⚖️ Sens de la justice d'Atucan active (relance dé d'attaque 1-2, 1×/tour)")
+    log.append(f"⚖️ Sens de la justice d'Paladin active (relance dé d'attaque 1-2, 1×/tour)")
 
     return True
 
 
 def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
     """
-    Active automatiquement l'Aura sacrée si Atucan (P-3) est présent et vivant.
+    Active automatiquement l'Aura sacrée si Paladin (P-3) est présent et vivant.
     Appelé au début du combat par l'interface UI.
 
-    RÈGLE: L'Aura sacrée d'Atucan est une aura passive permanente qui s'active
-    automatiquement dès le début du combat et reste active tant qu'Atucan est vivant.
+    RÈGLE: L'Aura sacrée d'Paladin est une aura passive permanente qui s'active
+    automatiquement dès le début du combat et reste active tant qu'Paladin est vivant.
 
     Args:
         heroes: Liste des héros participant au combat
@@ -686,17 +686,17 @@ def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
         - source: 'aura_sacree'
         - Permanent (pas de rounds_remaining)
     """
-    # Chercher Atucan (P-3) parmi les héros vivants
-    atucan = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
+    # Chercher Paladin (P-3) parmi les héros vivants
+    paladin = next((h for h in heroes if h.code == "P-3" and h.is_alive()), None)
 
-    if not atucan:
+    if not paladin:
         return False
 
     # Vérifier que la capacité 4 (Aura sacrée) est débloquée
-    if not hasattr(atucan, 'abilities_level') or atucan.abilities_level < 4:
+    if not hasattr(paladin, 'abilities_level') or paladin.abilities_level < 4:
         return False
 
-    # Appliquer l'aura à tous les héros vivants (y compris Atucan lui-même)
+    # Appliquer l'aura à tous les héros vivants (y compris Paladin lui-même)
     protected_count = 0
     for hero in heroes:
         if hero.is_alive():
@@ -709,19 +709,19 @@ def auto_activate_aura_sacree(heroes: List, log: List[str]) -> bool:
                 'damage_reduction': 1,
                 'type': 'per_attack',
                 'source': 'aura_sacree'
-                # Pas de 'rounds_remaining' → effet permanent jusqu'à mort d'Atucan
+                # Pas de 'rounds_remaining' → effet permanent jusqu'à mort d'Paladin
             }
             protected_count += 1
 
     # Logger l'activation
     if protected_count > 0:
-        log.append(f"✨ Aura sacrée d'Atucan active (-1 blessure/attaque pour tous)")
+        log.append(f"✨ Aura sacrée d'Paladin active (-1 blessure/attaque pour tous)")
 
     return True
 
 
-def validate_atucan_implementation() -> dict:
-    """Valide que toutes les capacités Atucan utilisent les DONNÉES OFFICIELLES"""
+def validate_paladin_implementation() -> dict:
+    """Valide que toutes les capacités Paladin utilisent les DONNÉES OFFICIELLES"""
     return {
         "hero_code": "P-3",
         "total_abilities": 6,
@@ -738,8 +738,8 @@ def validate_atucan_implementation() -> dict:
     }
 
 
-def get_atucan_debug_info() -> dict:
-    """Informations de debug pour les capacités d'Atucan"""
+def get_paladin_debug_info() -> dict:
+    """Informations de debug pour les capacités d'Paladin"""
     return {
         "api_compliance": {
             "healing": "✅ _apply_healing() dans P-3-1 et P-3-5",
@@ -757,7 +757,7 @@ def get_atucan_debug_info() -> dict:
             "❌➡️✅ GLOBAL: Suppositions éliminées → project_knowledge_search utilisé"
         ],
         "test_scenarios": {
-            "P-3-1": "Atucan blessé vs sain = soins différents",
+            "P-3-1": "Paladin blessé vs sain = soins différents",
             "P-3-2": "Avec vs sans bouclier équipé",
             "P-3-3": "Attaque normale vs avec châtiment actif",
             "P-3-4": "Vérifier réduction dégâts groupe",
@@ -767,26 +767,26 @@ def get_atucan_debug_info() -> dict:
     }
 
 
-def print_atucan_development_summary():
-    """Affiche un résumé du développement des capacités d'Atucan"""
+def print_paladin_development_summary():
+    """Affiche un résumé du développement des capacités d'Paladin"""
     print("\n" + "="*60)
-    print("📋 ATUCAN (P-3) - RÉSUMÉ DÉVELOPPEMENT")
+    print("📋 PALADIN (P-3) - RÉSUMÉ DÉVELOPPEMENT")
     print("="*60)
     
-    summary = get_atucan_abilities_summary()
+    summary = get_paladin_abilities_summary()
     print(summary)
     
-    costs = get_atucan_spell_costs()
+    costs = get_paladin_spell_costs()
     print(f"\n💎 Coûts en sorts: {costs}")
     
-    validation = validate_atucan_implementation()
+    validation = validate_paladin_implementation()
     print(f"\n✅ Validation: {validation['total_abilities']} capacités - APIs corrigées")
     
-    tactical = get_atucan_tactical_analysis()
+    tactical = get_paladin_tactical_analysis()
     print(f"\n⚔️ Rôle: {tactical['role']}")
     print(f"🎯 Forces clés: {len(tactical['strengths'])} atouts majeurs")
     
-    debug = get_atucan_debug_info()
+    debug = get_paladin_debug_info()
     print(f"\n🔧 APIs corrigées: {len(debug['corrected_issues'])} problèmes résolus")
     
     print("="*60)
@@ -796,21 +796,21 @@ def print_atucan_development_summary():
 # STATISTIQUES COMPARATIVES
 # ========================================
 
-def get_atucan_vs_other_heroes() -> dict:
-    """Compare Atucan aux autres héros du projet"""
+def get_paladin_vs_other_heroes() -> dict:
+    """Compare Paladin aux autres héros du projet"""
     return {
-        "vs_elneha": {
+        "vs_druide": {
             "commun": ["Soins", "Buffs temporaires"],
-            "unique_atucan": ["Défense bouclier", "Protection groupe", "AoE + stun"],
-            "unique_elneha": ["Transformations", "Résurrection"]
+            "unique_paladin": ["Défense bouclier", "Protection groupe", "AoE + stun"],
+            "unique_druide": ["Transformations", "Résurrection"]
         },
-        "vs_liarie": {
+        "vs_mage": {
             "commun": ["Sorts coûteux", "AoE damage"],
-            "unique_atucan": ["Soins", "Buffs défensifs"],
-            "unique_liarie": ["Contrôle élémentaire", "Vol de vie"]
+            "unique_paladin": ["Soins", "Buffs défensifs"],
+            "unique_mage": ["Contrôle élémentaire", "Vol de vie"]
         },
         "team_composition": {
-            "best_partner": "Elneha (soins complémentaires)",
+            "best_partner": "Druide (soins complémentaires)",
             "counters": "DPS magiques pure (ignore défense physique)",
             "enables": "Tanks physiques (bénéficient châtiment + parade)"
         }
@@ -823,24 +823,24 @@ def get_atucan_vs_other_heroes() -> dict:
 
 # Export des capacités
 __all__ = [
-    'AtucanImpositionDesMains',
-    'AtucanSensDeLaJustice',
-    'AtucanChatimentDivin',
-    'AtucanAuraSacree',
-    'AtucanSoinSuperieur',
-    'AtucanJugementDernier',
-    'get_atucan_abilities_count',
-    'get_atucan_abilities_summary',
-    'get_atucan_spell_costs',
-    'get_atucan_damage_output',
-    'get_atucan_tactical_analysis',
-    'get_atucan_equipment_requirements',
+    'PaladinImpositionDesMains',
+    'PaladinSensDeLaJustice',
+    'PaladinChatimentDivin',
+    'PaladinAuraSacree',
+    'PaladinSoinSuperieur',
+    'PaladinJugementDernier',
+    'get_paladin_abilities_count',
+    'get_paladin_abilities_summary',
+    'get_paladin_spell_costs',
+    'get_paladin_damage_output',
+    'get_paladin_tactical_analysis',
+    'get_paladin_equipment_requirements',
     'auto_activate_sens_de_la_justice',  # Fonction d'activation automatique (passif)
     'auto_activate_aura_sacree',  # Fonction d'activation automatique
-    'validate_atucan_implementation',
-    'get_atucan_debug_info',
-    'print_atucan_development_summary',
-    'get_atucan_vs_other_heroes'
+    'validate_paladin_implementation',
+    'get_paladin_debug_info',
+    'print_paladin_development_summary',
+    'get_paladin_vs_other_heroes'
 ]
 
 
@@ -851,15 +851,15 @@ __all__ = [
 def _validate_on_import():
     """Validation automatique lors de l'import du module"""
     try:
-        validation = validate_atucan_implementation()
-        debug_info = get_atucan_debug_info()
+        validation = validate_paladin_implementation()
+        debug_info = get_paladin_debug_info()
         
-        print(f"✅ Module atucan.py chargé - {validation['total_abilities']} capacités")
+        print(f"✅ Module paladin.py chargé - {validation['total_abilities']} capacités")
         print(f"🎯 Prêt pour debug Niveau 2: {validation['ready_for_debug']}")
         
         return True
     except Exception as e:
-        print(f"❌ Erreur validation atucan.py: {e}")
+        print(f"❌ Erreur validation paladin.py: {e}")
         return False
 
 # Exécuter la validation automatique

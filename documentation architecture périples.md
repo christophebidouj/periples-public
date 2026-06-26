@@ -4,7 +4,7 @@
 ## 🎯 OBJECTIF DE CE DOCUMENT
 
 Cette documentation résout les problèmes récurrents :
-- **Imports qui échouent** (exemple: kraor.py)
+- **Imports qui échouent** (exemple: chasseur.py)
 - **Fichiers orphelins** sans comprendre leur rôle
 - **Flux de données** obscur entre composants
 - **APIs cachées** et interactions complexes
@@ -213,10 +213,10 @@ AbilityEffectsManager.apply_ability_effects()
 ### ❌ **Problème : Import de Capacité Échoue**
 ```python
 # ERREUR TYPIQUE
-ImportError: cannot import name 'KraorCapacity' from 'models.combat.abilities.individual_abilities.heroes.kraor'
+ImportError: cannot import name 'ChasseurCapacity' from 'models.combat.abilities.individual_abilities.heroes.chasseur'
 
 # CAUSES POSSIBLES :
-1. Fichier kraor.py pas créé
+1. Fichier chasseur.py pas créé
 2. Classe mal nommée  
 3. @register_ability manquant
 4. __init__.py non mis à jour
@@ -224,19 +224,19 @@ ImportError: cannot import name 'KraorCapacity' from 'models.combat.abilities.in
 
 **✅ Solution :**
 ```python
-# 1. Créer kraor.py dans individual_abilities/heroes/
+# 1. Créer chasseur.py dans individual_abilities/heroes/
 # 2. Structure obligatoire :
 from ..base_ability import BaseAbility
 from ..ability_registry import register_ability
 
 @register_ability  # ← CRITIQUE
-class KraorCapacity1(BaseAbility):
+class ChasseurCapacity1(BaseAbility):
     hero_code = "P-4"
     ability_number = 1
     # ...
 
 # 3. Mettre à jour __init__.py :
-__all__ = ['KraorCapacity1', ...]
+__all__ = ['ChasseurCapacity1', ...]
 ```
 
 ### ❌ **Problème : APIs Character Incorrectes**
