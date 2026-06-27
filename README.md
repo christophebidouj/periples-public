@@ -8,6 +8,12 @@
 
 ---
 
+## Aperçu
+
+![Playtest Manuel](docs/screenshots/Playtest-Manuel.png)
+
+---
+
 ## Vue d'ensemble
 
 Le **Périples Balance Workshop** est un simulateur de combat développé spécifiquement pour l'équilibrage et le développement du jeu de société **Périples** © Bastien LIAUTY. Cet outil permet aux game designers de tester, valider et ajuster les mécaniques de jeu avec des données authentiques issues des règles officielles V3.0.
@@ -41,6 +47,13 @@ Module de configuration rapide pour lancer des simulations.
 - Configuration des règles : initiative D20, coups critiques, dégâts magiques
 - Support des builds personnalisés créés dans la Forge
 
+<table>
+<tr>
+<td><img src="docs/screenshots/Selection-Heros.png" alt="Sélection des héros"/></td>
+<td><img src="docs/screenshots/Selection-Ennemis.png" alt="Sélection des ennemis"/></td>
+</tr>
+</table>
+
 ### 🎮 Playtest Manuel (Sandbox V2)
 
 Mode de simulation avancé avec contrôle total des actions.
@@ -48,6 +61,13 @@ Mode de simulation avancé avec contrôle total des actions.
 **Mode Initiative (règles officielles)** : Jets de D20 pour déterminer l'ordre des tours, héros prioritaires en cas d'égalité.
 
 **Mode Manuel (tests de scénarios)** : Sélection manuelle du personnage actif, actions multiples par tour (⚔️ Attaquer, 🔮 Utiliser capacité, 🩸 Boire potion, 🤝 Faire boire un allié), système **undo/redo** pour explorer différentes stratégies.
+
+<table>
+<tr>
+<td><img src="docs/screenshots/Playtest-Manuel.png" alt="Playtest Manuel - combat"/></td>
+<td><img src="docs/screenshots/Playtest-Manuel2.png" alt="Playtest Manuel - actions"/></td>
+</tr>
+</table>
 
 ### ⚙️ Forge des équipements
 
@@ -58,6 +78,8 @@ Mode de simulation avancé avec contrôle total des actions.
 - Configuration des potions (quantités personnalisables)
 - Sauvegarde dans `custom_builds.csv`
 
+![Forge des équipements](docs/screenshots/Forge-Build.png)
+
 ### ⚔️ Gestion des ennemis
 
 Éditeur d'ennemis personnalisés pour tester de nouvelles créatures.
@@ -65,6 +87,13 @@ Mode de simulation avancé avec contrôle total des actions.
 - Création d'ennemis avec statistiques et capacités personnalisées
 - Configuration de la scalabilité multi-joueurs
 - Sauvegarde dans `custom_enemies.csv`
+
+<table>
+<tr>
+<td><img src="docs/screenshots/Gestion-Ennemis1.png" alt="Gestion des ennemis - liste"/></td>
+<td><img src="docs/screenshots/Gestion-Ennemis2.png" alt="Gestion des ennemis - édition"/></td>
+</tr>
+</table>
 
 ### ℹ️ À propos
 
